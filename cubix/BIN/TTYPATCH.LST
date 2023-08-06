@@ -1,0 +1,594 @@
+DUNFIELD 6809 ASSEMBLER: D:TTYPATCH                                   PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         9  *
+0000                        10  * TTYPATCH: Terminal definition editor
+0000                        11  *
+0000                        12  * Copyright 1983-2005 Dave Dunfield
+0000                        13  * All rights reserved.
+0000                        14  *
+0019                        15  NSIZE	EQU	25		MAXIMUM NAME WIDTH
+0019                        16  ISIZE	EQU	25		MAXIMUM ITEM SIZE
+000D                        17  INUM	EQU	13		# INPUT ENTRIES
+000F                        18  FNUM	EQU	15		# FUNCTION ENTRIES
+0008                        19  ONUM	EQU	8		# OUTPUT ENTRIES
+0000                        20  *
+0000                        21  	ORG	0
+0000                        22  DPREFIX	RMB	8		DIRECTORY PREFIX
+0008                        23  FNAME	RMB	8		FILE NAME
+0010                        24  FTYPE	RMB	3		FILE TYPE
+0013                        25  DSKADR	RMB	2		DISK SECTOR ADDRESS
+0015                        26  LODADR	RMB	2		LOAD ADDRESS
+0017                        27  FPROT	RMB	1		PROTECTION BITS
+0018                        28  *
+2000                        29  	ORG	$2000
+2000  81 3F                 30  	CMPA	#'?'		QUESTION?
+2002  26 12                 31  	BNE	MAIN		NO, ITS OK
+2004  3F                    32  	SWI			SOFTWARE INTERRUPT TO DOS
+2005  19                    33  	FCB	25		SYSTEM REQUEST NUMBER
+2006  55 73 65 3A 20 74 +   34  	FCCZ	'Use: ttypatch'
+2014  3F                    35  	SWI			SOFTWARE INTERRUPT TO DOS
+2015  00                    36  	FCB	0		SYSTEM REQUEST NUMBER
+2016  3F                    37  MAIN	SWI			SOFTWARE INTERRUPT TO DOS
+2017  19                    38  	FCB	25		SYSTEM REQUEST NUMBER
+2018  20 20 20 20 20 2A +   39  	FCC	'     *** TTY patch utility ***'
+2036  0A 0D                 40  	FCB	$0A,$0D
+2038  43 61 72 72 69 61 +   41  	FCC	'Carriage-return to exit a Sub-Menu'
+205A  0A 00                 42  	FCB	$0A,0
+205C                        43  * ZERO INITIALIZED DATA
+205C  BD 21 C7              44  MAIN1	JSR	CLRAM
+205F                        45  * MAIN MENU
+205F  10 CE 2A 81           46  MAIN2	LDS	#STACK		POINT TO STACK
+2063  8E 23 F1              47  	LDX	#MMENU		POINT TO MAIN MENU
+2066  C6 31                 48  	LDB	#'1'		ZERO COUNT
+2068  A6 84                 49  MAIN3	LDA	,X		MORE DATA
+206A  27 17                 50  	BEQ	MAIN4		NO, NONE
+206C  3F                    51  	SWI			SOFTWARE INTERRUPT TO DOS
+206D  18                    52  	FCB	24		SYSTEM REQUEST NUMBER
+206E  20 20 20 00           53  	FCCZ	'   '		SPACE OVER MENU
+2072  1F 98                 54  	TFR	B,A		GET VALUE
+2074  3F                    55  	SWI			SOFTWARE INTERRUPT TO DOS
+2075  21                    56  	FCB	33		SYSTEM REQUEST NUMBER
+2076  3F                    57  	SWI			SOFTWARE INTERRUPT TO DOS
+2077  18                    58  	FCB	24		SYSTEM REQUEST NUMBER
+2078  20 2D 20 00           59  	FCCZ	' - '
+DUNFIELD 6809 ASSEMBLER: TERMINAL DEFINITION EDITOR                   PAGE: 2
+
+207C  3F                    60  	SWI			SOFTWARE INTERRUPT TO DOS
+207D  17                    61  	FCB	23		SYSTEM REQUEST NUMBER
+207E  3F                    62  	SWI			SOFTWARE INTERRUPT TO DOS
+207F  16                    63  	FCB	22		SYSTEM REQUEST NUMBER
+2080  5C                    64  	INCB			ADVANCE COUNT
+2081  20 E5                 65  	BRA	MAIN3		AND DO NEXT
+2083  3F                    66  MAIN4	SWI			SOFTWARE INTERRUPT TO DOS
+2084  18                    67  	FCB	24		SYSTEM REQUEST NUMBER
+2085  46 75 6E 63 74 69 +   68  	FCCZ	'Function? '
+2090  3F                    69  	SWI			SOFTWARE INTERRUPT TO DOS
+2091  22                    70  	FCB	34		SYSTEM REQUEST NUMBER
+2092                        71  * FUNCTION SELECTED
+2092  3F                    72  MAIN5	SWI			SOFTWARE INTERRUPT TO DOS
+2093  21                    73  	FCB	33		SYSTEM REQUEST NUMBER
+2094  3F                    74  	SWI			SOFTWARE INTERRUPT TO DOS
+2095  16                    75  	FCB	22		SYSTEM REQUEST NUMBER
+2096                        76  * '1' - INPUT KEYS
+2096  80 31                 77  	SUBA	#'1'		CONVERT
+2098  26 08                 78  	BNE	MAIN6		NO, TRY NEXT
+209A  8E 25 27              79  	LDX	#INAMES		POINT TO INPUT NAMES
+209D  CE 26 99              80  	LDU	#IDATA		POINT TO DATA AREA
+20A0  20 14                 81  	BRA	SUBMEN		DO SUBMENU
+20A2                        82  * '2' - FUNCTION KEYS
+20A2  4A                    83  MAIN6	DECA			DEFINE FUNCTION?
+20A3  26 08                 84  	BNE	MAIN7		NO, TRY NEXT
+20A5  8E 25 AE              85  	LDX	#FNAMES		POINT TO NAMES
+20A8  CE 27 DE              86  	LDU	#FDATA		POINT TO DATA
+20AB  20 09                 87  	BRA	SUBMEN		DO SUB MENU
+20AD                        88  * '3' - OUTPUT STRINGS
+20AD  4A                    89  MAIN7	DECA			DEFINE OUTPUT?
+20AE  26 0E                 90  	BNE	MAIN9		NO, TRY NEXT
+20B0  8E 24 87              91  	LDX	#ONAMES		POINT TO PUTPUT NAMES
+20B3  CE 29 55              92  	LDU	#ODATA		POINT TO OUTPUT DATA
+20B6  86 FF                 93  SUBMEN	LDA	#-1		INSURE NO XY
+20B8  BD 21 D5              94  	JSR	DMENU		DO THE MENU
+20BB  7E 20 5F              95  	JMP	MAIN2		AND RETURN
+20BE                        96  * '5' - LOAD SETTINGS
+20BE  4A                    97  MAIN9	DECA			IS IT LOAD?
+20BF  26 45                 98  	BNE	MAIN10		NO, TRY NEXT
+20C1  BD 21 70              99  	JSR	LDPGM		LOAD THE FILE
+20C4                       100  * OUTPUT KEYS INTO MEMORY
+20C4  BD 21 C7             101  	JSR	CLRAM		ZERO THE RAM DATABASE
+20C7  CE 29 55             102  	LDU	#ODATA		POINT TO OUTPUT DATA
+20CA  C6 08                103  	LDB	#ONUM		GET # ENTRIES
+20CC  34 44                104  MAIN9A	PSHS	B,U		SAVE REG
+20CE  EC 81                105  	LDD	,X++		GET ADDRESS
+20D0  B3 26 96             106  	SUBD	FLOAD		CONVERT
+20D3  C3 2A 81             107  	ADDD	#LOAD		TO READ ADDRESS
+20D6  1F 02                108  	TFR	D,Y		'Y' = PTR TO ENTRY
+20D8  A6 A0                109  MAIN9B	LDA	,Y+		GET CHAR
+20DA  A7 C0                110  	STA	,U+		WRITE IT OUT
+20DC  2A 06                111  	BPL	MAIN9C		ITS OK
+20DE  A6 A0                112  	LDA	,Y+		GET CHAR
+20E0  A7 C0                113  	STA	,U+		WRITE IT OUT
+20E2  20 F4                114  	BRA	MAIN9B		AND CONTINUE
+20E4  26 F2                115  MAIN9C	BNE	MAIN9B		AND PROCEED
+20E6  35 44                116  	PULS	B,U		RESTORE 'U'
+20E8  33 C8 19             117  	LEAU	ISIZE,U		ADVANCE TO NEXT
+DUNFIELD 6809 ASSEMBLER: TERMINAL DEFINITION EDITOR                   PAGE: 3
+
+20EB  5A                   118  	DECB			REDUCE COUNT
+20EC  26 DE                119  	BNE	MAIN9A		KEEP GOING
+20EE                       120  * COPY INPUT & FUNCTION KEYS
+20EE  CE 26 99             121  	LDU	#IDATA		POINT TO INPUT DATA
+20F1  C6 1C                122  	LDB	#INUM+FNUM	GET # KEYS
+20F3  34 40                123  MAIN9D	PSHS	U		SAVE ENTRY
+20F5  A6 80                124  MAIN9E	LDA	,X+		GET CHAR
+20F7  A7 C0                125  	STA	,U+		WRITE IT
+20F9  26 FA                126  	BNE	MAIN9E		PROCEED
+20FB  35 40                127  	PULS	U		RESTORE U
+20FD  33 C8 19             128  	LEAU	ISIZE,U		OFFSET BY SIZE
+2100  5A                   129  	DECB			REDUCE COUNT
+2101  26 F0                130  	BNE	MAIN9D		AND PROCEED
+2103  7E 20 5F             131  	JMP	MAIN2		AND PROCEED
+2106                       132  * '6' - SAVE SETTINGS
+2106  4A                   133  MAIN10	DECA			SAVE ?
+2107  26 52                134  	BNE	MAIN11		NO, TRY NEXT
+2109  BD 21 70             135  	JSR	LDPGM		LOAD PROGRAM INTO RAM
+210C  33 88 10             136  	LEAU	ONUM*2,X	'U'= OUTPUT PTR
+210F                       137  * COPY INPUT & FUNCTION KEYS
+210F  10 8E 26 99          138  	LDY	#IDATA		POINT TO INPUT DATA
+2113  C6 1C                139  	LDB	#INUM+FNUM	GET # KEYS
+2115  34 20                140  MAIN10A	PSHS	Y		SAVE FOR LATER
+2117  A6 A0                141  MAIN10B	LDA	,Y+		GET CHAR
+2119  A7 C0                142  	STA	,U+		WRITE IT OUT
+211B  26 FA                143  	BNE	MAIN10B		AND PROCEED
+211D  35 20                144  	PULS	Y		RESTORE 'Y'
+211F  31 A8 19             145  	LEAY	ISIZE,Y		SKIP IT
+2122  5A                   146  	DECB			REDUCE COUNT
+2123  26 F0                147  	BNE	MAIN10A		COPY THEM ALL
+2125  6F C0                148  	CLR	,U+		INDICATE END OF INPUTS
+2127                       149  * COPY OUTPUT STRINGS
+2127  10 8E 29 55          150  	LDY	#ODATA		POINT TO OUTPUT DATA
+212B  C6 08                151  	LDB	#ONUM		GET # OUTPUTS
+212D  34 24                152  MAIN10C	PSHS	B,Y		SAVE REGS
+212F  1F 30                153  	TFR	U,D		GET ADDRESS
+2131  83 2A 81             154  	SUBD	#LOAD		CONVERT TO ZERO OFFSET
+2134  F3 26 96             155  	ADDD	FLOAD		CONVERT TO PGM OFFSET
+2137  ED 81                156  	STD	,X++		SAVE VECTOR
+2139  A6 A0                157  MAIN10D	LDA	,Y+		GET CHAR
+213B  A7 C0                158  	STA	,U+		WRITE CHAR
+213D  2A 06                159  	BPL	MAIN10E		ITS OK
+213F  A6 A0                160  	LDA	,Y+		GET CHAR
+2141  A7 C0                161  	STA	,U+		WRITE IT
+2143  20 F4                162  	BRA	MAIN10D		AND PROCEED
+2145  26 F2                163  MAIN10E	BNE	MAIN10D		DO THEM ALL
+2147  35 24                164  	PULS	B,Y		RESTORE REGISTER
+2149  31 A8 19             165  	LEAY	ISIZE,Y		ADVANCE TO NEXT
+214C  5A                   166  	DECB			REDUCE COUNT
+214D  26 DE                167  	BNE	MAIN10C		AND PROCEED
+214F                       168  * RE-SAVE THE FILE
+214F  8E 2A 81             169  	LDX	#LOAD		POINT TO LOAD ADDRESS
+2152  F6 26 98             170  	LDB	FSIZE		GET FILE SIZE
+2155  4F                   171  	CLRA			ZERO HIGH
+2156  3F                   172  	SWI			SOFTWARE INTERRUPT TO DOS
+2157  36                   173  	FCB	54		SYSTEM REQUEST NUMBER
+2158  7E 20 5F             174  	JMP	MAIN2		AND PROCEED
+215B                       175  * EXIT THE PROGRAM
+DUNFIELD 6809 ASSEMBLER: TERMINAL DEFINITION EDITOR                   PAGE: 4
+
+215B  4A                   176  MAIN11	DECA			TEST FOR EXIT
+215C  26 03                177  	BNE	MAIN12		NO, REPORT ERROR
+215E  4F                   178  	CLRA			ZERO RC
+215F  3F                   179  	SWI			SOFTWARE INTERRUPT TO DOS
+2160  00                   180  	FCB	0		SYSTEM REQUEST NUMBER
+2161                       181  *
+2161  3F                   182  MAIN12	SWI			SOFTWARE INTERRUPT TO DOS
+2162  19                   183  	FCB	25		SYSTEM REQUEST NUMBER
+2163  2A 2A 45 52 52 4F +  184  	FCCZ	'**ERROR**'
+216D  7E 20 5F             185  	JMP	MAIN2		AND PROCEED
+2170                       186  * LOAD FILE INTO MEMORY
+2170  3F                   187  LDPGM	SWI			SOFTWARE INTERRUPT TO DOS
+2171  18                   188  	FCB	24		SYSTEM REQUEST NUMBER
+2172  46 69 6C 65 6E 61 +  189  	FCCZ	'Filename? '
+217D  3F                   190  	SWI			SOFTWARE INTERRUPT TO DOS
+217E  03                   191  	FCB	3		SYSTEM REQUEST NUMBER
+217F  3F                   192  	SWI			SOFTWARE INTERRUPT TO DOS
+2180  04                   193  	FCB	4		SYSTEM REQUEST NUMBER
+2181  27 41                194  	BEQ	LODERR		NO, EXIT
+2183  3F                   195  	SWI			SOFTWARE INTERRUPT TO DOS
+2184  0A                   196  	FCB	10		SYSTEM REQUEST NUMBER
+2185  26 3D                197  	BNE	LODERR		ERROR
+2187  3F                   198  	SWI			SOFTWARE INTERRUPT TO DOS
+2188  46                   199  	FCB	70		SYSTEM REQUEST NUMBER
+2189  26 39                200  	BNE	LODERR		ERROR
+218B  EC 88 15             201  	LDD	LODADR,X	GET LOAD ADDRESS
+218E  FD 26 96             202  	STD	FLOAD		WRITE IT OUT
+2191  EC 88 13             203  	LDD	DSKADR,X	GET DISK ADDRESS
+2194  8E 2A 81             204  	LDX	#LOAD		GET INPUT ADDRESS
+2197  3F                   205  	SWI			SOFTWARE INTERRUPT TO DOS
+2198  4E                   206  	FCB	78		SYSTEM REQUEST NUMBER
+2199  1F 10                207  	TFR	X,D		'A' = # 256 BYTE BLOCKS
+219B  83 2A 81             208  	SUBD	#LOAD		CONVERT TO OFFSET
+219E  44                   209  	LSRA			'A' = # 512 BYTE BLOCKS
+219F  B7 26 98             210  	STA	FSIZE		SET FILE SIZE
+21A2  B6 2A 81             211  	LDA	>LOAD		GET FIRST INST.
+21A5  81 BE                212  	CMPA	#$BE		IS IT 'LDX >'
+21A7  26 15                213  	BNE	LODBAD		BAD FILE
+21A9  FC 2A 84             214  	LDD	>LOAD+3		GET FOLLOWING INST
+21AC  10 83 3F 17          215  	CMPD	#$3F17		IS IT 'SSR 23'
+21B0  26 0C                216  	BNE	LODBAD		BAD FILE
+21B2  FC 2A 82             217  	LDD	LOAD+1		GET ADDRESS
+21B5  B3 26 96             218  	SUBD	FLOAD		CONVERT TO ZERO OFFSET
+21B8  C3 2A 81             219  	ADDD	#LOAD		OFFSET TO SCREEN POSITION
+21BB  1F 01                220  	TFR	D,X		SET UP 'X'
+21BD  39                   221  	RTS
+21BE                       222  * FILE FORMAT IS INVALID
+21BE  10 8E 23 D5          223  LODBAD	LDY	#BADFIL		POINT TO MESSAGE
+21C2  3F                   224  	SWI			SOFTWARE INTERRUPT TO DOS
+21C3  34                   225  	FCB	52		SYSTEM REQUEST NUMBER
+21C4  7E 20 5F             226  LODERR	JMP	MAIN2		AND PROCEED
+21C7                       227  *
+21C7                       228  * CLEAR THE RAM DATABASE
+21C7                       229  *
+21C7  34 10                230  CLRAM	PSHS	X		SAVE REG
+21C9  8E 26 99             231  	LDX	#IDATA		POINT TO IT
+21CC  6F 80                232  CLR1	CLR	,X+		ZERO BYTE
+21CE  8C 2A 1D             233  	CMPX	#IEND		ARE WE OVER?
+DUNFIELD 6809 ASSEMBLER: TERMINAL DEFINITION EDITOR                   PAGE: 5
+
+21D1  25 F9                234  	BLO	CLR1		NO, KEEP GOING
+21D3  35 90                235  	PULS	X,PC		RESTORE & RETURN
+21D5                       236  *
+21D5                       237  * DISPLAY MENU OF SELECTIONS(X), DATA AREA(U)
+21D5                       238  *
+21D5  34 52                239  DMENU	PSHS	A,X,U		SAVE REGISTER
+21D7  6F E4                240  DMENU0	CLR	,S		ZERO COUNT
+21D9  EE 61                241  	LDU	1,S		GET TABLE ADDRESS
+21DB  A6 C4                242  DMENU1	LDA	,U		MORE ENTRIES?
+21DD  27 3A                243  	BEQ	DMENU4		NO, NONE
+21DF  3F                   244  	SWI			SOFTWARE INTERRUPT TO DOS
+21E0  18                   245  	FCB	24		SYSTEM REQUEST NUMBER
+21E1  20 20 20 00          246  	FCCZ	'   '		OVER
+21E5  A6 E4                247  	LDA	,S		GET INDEX CHAR
+21E7  8B 41                248  	ADDA	#'A'		OFFSET
+21E9  3F                   249  	SWI			SOFTWARE INTERRUPT TO DOS
+21EA  21                   250  	FCB	33		SYSTEM REQUEST NUMBER
+21EB  3F                   251  	SWI			SOFTWARE INTERRUPT TO DOS
+21EC  18                   252  	FCB	24		SYSTEM REQUEST NUMBER
+21ED  20 2D 20 00          253  	FCCZ	' - '
+21F1  5F                   254  	CLRB			ZERO COUNT
+21F2  A6 C0                255  DMENU2	LDA	,U+		GET CHAR
+21F4  27 05                256  	BEQ	DMENU3		MORE, QUIT
+21F6  5C                   257  	INCB			ADVANCE COUNT
+21F7  3F                   258  	SWI			SOFTWARE INTERRUPT TO DOS
+21F8  21                   259  	FCB	33		SYSTEM REQUEST NUMBER
+21F9  20 F7                260  	BRA	DMENU2		DO THEM ALL
+21FB  3F                   261  DMENU3	SWI			SOFTWARE INTERRUPT TO DOS
+21FC  15                   262  	FCB	21		SYSTEM REQUEST NUMBER
+21FD  5C                   263  	INCB			ADVANCE COUNT
+21FE  C1 19                264  	CMPB	#NSIZE		ARE WE OVER?
+2200  25 F9                265  	BLO	DMENU3		DO THEM ALL
+2202  3F                   266  	SWI			SOFTWARE INTERRUPT TO DOS
+2203  18                   267  	FCB	24		SYSTEM REQUEST NUMBER
+2204  3A 20 00             268  	FCCZ	': '
+2207  A6 E4                269  	LDA	,S		GET ITEM NUMBER
+2209  C6 19                270  	LDB	#ISIZE		GET ITEM SIZE
+220B  3D                   271  	MUL			CALCULATE OFFSET
+220C  E3 63                272  	ADDD	3,S		GET ADDRESS
+220E  1F 01                273  	TFR	D,X		GET ADDRESS
+2210  BD 22 57             274  	JSR	DISDAT		DISPLAY IT
+2213  3F                   275  	SWI			SOFTWARE INTERRUPT TO DOS
+2214  16                   276  	FCB	22		SYSTEM REQUEST NUMBER
+2215  6C E4                277  	INC	,S		NEXT ITEM
+2217  20 C2                278  	BRA	DMENU1		AND PROCEED
+2219                       279  * WE HAVE END OF LIST, GET SELECTION
+2219  3F                   280  DMENU4	SWI			SOFTWARE INTERRUPT TO DOS
+221A  18                   281  	FCB	24		SYSTEM REQUEST NUMBER
+221B  53 65 6C 65 63 74 +  282  	FCCZ	'Select? '
+2224  3F                   283  DMENU5	SWI			SOFTWARE INTERRUPT TO DOS
+2225  22                   284  	FCB	34		SYSTEM REQUEST NUMBER
+2226  81 0D                285  	CMPA	#$0D		ESCAPE
+2228  27 29                286  	BEQ	DMENU9		ABORT
+222A  1F 89                287  	TFR	A,B		GET CHAR
+222C  C4 5F                288  	ANDB	#$5F		CONVERT TO UPPER
+222E  C0 41                289  	SUBB	#'A'		CONVERT TO OFFSET
+2230  E1 E4                290  	CMPB	,S		ARE WE OK
+2232  24 F0                291  	BHS	DMENU5		NO, REQUEST NEXT
+DUNFIELD 6809 ASSEMBLER: TERMINAL DEFINITION EDITOR                   PAGE: 6
+
+2234                       292  * WE HAVE SELECTION
+2234  34 04                293  	PSHS	B		SAVE FOR LATER
+2236  AE 62                294  	LDX	2,S		GET TEXT PTR BACK
+2238  5A                   295  DMENU6	DECB			REDUCE COUNT
+2239  2B 06                296  	BMI	DMENU8		WE HAVE IT
+223B  A6 80                297  DMENU7	LDA	,X+		GET CHAR
+223D  26 FC                298  	BNE	DMENU7		PROCEED
+223F  20 F7                299  	BRA	DMENU6		TEST NEXT
+2241                       300  * WE FOUND TITLE
+2241  3F                   301  DMENU8	SWI			SOFTWARE INTERRUPT TO DOS
+2242  17                   302  	FCB	23		SYSTEM REQUEST NUMBER
+2243  3F                   303  	SWI			SOFTWARE INTERRUPT TO DOS
+2244  16                   304  	FCB	22		SYSTEM REQUEST NUMBER
+2245  35 04                305  	PULS	B		RESTORE NUMBER
+2247  86 19                306  	LDA	#ISIZE		GET ITEM SIZE
+2249  3D                   307  	MUL			CALCULATE OFFSET
+224A  E3 63                308  	ADDD	3,S		INCLUDE ADDRESS
+224C  1F 01                309  	TFR	D,X		GET CHAR
+224E  8D 34                310  	BSR	GETSTR		GET STRING
+2250  7E 21 D7             311  	JMP	DMENU0		NEXT MENU
+2253  3F                   312  DMENU9	SWI			SOFTWARE INTERRUPT TO DOS
+2254  16                   313  	FCB	22		SYSTEM REQUEST NUMBER
+2255  35 D2                314  	PULS	A,X,U,PC	RESTORE & RETURN
+2257                       315  *
+2257                       316  * DISPLAY DATA LINE(X)
+2257                       317  *
+2257  5F                   318  DISDAT	CLRB			ZERO COUNT
+2258  A6 80                319  DISD1	LDA	,X+		GET CHAR
+225A  27 27                320  	BEQ	DISD5		END, EXIT
+225C  2A 20                321  	BPL	DISD4		NORMAL CHAR
+225E  1F 89                322  	TFR	A,B		'B' = CHAR
+2260  3F                   323  	SWI			SOFTWARE INTERRUPT TO DOS
+2261  18                   324  	FCB	24		SYSTEM REQUEST NUMBER
+2262  3C 00                325  	FCCZ	'<'
+2264  86 58                326  	LDA	#'X'		ASSUME 'X'
+2266  C5 40                327  	BITB	#%01000000	TEST
+2268  27 02                328  	BEQ	DISD2		ASSUMPTION CORRECT
+226A  86 59                329  	LDA	#'Y'		FIX MISTAKE
+226C  3F                   330  DISD2	SWI			SOFTWARE INTERRUPT TO DOS
+226D  21                   331  	FCB	33		SYSTEM REQUEST NUMBER
+226E  86 42                332  	LDA	#'B'		ASSUME BINARY
+2270  C5 20                333  	BITB	#%00100000	TEST
+2272  27 02                334  	BEQ	DISD3		ASSUMPTION CORRECT
+2274  86 44                335  	LDA	#'D'		FIX MISTAKE
+2276  3F                   336  DISD3	SWI			SOFTWARE INTERRUPT TO DOS
+2277  21                   337  	FCB	33		SYSTEM REQUEST NUMBER
+2278  A6 80                338  	LDA	,X+		GET VALUE
+227A  3F                   339  	SWI			SOFTWARE INTERRUPT TO DOS
+227B  1C                   340  	FCB	28		SYSTEM REQUEST NUMBER
+227C  86 3E                341  	LDA	#'>'		INDICATE SPECIAL
+227E                       342  * NORMAL CHAR TO DISPLAY
+227E  BD 23 B3             343  DISD4	JSR	PUTCHR		DISPLAY
+2281  20 D5                344  	BRA	DISD1		AND BACK
+2283  39                   345  DISD5	RTS
+2284                       346  *
+2284                       347  * READ STRING(X) FROM KEYBOARD WITH SPECIALS
+2284                       348  *
+2284  5F                   349  GETSTR	CLRB			ZERO LOW
+DUNFIELD 6809 ASSEMBLER: TERMINAL DEFINITION EDITOR                   PAGE: 7
+
+2285  3F                   350  GETS1	SWI			SOFTWARE INTERRUPT TO DOS
+2286  22                   351  	FCB	34		SYSTEM REQUEST NUMBER
+2287  81 0D                352  	CMPA	#$0D		SPECIAL CHARACTER
+2289  27 08                353  	BEQ	GETS2		YES, IT IS
+228B  A7 85                354  	STA	B,X		WRITE IT
+228D  5C                   355  	INCB			ADVANCE
+228E  BD 23 B3             356  	JSR	PUTCHR		DISPLAY IT
+2291  20 F2                357  	BRA	GETS1		AND PROCEED
+2293                       358  *SPECIAL KEY PRESSED
+2293  3F                   359  GETS2	SWI			SOFTWARE INTERRUPT TO DOS
+2294  18                   360  	FCB	24		SYSTEM REQUEST NUMBER
+2295  0A 0D                361  	FCB	$0A,$0D		
+2297  28 44 29 65 6C 65 +  362  	FCCZ	'(D)elete (C)ontinue (E)nter-CR (H)exchar (Q)uit '
+22C8  8C 29 6E             363  	CMPX	#GDATA		SPECIAL CASE
+22CB  26 11                364  	BNE	GETS3		NO, ITS NOT
+22CD  3F                   365  	SWI			SOFTWARE INTERRUPT TO DOS
+22CE  18                   366  	FCB	24		SYSTEM REQUEST NUMBER
+22CF  28 58 29 6F 75 74 +  367  	FCCZ	'(X)out (Y)out '
+22DE  86 3F                368  GETS3	LDA	#'?'		PROMPT
+22E0  3F                   369  	SWI			SOFTWARE INTERRUPT TO DOS
+22E1  21                   370  	FCB	33		SYSTEM REQUEST NUMBER
+22E2  3F                   371  	SWI			SOFTWARE INTERRUPT TO DOS
+22E3  22                   372  	FCB	34		SYSTEM REQUEST NUMBER
+22E4  3F                   373  	SWI			SOFTWARE INTERRUPT TO DOS
+22E5  21                   374  	FCB	33		SYSTEM REQUEST NUMBER
+22E6  84 5F                375  	ANDA	#$5F		CONVERT TO CAPS
+22E8                       376  * 'C'ONTINUE ENTRY
+22E8  81 43                377  	CMPA	#'C'		CONTINUE
+22EA  27 08                378  	BEQ	GETS3A		YES, PROCEED
+22EC                       379  * 'D'ELETE PREVIOUS CHARACTER
+22EC  81 44                380  	CMPA	#'D'		DELETE?
+22EE  26 11                381  	BNE	GETS4		NO, TRY NEXT
+22F0  5D                   382  	TSTB			AT ZERO?
+22F1  27 01                383  	BEQ	GETS3A		YES, EXIT
+22F3  5A                   384  	DECB			BACKUP
+22F4  6F 85                385  GETS3A	CLR	B,X		ZERO CHAR
+22F6  3F                   386  	SWI			SOFTWARE INTERRUPT TO DOS
+22F7  16                   387  	FCB	22		SYSTEM REQUEST NUMBER
+22F8  34 14                388  	PSHS	B,X
+22FA  BD 22 57             389  	JSR	DISDAT		DISPLAY IT
+22FD  35 14                390  	PULS	B,X
+22FF  20 84                391  	BRA	GETS1		AND PROCEED
+2301                       392  * 'E' INSERT ESCAPE ECHARACTER
+2301  81 45                393  GETS4	CMPA	#'E'		ESCAPE?
+2303  26 07                394  	BNE	GETS6		NO, TRY NEXT
+2305  86 0D                395  	LDA	#$0D		GET ESCAPE
+2307  A7 85                396  GETS4A	STA	B,X		SAVE IT
+2309  5C                   397  	INCB			ADVANCE COUNT
+230A  20 E8                398  	BRA	GETS3A		AND PROCEED
+230C                       399  * 'Q'UIT
+230C  81 51                400  GETS6	CMPA	#'Q'		QUIT?
+230E  26 05                401  	BNE	GETS7		NO, TRY NEXT
+2310  3F                   402  	SWI			SOFTWARE INTERRUPT TO DOS
+2311  16                   403  	FCB	22		SYSTEM REQUEST NUMBER
+2312  6F 85                404  	CLR	B,X		ZERO END
+2314  39                   405  	RTS
+2315                       406  * 'H'EXIDECIMAL CHARSCTERS
+2315  81 48                407  GETS7	CMPA	#'H'		HEX?
+DUNFIELD 6809 ASSEMBLER: TERMINAL DEFINITION EDITOR                   PAGE: 8
+
+2317  27 67                408  	BEQ	GETS10B		YES, ITS OK
+2319                       409  * 'X' AND 'Y' OFFSETS
+2319  8C 29 6E             410  	CMPX	#GDATA		SPECIAL CASE
+231C  27 07                411  	BEQ	GETS8		YES
+231E  86 07                412  GETS7A	LDA	#7		BEEP
+2320  3F                   413  	SWI			SOFTWARE INTERRUPT TO DOS
+2321  21                   414  	FCB	33		SYSTEM REQUEST NUMBER
+2322  7E 22 93             415  	JMP	GETS2		AND PROCEED
+2325  81 58                416  GETS8	CMPA	#'X'		IS IT 'X'?
+2327  26 04                417  	BNE	GETS9		NO, TRY NEXT
+2329  86 80                418  	LDA	#%10000000	INDICATE 'X' ENTRY
+232B  20 06                419  	BRA	GETS10		AND PROCEED
+232D  81 59                420  GETS9	CMPA	#'Y'		IS IT 'Y'
+232F  26 ED                421  	BNE	GETS7A		REPORT ERROR
+2331  86 C0                422  	LDA	#%11000000	INDICATE 'Y' ENTRY
+2333  34 04                423  GETS10	PSHS	B		SAVE IT FOR LATER
+2335  1F 89                424  	TFR	A,B		'B' = REGISTER
+2337  3F                   425  	SWI			SOFTWARE INTERRUPT TO DOS
+2338  18                   426  	FCB	24		SYSTEM REQUEST NUMBER
+2339  0A 0D                427  	FCB	$0A,$0D		OUTPUT MESSAGE
+233B  28 42 29 69 6E 61 +  428  	FCCZ	'(B)inary (D)ecimal? '
+2350  3F                   429  	SWI			SOFTWARE INTERRUPT TO DOS
+2351  22                   430  	FCB	34		SYSTEM REQUEST NUMBER
+2352  3F                   431  	SWI			SOFTWARE INTERRUPT TO DOS
+2353  21                   432  	FCB	33		SYSTEM REQUEST NUMBER
+2354  84 5F                433  	ANDA	#$5F		CONVERT TO UPPER
+2356  81 42                434  	CMPA	#'B'		BINARY
+2358  27 06                435  	BEQ	GETS10A		YES, ITS OK
+235A  81 44                436  	CMPA	#'D'		DECIMAL?
+235C  26 C0                437  	BNE	GETS7A		ERROR
+235E  CA 20                438  	ORB	#%00100000	SET TO 'DECIMAL'
+2360  1F 98                439  GETS10A	TFR	B,A		'A' = VALUE
+2362  35 04                440  	PULS	B		RESTORE POSITION
+2364  A7 85                441  	STA	B,X		WRITE IT
+2366  5C                   442  	INCB			ADVANCE
+2367  3F                   443  	SWI			SOFTWARE INTERRUPT TO DOS
+2368  18                   444  	FCB	24		SYSTEM REQUEST NUMBER
+2369  0A 0D                445  	FCB	$0A,$0D
+236B  4F 66 66 73 65 74 +  446  	FCCZ	'Offset value (hex)? '
+2380  8D 0D                447  GETS10B	BSR	GETDIG		GET DIGIT
+2382  48                   448  	LSLA
+2383  48                   449  	LSLA
+2384  48                   450  	LSLA
+2385  48                   451  	LSLA
+2386  34 02                452  	PSHS	A
+2388  8D 05                453  	BSR	GETDIG		GET NEXT
+238A  AA E0                454  	ORA	,S+		INCLUDE
+238C  7E 23 07             455  	JMP	GETS4A		AND PROCEED
+238F                       456  * GET HEX DIGIT
+238F  3F                   457  GETDIG	SWI			SOFTWARE INTERRUPT TO DOS
+2390  22                   458  	FCB	34		SYSTEM REQUEST NUMBER
+2391  81 30                459  	CMPA	#'0'		IN RANGE?
+2393  25 18                460  	BLO	GETD2		ERROR
+2395  81 39                461  	CMPA	#'9'		IN RANGE?
+2397  23 0F                462  	BLS	GETD1		YES, ITS OK
+2399  84 5F                463  	ANDA	#$5F		CONVERT TO UPPER
+239B  81 41                464  	CMPA	#'A'		IN RANGE?
+239D  25 0E                465  	BLO	GETD2		ERROR
+DUNFIELD 6809 ASSEMBLER: TERMINAL DEFINITION EDITOR                   PAGE: 9
+
+239F  81 46                466  	CMPA	#'F'		IN RANGE?
+23A1  22 0A                467  	BHI	GETD2		NO, ERROR
+23A3  3F                   468  	SWI			SOFTWARE INTERRUPT TO DOS
+23A4  21                   469  	FCB	33		SYSTEM REQUEST NUMBER
+23A5  80 37                470  	SUBA	#'0'+7		CONVERT
+23A7  39                   471  	RTS
+23A8  3F                   472  GETD1	SWI			SOFTWARE INTERRUPT TO DOS
+23A9  21                   473  	FCB	33		SYSTEM REQUEST NUMBER
+23AA  80 30                474  	SUBA	#'0'		CONVERT TO BINARY
+23AC  39                   475  	RTS
+23AD  86 07                476  GETD2	LDA	#7		ERROR
+23AF  3F                   477  	SWI			SOFTWARE INTERRUPT TO DOS
+23B0  21                   478  	FCB	33		SYSTEM REQUEST NUMBER
+23B1  20 DC                479  	BRA	GETDIG		AND PROCEED
+23B3                       480  *
+23B3                       481  * DISPLAY CHARACTER IN SPECIAL FORM
+23B3                       482  *
+23B3  34 02                483  PUTCHR	PSHS	A		SAVE REG
+23B5  81 20                484  	CMPA	#' '		CONTROL CODE?
+23B7  24 0A                485  	BHS	PUTC1		NO, TRY NEXT
+23B9  86 5E                486  	LDA	#'^'		INDICATE CONTROL
+23BB  3F                   487  	SWI			SOFTWARE INTERRUPT TO DOS
+23BC  21                   488  	FCB	33		SYSTEM REQUEST NUMBER
+23BD  A6 E4                489  	LDA	,S		GET CHAR
+23BF  8B 40                490  	ADDA	#'@'		CONVERT
+23C1  20 0E                491  	BRA	PUTC2		AND DISPLAY
+23C3  81 7F                492  PUTC1	CMPA	#$7F		IN RANGE?
+23C5  25 0A                493  	BLO	PUTC2		NO, ITS OK
+23C7  86 3C                494  	LDA	#'<'		OPENING
+23C9  3F                   495  	SWI			SOFTWARE INTERRUPT TO DOS
+23CA  21                   496  	FCB	33		SYSTEM REQUEST NUMBER
+23CB  A6 E4                497  	LDA	,S		GET CHAR
+23CD  3F                   498  	SWI			SOFTWARE INTERRUPT TO DOS
+23CE  1C                   499  	FCB	28		SYSTEM REQUEST NUMBER
+23CF  86 3E                500  	LDA	#'>'		CLOSING
+23D1  3F                   501  PUTC2	SWI			SOFTWARE INTERRUPT TO DOS
+23D2  21                   502  	FCB	33		SYSTEM REQUEST NUMBER
+23D3  35 82                503  	PULS	A,PC		RESTORE & RETURN
+23D5                       504  *
+23D5                       505  * MISC. STRINGS AND CONSTANTS
+23D5                       506  *
+23D5  43 61 6E 6E 6F 74 +  507  BADFIL	FCCZ	'Cannot locate TTY interface'
+23F1                       508  * MAIN MENU ITEMS
+23F1  53 74 61 6E 64 61 +  509  MMENU	FCCZ	'Standard key definitions'
+240A  46 75 6E 63 74 69 +  510  	FCCZ	'Function key definitions'
+2423  43 6F 6E 74 72 6F +  511  	FCCZ	'Control code definitions'
+243C  4C 6F 61 64 20 73 +  512  	FCCZ	'Load settings from program'
+2457  53 61 76 65 20 73 +  513  	FCCZ	'Save settings to program'
+2470  45 78 69 74 20 54 +  514  	FCCZ	'Exit TTYPATCH utility'
+2486  00                   515  	FCB	0
+2487                       516  * OUTPUT STRING NAMES
+2487  54 65 72 6D 69 6E +  517  ONAMES	FCCZ	'Terminal initialization'
+249F  43 75 72 73 6F 72 +  518  	FCCZ	'Cursor positioning'
+24B2  43 6C 65 61 72 20 +  519  	FCCZ	'Clear screen'
+24BF  43 6C 65 61 72 20 +  520  	FCCZ	'Clear to end of line'
+24D4  43 6C 65 61 72 20 +  521  	FCCZ	'Clear to end of screen'
+24EB  53 70 65 63 69 61 +  522  	FCCZ	'Special effect ON'
+24FD  53 70 65 63 69 61 +  523  	FCCZ	'Special effect OFF'
+DUNFIELD 6809 ASSEMBLER: TERMINAL DEFINITION EDITOR                   PAGE: 10
+
+2510  53 63 72 6F 6C 6C +  524  	FCCZ	'Scroll screen forward'
+2526  00                   525  	FCB	0
+2527                       526  * INPUT STRING NAMES
+2527  43 75 72 73 6F 72 +  527  INAMES	FCCZ	'Cursor up'
+2531  43 75 72 73 6F 72 +  528  	FCCZ	'Cursor down'
+253D  43 75 72 73 6F 72 +  529  	FCCZ	'Cursor right'
+254A  43 75 72 73 6F 72 +  530  	FCCZ	'Cursor left'
+2556  50 61 67 65 20 75 +  531  	FCCZ	'Page up'
+255E  50 61 67 65 20 64 +  532  	FCCZ	'Page down'
+2568  50 61 67 65 20 72 +  533  	FCCZ	'Page right'
+2573  50 61 67 65 20 6C +  534  	FCCZ	'Page left'
+257D  48 6F 6D 65 00       535  	FCCZ	'Home'
+2582  45 6E 64 00          536  	FCCZ	'End'
+2586  44 65 6C 65 74 65 +  537  	FCCZ	'Delete character'
+2597  44 65 6C 65 74 65 +  538  	FCCZ	'Delete previous'
+25A7  43 6C 65 61 72 00    539  	FCCZ	'Clear'
+25AD  00                   540  	FCB	0
+25AE                       541  * FUNCTION KEY NAMES
+25AE  46 75 6E 63 74 69 +  542  FNAMES	FCCZ	'Function key 1'
+25BD  46 75 6E 63 74 69 +  543  	FCCZ	'Function key 2'
+25CC  46 75 6E 63 74 69 +  544  	FCCZ	'Function key 3'
+25DB  46 75 6E 63 74 69 +  545  	FCCZ	'Function key 4'
+25EA  46 75 6E 63 74 69 +  546  	FCCZ	'Function key 5'
+25F9  46 75 6E 63 74 69 +  547  	FCCZ	'Function key 6'
+2608  46 75 6E 63 74 69 +  548  	FCCZ	'Function key 7'
+2617  46 75 6E 63 74 69 +  549  	FCCZ	'Function key 8'
+2626  46 75 6E 63 74 69 +  550  	FCCZ	'Function key 9'
+2635  46 75 6E 63 74 69 +  551  	FCCZ	'Function key 10'
+2645  46 75 6E 63 74 69 +  552  	FCCZ	'Function key 11'
+2655  46 75 6E 63 74 69 +  553  	FCCZ	'Function key 12'
+2665  46 75 6E 63 74 69 +  554  	FCCZ	'Function key 13'
+2675  46 75 6E 63 74 69 +  555  	FCCZ	'Function key 14'
+2685  46 75 6E 63 74 69 +  556  	FCCZ	'Function key 15'
+2695  00                   557  	FCB	0
+2696                       558  *
+2696                       559  * MISC VARIABLES
+2696                       560  *
+2696  2A 81                561  FLOAD	FDB	LOAD		PGM LOAD ADDRESS
+2698  00                   562  FSIZE	FCB	0
+2699                       563  *
+2699                       564  * FUNCTION KEY EDIT AREA
+2699                       565  *
+2699                       566  IDATA	RMB	ISIZE*INUM
+27DE                       567  FDATA	RMB	ISIZE*FNUM
+2955                       568  ODATA	RMB	ISIZE*ONUM
+296E                       569  GDATA	EQU	ODATA+ISIZE
+2A1D                       570  IEND	RMB	100		END OF INIT, STACK SPACE
+2A81                       571  STACK	EQU	*
+2A81                       572  *
+2A81                       573  * PROGRAM LOAD ADDRESS
+2A81                       574  *
+2A81                       575  LOAD	EQU	*		LOAD ADDRESS

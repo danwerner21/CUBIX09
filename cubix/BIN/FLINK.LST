@@ -1,0 +1,165 @@
+DUNFIELD 6809 ASSEMBLER: D:FLINK                                      PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         8  *
+0000                         9  * FLINK: Link/Unlink file directory entries
+0000                        10  *
+0000                        11  * Copyright 1983-2005 Dave Dunfield
+0000                        12  * All rights reserved.
+0000                        13  *
+0000                        14  * DIRECTORY STRUCTURE
+0000                        15  	ORG	0
+0000                        16  FPREFIX	RMB	8		DIRECTORY PREFIX
+0008                        17  FNAME	RMB	8		FILE NAME
+0010                        18  FTYPE	RMB	3		FILE TYPE
+0013                        19  FDADDR	RMB	2		DISK ADDRESS
+0015                        20  FLADDR	RMB	2		LOAD ADDRESS
+0017                        21  FPROT	RMB	1		FILE PROTECTIONS
+0018                        22  FSPARE	RMB	8		USER SPARE
+0020                        23  FDSIZE	EQU	*		SIZE OF DIR ENTRY
+0020                        24  * PROTECTION BITS IN "FPROT" FIELD
+0080                        25  RPERM	EQU	%10000000	READ PERMISSION
+0040                        26  WPERM	EQU	%01000000	WRITE PERMISSION
+0020                        27  EPERM	EQU	%00100000	EXECUTE PERMISSION
+0010                        28  DPERM	EQU	%00010000	DELETE PERMISSION
+D000                        29  	ORG	OSUTIL		UTILITY SPACE
+D000                        30  *
+D000  81 3F                 31  FLINK	CMPA	#'?'		QUERY?
+D002  26 27                 32  	BNE	QUAL		NO, TEST FOR QUALIFIERS
+D004  3F                    33  	SWI			SOFTWARE INTERRUPT TO DOS
+D005  19                    34  	FCB	25		SYSTEM REQUEST NUMBER
+D006  55 73 65 3A 20 46 +   35  	FCCZ	'Use: FLINK/UNLINK <file> [file ...]'
+D02A  39                    36  ABORT	RTS
+D02B                        37  * PARSE FOR COMMAND QUALIFIERS
+D02B  A6 A4                 38  QUAL	LDA	,Y		GET CHAR FROM COMMAND LINE
+D02D  81 2F                 39  	CMPA	#'/'		IS IT A QUALIFIER?
+D02F  26 3A                 40  	BNE	MAIN		NO, GET PARAMETERS
+D031  8E D0 FE              41  	LDX	#QTABLE		POINT TO QUALIFIER TABLE
+D034  3F                    42  	SWI			SOFTWARE INTERRUPT TO DOS
+D035  12                    43  	FCB	18		SYSTEM REQUEST NUMBER
+D036  C1 01                 44  	CMPB	#QMAX		IS IT IN RANGE
+D038  24 07                 45  	BHS	QERR		IF SO, IT'S INVALID
+D03A  8E D1 07              46  	LDX	#QFLAGS		POINT TO QUALIFIER FLAGS
+D03D  6F 85                 47  	CLR	B,X		SET THE FLAG
+D03F  20 EA                 48  	BRA	QUAL		LOOK FOR ANOTHER QUALIFIER
+D041                        49  * INVALID QUALIFIER RECEIVED
+D041  3F                    50  QERR	SWI			SOFTWARE INTERRUPT TO DOS
+D042  18                    51  	FCB	24		SYSTEM REQUEST NUMBER
+D043  49 6E 76 61 6C 69 +   52  	FCCZ	/Invalid qualifier: '/
+D058  A6 A0                 53  	LDA	,Y+		GET CHARACTER
+D05A  3F                    54  DSQU1	SWI			SOFTWARE INTERRUPT TO DOS
+D05B  21                    55  	FCB	33		SYSTEM REQUEST NUMBER
+D05C  3F                    56  	SWI			SOFTWARE INTERRUPT TO DOS
+D05D  05                    57  	FCB	5		SYSTEM REQUEST NUMBER
+D05E  27 04                 58  	BEQ	GOABO		END, EXIT
+DUNFIELD 6809 ASSEMBLER: D:FLINK                                      PAGE: 2
+
+D060  81 2F                 59  	CMPA	#'/'		NEXT QUALIFIER
+D062  26 F6                 60  	BNE	DSQU1		NO, KEEP DUMPING
+D064  3F                    61  GOABO	SWI			SOFTWARE INTERRUPT TO DOS
+D065  19                    62  	FCB	25		SYSTEM REQUEST NUMBER
+D066  27 00                 63  	FCCZ	/'/		ENDING QUOTE
+D068  86 01                 64  	LDA	#1		INVALID OPERAND RC
+D06A  39                    65  	RTS
+D06B                        66  *
+D06B                        67  * MAIN PROGRAM
+D06B                        68  *
+D06B  B6 D1 07              69  MAIN	LDA	>QFLAGS		UNLINK MODE?
+D06E  27 52                 70  	BEQ	MAIN5		YES, DO UNLINK
+D070                        71  *
+D070                        72  * LINK MODE, LINK DIRECTORY ENTRIES TO EXISTING FILES
+D070                        73  *
+D070  3F                    74  	SWI			SOFTWARE INTERRUPT TO DOS
+D071  0A                    75  	FCB	10		SYSTEM REQUEST NUMBER
+D072  26 B6                 76  	BNE	ABORT		ERROR, EXIT
+D074  A6 1F                 77  	LDA	-1,X		GET DRIVE SPEC
+D076  B7 D1 08              78  	STA	>DRIVE		SAVE IT
+D079  3F                    79  	SWI			SOFTWARE INTERRUPT TO DOS
+D07A  45                    80  	FCB	69		SYSTEM REQUEST NUMBER
+D07B  26 AD                 81  	BNE	ABORT		ERROR, EXIT
+D07D  30 88 13              82  	LEAX	FDADDR,X	OFFSET TO DISK ADDRESS
+D080  CE D1 0B              83  	LDU	#SAVDIR		SAVE AREA
+D083  C6 0D                 84  	LDB	#FDSIZE-FDADDR	GET SIZE
+D085  A6 80                 85  MAIN1	LDA	,X+		GET CHAR
+D087  A7 C0                 86  	STA	,U+		SAVE IT
+D089  5A                    87  	DECB			REDUCE COUNT
+D08A  26 F9                 88  	BNE	MAIN1		AND CONTINUE
+D08C                        89  * CREATE NEW FILE, AND COPY IN OTHER DIRECTORY INFO
+D08C  3F                    90  MAIN2	SWI			SOFTWARE INTERRUPT TO DOS
+D08D  0A                    91  	FCB	10		SYSTEM REQUEST NUMBER
+D08E  26 9A                 92  	BNE	ABORT		ERROR, EXIT
+D090  A6 1F                 93  	LDA	-1,X		GET DRIVE SPEC
+D092  B1 D1 08              94  	CMPA	>DRIVE		IS IT SAME?
+D095  26 22                 95  	BNE	MAIN4		NO, REPORT ERROR
+D097  3F                    96  	SWI			SOFTWARE INTERRUPT TO DOS
+D098  48                    97  	FCB	72		SYSTEM REQUEST NUMBER
+D099  26 8F                 98  	BNE	ABORT		ERROR, EXIT
+D09B  FD D1 09              99  	STD	>SECTOR		SAVE SECTOR ID
+D09E  30 88 13             100  	LEAX	FDADDR,X	OFFSET TO ADDRESS
+D0A1  CE D1 0B             101  	LDU	#SAVDIR		POINT TO SAVED ENTRY
+D0A4  C6 0D                102  	LDB	#FDSIZE-FDADDR	GET SIZE
+D0A6  A6 C0                103  MAIN3	LDA	,U+		GET CHAR
+D0A8  A7 80                104  	STA	,X+		WRITE TO DIR
+D0AA  5A                   105  	DECB			REDUCE COUNT
+D0AB  26 F9                106  	BNE	MAIN3		AND CONTINUE
+D0AD  3F                   107  	SWI			SOFTWARE INTERRUPT TO DOS
+D0AE  55                   108  	FCB	85		SYSTEM REQUEST NUMBER
+D0AF  FC D1 09             109  	LDD	>SECTOR		GET SECTOR LINK OF NEW FILE
+D0B2  3F                   110  	SWI			SOFTWARE INTERRUPT TO DOS
+D0B3  50                   111  	FCB	80		SYSTEM REQUEST NUMBER
+D0B4  3F                   112  	SWI			SOFTWARE INTERRUPT TO DOS
+D0B5  04                   113  	FCB	4		SYSTEM REQUEST NUMBER
+D0B6  26 D4                114  	BNE	MAIN2		CONTINUE
+D0B8  39                   115  	RTS
+D0B9                       116  * LINK NAME SPECIFIED A DIFFERENT DRIVE THAN SOURCE
+DUNFIELD 6809 ASSEMBLER: D:FLINK                                      PAGE: 3
+
+D0B9  10 8E D0 E2          117  MAIN4	LDY	#ERRMSG		POINT TO ERROR MESSAGE
+D0BD  3F                   118  	SWI			SOFTWARE INTERRUPT TO DOS
+D0BE  34                   119  	FCB	52		SYSTEM REQUEST NUMBER
+D0BF  86 64                120  	LDA	#100		ERROR CODE
+D0C1  39                   121  	RTS
+D0C2                       122  *
+D0C2                       123  * UNLINK MODE, UNLINK FILES FROM DIRECTORY ENTRIES
+D0C2                       124  *
+D0C2  3F                   125  MAIN5	SWI			SOFTWARE INTERRUPT TO DOS
+D0C3  0A                   126  	FCB	10		SYSTEM REQUEST NUMBER
+D0C4  26 18                127  	BNE	ABORT1		ERROR, EXIT
+D0C6  3F                   128  	SWI			SOFTWARE INTERRUPT TO DOS
+D0C7  45                   129  	FCB	69		SYSTEM REQUEST NUMBER
+D0C8  26 14                130  	BNE	ABORT1		ERROR, EXIT
+D0CA  A6 88 17             131  	LDA	FPROT,X		GET FILE PROTECTIONS
+D0CD  85 10                132  	BITA	#DPERM		DELETE ALLOWED?
+D0CF  27 0E                133  	BEQ	MAIN7		NO, REPORT ERROR
+D0D1  C6 20                134  	LDB	#FDSIZE		GET DIRECTORY SIZE
+D0D3  6F 80                135  MAIN6	CLR	,X+		ZERO ONE BYTE
+D0D5  5A                   136  	DECB			REDUCE COUNT
+D0D6  26 FB                137  	BNE	MAIN6		DO THEM ALL
+D0D8  3F                   138  	SWI			SOFTWARE INTERRUPT TO DOS
+D0D9  55                   139  	FCB	85		SYSTEM REQUEST NUMBER
+D0DA  3F                   140  	SWI			SOFTWARE INTERRUPT TO DOS
+D0DB  04                   141  	FCB	4		SYSTEM REQUEST NUMBER
+D0DC  26 E4                142  	BNE	MAIN5		YES, HANDLE THEM
+D0DE  39                   143  ABORT1	RTS
+D0DF                       144  * FILE DOES NOT HAVE "DELETE" PERMISSION, REPORT VIOLATION
+D0DF  3F                   145  MAIN7	SWI			SOFTWARE INTERRUPT TO DOS
+D0E0  2D                   146  	FCB	45		SYSTEM REQUEST NUMBER
+D0E1  39                   147  	RTS
+D0E2                       148  * STRINGS & CONSTANTS
+D0E2  43 61 6E 6E 6F 74 +  149  ERRMSG	FCCZ	'Cannot link between drives.'
+D0FE  82                   150  QTABLE	FCB	$82
+D0FF  2F 55 4E 4C 49 4E +  151  	FCC	'/UNLINK'
+D106  80                   152  	FCB	$80		END OF TABLE
+0001                       153  QMAX	EQU	1		# QUALIFIERS
+D107                       154  * QUALIFIER FLAGS
+D107  FF                   155  QFLAGS	FCB	$FF		UNLINK MODE
+D108                       156  * TEMPORARY STORAGE
+D108                       157  DRIVE	RMB	1		SOURCE FILE DRIVE
+D109                       158  SECTOR	RMB	2		NEW DISK SECTOR
+D10B                       159  SAVDIR	RMB	FDSIZE-FDADDR	SAVED DIR ENTRY

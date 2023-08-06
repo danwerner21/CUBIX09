@@ -1,0 +1,1944 @@
+DUNFIELD 6809 ASSEMBLER: D:EDT                                        PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         9  *
+0000                        10  * EDT: A terminal independant screen editor
+0000                        11  *
+0000                        12  * Copyright 1983-2005 Dave Dunfield
+0000                        13  * All rights reserved.
+0000                        14  *
+0000                        15  * SCREEN HANDLING CHARACTERS
+0080                        16  CL	EQU	$80		CLEAR SCREEN
+0081                        17  CE	EQU	$81		CLEAR TO END OF LINE
+0082                        18  CD	EQU	$82		CLEAR TO END OF SCREEN
+0083                        19  SO	EQU	$83		SPECIAL EFFECTS ON
+0084                        20  SE	EQU	$84		SPECIAL EFFECTS OFF
+0085                        21  SF	EQU	$85		SCROLL FORWARD
+0000                        22  * KEYBOARD INPUT CHARACTERS
+0080                        23  KUP	EQU	$80		UP KEY
+0081                        24  KDO	EQU	$81		DOWN KEY
+008B                        25  KDP	EQU	$8B		DELETE PREVIOUS
+008D                        26  KCM	EQU	$8D		COMMAND MODE
+0000                        27  * STANDARD TEXT INPUT CHARACTERS
+000D                        28  NL	EQU	$0D		NEW LINE (CARRIAGE RETURN)
+0009                        29  TAB	EQU	$09		TAB CHARACTER
+0000                        30  * MISC CONSTANTS
+0018                        31  LINES	EQU	24		# LINES ON THE SCREEN
+0050                        32  COLS	EQU	80		COLUMNS
+0000                        33  *
+2000                        34  	ORG	OSRAM
+2000                        35  *
+2000                        36  * TERMINAL INITIALIZATION.
+2000                        37  *
+2000  BE 2D 0C              38  ENTRY	LDX	ISTPTR		GET INPUT STRING POINTER
+2003  3F                    39  	SWI			SOFTWARE INTERRUPT TO DOS
+2004  17                    40  	FCB	23		SYSTEM REQUEST NUMBER
+2005  3F                    41  	SWI			SOFTWARE INTERRUPT TO DOS
+2006  04                    42  	FCB	4		SYSTEM REQUEST NUMBER
+2007  81 3F                 43  	CMPA	#'?'		QUERY OPERATION?
+2009  26 14                 44  	BNE	EDT1		NO, KEEP GOING
+200B  3F                    45  	SWI			SOFTWARE INTERRUPT TO DOS
+200C  19                    46  	FCB	25		SYSTEM REQUEST NUMBER
+200D  55 73 65 3A 20 45 +   47  	FCCZ	'Use: EDT <file>'
+201D  3F                    48  ABORT	SWI			SOFTWARE INTERRUPT TO DOS
+201E  00                    49  	FCB	0		SYSTEM REQUEST NUMBER
+201F  86 2E                 50  EDT1	LDA	#=CX		GET HIGH ADDRSS OF DATA
+2021  1F 8B                 51  	TFR	A,DP		SET UP DP
+2023                        52  	SETDP	$FF&=CX		INFORM ASSEMBLER
+2023                        53  * INIT LOCAL VARIABLES & SAME FILENAME
+2023  8E 2E 21              54  	LDX	#NAMBUF		POINT TO NAME BUFFER
+2026  A6 9F 2D 0E           55  	LDA	[GXYPTR]	GOTOXY DEFINED?
+202A  26 02                 56  	BNE	EDT2		YES, ITS OK
+202C  0F 05                 57  	CLR	WINDOW		SWITCH TO LINE MODE
+202E  A6 A0                 58  EDT2	LDA	,Y+		GET CHAR
+2030  A7 80                 59  	STA	,X+		SAVE IN BUFFER
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 2
+
+2032  81 0D                 60  	CMPA	#$0D		END OF LINE?
+2034  26 F8                 61  	BNE	EDT2		NO, KEEP GOING
+2036  6F 1F                 62  	CLR	-1,X		ZERO THE BUFFER
+2038  10 8E 2E 21           63  	LDY	#NAMBUF		POINT TO NAME
+203C  3F                    64  	SWI			SOFTWARE INTERRUPT TO DOS
+203D  0A                    65  	FCB	10		SYSTEM REQUEST NUMBER
+203E  26 DD                 66  	BNE	ABORT		INVALID, EXIT
+2040                        67  * LOAD FILE
+2040  3F                    68  	SWI			SOFTWARE INTERRUPT TO DOS
+2041  44                    69  	FCB	68		SYSTEM REQUEST NUMBER
+2042  27 0A                 70  	BEQ	EDT3		YES IT DOES
+2044  CC 2C 87              71  	LDD	#NEWMSG		POINT TO NEW MESSAGE
+2047  DD 1B                 72  	STD	ERRMSG		SAVE IT OUT
+2049  8E 30 98              73  	LDX	#T_BUFF		POINT TO BUFFER
+204C  20 05                 74  	BRA	EDT3A		AND PROCEED
+204E  8E 30 98              75  EDT3	LDX	#T_BUFF		POINT TO TEXT BUFFER
+2051  3F                    76  	SWI			SOFTWARE INTERRUPT TO DOS
+2052  35                    77  	FCB	53		SYSTEM REQUEST NUMBER
+2053  86 FF                 78  EDT3A	LDA	#$FF		END OF FILE
+2055  A7 84                 79  	STA	,X		MARK POSITION
+2057                        80  * MOVE TO HOME POSITION
+2057  4F                    81  EDT4	CLRA			ZERO HIGH
+2058  5F                    82  	CLRB			ZERO LOW
+2059  DD 00                 83  	STD	CX		ZERO 'X' AND 'Y'
+205B  DD 19                 84  	STD	NEWPOS		NO RE-POSITION
+205D  CC 30 98              85  	LDD	#T_BUFF		POINT TO TEXT BUFFER
+2060  DD 0D                 86  	STD	SCRTOP		SET START OF SCREEN
+2062  DD 0F                 87  	STD	TXTPOS		SET START OF LINE
+2064  0A 04                 88  	DEC	REFLAG		SET REFRESH FLAG
+2066                        89  * PROMPT FOR AND EXECUTE SCREEN MODE COMMANDS
+2066  96 05                 90  SCR	LDA	WINDOW		IN WINDOW MODE?
+2068  10 2A 01 1E           91  	LBPL	LINE		LINE MODE COMMAND
+206C  DE 19                 92  	LDU	NEWPOS		HAS POSITION CHANGED
+206E  27 07                 93  	BEQ	SCR1		NO, ITS OK
+2070  BD 2A 5B              94  	JSR	REPOS		REPOSITION TO IT
+2073  4F                    95  	CLRA			ZERO HIGH
+2074  5F                    96  	CLRB			ZERO LOW
+2075  DD 19                 97  	STD	NEWPOS		INSURE NO FURTHER POSITION
+2077  BD 2A 1C              98  SCR1	JSR	POSITC		POSITION THE CURSOR
+207A  D7 1D                 99  	STB	TEMP		SAVE 'X' FOR LATER
+207C  34 40                100  	PSHS	U		SAVE REGS
+207E                       101  * UPDATE SCREEN IF REQUIRED
+207E  96 04                102  	LDA	REFLAG		REFRESH REQUIRED?
+2080  27 03                103  	BEQ	SCR2		NO, ITS OK
+2082  BD 2A A6             104  	JSR	REFALL		REFRESH SCREEN
+2085                       105  * WRITE ANY PENDING ERROR MESSAGES
+2085  9E 1B                106  SCR2	LDX	ERRMSG		ANY ERROR MESSAGES?
+2087  27 12                107  	BEQ	SCR3		NO, ITS OK
+2089  BD 2B 93             108  	JSR	GOTOLST		MOVE TO IT
+208C  BD 2B 7B             109  	JSR	WSO		ENABLE SPECIAL EFFECTS
+208F  3F                   110  	SWI			SOFTWARE INTERRUPT TO DOS
+2090  17                   111  	FCB	23		SYSTEM REQUEST NUMBER
+2091  BD 2B 7F             112  	JSR	WSE		DISABLE SPECIAL EFFECTS
+2094  BD 2B 73             113  	JSR	WCD		CLEAR END OF DISPLAY
+2097  4F                   114  	CLRA			ZERO HIGH
+2098  5F                   115  	CLRB			ZERO LOW
+2099  DD 1B                116  	STD	ERRMSG		RESET ERROR MESSAGE FLAG
+209B  BD 2B 98             117  SCR3	JSR	GOTOXX		MOVE TO POSITION
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 3
+
+209E  35 40                118  	PULS	U		RESTORE 'U'
+20A0                       119  * GET A KEY & EXECUTE COMMANDS
+20A0  10 CE 30 98          120  KEY	LDS	#STACK		FIX STACK
+20A4  BD 2B C6             121  	JSR	GETKEY		GET A KEY COMMAND
+20A7  81 81                122  	CMPA	#KDO		DOWN KEY?
+20A9  27 08                123  	BEQ	KEY1		DON'T RESET
+20AB  81 80                124  	CMPA	#KUP		UP KEY?
+20AD  27 04                125  	BEQ	KEY1		DON'T RESET
+20AF  D6 1D                126  	LDB	TEMP		GET 'X' POSITION
+20B1  D7 00                127  	STB	CX		SAVE ACTUAL 'X'
+20B3  34 02                128  KEY1	PSHS	A		SAVE CHAR
+20B5  D6 00                129  	LDB	CX		GET 'X' POSITION
+20B7  4F                   130  	CLRA			ZERO HIGH
+20B8  31 CB                131  	LEAY	D,U		'Y' = PTR TO CHAR
+20BA  A6 E0                132  	LDA	,S+		SPECIAL CHAR?
+20BC  2A 08                133  	BPL	EDTKEY		EDIT KEY (TEXT) CHANGE
+20BE  48                   134  	LSLA			X2 FOR TWO BYTE ENTRIES
+20BF  8E 2C CA             135  	LDX	#CMDTAB		POINT TO TABLE
+20C2  AD 96                136  	JSR	[A,X]		EXECUTE COMMAND
+20C4  20 A0                137  	BRA	SCR		GET NEXT COMMAND
+20C6                       138  * STANDARD INPUT KEY ENTERED, INSERT IT INTO THE TEXT
+20C6  BD 29 AB             139  EDTKEY	JSR	EDIT		BEGIN EDIT, Y = PTR TO CHAR
+20C9                       140  * IF INSERT MODE OR END OF LINE, INSERT
+20C9  E6 A4                141  	LDB	,Y		GET CHAR
+20CB  2B 0C                142  	BMI	EDTK1		EOF, DO INSERT
+20CD  C1 0D                143  	CMPB	#NL		END OF LINE?
+20CF  27 08                144  	BEQ	EDTK1		DO INSERT
+20D1  81 0D                145  	CMPA	#NL		NEW LINE?
+20D3  27 04                146  	BEQ	EDTK1		YES, INSERT
+20D5  0D 07                147  	TST	INSFLAG		INSERTING?
+20D7  27 10                148  	BEQ	EDTK4		DON'T INSERT
+20D9                       149  * INSERT 1 CHARACTER INTO THE LINE
+20D9  34 22                150  EDTK1	PSHS	A,Y		SAVE IT 
+20DB  1F 98                151  EDTK2	TFR	B,A		SAVE CHAR
+20DD  31 21                152  	LEAY	1,Y		ADVANCE TO NEXT
+20DF  E6 A4                153  	LDB	,Y		GET CHAR
+20E1  A7 A4                154  	STA	,Y		AND
+20E3  2A F6                155  	BPL	EDTK2		DO THEM ALL
+20E5  0C 0B                156  	INC	EDTLEN		ADVANCE LENGTH
+20E7  35 22                157  	PULS	A,Y		RESTORE 'Y'
+20E9                       158  * WRITE THE ENTERED CHARACTER OUT
+20E9  A7 A4                159  EDTK4	STA	,Y		WRITE IN CHAR
+20EB  0C 00                160  	INC	CX		ADVANCE 'X' POSITION
+20ED  81 0D                161  	CMPA	#NL		NEW LINE ENTERED?
+20EF  26 0D                162  	BNE	EDTK5		NO, ITS OK
+20F1  BD 29 E4             163  	JSR	UPDATE		UPDATE THE CHANGES
+20F4  BD 27 41             164  	JSR	REFBOT		REFRESH BOTTOM OF SCREEN
+20F7  0F 00                165  	CLR	CX		ZERO 'X'
+20F9  BD 27 F8             166  	JSR	FWDLIN		ADVANCE A LINE
+20FC  20 05                167  	BRA	EDTK6		AND PROCEED
+20FE  1F 23                168  EDTK5	TFR	Y,U		PTR TO CHAR
+2100  BD 2A DB             169  	JSR	REFLIN		UPDATE THE LINE
+2103  7E 20 66             170  EDTK6	JMP	SCR		AND GET NEXT COMMAND
+2106                       171  *
+2106                       172  * PROMPT FOR & EXECUTE LINE MODE COMMAND
+2106                       173  *
+2106  BD 2B 93             174  ECMD	JSR	GOTOLST		MOVE THERE
+2109  3F                   175  	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 4
+
+210A  18                   176  	FCB	24		SYSTEM REQUEST NUMBER
+210B  43 6F 6D 6D 61 6E +  177  	FCCZ	'Command: '
+2115  BD 2B 73             178  	JSR	WCD		CLEAR DISPLAY
+2118  8E 2E 3A             179  	LDX	#COMMAND	POINT TO COMMAND BUFFER
+211B  8D 2C                180  	BSR	GETLIN		GET INPUT LINE
+211D  BD 2B 93             181  RCMD	JSR	GOTOLST		MOVE THERE
+2120  BD 2B 7B             182  	JSR	WSO		ENABLE SPECIAL EFFECTS
+2123  0A 06                183  	DEC	VIDEO		SET VIDEO FLAG
+2125  8E 2E 3A             184  	LDX	#COMMAND	POINT TO COMMAND
+2128  A6 80                185  RCMD1	LDA	,X+		GET CHAR
+212A  2B 05                186  	BMI	RCMD2		END OF THE ROAD
+212C  BD 2B 4F             187  	JSR	WRCHR		DISPLAY IT
+212F  20 F7                188  	BRA	RCMD1		AND PROCEED
+2131  BD 2B 7F             189  RCMD2	JSR	WSE		END SPECIALS
+2134  0F 06                190  	CLR	VIDEO		RESET VIDEO FLAG
+2136  BD 2B 73             191  	JSR	WCD		CLEAR IT
+2139  BD 29 E4             192  	JSR	UPDATE		UPDATE CHANGES
+213C  BD 22 13             193  	JSR	EXEC		EXECUTE COMMAND
+213F  DC 1B                194  	LDD	ERRMSG		ANY ERRORS
+2141  26 05                195  	BNE	RCMD3		YES, DON'T OVERWRITE
+2143  CC 2C 86             196  	LDD	#NULLMSG	POINT TO NULL MESSAGE
+2146  DD 1B                197  	STD	ERRMSG		SAVE IT
+2148  39                   198  RCMD3	RTS
+2149                       199  *
+2149                       200  * GET A LINE OF INPUT
+2149                       201  *
+2149  5F                   202  GETLIN	CLRB			ZERO COUNT
+214A  96 05                203  GETL1	LDA	WINDOW		WINDOW MODE
+214C  2A 27                204  	BPL	GETL4		NO, LINE BY LINE
+214E  BD 2B C6             205  	JSR	GETKEY		GET A KEY
+2151  81 8B                206  	CMPA	#KDP		DELETE PREVIOUS
+2153  26 0B                207  	BNE	GETL2		NO, ITS OK
+2155  5A                   208  GETL1A	DECB			REDUCE COUNT
+2156  2B F1                209  	BMI	GETLIN		INVALID, STOP
+2158  3F                   210  	SWI			SOFTWARE INTERRUPT TO DOS
+2159  18                   211  	FCB	24		SYSTEM REQUEST NUMBER
+215A  08 20 08 00          212  	FCB	8,' ',8,0	ERASE CHAR
+215E  20 EA                213  	BRA	GETL1		AND GET NEXT
+2160  81 8D                214  GETL2	CMPA	#KCM		COMMAND KEY
+2162  27 0C                215  	BEQ	GETL3		AND SAVE IT
+2164  A7 85                216  	STA	B,X		WRITE CHAR
+2166  2B E2                217  	BMI	GETL1		IGNORE IF SPECIAL
+2168  5C                   218  	INCB			ADVANCE B
+2169  BD 2B 4F             219  	JSR	WRCHR		DISPLAY IT
+216C  20 DC                220  	BRA	GETL1		AND PROCEED
+216E  3F                   221  GETL2A	SWI			SOFTWARE INTERRUPT TO DOS
+216F  16                   222  	FCB	22		SYSTEM REQUEST NUMBER
+2170  86 FF                223  GETL3	LDA	#-1		GET EOL MARKER
+2172  A7 85                224  	STA	B,X		WRITE EOL MARKER
+2174  39                   225  	RTS
+2175                       226  * LINE BY LINE INPUT
+2175  3F                   227  GETL4	SWI			SOFTWARE INTERRUPT TO DOS
+2176  22                   228  	FCB	34		SYSTEM REQUEST NUMBER
+2177  81 08                229  	CMPA	#8		BACKSPACE?
+2179  27 DA                230  	BEQ	GETL1A		YES, HANDLE IT
+217B  81 7F                231  	CMPA	#$7F		DELETE
+217D  27 D6                232  	BEQ	GETL1A		YES, HANDLE IT
+217F  81 0D                233  	CMPA	#$0D		NEW LINE
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 5
+
+2181  27 EB                234  	BEQ	GETL2A		SPECIAL CASE
+2183  A7 85                235  	STA	B,X		WRITE IT OUT
+2185  5C                   236  	INCB			ADVANCE COUNT
+2186  3F                   237  	SWI			SOFTWARE INTERRUPT TO DOS
+2187  21                   238  	FCB	33		SYSTEM REQUEST NUMBER
+2188  20 EB                239  	BRA	GETL4		AND PROCEED
+218A                       240  *
+218A                       241  * EXECUTE LINE MODE COMMANDS
+218A                       242  *
+218A  9E 1B                243  LINE	LDX	ERRMSG		GET ERROR MESSAGE
+218C  27 08                244  	BEQ	LINE1		NONE
+218E  3F                   245  	SWI			SOFTWARE INTERRUPT TO DOS
+218F  17                   246  	FCB	23		SYSTEM REQUEST NUMBER
+2190  3F                   247  	SWI			SOFTWARE INTERRUPT TO DOS
+2191  16                   248  	FCB	22		SYSTEM REQUEST NUMBER
+2192  4F                   249  	CLRA			ZERO HIGH
+2193  5F                   250  	CLRB			ZERO LOW
+2194  DD 1B                251  	STD	ERRMSG		RE-WRITE IT
+2196  DE 19                252  LINE1	LDU	NEWPOS		HAS POSITION CHANGED
+2198  27 09                253  	BEQ	LINE2		NO, ITS OK
+219A  BD 2A 5B             254  	JSR	REPOS		REPOSITION TO IT
+219D  4F                   255  	CLRA			ZERO HIGH
+219E  5F                   256  	CLRB			ZERO LOW
+219F  DD 19                257  	STD	NEWPOS		INSURE NO FURTHER POSITION
+21A1  20 04                258  	BRA	LINE3		AND PROCEED
+21A3  96 04                259  LINE2	LDA	REFLAG		DO WE REFRESH
+21A5  27 1A                260  	BEQ	LINE7		NO, ITS OK
+21A7  DE 0F                261  LINE3	LDU	TXTPOS		GET TEXT POSITION
+21A9  A6 C0                262  LINE4	LDA	,U+		GET CHAR
+21AB  2B 08                263  	BMI	LINE5		END OF FILE
+21AD  81 0D                264  	CMPA	#NL		NEW LINE
+21AF  27 0C                265  	BEQ	LINE6		YES, EXIT
+21B1  3F                   266  	SWI			SOFTWARE INTERRUPT TO DOS
+21B2  21                   267  	FCB	33		SYSTEM REQUEST NUMBER
+21B3  20 F4                268  	BRA	LINE4		AND PROCEED
+21B5  3F                   269  LINE5	SWI			SOFTWARE INTERRUPT TO DOS
+21B6  18                   270  	FCB	24		SYSTEM REQUEST NUMBER
+21B7  2A 45 4F 46 2A 00    271  	FCCZ	'*EOF*'		INDICATE END OF FILE
+21BD  3F                   272  LINE6	SWI			SOFTWARE INTERRUPT TO DOS
+21BE  16                   273  	FCB	22		SYSTEM REQUEST NUMBER
+21BF  0F 04                274  	CLR	REFLAG		ZERO IT
+21C1  3F                   275  LINE7	SWI			SOFTWARE INTERRUPT TO DOS
+21C2  18                   276  	FCB	24		SYSTEM REQUEST NUMBER
+21C3  2A 20 00             277  	FCCZ	'* '
+21C6  8E 2E 3A             278  	LDX	#COMMAND	POINT TO COMMAND BUFFER
+21C9  BD 21 49             279  	JSR	GETLIN		GET INPUT LINE
+21CC  8D 45                280  	BSR	EXEC		EXECUTE COMMAND
+21CE  7E 20 66             281  	JMP	SCR		AND PROCEED
+21D1                       282  *
+21D1                       283  * TEST FOR NUMERIC DIGIT
+21D1                       284  *
+21D1  81 30                285  ISDIGIT	CMPA	#'0'		IS IT DIGIT?
+21D3  25 06                286  	BLO	ISDIG1		NO, ITS NOT
+21D5  81 39                287  	CMPA	#'9'		TEST AGAIN
+21D7  22 02                288  	BHI	ISDIG1		ITS NOT
+21D9  1A 04                289  	ORCC	#%00000100	SET 'Z', INDICATE FOUND
+21DB  39                   290  ISDIG1	RTS
+21DC                       291  *
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 6
+
+21DC                       292  * GET NUMBER FROMLINE(Y)
+21DC                       293  *
+21DC  BD 22 0A             294  GETNUM	JSR	SKIP		ADVANCE TO NON-BLANK
+21DF  8E 00 00             295  	LDX	#0		BEGIN WITH ZERO
+21E2  A6 A4                296  GETN1	LDA	,Y		GET NEXT
+21E4  8D EB                297  	BSR	ISDIGIT		IS IT A DIGIT?
+21E6  26 22                298  	BNE	SKIP		NO, EXIT
+21E8  CC 00 0A             299  	LDD	#10		X 10
+21EB  3F                   300  	SWI			SOFTWARE INTERRUPT TO DOS
+21EC  6B                   301  	FCB	107		SYSTEM REQUEST NUMBER
+21ED  1F 01                302  	TFR	D,X		SWAP BACK
+21EF  E6 A0                303  	LDB	,Y+		RESTORE VALUE
+21F1  C0 30                304  	SUBB	#'0'		CONVERT
+21F3  3A                   305  	ABX			INCLUDE
+21F4  20 EC                306  	BRA	GETN1		AND PROCEED
+21F6                       307  *
+21F6                       308  * LOOKUP THE LINE BY NUMBER(X)
+21F6                       309  *
+21F6  CE 30 98             310  FINDLIN	LDU	#T_BUFF		POINT TO TEXT BUFFER
+21F9  30 1F                311  FINDL1	LEAX	-1,X		REDUCE COUNT
+21FB  27 0C                312  	BEQ	FINDL4		WE HAVE IT
+21FD  A6 C0                313  FINDL2	LDA	,U+		GET CHAR
+21FF  2B 06                314  	BMI	FINDL3		END, EXIT
+2201  81 0D                315  	CMPA	#NL		NEW-LINE
+2203  26 F8                316  	BNE	FINDL2		WAIT FOR IT
+2205  20 F2                317  	BRA	FINDL1		AND PROCEED
+2207  33 5F                318  FINDL3	LEAU	-1,U		BACKUP
+2209  39                   319  FINDL4	RTS
+220A                       320  *
+220A                       321  * SKIP AHEAD TO NON-BLANK
+220A                       322  *
+220A  A6 A0                323  SKIP	LDA	,Y+		GET CHAR
+220C  81 20                324  	CMPA	#' '		BLANK?
+220E  27 FA                325  	BEQ	SKIP		KEEP LOOKING
+2210  A6 A2                326  	LDA	,-Y		SET FLAGS AGAIN
+2212  39                   327  	RTS
+2213                       328  *
+2213                       329  * EXECUTE A LINE MODE COMMAND(Y)
+2213                       330  *
+2213  10 8E 2E 3A          331  EXEC	LDY	#COMMAND	POINT TO COMMAND BUFFER
+2217  0F 15                332  	CLR	START		ZERO FIRST PARM FLAG
+2219  0F 1F                333  	CLR	TEMP+2		ZERO RANGE GIVEN FLAG
+221B  0F 20                334  	CLR	TEMP+3		ZERO TAGGS USED FLAG
+221D  8D EB                335  GETRNG	BSR	SKIP		ADVANCE POSITIN
+221F                       336  * NUMBER, LOOKUP LINE
+221F  8D B0                337  	BSR	ISDIGIT		IS IT A NUMBER
+2221  26 06                338  	BNE	GETRN1		NOT A NUMBER
+2223  8D B7                339  	BSR	GETNUM		GET LINE NUMBER
+2225  8D CF                340  	BSR	FINDLIN		LOCATE LINE POSITION
+2227  20 32                341  	BRA	GETRN5		AND PROCEED
+2229                       342  * '=' TAGGED LINES
+2229  31 21                343  GETRN1	LEAY	1,Y		ADVANCE
+222B  81 3D                344  	CMPA	#'='		TAGGED LINES?
+222D  26 10                345  	BNE	GETRN2		NO, TRY NEXT
+222F  0A 20                346  	DEC	TEMP+3		INDICATE TAGGS USED
+2231  DE 11                347  	LDU	TAG		GET FIRST TAG
+2233  27 04                348  	BEQ	GETRN1A		NO TAGGS DEFINED
+2235  9E 13                349  	LDX	TAG1		'X' = EOT
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 7
+
+2237  20 24                350  	BRA	GETRN5A		AND PROCEED
+2239  CC 2C 4F             351  GETRN1A	LDD	#NOTAGG		POINT TO MESSAGE
+223C  DD 1B                352  	STD	ERRMSG		SET IT UP
+223E  39                   353  	RTS			EXIT
+223F                       354  * '/' WHOLE FILE
+223F  81 2F                355  GETRN2	CMPA	#'/'		ENTIRE FILE?
+2241  26 0A                356  	BNE	GETRN3		NO, TRY NEXT
+2243  BD 28 E5             357  	JSR	FINDEOF		LOCATE END OF FILE
+2246  1F 31                358  	TFR	U,X		'X' = EOT
+2248  CE 30 98             359  	LDU	#T_BUFF		GET START OF BUFFER
+224B  20 10                360  	BRA	GETRN5A		AND PROCEED
+224D                       361  * '*', CURRENT LINE
+224D  DE 0F                362  GETRN3	LDU	TXTPOS		GET TEXT POSITION
+224F  81 2A                363  	CMPA	#'*'		CURRENT LINE
+2251  27 06                364  	BEQ	GETRN4		YES, HANDLE IT
+2253  1F 31                365  	TFR	U,X		'X' = VALUE ALSO
+2255  31 3F                366  	LEAY	-1,Y		BACKUP TO IT
+2257  20 06                367  	BRA	GETRN5B		AND PROCEED
+2259  DE 0F                368  GETRN4	LDU	TXTPOS		GET POSITION
+225B  1F 31                369  GETRN5	TFR	U,X		'X' = POSITION
+225D  0A 1F                370  GETRN5A	DEC	TEMP+2		INDICATE OPERAND RECEIVED
+225F  BD 22 0A             371  GETRN5B	JSR	SKIP		SKIP BLANKS
+2262  A6 A0                372  	LDA	,Y+		GET NEXT CHAR
+2264                       373  * TEST FOR ADD OF SUBTRACT FROM RANGE
+2264  81 2B                374  	CMPA	#'+'		ADDITION?
+2266  26 13                375  	BNE	GETRN7		NO, ITS OK
+2268  BD 21 DC             376  	JSR	GETNUM		GET NUMBER
+226B  A6 C4                377  GETRN6	LDA	,U		GET CHAR
+226D  2B 27                378  	BMI	GETRN9		EOF, EXIT
+226F  33 41                379  	LEAU	1,U		ADVANCE
+2271  81 0D                380  	CMPA	#NL		NEWLINE
+2273  26 F6                381  	BNE	GETRN6		NOT IT
+2275  30 1F                382  	LEAX	-1,X		REDUCE COUNT
+2277  26 F2                383  	BNE	GETRN6		KEEP TRYING
+2279  20 1B                384  	BRA	GETRN9		CONTINUE
+227B                       385  * TEST FOR SUBTRACT FROM RANGE
+227B  81 2D                386  GETRN7	CMPA	#'-'		SUBTRACTION?
+227D  26 1D                387  	BNE	GETRN10		NO, ITS OK
+227F  BD 21 DC             388  	JSR	GETNUM		GET NUMBER
+2282  30 01                389  	LEAX	1,X		ADVANCE FOR LATER
+2284  11 83 30 98          390  GETRN8	CMPU	#T_BUFF		ARE WE UNDER?
+2288  23 0C                391  	BLS	GETRN9		YES, EXIT
+228A  A6 C2                392  	LDA	,-U		GET CHAR
+228C  81 0D                393  	CMPA	#NL		NEW LINE?
+228E  26 F4                394  	BNE	GETRN8		KEEP LOOKING
+2290  30 1F                395  	LEAX	-1,X		BACKUP COUNT
+2292  26 F0                396  	BNE	GETRN8		KEEP GOING
+2294  33 41                397  	LEAU	1,U		BACKUP TO IT
+2296  1F 31                398  GETRN9	TFR	U,X		SET NEW END OF RANGE
+2298  0A 1F                399  	DEC	TEMP+2		INDICATE OPERAND RECEIVED
+229A  A6 A0                400  	LDA	,Y+		GET NEXT COMMAND
+229C  D6 15                401  GETRN10	LDB	START		BEGINNING RANGE ALREADY GIVEN
+229E  26 04                402  	BNE	GETRN11		DON'T SAVE
+22A0  DF 15                403  	STU	START		SET STARTING RANGE
+22A2  1F 13                404  	TFR	X,U		'U' = END ADDRESS
+22A4  DF 17                405  GETRN11	STU	END		SET ENDING RANGE
+22A6  81 2C                406  	CMPA	#','		RANGE SEPERATOR?
+22A8  10 27 FF 71          407  	LBEQ	GETRNG		NO, KEEP GOING
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 8
+
+22AC  DE 15                408  	LDU	START		GET FIRST IN RANGE
+22AE  9E 17                409  	LDX	END		GET LAST IN RANGE
+22B0  11 93 17             410  	CMPU	END		ARE WE OVER?
+22B3  23 04                411  	BLS	GETRN12		NO, ITS OK
+22B5  1E 31                412  	EXG	U,X		SWAP
+22B7  DF 15                413  	STU	START		RESAVE
+22B9  E6 84                414  GETRN12	LDB	,X		GET CHAR
+22BB  2B 06                415  	BMI	GETRN13		EOF, EXIT
+22BD  30 01                416  	LEAX	1,X		ADVANCE
+22BF  C1 0D                417  	CMPB	#NL		NEW LINE
+22C1  26 F6                418  	BNE	GETRN12		KEP GOING
+22C3  9F 17                419  GETRN13	STX	END		AND PROCEED
+22C5                       420  * WE HAVE COMMAND CHARACTER, PROCEED
+22C5  8D 12                421  DOCMD	BSR	TOUPPER		INSURE UPPERCASE
+22C7  4D                   422  	TSTA			NULL COMMAND
+22C8  2A 1A                423  	BPL	DOCM1		NO, TRY NEXT
+22CA  DF 19                424  	STU	NEWPOS		REPOSITION
+22CC                       425  * EXIT BACK TO CALLER
+22CC  96 20                426  DOQUIT	LDA	TEMP+3		TAGGS USED?
+22CE  27 08                427  	BEQ	DOQUI1		NO, ITS OK
+22D0  4F                   428  	CLRA			ZERO HIGH
+22D1  5F                   429  	CLRB			ZERO LOW
+22D2  DD 11                430  	STD	TAG		ZERO TAG START
+22D4  DD 13                431  	STD	TAG1		ZERO TAG END
+22D6  0A 04                432  	DEC	REFLAG		INSURE REFRESH
+22D8  39                   433  DOQUI1	RTS
+22D9                       434  * CONVERT CHAR IN A TO UPPERCASE
+22D9  81 61                435  TOUPPER	CMPA	#'a'		LOWER?
+22DB  25 FB                436  	BLO	DOQUI1		NO, ITS OK
+22DD  81 7A                437  	CMPA	#'z'		LOWER?
+22DF  22 F7                438  	BHI	DOQUI1		NO, ITS OK
+22E1  84 5F                439  	ANDA	#$5F		CONVERT
+22E3  39                   440  	RTS
+22E4                       441  * 'Q' QUIT COMMAND
+22E4  81 51                442  DOCM1	CMPA	#'Q'		IS IT QUIT?
+22E6  26 20                443  	BNE	DOCM2		NO, ITS NOT
+22E8  A6 A4                444  	LDA	,Y		GET NEXT CHAR
+22EA  8D ED                445  	BSR	TOUPPER		INSURE UPPERCASE
+22EC  81 51                446  	CMPA	#'Q'		FORCE QUIT?
+22EE  27 0E                447  	BEQ	DOCM1A		IF SO, NO TEST
+22F0  96 0A                448  	LDA	FCHANGE		HAS FILE CHANGED
+22F2  27 0A                449  	BEQ	DOCM1A		NO PROBLEM
+22F4  CC 2C A1             450  	LDD	#FCHMSG		INDICATE FILE CHANGED
+22F7  DD 1B                451  	STD	ERRMSG		SAVE IT
+22F9  39                   452  	RTS
+22FA                       453  * GET HERE FROM E'X'IT COMMAND, CLOSE FILE & TERMINATE
+22FA  3F                   454  DOEXIT	SWI			SOFTWARE INTERRUPT TO DOS
+22FB  39                   455  	FCB	57		SYSTEM REQUEST NUMBER
+22FC  3F                   456  	SWI			SOFTWARE INTERRUPT TO DOS
+22FD  56                   457  	FCB	86		SYSTEM REQUEST NUMBER
+22FE                       458  * PERFORM VIDEO CLEANUP AND EXIT
+22FE  96 05                459  DOCM1A	LDA	WINDOW		WINDOW MODE
+2300  2A 03                460  	BPL	DOCM1B		NO, DON'T CLEAR
+2302  BD 2B 6F             461  	JSR	WCL		CLEAR SCREEN
+2305  4F                   462  DOCM1B	CLRA			ZERO RETURN CODE
+2306  3F                   463  	SWI			SOFTWARE INTERRUPT TO DOS
+2307  00                   464  	FCB	0		SYSTEM REQUEST NUMBER
+2308                       465  * '?' LOCATE COMMAND
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 9
+
+2308  81 3F                466  DOCM2	CMPA	#'?'		FIND COMMAND?
+230A  26 3D                467  	BNE	DOCM3		NO, TRY NEXT
+230C  1F 21                468  	TFR	Y,X		'X' = PTR TO SEARCH STRING
+230E  96 1F                469  	LDA	TEMP+2		DEFAULT?
+2310  26 0C                470  	BNE	DOCM2A		NO, ITS OK
+2312  BD 28 E5             471  	JSR	FINDEOF		LOCATE END OF FILE
+2315  DF 17                472  	STU	END		RESET END
+2317  DE 15                473  	LDU	START		GET START BACK
+2319  D6 00                474  	LDB	CX		GET 'X'
+231B  5C                   475  	INCB			ADVANCE
+231C  33 CB                476  	LEAU	D,U		OFFSET TO IT
+231E                       477  * LOOK FOR THE DATA
+231E  11 93 17             478  DOCM2A	CMPU	END		ARE WE OVER?
+2321  24 11                479  	BHS	DOCM2E		YES, ERROR
+2323  8D 15                480  	BSR	PMATCH		DO WE HAVE A PARTIAL MATCH
+2325  26 05                481  	BNE	DOCM2C		DIDN'T FIND
+2327  DF 19                482  	STU	NEWPOS		MOVE TO IT
+2329  7E 22 CC             483  DOCM2B	JMP	DOQUIT		EXIT
+232C  33 41                484  DOCM2C	LEAU	1,U		SKIP TO NEXT
+232E  20 EE                485  	BRA	DOCM2A		ADVANCE
+2330  96 04                486  DOCM2D	LDA	REFLAG		DID WE FIND ANY?
+2332  26 F5                487  	BNE	DOCM2B		YES, A-OK
+2334  CC 2C 5F             488  DOCM2E	LDD	#NOTFND		POINT TO ERROR
+2337  DD 1B                489  	STD	ERRMSG		INDICTE NOT FOUND
+2339  39                   490  	RTS
+233A                       491  * TEST FOR STRING(U) BEGINNING WITH STRING(X)
+233A  34 50                492  PMATCH	PSHS	X,U		SAVE REGS
+233C  A6 80                493  PMAT1	LDA	,X+		GET CHAR
+233E  2B 06                494  	BMI	PMAT2		WE FOUND
+2340  A1 C0                495  	CMPA	,U+		DO IT MATCH
+2342  27 F8                496  	BEQ	PMAT1		YES
+2344  35 D0                497  	PULS	X,U,PC		RESTORE & RETURN
+2346  4F                   498  PMAT2	CLRA			SET 'Z'
+2347  35 D0                499  	PULS	X,U,PC		RESTORE & RETURN
+2349                       500  * 'S'UBSTITUTE COMMAND
+2349  81 53                501  DOCM3	CMPA	#'S'		SUBSTITUTE?
+234B  26 6F                502  	BNE	DOCM4		NO, TRY NEXT
+234D  A6 A0                503  	LDA	,Y+		GET DELIMITER
+234F  2B 61                504  	BMI	DOCM3I		FORMAT ERROR
+2351  97 1D                505  	STA	TEMP		SAVE FOR LATER
+2353                       506  * PARSE OFF THE SEARCH STRING
+2353  8E 2E 6C             507  	LDX	#E_BUFF		USE EDIT BUFFER
+2356  5F                   508  	CLRB			ZERO COUNT
+2357  A6 A0                509  DOCM3A	LDA	,Y+		GET NEXT CHAR
+2359  2B 57                510  	BMI	DOCM3I		FORMAT ERROR
+235B  91 1D                511  	CMPA	TEMP		DO IT MATCH?
+235D  27 05                512  	BEQ	DOCM3B		YES, IT DOES
+235F  A7 80                513  	STA	,X+		WRITE IT OUT
+2361  5C                   514  	INCB			ADVANCE
+2362  20 F3                515  	BRA	DOCM3A		CONTINUE
+2364  86 FF                516  DOCM3B	LDA	#-1		EOF MARKER
+2366  A7 84                517  	STA	,X		WRITE IT
+2368  D7 1D                518  	STB	TEMP		SAVE LENGTH
+236A  27 46                519  	BEQ	DOCM3I		FORMAT ERROR
+236C                       520  * LOCATE THE NEXT OCCURANCE OF THE TEXT
+236C  8E 2E 6C             521  	LDX	#E_BUFF		RESET TO BUFFER
+236F  11 93 17             522  DOCM3C	CMPU	END		ARE WE PAST END?
+2372  24 BC                523  	BHS	DOCM2D		YES, EXIT
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 10
+
+2374  8D C4                524  	BSR	PMATCH		DO IT MATCH?
+2376  26 40                525  	BNE	DOCM3J		NO, ADVANCE
+2378                       526  * WE FOUND A STRING, SUBSTITUTE
+2378  DF 19                527  	STU	NEWPOS		NEW POSITION TO MOVE TO
+237A  34 72                528  	PSHS	A,X,Y,U		SAVE REGS
+237C  C6 FF                529  	LDB	#-1		START WITH -1
+237E  5C                   530  DOCM3D	INCB			ADVANCE COUNT
+237F  A6 A0                531  	LDA	,Y+		GET CHAR
+2381  2A FB                532  	BPL	DOCM3D		DO TILL END
+2383  97 0A                533  DOCM3E	STA	FCHANGE		INDICATE FILE CHANGED
+2385  97 04                534  	STA	REFLAG		INDICATE RFRESH REQUIRED
+2387  E7 E4                535  	STB	,S		SAVE LENGTH ON STACK
+2389  4F                   536  	CLRA			ZERO HIGH
+238A  1F 02                537  	TFR	D,Y		'Y' = LENGTH OF SUB STRING
+238C  AE 63                538  	LDX	3,S		GET PTR BACK
+238E  D0 1D                539  	SUBB	TEMP		B = SUB - SEARCH
+2390  27 17                540  	BEQ	DOCM3G		SAME LENGTH
+2392  25 09                541  	BLO	DOCM3F		WE HAVE TO DELETE
+2394                       542  * SUBSTITUTE TEXT IS LONGER, INSERT INTO FILE
+2394  BD 28 F1             543  	JSR	INSERT		DO INSERT
+2397  D3 17                544  	ADDD	END		ADVANCE END BY # INSERTED
+2399  DD 17                545  	STD	END		AND RESAVE
+239B  20 0F                546  	BRA	DOCM3H		AND CONTINUE
+239D                       547  * SUBSTITUTE TEXT IS SHORTER, DELETE FROM FILE
+239D  50                   548  DOCM3F	NEGB			CALCULATE DIFFERENCE
+239E  BD 29 5D             549  	JSR	DELETE		DELETE THE DATA
+23A1  34 06                550  	PSHS	A,B		SAVE
+23A3  DC 17                551  	LDD	END		GET END
+23A5  A3 E1                552  	SUBD	,S++		DO SUBTRACT
+23A7  DD 17                553  	STD	END		RESAVE
+23A9  BD 29 4C             554  DOCM3G	JSR	COPY		PERFORM COPY
+23AC  35 72                555  DOCM3H	PULS	A,X,Y,U		RESTORE REG'S
+23AE  33 C6                556  	LEAU	A,U		SKIP NEW TEXT
+23B0  20 BD                557  	BRA	DOCM3C		PROCEED
+23B2                       558  * INVALID SERARCH STRING
+23B2  CC 2C 25             559  DOCM3I	LDD	#INVSER		GET MESSAGE
+23B5  DD 1B                560  	STD	ERRMSG		SET MESSAGE
+23B7  39                   561  	RTS
+23B8                       562  * NO MATCH, ADVANCE TO NEXT
+23B8  33 41                563  DOCM3J	LEAU	1,U		ADVANCE
+23BA  20 B3                564  	BRA	DOCM3C		AND CONTINUE
+23BC                       565  * 'T'AG LINES
+23BC  81 54                566  DOCM4	CMPA	#'T'		DO WE TAG?
+23BE  26 09                567  	BNE	DOCM5		NO, TRY NEXT
+23C0  DF 11                568  	STU	TAG		SET TAG
+23C2  30 1F                569  	LEAX	-1,X		BACKUP
+23C4  9F 13                570  	STX	TAG1		SET IT
+23C6  0A 04                571  	DEC	REFLAG		CAUSE REFRESH
+23C8  39                   572  	RTS
+23C9                       573  * 'C' COPY LINES
+23C9  81 43                574  DOCM5	CMPA	#'C'		COPY COMMAND?
+23CB  26 26                575  	BNE	DOCM6		NO, TRY NEXT
+23CD  8D 03                576  	BSR	DOCM5A		EXEC
+23CF  7E 22 CC             577  	JMP	DOQUIT		AND PROCEED
+23D2                       578  * PERFORM COPY OF INDICATED LINES
+23D2  DE 0F                579  DOCM5A	LDU	TXTPOS		GET POSITION
+23D4  11 93 15             580  	CMPU	START		ARE WE IN TEXT
+23D7  23 0C                581  	BLS	DOCM5B		ITS OK
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 11
+
+23D9  91 17                582  	CMPA	END		ARE WE IN TEXT?
+23DB  24 08                583  	BHS	DOCM5B		NO, ITS OK
+23DD  CC 2C 3B             584  	LDD	#INVDEST	POINT TO MESSAGE
+23E0  DD 1B                585  	STD	ERRMSG		SAVE IT
+23E2  32 62                586  	LEAS	2,S		SKIP SAVED PC
+23E4  39                   587  	RTS
+23E5                       588  * RANGE IS OK, COPY LINES
+23E5  DC 17                589  DOCM5B	LDD	END		GET END
+23E7  93 15                590  	SUBD	START		GET SIZE
+23E9  1F 02                591  	TFR	D,Y		'Y' = LENGTH
+23EB  9E 15                592  	LDX	START		POINT TO TEXT
+23ED  BD 28 F1             593  	JSR	INSERT		DO INERT
+23F0  0A 04                594  	DEC	REFLAG		REFRESH
+23F2  39                   595  	RTS
+23F3                       596  * 'M'OVE LINES
+23F3  81 4D                597  DOCM6	CMPA	#'M'		MOVE LINES?
+23F5  26 0D                598  	BNE	DOCM7		NO, TRY NEXT
+23F7  8D D9                599  	BSR	DOCM5A		INSERT THE TEXT
+23F9  DE 15                600  	LDU	START		GET STARTING ADDRESS
+23FB  11 93 0F             601  	CMPU	TXTPOS		ARE WE IN RANGE
+23FE  25 0C                602  	BLO	DOCM7A		ITS OK
+2400  33 CB                603  	LEAU	D,U		OFFSET TO IT
+2402  20 08                604  	BRA	DOCM7A		AND PROCEED
+2404                       605  * 'D'ELETE LINES
+2404  81 44                606  DOCM7	CMPA	#'D'		DELETE?
+2406  26 0C                607  	BNE	DOCM8		NO, PROCEED
+2408  DC 17                608  	LDD	END		GET END
+240A  93 15                609  	SUBD	START		CALCULATE LENGTH
+240C  BD 29 5D             610  DOCM7A	JSR	DELETE		PERFORM DELETE
+240F  0A 04                611  	DEC	REFLAG		DO REFRESH
+2411  7E 22 CC             612  	JMP	DOQUIT		CLEAN UP AND EXIT
+2414                       613  * 'L'IST FILE LINES
+2414  81 4C                614  DOCM8	CMPA	#'L'		LIST?
+2416  26 49                615  	BNE	DOCM9		NO, TRY NEXT
+2418  8D 40                616  	BSR	OSTART		BEGIN LARGE OUTPUT
+241A  11 93 17             617  DOCM8A	CMPU	END		ARE WE OVER?
+241D  24 0E                618  	BHS	OSTOP		YES, EXIT
+241F  A6 C0                619  	LDA	,U+		GET CHAR
+2421  81 0D                620  	CMPA	#NL		NEW LINE?
+2423  27 04                621  	BEQ	DOCM8B		SPECIAL CASE
+2425  3F                   622  	SWI			SOFTWARE INTERRUPT TO DOS
+2426  21                   623  	FCB	33		SYSTEM REQUEST NUMBER
+2427  20 F1                624  	BRA	DOCM8A		AND PROCEED
+2429  3F                   625  DOCM8B	SWI			SOFTWARE INTERRUPT TO DOS
+242A  16                   626  	FCB	22		SYSTEM REQUEST NUMBER
+242B  20 ED                627  	BRA	DOCM8A
+242D                       628  * TERMINATE LARGE OUTPUT
+242D  96 05                629  OSTOP	LDA	WINDOW		WINDOW MODE?
+242F  2A 26                630  	BPL	OSTOPX		NO, NOTHING SPECIAL
+2431  3F                   631  	SWI			SOFTWARE INTERRUPT TO DOS
+2432  18                   632  	FCB	24		SYSTEM REQUEST NUMBER
+2433  0A 0D                633  	FCB	$0A,$0D		NEW LINE
+2435  50 72 65 73 73 20 +  634  	FCCZ	'Press any key to continue...'
+2452  BD 2B C6             635  	JSR	GETKEY		GET INPUT KEY
+2455  0A 04                636  	DEC	REFLAG		FORCE REFRESH
+2457  7E 22 CC             637  OSTOPX	JMP	DOQUIT		EXIT
+245A                       638  * BEGIN LARGE OUTPUT
+245A  96 05                639  OSTART	LDA	WINDOW		WINDOW MODE?
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 12
+
+245C  10 2B 07 0F          640  	LBMI	WCL		YES, CLEAR DISPLAY
+2460  39                   641  	RTS
+2461                       642  * 'P'RINT LINES IN FORMATTED FASHON
+2461  81 50                643  DOCM9	CMPA	#'P'		PRINT?
+2463  26 6C                644  	BNE	DOCM10		NO, TRY NEXT
+2465  8D F3                645  	BSR	OSTART		BEGIN LARGE OUTPUT
+2467  8E 00 01             646  	LDX	#1		ZERO LINE COUNT
+246A  CE 30 98             647  	LDU	#T_BUFF		POINT TO TEXT BUFFER
+246D  11 93 15             648  DOCM9A	CMPU	START		AT BEGINNING?
+2470  24 0A                649  	BHS	DOCM9B		YES, WE ARE THERE
+2472  A6 C0                650  	LDA	,U+		GET CHAR
+2474  81 0D                651  	CMPA	#NL		NEW LINE
+2476  26 F5                652  	BNE	DOCM9A		KEEP LOOKING
+2478  30 01                653  	LEAX	1,X		ADVANCE # LINES
+247A  20 F1                654  	BRA	DOCM9A		AND PROCEED
+247C  86 20                655  DOCM9B	LDA	#' '		ASSUME NOT CURRENT
+247E  11 93 0F             656  	CMPU	TXTPOS		CURRENT LINE?
+2481  26 02                657  	BNE	DOCM9C		YES, ASSUMTION CORRECT
+2483  86 2A                658  	LDA	#'*'		WE ARE ON TAGGED LINE
+2485  3F                   659  DOCM9C	SWI			SOFTWARE INTERRUPT TO DOS
+2486  21                   660  	FCB	33		SYSTEM REQUEST NUMBER
+2487  8C 27 0F             661  	CMPX	#9999		OVER 4 DIGITS?
+248A  22 17                662  	BHI	DOCM9D		YES
+248C  3F                   663  	SWI			SOFTWARE INTERRUPT TO DOS
+248D  15                   664  	FCB	21		SYSTEM REQUEST NUMBER
+248E  8C 03 E7             665  	CMPX	#999		OVER 3 DIGITS
+2491  22 10                666  	BHI	DOCM9D		YES
+2493  3F                   667  	SWI			SOFTWARE INTERRUPT TO DOS
+2494  15                   668  	FCB	21		SYSTEM REQUEST NUMBER
+2495  8C 00 63             669  	CMPX	#99		OVER 2 DIGITS
+2498  22 09                670  	BHI	DOCM9D		YES
+249A  3F                   671  	SWI			SOFTWARE INTERRUPT TO DOS
+249B  15                   672  	FCB	21		SYSTEM REQUEST NUMBER
+249C  8C 00 09             673  	CMPX	#9		OVER 1 DIGIT
+249F  22 02                674  	BHI	DOCM9D		YES
+24A1  3F                   675  	SWI			SOFTWARE INTERRUPT TO DOS
+24A2  15                   676  	FCB	21		SYSTEM REQUEST NUMBER
+24A3  1F 10                677  DOCM9D	TFR	X,D		GET VALUE
+24A5  3F                   678  	SWI			SOFTWARE INTERRUPT TO DOS
+24A6  1A                   679  	FCB	26		SYSTEM REQUEST NUMBER
+24A7  86 20                680  	LDA	#' '		ASSUME NOT TAGGED
+24A9  11 93 11             681  	CMPU	TAG		ARE WE TAGGED
+24AC  25 07                682  	BLO	DOCM9E		NO
+24AE  11 93 13             683  	CMPU	TAG1		SECOND TEST
+24B1  22 02                684  	BHI	DOCM9E		NO
+24B3  86 3D                685  	LDA	#'='		INDICATE TAGGED
+24B5  3F                   686  DOCM9E	SWI			SOFTWARE INTERRUPT TO DOS
+24B6  21                   687  	FCB	33		SYSTEM REQUEST NUMBER
+24B7  3F                   688  	SWI			SOFTWARE INTERRUPT TO DOS
+24B8  15                   689  	FCB	21		SYSTEM REQUEST NUMBER
+24B9  A6 C0                690  DOCM9F	LDA	,U+		GET CHAR
+24BB  2B 11                691  	BMI	OSTOP1		END OF FILE
+24BD  81 0D                692  	CMPA	#NL		NEW LINE
+24BF  27 04                693  	BEQ	DOCM9G		SPECIAL CASE
+24C1  3F                   694  	SWI			SOFTWARE INTERRUPT TO DOS
+24C2  21                   695  	FCB	33		SYSTEM REQUEST NUMBER
+24C3  20 F4                696  	BRA	DOCM9F		PROCEED
+24C5  3F                   697  DOCM9G	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 13
+
+24C6  16                   698  	FCB	22		SYSTEM REQUEST NUMBER
+24C7  30 01                699  	LEAX	1,X		ADVANCE LINE NUMBER
+24C9  11 93 17             700  	CMPU	END		END OF TEXT
+24CC  25 AE                701  	BLO	DOCM9B		NO, TRY AGAIN
+24CE  7E 24 2D             702  OSTOP1	JMP	OSTOP		EXIT
+24D1                       703  * 'F'ILE INFORMATION
+24D1  81 46                704  DOCM10	CMPA	#'F'		FILE INFO?
+24D3  10 26 00 BD          705  	LBNE	DOCM11		NO, TRY NEXT
+24D7  BD 24 5A             706  	JSR	OSTART		BEGIN LARGE OUTPUT
+24DA  CE 30 98             707  	LDU	#T_BUFF		POINT TO START OF BUFFER
+24DD  8E 00 00             708  	LDX	#0		LINE COUNT
+24E0  11 93 15             709  DOCM10A	CMPU	START		ARE WE THERE?
+24E3  26 02                710  	BNE	DOCM10B		NO, WE ARE NOT
+24E5  9F 1D                711  	STX	TEMP		SAVE FOR LATER
+24E7  A6 C0                712  DOCM10B	LDA	,U+		GET CHAR
+24E9  2B 08                713  	BMI	DOCM10C		END OF LINE
+24EB  81 0D                714  	CMPA	#NL		NEW LINE
+24ED  26 F8                715  	BNE	DOCM10B		KEEP LOOKING
+24EF  30 01                716  	LEAX	1,X		ADVANCE
+24F1  20 ED                717  	BRA	DOCM10A		AND KEEP LOOKING
+24F3  1F 30                718  DOCM10C	TFR	U,D		GET EOF POSITION
+24F5  83 30 99             719  	SUBD	#T_BUFF+1	CONVERT
+24F8  1F 03                720  	TFR	D,U		'U' = # CHARACTERS
+24FA  1F 10                721  	TFR	X,D		'D' = # LINES
+24FC  3F                   722  	SWI			SOFTWARE INTERRUPT TO DOS
+24FD  18                   723  	FCB	24		SYSTEM REQUEST NUMBER
+24FE  46 69 6C 65 6E 61 +  724  	FCCZ	'Filename: '
+2509  8E 2E 21             725  	LDX	#NAMBUF		POINT TO NAME BUFFER
+250C  3F                   726  	SWI			SOFTWARE INTERRUPT TO DOS
+250D  17                   727  	FCB	23		SYSTEM REQUEST NUMBER
+250E  8D 5F                728  	BSR	DLINCHR		DISPLAY # LINES & CHARS
+2510  DE 15                729  	LDU	START		GET STARTING POSITION
+2512  8E 00 00             730  	LDX	#0		RESET # LINES
+2515  11 93 17             731  DOCM10D	CMPU	END		ARE WE OVER?
+2518  24 0A                732  	BHS	DOCM10E		NO, WE ARE NOT
+251A  A6 C0                733  	LDA	,U+		GET CHAR
+251C  81 0D                734  	CMPA	#NL		NEW LINE?
+251E  26 F5                735  	BNE	DOCM10D		NO, KEEP LOOKING
+2520  30 01                736  	LEAX	1,X		ADVANCE COUNT
+2522  20 F1                737  	BRA	DOCM10D		AND KEEP GOING
+2524  3F                   738  DOCM10E	SWI			SOFTWARE INTERRUPT TO DOS
+2525  18                   739  	FCB	24		SYSTEM REQUEST NUMBER
+2526  50 6F 73 69 74 69 +  740  	FCCZ	'Position: '
+2531  DC 1D                741  	LDD	TEMP		GET ID
+2533  C3 00 01             742  	ADDD	#1		ADVANCE
+2536  3F                   743  	SWI			SOFTWARE INTERRUPT TO DOS
+2537  1A                   744  	FCB	26		SYSTEM REQUEST NUMBER
+2538  DC 17                745  	LDD	END		GET END
+253A  93 15                746  	SUBD	START		CALCULATE SIZE
+253C  1F 03                747  	TFR	D,U		'U' = # CHARS
+253E  1F 10                748  	TFR	X,D		'D' = # LINES
+2540  8D 2D                749  	BSR	DLINCHR		DISPLAY # LINES & CHARS
+2542  3F                   750  	SWI			SOFTWARE INTERRUPT TO DOS
+2543  18                   751  	FCB	24		SYSTEM REQUEST NUMBER
+2544  54 68 65 72 65 20 +  752  	FCCZ	'There are '
+254F  96 0A                753  	LDA	FCHANGE		IS FILE CHANGED?
+2551  26 06                754  	BNE	DOCM10F		YES, RECORD IT
+2553  3F                   755  	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 14
+
+2554  18                   756  	FCB	24		SYSTEM REQUEST NUMBER
+2555  6E 6F 20 00          757  	FCCZ	'no '		INDICTE NEGATIVE
+2559  3F                   758  DOCM10F	SWI			SOFTWARE INTERRUPT TO DOS
+255A  19                   759  	FCB	25		SYSTEM REQUEST NUMBER
+255B  75 6E 73 61 76 65 +  760  	FCCZ	'unsaved changes.'
+256C  7E 24 2D             761  DOCM10G	JMP	OSTOP		TERMINATE OUTPUT
+256F                       762  * DISPLAY # LINES(D) & CHARACTERS(U)
+256F  3F                   763  DLINCHR	SWI			SOFTWARE INTERRUPT TO DOS
+2570  18                   764  	FCB	24		SYSTEM REQUEST NUMBER
+2571  2C 20 00             765  	FCCZ	', '
+2574  3F                   766  	SWI			SOFTWARE INTERRUPT TO DOS
+2575  1A                   767  	FCB	26		SYSTEM REQUEST NUMBER
+2576  3F                   768  	SWI			SOFTWARE INTERRUPT TO DOS
+2577  18                   769  	FCB	24		SYSTEM REQUEST NUMBER
+2578  20 4C 69 6E 65 73 +  770  	FCCZ	' Lines, '
+2581  1F 30                771  	TFR	U,D		GET EOF
+2583  3F                   772  	SWI			SOFTWARE INTERRUPT TO DOS
+2584  1A                   773  	FCB	26		SYSTEM REQUEST NUMBER
+2585  3F                   774  	SWI			SOFTWARE INTERRUPT TO DOS
+2586  19                   775  	FCB	25		SYSTEM REQUEST NUMBER
+2587  20 43 68 61 72 61 +  776  	FCCZ	' Characters'
+2593  39                   777  	RTS
+2594                       778  * 'I'NPUT NEW TEXT
+2594  81 49                779  DOCM11	CMPA	#'I'		INPUT?
+2596  26 2A                780  	BNE	DOCM12		NO, TRY NEXT
+2598  BD 24 5A             781  	JSR	OSTART		BEGIN LARGE OUTPUT
+259B  3F                   782  	SWI			SOFTWARE INTERRUPT TO DOS
+259C  19                   783  	FCB	25		SYSTEM REQUEST NUMBER
+259D  49 6E 70 75 74 3A +  784  	FCCZ	'Input:'
+25A4  8E 2E 6C             785  DOCM11A	LDX	#E_BUFF		POINT TO EDIT BUFFER
+25A7  BD 21 49             786  	JSR	GETLIN		GET INPUT LINE
+25AA  96 05                787  	LDA	WINDOW		GET WINDOW STAT
+25AC  2A 02                788  	BPL	DOCM11B		NO SPECIAL
+25AE  3F                   789  	SWI			SOFTWARE INTERRUPT TO DOS
+25AF  16                   790  	FCB	22		SYSTEM REQUEST NUMBER
+25B0  5D                   791  DOCM11B	TSTB			ZERO LENGTH?
+25B1  27 B9                792  	BEQ	DOCM10G		YES, EXIT
+25B3  86 0D                793  	LDA	#NL		INCLUDE NEW LINE
+25B5  A7 85                794  	STA	B,X		WRITE IT
+25B7  5C                   795  	INCB			ADVANCE
+25B8  4F                   796  	CLRA			ZERO HIGH
+25B9  1F 02                797  	TFR	D,Y		'Y' = INPUT LENGTH
+25BB  BD 28 F1             798  	JSR	INSERT		INSERT INTO TEXT
+25BE  33 CB                799  	LEAU	D,U		ADVANCE TO NEXT LINE
+25C0  20 E2                800  	BRA	DOCM11A		KEEP GOING
+25C2                       801  * 'V'ISUAL MODE SWITCH
+25C2  81 56                802  DOCM12	CMPA	#'V'		SWAP MODES
+25C4  26 13                803  	BNE	DOCM13		NO, TRY NEXT
+25C6  DF 19                804  	STU	NEWPOS		SET NEW POSITION
+25C8  4F                   805  	CLRA			ZERO HIGH
+25C9  5F                   806  	CLRB			ZERO LOW
+25CA  DD 00                807  	STD	CX		ZERO CURSORS
+25CC  A6 9F 2D 0E          808  	LDA	[GXYPTR]	GOTOXY DEFINED?
+25D0  27 04                809  	BEQ	DOCM12A		NO, SKIP IT
+25D2  0A 04                810  	DEC	REFLAG		SWAP IT
+25D4  03 05                811  	COM	WINDOW		TOGGLE FLAG
+25D6  7E 22 CC             812  DOCM12A	JMP	DOQUIT		EXIT
+25D9                       813  * EXECUTE DOS COMMAND
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 15
+
+25D9  81 24                814  DOCM13	CMPA	#'$'		DOS COMMAND
+25DB  26 26                815  	BNE	DOCM14		ERROR
+25DD  BD 24 5A             816  	JSR	OSTART		BEGIN OUTPUT
+25E0  8D 0B                817  	BSR	CONVERT		CONVERT INPUT
+25E2  34 48                818  	PSHS	DP,U		SAVE FOR LATER
+25E4  3F                   819  	SWI			SOFTWARE INTERRUPT TO DOS
+25E5  64                   820  	FCB	100		SYSTEM REQUEST NUMBER
+25E6  35 48                821  	PULS	DP,U		RESTORE PTR
+25E8  6A C4                822  	DEC	,U		SET EOL
+25EA  7E 24 2D             823  	JMP	OSTOP		END EXIT
+25ED                       824  * CONVERT COMMAND LINE TO UPPERCASE, ZERO TERMINATED
+25ED  34 20                825  CONVERT	PSHS	Y		SAVE 'Y'
+25EF  A6 A4                826  CONV1	LDA	,Y		GET CHAR
+25F1  2B 07                827  	BMI	CONV2		END OF LINE, ZERO TERMINATE
+25F3  BD 22 D9             828  	JSR	TOUPPER		CONVERT TO UPPER
+25F6  A7 A0                829  	STA	,Y+		WRITE IT OUT
+25F8  20 F5                830  	BRA	CONV1		AND PROCEED
+25FA  6F A4                831  CONV2	CLR	,Y		ZERO END
+25FC  1F 23                832  	TFR	Y,U		SAVE EOL INDICATOR
+25FE  35 20                833  	PULS	Y		RESTORE 'Y'
+2600  3F                   834  	SWI			SOFTWARE INTERRUPT TO DOS
+2601  04                   835  	FCB	4		SYSTEM REQUEST NUMBER
+2602  39                   836  	RTS
+2603                       837  * 'R'EAD FILE AT POSITION
+2603  81 52                838  DOCM14	CMPA	#'R'		READ COMMAND
+2605  26 4B                839  	BNE	DOCM15		NO, TRY NEXT
+2607  8D 30                840  	BSR	GETFN		GET FILENAME
+2609  3F                   841  	SWI			SOFTWARE INTERRUPT TO DOS
+260A  37                   842  	FCB	55		SYSTEM REQUEST NUMBER
+260B  26 3C                843  	BNE	GETFN2		ERROR, EXIT
+260D  0A 04                844  	DEC	REFLAG		INDICATE REFRESH REQUIRED
+260F                       845  * READ IN EACH BLOCK & INSERT INTO TEXT
+260F  CE 2E 3A             846  DOCM14A	LDU	#COMMAND	POINT TO BUFFER
+2612  8E 2E 6C             847  	LDX	#E_BUFF		POINT TO BUFFER
+2615  3F                   848  	SWI			SOFTWARE INTERRUPT TO DOS
+2616  3A                   849  	FCB	58		SYSTEM REQUEST NUMBER
+2617  26 6B                850  	BNE	DOCM15D		END, EXIT
+2619                       851  * SCAN BLOCK LOOKING FOR EOF
+2619  A6 84                852  DOCM14B	LDA	,X		GET CHAR
+261B  2B 07                853  	BMI	DOCM14C		END, EXIT
+261D  30 01                854  	LEAX	1,X		ADVANCE
+261F  8C 30 6C             855  	CMPX	#E_BUFF+512	ARE WE OVER?
+2622  25 F5                856  	BLO	DOCM14B		NO, KEEP LOOKING
+2624  1F 10                857  DOCM14C	TFR	X,D		GET VALUE
+2626  83 2E 6C             858  	SUBD	#E_BUFF		GET # CHARACTERS
+2629  1F 02                859  	TFR	D,Y		'Y' = # CHARS
+262B  DE 15                860  	LDU	START		GET POSITION
+262D  8E 2E 6C             861  	LDX	#E_BUFF		POINT TO BUFFER
+2630  BD 28 F1             862  	JSR	INSERT		PERFORM INSERT
+2633  33 CB                863  	LEAU	D,U		ADVANCE TO NEXT
+2635  DF 15                864  	STU	START		RESAVE
+2637  20 D6                865  	BRA	DOCM14A		AND PROCEED
+2639                       866  * GET FILENAME FOR DOS
+2639  8D B2                867  GETFN	BSR	CONVERT		CONVERT FILENAME
+263B  26 04                868  	BNE	GETFN1		ITS OK
+263D  10 8E 2E 21          869  	LDY	#NAMBUF		POINT TO NAME BUFFER
+2641  3F                   870  GETFN1	SWI			SOFTWARE INTERRUPT TO DOS
+2642  0A                   871  	FCB	10		SYSTEM REQUEST NUMBER
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 16
+
+2643  27 07                872  	BEQ	GETFN3		A-OK, EXIT
+2645  6A C4                873  	DEC	,U		SET EOL INDICATOR
+2647  32 62                874  	LEAS	2,S		SKIP SAVED SP
+2649  7E 24 2D             875  GETFN2	JMP	OSTOP		EXIT WITH PROMPT
+264C  6A C4                876  GETFN3	DEC	,U		SET EOL INDICATOR
+264E  CE 2E 3A             877  	LDU	#COMMAND	SET UP PTR TO BUFFER
+2651  39                   878  	RTS
+2652                       879  * 'W'RITE CONTENTS OF RANGE
+2652  81 57                880  DOCM15	CMPA	#'W'		WRITE COMMAND?
+2654  27 04                881  	BEQ	DOCM15A		YES, PROCESS
+2656                       882  * E'X'IT AND SAVE FILE
+2656  80 58                883  	SUBA	#'X'		EXIT AND SAVE?
+2658  26 35                884  	BNE	BADCMD		NO, TRY NEXT
+265A  97 1E                885  DOCM15A	STA	TEMP+1		SAVE COMMAND
+265C  96 1F                886  	LDA	TEMP+2		DEFAULT?
+265E  26 0A                887  	BNE	DOCM15B		NO, ITS OK
+2660  BD 28 E5             888  	JSR	FINDEOF		LOCATE END OF FILE
+2663  DF 17                889  	STU	END		POINT TO END
+2665  CE 30 98             890  	LDU	#T_BUFF		POINT TO START OF FILE
+2668  DF 15                891  	STU	START		POINT TO START OF RANGE
+266A  8D CD                892  DOCM15B	BSR	GETFN		GET FILENAME
+266C  3F                   893  	SWI			SOFTWARE INTERRUPT TO DOS
+266D  38                   894  	FCB	56		SYSTEM REQUEST NUMBER
+266E  26 D9                895  	BNE	GETFN2		REPORT ERROR
+2670  9E 15                896  	LDX	START		POINT TO START OF RANGE
+2672  A6 80                897  DOCM15C	LDA	,X+		GET CHAR
+2674  3F                   898  	SWI			SOFTWARE INTERRUPT TO DOS
+2675  3D                   899  	FCB	61		SYSTEM REQUEST NUMBER
+2676  26 0C                900  	BNE	DOCM15D		ERROR, EXIT
+2678  9C 17                901  	CMPX	END		OVER END?
+267A  25 F6                902  	BLO	DOCM15C		NO, KEEP GOING
+267C  0F 0A                903  	CLR	FCHANGE		INDICATE NOT CHANGED
+267E  96 1E                904  	LDA	TEMP+1		GET COMMAND
+2680  10 27 FC 76          905  	LBEQ	DOEXIT		IT SO, TERMINATE
+2684                       906  * CLOSE FILE & TERMINATE COMMAND
+2684  3F                   907  DOCM15D	SWI			SOFTWARE INTERRUPT TO DOS
+2685  39                   908  	FCB	57		SYSTEM REQUEST NUMBER
+2686  3F                   909  	SWI			SOFTWARE INTERRUPT TO DOS
+2687  56                   910  	FCB	86		SYSTEM REQUEST NUMBER
+2688  0F 3A                911  	CLR	COMMAND		INSURE NO COMMAND
+268A  0F 0C                912  	CLR	DELLEN		INSURE NO DELETE BUFFER
+268C  7E 22 CC             913  	JMP	DOQUIT		AND EXIT
+268F                       914  * COMMAND IN NOT RECOGNIZED
+268F  CC 2C 15             915  BADCMD	LDD	#UNCMSG		POINT TO MESSAGE
+2692  DD 1B                916  	STD	ERRMSG		SET ERROT MESSAGE
+2694  39                   917  	RTS
+2695                       918  *
+2695                       919  * UNKNOWN KEY ENTERED
+2695                       920  *
+2695  CC 2C 09             921  UNKEY	LDD	#UNKMSG		POINT TO MESSAGE
+2698  DD 1B                922  	STD	ERRMSG		SET ERROR MESSAGE
+269A  39                   923  	RTS
+269B                       924  *
+269B                       925  * TOGGLE EOL DISPLAY
+269B                       926  *
+269B  03 08                927  TOGEOL	COM	EOLFLAG		SWAP FLAG STATE
+269D                       928  * COMMAND TO FORCE RE-REFRESH
+269D  0A 04                929  REDRAW	DEC	REFLAG		INDICTE REFRESH REQUIRED
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 17
+
+269F  7E 29 E4             930  	JMP	UPDATE		AND UPDATE ANY CHANGES
+26A2                       931  *
+26A2                       932  * TOGGLE INSERT MODE
+26A2                       933  *
+26A2  CC 2C 90             934  TOGINS	LDD	#INSMSG		POINT TO ON MESSAGE
+26A5  03 07                935  	COM	INSFLAG		SWAP FLAG STATE
+26A7  2B 03                936  	BMI	TOGIN1		CORRECT
+26A9  CC 2C 97             937  	LDD	#OVWMSG		POINT TO OFF MESSAGE
+26AC  DD 1B                938  TOGIN1	STD	ERRMSG		SAVE MESSAGE
+26AE  39                   939  	RTS
+26AF                       940  *
+26AF                       941  * DISPLAY CURSOR POSITION
+26AF                       942  *
+26AF  BD 2B 93             943  DISCUR	JSR	GOTOLST		MOVE THERE
+26B2  BD 2B 7B             944  	JSR	WSO		ENABLE SPECIAL EFFECTS
+26B5  3F                   945  	SWI			SOFTWARE INTERRUPT TO DOS
+26B6  18                   946  	FCB	24		SYSTEM REQUEST NUMBER
+26B7  20 43 75 72 73 6F +  947  	FCCZ	' Cursor: '
+26C1  D6 01                948  	LDB	CY		GET 'Y' POSITION
+26C3  8D 38                949  	BSR	WRDEC		DISPLAY
+26C5  3F                   950  	SWI			SOFTWARE INTERRUPT TO DOS
+26C6  18                   951  	FCB	24		SYSTEM REQUEST NUMBER
+26C7  20 64 6F 77 6E 2C +  952  	FCCZ	' down, '
+26CF  D6 02                953  	LDB	HORZ		GET ACTUAL 'X' POSITION
+26D1  8D 2A                954  	BSR	WRDEC		DISPLAY
+26D3  3F                   955  	SWI			SOFTWARE INTERRUPT TO DOS
+26D4  18                   956  	FCB	24		SYSTEM REQUEST NUMBER
+26D5  20 6F 76 65 72 2C +  957  	FCCZ	' over, at character '
+26EA  D6 00                958  	LDB	CX		GET CHAR 'X' POSITION
+26EC  8D 0F                959  	BSR	WRDEC		DISPLAY
+26EE  3F                   960  	SWI			SOFTWARE INTERRUPT TO DOS
+26EF  18                   961  	FCB	24		SYSTEM REQUEST NUMBER
+26F0  20 69 6E 20 6C 69 +  962  	FCCZ	' in line '
+26FA  7E 2B 7F             963  	JMP	WSE		DISABLE SPECIAL EFFECTS
+26FD  4F                   964  WRDEC	CLRA			ZERO HIGH
+26FE  C3 00 01             965  	ADDD	#1		ADVANCE IT
+2701  3F                   966  	SWI			SOFTWARE INTERRUPT TO DOS
+2702  1A                   967  	FCB	26		SYSTEM REQUEST NUMBER
+2703  39                   968  	RTS
+2704                       969  *
+2704                       970  * DELETE PREVIOUS CHARACTER
+2704                       971  *
+2704  BD 28 6D             972  DELPRE	JSR	BACKCHR		BACKUP A CHARACTER
+2707  BD 2A 1C             973  	JSR	POSITC		REPOSITION CURSOR
+270A  D7 00                974  	STB	CX		RESET 'C' POSITION
+270C  BD 2B 98             975  	JSR	GOTOXX		MOVE TO POSITION
+270F                       976  *
+270F                       977  * DELETE CHARACTER
+270F                       978  *
+270F  BD 29 AB             979  DELCHR	JSR	EDIT		BEGIN EDITING LINE
+2712  1F 23                980  	TFR	Y,U		SAVE FOR LATER
+2714  A6 C4                981  	LDA	,U		GET CHAR
+2716  2B 15                982  	BMI	DELC3		EOF, DO NOT DELETE
+2718  E6 21                983  DELC1	LDB	1,Y		GET NEXT CHAR
+271A  E7 A0                984  	STB	,Y+		WRITE TO TEXT
+271C  2A FA                985  	BPL	DELC1		DO THEM ALL
+271E  0A 0B                986  	DEC	EDTLEN		REDUCE LENGTH
+2720  81 0D                987  DELC2	CMPA	#NL		DELETED NEWLINE?
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 18
+
+2722  10 26 03 B5          988  	LBNE	REFLIN		NO, JUST UPDATE ONE LINE
+2726  BD 29 E4             989  	JSR	UPDATE		UPDATE IT
+2729  96 04                990  	LDA	REFLAG		ARE WE REFRESHING?
+272B  27 14                991  	BEQ	REFBOT		NO, DO EXPLICITILY
+272D  39                   992  DELC3	RTS
+272E                       993  *
+272E                       994  * DELETE LIPUT LINE
+272E                       995  *
+272E  8D 30                996  DELLIN	BSR	DELPREP		PREPERATION
+2730  A6 A0                997  DELL1	LDA	,Y+		GET CHAR FROM BUFFER
+2732  A7 80                998  	STA	,X+		WRITE IN BUFFER
+2734  2B 05                999  	BMI	DELL2		END OF FILE
+2736  5C                  1000  	INCB			ADVANCE
+2737  81 0D               1001  	CMPA	#NL		NEWLINE?
+2739  26 F5               1002  	BNE	DELL1		NO, ERROR
+273B  4F                  1003  DELL2	CLRA			ZERO HIGH
+273C  D7 0C               1004  	STB	DELLEN		SET LENGTH
+273E  BD 29 5D            1005  	JSR	DELETE		PERFORM DELETE
+2741                      1006  * REFRESH FROM CURRENT POSITION TO BOTTOM OF SCREEN
+2741  D6 01               1007  REFBOT	LDB	CY		GET 'Y' POSITION
+2743  DE 0F               1008  	LDU	TXTPOS		GET START OF LINE
+2745  7E 2A AB            1009  	JMP	REFSCR		CONTINUE
+2748                      1010  *
+2748                      1011  * DELETE TO END OF LINE (EXCLUSIVE)
+2748                      1012  *
+2748  8D 16               1013  DELEOL	BSR	DELPREP		PEROFRM PREPERATION
+274A  A6 A0               1014  DELEO1	LDA	,Y+		GET CHAR FROM BUFFER
+274C  A7 80               1015  	STA	,X+		WRITE IN DELETE BUFFER
+274E  2B 07               1016  	BMI	DELEO2		EOF, EXIT
+2750  81 0D               1017  	CMPA	#NL		END OF LINE?
+2752  27 03               1018  	BEQ	DELEO2		EOF, EXIT
+2754  5C                  1019  	INCB			ADVANCE COUNT
+2755  20 F3               1020  	BRA	DELEO1		CONTINUE
+2757  4F                  1021  DELEO2	CLRA			ZERO HIGH
+2758  D7 0C               1022  	STB	DELLEN		SET LENGTH
+275A  BD 29 5D            1023  	JSR	DELETE		PERORM DELETE
+275D  7E 2B 77            1024  	JMP	WCE		CLEAR END OF LINE
+2760                      1025  * PREPREATION FOR DELETE OPERATION
+2760  BD 29 E4            1026  DELPREP	JSR	UPDATE		UPDATE CHANGES
+2763  D6 00               1027  	LDB	CX		GET 'X' POSITION
+2765  4F                  1028  	CLRA			ZERO HIGH
+2766  D3 0F               1029  	ADDD	TXTPOS		'D' = POSITION
+2768  1F 03               1030  	TFR	D,U		'U' = INPUT PTR
+276A  1F 02               1031  	TFR	D,Y		'Y' = INPUT PTR
+276C  8E 2F 6C            1032  	LDX	#D_BUFF		POINT TO DELETE BUFFER
+276F  5F                  1033  	CLRB			ZERO COUNT
+2770  39                  1034  	RTS
+2771                      1035  *
+2771                      1036  * INSERT DELETED TEXT
+2771                      1037  *
+2771  8D ED               1038  INSDEL	BSR	DELPREP		PREPERATION
+2773  D6 0C               1039  	LDB	DELLEN		GET LENGTH OF DELETE BUFFER
+2775  4F                  1040  	CLRA			ZERO HIGH
+2776  1F 02               1041  	TFR	D,Y		'Y' = LENGTH OF DATA
+2778  BD 28 F1            1042  	JSR	INSERT		PERFORM INSERT
+277B  20 C4               1043  	BRA	REFBOT		AND PROCEED
+277D                      1044  *
+277D                      1045  * GOTO START OF FILE
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 19
+
+277D                      1046  *
+277D  BD 29 E4            1047  HOME	JSR	UPDATE		UPDATE ANY CHANGES
+2780  7E 20 57            1048  	JMP	EDT4		AND GOTO HOME
+2783                      1049  *
+2783                      1050  * MOVE CURRENT LINE TO TOP OF SCREEN
+2783                      1051  *
+2783  BD 29 E4            1052  CURTOP	JSR	UPDATE		UPDATE ANY CHANGES
+2786  DC 0F               1053  	LDD	TXTPOS		GET LINE POSITION
+2788  DD 0D               1054  	STD	SCRTOP		SET SCREEN TOP
+278A  0F 01               1055  	CLR	CY		RESET TO TOP
+278C  0A 04               1056  	DEC	REFLAG		INDICATE REFRESH REQUIRED
+278E  39                  1057  	RTS
+278F                      1058  *
+278F                      1059  * TAG LINES
+278F                      1060  *
+278F  BD 29 E4            1061  TAGLIN	JSR	UPDATE		UPDATE ANY CHANGES
+2792  DE 0F               1062  	LDU	TXTPOS		GET CURRENT POSITION
+2794  9E 11               1063  	LDX	TAG		AND FIRST TAG
+2796  26 0F               1064  	BNE	TAGL1		ALREADY TAGGED
+2798  DF 11               1065  	STU	TAG		SET BEGINNING TAG
+279A  DF 13               1066  	STU	TAG1		SET ENDING TAG
+279C  4F                  1067  	CLRA			ZERO 'X'
+279D  97 02               1068  	STA	HORZ		RESET COUNTER
+279F  D6 01               1069  	LDB	CY		GET 'Y'
+27A1  BD 2B 9E            1070  	JSR	GOTOXY		RESET CURSOR
+27A4  7E 2A DB            1071  	JMP	REFLIN		REFRESH THE LINE
+27A7  11 93 11            1072  TAGL1	CMPU	TAG		DOES IT MATCH
+27AA  27 0B               1073  	BEQ	TAGL3		DELETE THE TAGS
+27AC  22 02               1074  	BHI	TAGL2		IN PROPER ORDER
+27AE  1E 13               1075  	EXG	X,U		SWAP VALUES
+27B0  9F 11               1076  TAGL2	STX	TAG		SET BEGINNING TAG
+27B2  DF 13               1077  	STU	TAG1		SET ENDING TAG
+27B4  7E 2A A6            1078  	JMP	REFALL		REFRESH SCREEN
+27B7  8E 00 00            1079  TAGL3	LDX	#0		ZERO STARTNG TAG
+27BA  1F 13               1080  	TFR	X,U		ZERO ENDING TAG
+27BC  20 F2               1081  	BRA	TAGL2		AND SET IT
+27BE                      1082  *
+27BE                      1083  * MOVE WORD RIGHT
+27BE                      1084  *
+27BE  A6 A4               1085  WRDRT	LDA	,Y		GET CHAR
+27C0  81 0D               1086  	CMPA	#NL		AT END OF LINE?
+27C2  27 29               1087  	BEQ	FWDCHR		IF SO, ADVANCE
+27C4  A6 A4               1088  WRDRT1	LDA	,Y		GET CHAR
+27C6  2B 0A               1089  	BMI	WRDRT2		EOF, EXIT
+27C8  81 20               1090  	CMPA	#' '		CONTROL CODE
+27CA  23 06               1091  	BLS	WRDRT2		YES, EXIT
+27CC  31 21               1092  	LEAY	1,Y		ADVANCE
+27CE  0C 00               1093  	INC	CX		ADVANCE 'X' POSITION
+27D0  20 F2               1094  	BRA	WRDRT1		ADN PROCEED
+27D2  A6 A0               1095  WRDRT2	LDA	,Y+		GET NEXT CHAR
+27D4  2B 16               1096  	BMI	WRDRT4		EOF, EXIT
+27D6  81 0D               1097  	CMPA	#NL		NEW LINE
+27D8  27 12               1098  	BEQ	WRDRT4		EOL, EXIT
+27DA  81 20               1099  	CMPA	#' '		CONTROL CODE?
+27DC  22 0E               1100  	BHI	WRDRT4		NEW WORD, EXIT
+27DE  0C 00               1101  	INC	CX		ADVANCE 'X' POSITION
+27E0  20 F0               1102  	BRA	WRDRT2		AND PROCEED
+27E2                      1103  *
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 20
+
+27E2                      1104  * MOVE CURSOR TO END OF LINE
+27E2                      1105  *
+27E2  86 FF               1106  CUREOL	LDA	#$FF		HIGH NUMBER
+27E4  97 00               1107  	STA	CX		SET POSITION
+27E6  A6 A4               1108  	LDA	,Y		GET CHAR
+27E8  81 0D               1109  	CMPA	#NL		AT END ALREADY?
+27EA  27 0C               1110  	BEQ	FWDLIN		YES, GOTO NEXT
+27EC  39                  1111  WRDRT4	RTS
+27ED                      1112  *
+27ED                      1113  * MOVE FORWARD A CHARACTER
+27ED                      1114  *
+27ED  A6 A4               1115  FWDCHR	LDA	,Y		GET DATA
+27EF  81 0D               1116  	CMPA	#NL		NEW LINE?
+27F1  27 03               1117  	BEQ	FWDC1		YES, SPECIAL CASE
+27F3  0C 00               1118  	INC	CX		ADVANCE
+27F5  39                  1119  	RTS
+27F6  0F 00               1120  FWDC1	CLR	CX		ZERO POSITION
+27F8                      1121  *
+27F8                      1122  * MOVE FORWARD A LINE
+27F8                      1123  *
+27F8  34 16               1124  FWDLIN	PSHS	A,B,X		SAVE REGISTERS
+27FA  BD 29 E4            1125  	JSR	UPDATE		UPDATE ANY CHANGES
+27FD  DE 0F               1126  	LDU	TXTPOS		GET TEXT POSITION
+27FF  A6 C4               1127  FWDL1	LDA	,U		GET CHAR
+2801  2B 10               1128  	BMI	FWDL2		END OF FILE
+2803  33 41               1129  	LEAU	1,U		ADVANCE
+2805  81 0D               1130  	CMPA	#NL		NEW LINE?
+2807  26 F6               1131  	BNE	FWDL1		NO, KEEP LOOKING
+2809  DF 0F               1132  	STU	TXTPOS		NEW POSITION
+280B  D6 01               1133  	LDB	CY		GET POSITION
+280D  C1 16               1134  	CMPB	#LINES-2	PAST END OF SCREEN?
+280F  24 04               1135  	BHS	FWDL3		YES, SPECIAL CASE
+2811  0C 01               1136  	INC	CY		ADVANCE CY
+2813  35 96               1137  FWDL2	PULS	A,B,X,PC	RESTORE & RETURN
+2815  9E 0D               1138  FWDL3	LDX	SCRTOP		GET TOP OF SCREEN
+2817  A6 80               1139  FWDL4	LDA	,X+		GET CHAR
+2819  81 0D               1140  	CMPA	#NL		NEW LINE
+281B  26 FA               1141  	BNE	FWDL4		NO, KEEP GOING
+281D  9F 0D               1142  	STX	SCRTOP		RESAVE SCREEN TOP
+281F                      1143  * SOME TERMINALS MAY NOT PERFORM FOREWARD SCROLLING WHEN "SF" IS
+281F                      1144  * PRINTED ON THE BOTTOM LINE... IF SO, REPLACE NEXT SECTION WITH
+281F                      1145  * CODE SIMILAR TO THAT FOUND IN "BACKLIN".
+281F  86 85               1146  	LDA	#SF		SCROLL FORWARD COMMAND
+2821  BD 2B 81            1147  	JSR	PUTCHR		OUTPUT IT
+2824  BD 2A AB            1148  	JSR	REFSCR		REFRESH SCREEN (DRAW NEXT LINE)
+2827  35 96               1149  	PULS	A,B,X,PC	RESTORE & RETURN
+2829                      1150  *
+2829                      1151  * MOVE FORWARD A PAGE
+2829                      1152  *
+2829  34 06               1153  FWDPAG	PSHS	A,B		SAVE REGISTERS
+282B  BD 29 E4            1154  	JSR	UPDATE		UPDATE ANY CHANGES
+282E  C6 16               1155  	LDB	#LINES-2	GET # LINES
+2830  DE 0D               1156  	LDU	SCRTOP		GET TOP OF SCREEN
+2832  A6 C4               1157  FWDP1	LDA	,U		GET CHAR
+2834  2B 09               1158  	BMI	FWDP2		END OF FILE
+2836  33 41               1159  	LEAU	1,U		ADVANCE
+2838  81 0D               1160  	CMPA	#NL		NEWLINE?
+283A  26 F6               1161  	BNE	FWDP1		NO, TRY NEXT
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 21
+
+283C  5A                  1162  	DECB			REDUCE COUNT
+283D  26 F3               1163  	BNE	FWDP1		KEEP GOING
+283F                      1164  * RESET POSITIONS & EXIT
+283F  DF 0D               1165  FWDP2	STU	SCRTOP		SET SCREEN TOP
+2841  DF 0F               1166  	STU	TXTPOS		SET TEXT POSITION
+2843  0F 01               1167  	CLR 	CY		ZERO 'Y' POSITION
+2845  0A 04               1168  	DEC	REFLAG		INDICATE REFRESH REQUIRED
+2847  35 86               1169  	PULS	A,B,PC		RESTORE & RETURN
+2849                      1170  *
+2849                      1171  * MOVE WORD LEFT
+2849                      1172  *
+2849  D6 00               1173  WRDLT	LDB	CX		GET 'X' POSITION
+284B  27 20               1174  	BEQ	BACKCHR		END OF ROPE, BACKUP
+284D  A6 A2               1175  WRDLT1	LDA	,-Y		GET CHAR
+284F  81 20               1176  	CMPA	#' '		IN SPACE?
+2851  22 05               1177  	BHI	WRDLT2		YES, QUIT
+2853  5A                  1178  	DECB			REDUCE COUNT
+2854  26 F7               1179  	BNE	WRDLT1		AND CONTINUE
+2856  20 0B               1180  	BRA	WRDLT4		SOL, EXIT
+2858  31 21               1181  WRDLT2	LEAY	1,Y		ADVANCE
+285A  A6 A2               1182  WRDLT3	LDA	,-Y		GET CHAR
+285C  81 20               1183  	CMPA	#' '		IN WORD?
+285E  23 03               1184  	BLS	WRDLT4		NO, EXIT
+2860  5A                  1185  	DECB			REDUCE COUNT
+2861  26 F7               1186  	BNE	WRDLT3		AND PROCEED
+2863  D7 00               1187  WRDLT4	STB	CX		RESAVE 'X' POSITION
+2865  39                  1188  	RTS
+2866                      1189  *
+2866                      1190  * MOVE CURSOR TO START OF LINE
+2866                      1191  *
+2866  96 00               1192  CURSOL	LDA	CX		GET 'X' POSITION
+2868  27 0B               1193  	BEQ	BACKLIN		BACKUP A LINE
+286A  0F 00               1194  	CLR	CX		RESET TO ZERO
+286C  39                  1195  	RTS
+286D                      1196  *
+286D                      1197  * BACKUP A CHARACTER
+286D                      1198  *
+286D  0A 00               1199  BACKCHR	DEC	CX		REDUCE COUNT
+286F  96 00               1200  	LDA	CX		GET VALUE
+2871  4C                  1201  	INCA			WAS IT ZERO
+2872  27 01               1202  	BEQ	BACKLIN		OVERFLOW, BACKUP LINE
+2874  39                  1203  	RTS
+2875                      1204  *
+2875                      1205  * BACKUP A LINE
+2875                      1206  *
+2875  34 16               1207  BACKLIN	PSHS	A,B,X		SAVE REGISTERS
+2877  BD 29 E4            1208  	JSR	UPDATE		UPDATE ANY CHANGES
+287A  DE 0F               1209  	LDU	TXTPOS		GET CURRENT TEXT POSITION
+287C  33 5F               1210  	LEAU	-1,U		BACKUP INCASE AT START OF LINE
+287E  11 83 30 98         1211  BACKL1	CMPU	#T_BUFF		AT START OF BUFFER?
+2882  25 06               1212  	BLO	BACKL2		YES, EXIT
+2884  A6 C2               1213  	LDA	,-U		GET PRECEEDING CHAR
+2886  81 0D               1214  	CMPA	#NL		NEWLINE?
+2888  26 F4               1215  	BNE	BACKL1		NO, KEEP LOOKING
+288A  33 41               1216  BACKL2	LEAU	1,U		ADVANCE TO LINE
+288C  DF 0F               1217  	STU	TXTPOS		SAVE LINE POSITION
+288E  0A 01               1218  	DEC	CY		REDUCE COUNT
+2890  2A 28               1219  	BPL	BACKL7		NO OVERFLOW
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 22
+
+2892                      1220  * BACKUP PAST TOP OF SCREEN
+2892  9E 0D               1221  	LDX	SCRTOP		GET TOP OF SCREEN
+2894  C6 0C               1222  	LDB	#LINES/2	GET HALF SCREEN
+2896  8C 30 98            1223  BACKL3	CMPX	#T_BUFF		ARE WE AT START?
+2899  23 0B               1224  	BLS	BACKL4		YES, EXIT
+289B  A6 82               1225  	LDA	,-X		GET PREVIOUS CHAR
+289D  81 0D               1226  	CMPA	#NL		NEW LINE?
+289F  26 F5               1227  	BNE	BACKL3		PROCEED
+28A1  5A                  1228  	DECB			REDUCE COUNT
+28A2  26 F2               1229  	BNE	BACKL3		AND PROCEED
+28A4  30 01               1230  	LEAX	1,X		ADVANCE TO LINE
+28A6  9F 0D               1231  BACKL4	STX	SCRTOP		RESET TOP OF SCREEN
+28A8  5F                  1232  	CLRB			ZERO 'B'
+28A9  D1 00               1233  BACKL5	CMPB	CX		ARE WE OVER?
+28AB  24 09               1234  	BHS	BACKL6		YES, WE ARE THERE
+28AD  5C                  1235  	INCB			ADVANCE
+28AE  A6 C0               1236  	LDA	,U+		GET CHAR
+28B0  81 0D               1237  	CMPA	#NL		NEW LINE?
+28B2  26 F5               1238  	BNE	BACKL5		PROCEED
+28B4  33 5F               1239  	LEAU	-1,U		BACKUP
+28B6  DF 19               1240  BACKL6	STU	NEWPOS		INDICATE MOVE TO
+28B8  0A 04               1241  	DEC	REFLAG		INSURE REFRESH
+28BA  35 96               1242  BACKL7	PULS	A,B,X,PC	RESTORE * RETURN
+28BC                      1243  *
+28BC                      1244  * GOTO END OF FILE
+28BC                      1245  *
+28BC  BD 29 E4            1246  FEND	JSR	UPDATE		UPDATE CHANGES
+28BF  BD 28 E5            1247  	JSR	FINDEOF		LOCATE END
+28C2  DF 19               1248  	STU	NEWPOS		REPOSITION
+28C4  DF 0D               1249  	STU	SCRTOP		SET START OF SCREEN
+28C6  DF 0F               1250  	STU	TXTPOS		SET START OF LINE
+28C8                      1251  *
+28C8                      1252  * BACKUP A PAGE
+28C8                      1253  *
+28C8  34 06               1254  BACKPAG	PSHS	A,B		SAVE REGS
+28CA  BD 29 E4            1255  	JSR	UPDATE		UPDATE ANY CHANGES
+28CD  C6 17               1256  	LDB	#LINES-1	ZERO COUNTER
+28CF  DE 0D               1257  	LDU	SCRTOP		GET TOP OF SCREEN
+28D1  11 83 30 98         1258  BACKP1	CMPU	#T_BUFF		AT START OF BUFFER?
+28D5  23 0B               1259  	BLS	BACKP2		YES, EXIT
+28D7  A6 C2               1260  	LDA	,-U		GET NEXT CHAR
+28D9  81 0D               1261  	CMPA	#NL		NEWLINE?
+28DB  26 F4               1262  	BNE	BACKP1		NO, ITS NOT
+28DD  5A                  1263  	DECB			REDUCE CONT
+28DE  26 F1               1264  	BNE	BACKP1		KEEP GOING
+28E0  33 41               1265  	LEAU	1,U		ADVANCE
+28E2  7E 28 3F            1266  BACKP2	JMP	FWDP2		RESAVE REGISTERS
+28E5                      1267  *
+28E5                      1268  * LOCATE THE END OF FILE
+28E5                      1269  * EXIT:		U = PTR TO END OF FILE MARKER
+28E5                      1270  *
+28E5  34 02               1271  FINDEOF	PSHS	A		SAVE 'A'
+28E7  DE 0D               1272  	LDU	SCRTOP		BEGIN AT TOP OF SCREEN
+28E9  A6 C0               1273  FINDE1	LDA	,U+		GET NEXT CHAR
+28EB  2A FC               1274  	BPL	FINDE1		KEEP LOOKING
+28ED  33 5F               1275  	LEAU	-1,U		BACKUP TO MARKER
+28EF  35 82               1276  	PULS	A,PC		RETORE & RETURN
+28F1                      1277  *
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 23
+
+28F1                      1278  * INSERT A BLOCK OF DATA INTO THE FILE
+28F1                      1279  * ENTRY:    U = PTR TO INSERT AT
+28F1                      1280  *		D = # CHARACTERS TO INSERT
+28F1                      1281  *		X = PTR TO DATA TO OVERWRITE
+28F1                      1282  *		Y = # CHARACTERS TO OVERWRITE
+28F1                      1283  *
+28F1  34 76               1284  INSERT	PSHS	A,B,X,Y,U	SAVE REGS
+28F3  8D F0               1285  	BSR	FINDEOF		LOCATE END OF FILE
+28F5  33 41               1286  	LEAU	1,U		INCLUDE EOF
+28F7  30 CB               1287  	LEAX	D,U		POINTER TO NEW END
+28F9  8C DB FF            1288  	CMPX	#OSEND		ARE WE OVER?
+28FC  22 47               1289  	BHI	INSERR		REPORT ERROR
+28FE                      1290  * ADJUST FILE TO PROVIDE SPACE
+28FE  A6 C2               1291  INSE0	LDA	,-U		GET CHAR FROM FILE
+2900  A7 82               1292  	STA	,-X		WRITE TO NEW DATA
+2902  11 A3 66            1293  	CMPU	6,S		ARE WE BACK TO PTR
+2905  22 F7               1294  	BHI	INSE0		NO, KEEP GOING
+2907                      1295  * ADJUST TOP OF SCREEN
+2907  11 93 0D            1296  	CMPU	SCRTOP		PTR < SCRTOP?
+290A  24 06               1297  	BHS	INSE1		NO, ITS OK
+290C  DC 0D               1298  	LDD	SCRTOP		GET TOP OF SCREEN
+290E  E3 E4               1299  	ADDD	,S		ADJUST
+2910  DD 0D               1300  	STD	SCRTOP		RESAVE
+2912                      1301  * ADJUST TEXT POSITION
+2912  11 93 0F            1302  INSE1	CMPU	TXTPOS		PTR < TXTPOS?
+2915  24 06               1303  	BHS	INSE2		NO, ITS OK
+2917  DC 0F               1304  	LDD	TXTPOS		GET TOP OF SCREEN
+2919  E3 E4               1305  	ADDD	,S		ADJUST
+291B  DD 0F               1306  	STD	TXTPOS		RESAVE
+291D                      1307  * ADJUST TAG POSITIONS
+291D  11 93 11            1308  INSE2	CMPU	TAG		PTR < TAG?
+2920  24 06               1309  	BHS	INSE3		NO, ITS OK
+2922  DC 11               1310  	LDD	TAG		GET FIRST TAGE
+2924  E3 E4               1311  	ADDD	,S		ADJUST
+2926  DD 11               1312  	STD	TAG		RESAVE
+2928  11 93 13            1313  INSE3	CMPU	TAG1		PTR < TAG1
+292B  24 06               1314  	BHS	INSE4		NO, ITS OK
+292D  DC 13               1315  	LDD	TAG1		GET SECOND TAG
+292F  E3 E4               1316  	ADDD	,S		ADJUST
+2931  DD 13               1317  	STD	TAG1		RESAVE
+2933                      1318  * ADJUST OVERWRITE POINTER
+2933  11 A3 62            1319  INSE4	CMPU	2,S		PTR < OVERWRITE
+2936  24 06               1320  	BHS	INSE5		NO, ITS OK
+2938  EC 62               1321  	LDD	2,S		GET OVERWRITE POINTER
+293A  E3 E4               1322  	ADDD	,S		ADJUST
+293C  ED 62               1323  	STD	2,S		RESAVE
+293E                      1324  * COPY IN THE NEW TEXT
+293E  AE 62               1325  INSE5	LDX	2,S		RESTORE SOURCE POINTER
+2940  BD 29 4C            1326  	JSR	COPY		PERFORM COPY
+2943  35 F6               1327  	PULS	A,B,X,Y,U,PC	RESTORE & RETURN
+2945                      1328  * ERROR, CANNOT INSERT TEXT
+2945  CC 2C 69            1329  INSERR	LDD	#INEMSG		POINT TO MESSAGE
+2948  DD 1B               1330  	STD	ERRMSG		SAVE IT
+294A  35 F6               1331  	PULS	A,B,X,Y,U,PC	RESTORE & RETURN
+294C                      1332  *
+294C                      1333  * COPY MEMORY SUBROUTINE
+294C                      1334  * ENTRY:    X = SOURCE PTR
+294C                      1335  *		U = DEST PTR
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 24
+
+294C                      1336  *		Y = LENGTH
+294C                      1337  *
+294C  31 21               1338  COPY	LEAY	1,Y		ADVANCE FOR DEC
+294E  31 3F               1339  COPY1	LEAY	-1,Y		REDUCE COUNT
+2950  27 06               1340  	BEQ	COPY2		EXIT
+2952  A6 80               1341  	LDA	,X+		GET CHAR FROM SOURCE
+2954  A7 C0               1342  	STA	,U+		WRITE INTO DEST
+2956  20 F6               1343  	BRA	COPY1		AND PROCEED
+2958  86 FF               1344  COPY2	LDA	#-1		GET SET FLAG
+295A  97 0A               1345  	STA	FCHANGE		INDICATE FILE CHANGED
+295C  39                  1346  	RTS
+295D                      1347  *
+295D                      1348  * DELETE DATA FROM FILE
+295D                      1349  * ENTRY:    U = PTR TO LOCATION TO DELETE
+295D                      1350  *		D = # CHARACTERS TO DELETE
+295D  34 56               1351  DELETE	PSHS	A,B,X,U		SAVE DATA
+295F  30 CB               1352  	LEAX	D,U		'X' = POS + LEN
+2961                      1353  * ADJUST LINE POSITION IF WE DELETE
+2961  11 93 0F            1354  	CMPU	TXTPOS		PTR < TEXTPOS?
+2964  24 0F               1355  	BHS	DELE2		NO, ITS OK
+2966  DC 0F               1356  	LDD	TXTPOS		GET ADDRESS
+2968  A3 E4               1357  	SUBD	,S		ADJUST
+296A  10 A3 64            1358  	CMPD	4,S		NEW TXTPOS < PTR ?
+296D  24 02               1359  	BHS	DELE1		NO, ITS OK
+296F  1F 30               1360  	TFR	U,D		TXTPOS = PTR
+2971  DD 0F               1361  DELE1	STD	TXTPOS		SET POSITION
+2973  DD 19               1362  	STD	NEWPOS		ADJUST POSITION
+2975                      1363  * ADJUST SCREEN TOP IF WE DELETE
+2975  11 93 0D            1364  DELE2	CMPU	SCRTOP		PTR < SCRTOP?
+2978  24 0F               1365  	BHS	DELE4		NO, ITS OK
+297A  DC 0D               1366  	LDD	SCRTOP		GET ADDRESS
+297C  A3 E4               1367  	SUBD	,S		ADJUST
+297E  10 A3 64            1368  	CMPD	4,S		NEW SCRTOP < PTR?
+2981  24 02               1369  	BHS	DELE3		NO, ITS OK
+2983  1F 30               1370  	TFR	U,D		SCRTOP = PTR
+2985  DD 0D               1371  DELE3	STD	SCRTOP		SET POSITION
+2987  0A 04               1372  	DEC	REFLAG		INDICATE REFRESH REQUIRED
+2989                      1373  * ADJUST TAGGED LINE POSITIONS
+2989  11 93 11            1374  DELE4	CMPU	TAG		PTR < TAG?
+298C  24 06               1375  	BHS	DELE5		NO, ITS OK
+298E  DC 11               1376  	LDD	TAG		GET TAG
+2990  A3 E4               1377  	SUBD	,S		ADJUST
+2992  DD 11               1378  	STD	TAG		RESAVE
+2994  11 93 13            1379  DELE5	CMPU	TAG1		PTR < TAG1
+2997  24 06               1380  	BHS	DELE6		NO, ITS OK
+2999  DC 13               1381  	LDD	TAG1		GET TAG1
+299B  A3 E4               1382  	SUBD	,S		ADJUST
+299D  DD 13               1383  	STD	TAG1		RESAVE
+299F                      1384  * PERFORM DELETE FROM TEXT
+299F  A6 80               1385  DELE6	LDA	,X+		GET CHAR
+29A1  A7 C0               1386  	STA	,U+		WRITE IT
+29A3  2A FA               1387  	BPL	DELE6		DO ALL DATA
+29A5  86 FF               1388  	LDA	#-1		GET SET FLAG
+29A7  97 0A               1389  	STA	FCHANGE		INDICATE FILE CHANGED
+29A9  35 D6               1390  	PULS	A,B,X,U,PC	RESTORE & RETURN
+29AB                      1391  *
+29AB                      1392  * BEGIN EDITING CURRENT LINE, IF NOT ALREADY IN EDIT
+29AB                      1393  * BUFFER, COPY IT THERE.
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 25
+
+29AB                      1394  * EXIT:		Y = PTR TO CURRENT CHAR IN EDIT BUFFER
+29AB                      1395  *
+29AB  34 56               1396  EDIT	PSHS	A,B,X,U		RESTORE & RETURN
+29AD  8E 2E 6C            1397  	LDX	#E_BUFF		POINT TO EDIT BUFFER
+29B0  D6 00               1398  	LDB	CX		GET 'X' POSITION
+29B2  4F                  1399  	CLRA			ZERO HIGH
+29B3  31 8B               1400  	LEAY	D,X		OFFSET TO POSITION
+29B5  96 09               1401  	LDA	CHANGE		LINE ALREADY IN BUFFER?
+29B7  26 29               1402  	BNE	EDIT4		YES, ALL IS OK
+29B9                      1403  * COPY EDIT LINE OVER
+29B9  DE 0F               1404  	LDU	TXTPOS		GET LINE POSITION
+29BB  0F 0B               1405  	CLR	EDTLEN		ZERO COUNT
+29BD  0C 0B               1406  EDIT1	INC	EDTLEN		ADVANCE COUNT
+29BF  A6 C4               1407  	LDA	,U		GET CHAR
+29C1  2B 0A               1408  	BMI	EDIT2		EOF, EXIT
+29C3  33 41               1409  	LEAU	1,U		ADVANCE
+29C5  A7 80               1410  	STA	,X+		WRITE IT OUT
+29C7  81 0D               1411  	CMPA	#NL		NEW LINE?
+29C9  27 0F               1412  	BEQ	EDIT3		EXIT
+29CB  20 F0               1413  	BRA	EDIT1		AND KEEP COPYING
+29CD                      1414  * END OF FILE ENCOUNTERED, INSERT CARRIAGE RETURN
+29CD  86 0D               1415  EDIT2	LDA	#NL		GET A NEWLINE
+29CF  A7 80               1416  	STA	,X+		WRITE IT OUT
+29D1  D6 01               1417  	LDB	CY		GET 'Y' POSITION
+29D3  5C                  1418  	INCB			ADVANCE
+29D4  BD 2A AB            1419  	JSR	REFSCR		DISPLAY "EOF" MARKER
+29D7  BD 2B 98            1420  	JSR	GOTOXX		RESTORE CURSOR
+29DA                      1421  * WE HAVE EDIT LINE
+29DA  86 FF               1422  EDIT3	LDA	#-1		GET SET FLAG
+29DC  A7 84               1423  	STA	,X		WRITE END OF LINE
+29DE  97 09               1424  	STA	CHANGE		INDICATE CHANGED
+29E0  97 0A               1425  	STA	FCHANGE		INDICATE FILE CHANGED
+29E2  35 D6               1426  EDIT4	PULS	A,B,X,U,PC	RESTORE & RETURN
+29E4                      1427  *
+29E4                      1428  * UPDATE ANY CHANEGS WHICH ARE PENDING
+29E4                      1429  *
+29E4  34 76               1430  UPDATE	PSHS	A,B,X,Y,U	SAVE REGS
+29E6  96 09               1431  	LDA	CHANGE		ANY CHANGES?
+29E8  27 30               1432  	BEQ	UPDAT6		NO, ITS OK
+29EA  DE 0F               1433  	LDU	TXTPOS		POINT TO CURRENT LINE
+29EC  1F 31               1434  	TFR	U,X		'X' = COPY
+29EE  5F                  1435  	CLRB			ZERO COUNT
+29EF  A6 84               1436  UPDAT1	LDA	,X		GET CHAR
+29F1  2B 07               1437  	BMI	UPDAT2		END OF BUFFER
+29F3  5C                  1438  	INCB			ADVANCE COUNTER
+29F4  30 01               1439  	LEAX	1,X		ADVANCE PTR
+29F6  81 0D               1440  	CMPA	#NL		NEW LINE?
+29F8  26 F5               1441  	BNE	UPDAT1		KEEP GOING
+29FA  4F                  1442  UPDAT2	CLRA			ZERO HIGH
+29FB  34 04               1443  	PSHS	B		SAVE COUNT
+29FD  D6 0B               1444  	LDB	EDTLEN		GET EDIT BUFFER LENGTH
+29FF  1F 02               1445  	TFR	D,Y		'Y' = EDIT LENGTH
+2A01  35 04               1446  	PULS	B		RESTORE IT
+2A03  8E 2E 6C            1447  	LDX	#E_BUFF		POINT TO EDIT BUFFER
+2A06  D0 0B               1448  	SUBB	EDTLEN		CHECK LENGTHS
+2A08  24 06               1449  	BHS	UPDAT3		BUFFER IS LARGER
+2A0A                      1450  * BUFFER IS LARGER, INSERT SPACE
+2A0A  50                  1451  	NEGB			CONVERT TO POSITIVE VALUE
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 26
+
+2A0B  BD 28 F1            1452  	JSR	INSERT		INSERT SPACE
+2A0E  20 08               1453  	BRA	UPDAT5		AND PROCEED
+2A10  27 03               1454  UPDAT3	BEQ	UPDAT4		SAME LENGTH
+2A12                      1455  * BUFFER IS SMALLER, DELETE TEXT
+2A12  BD 29 5D            1456  	JSR	DELETE		DELETE SOME TEXT
+2A15  BD 29 4C            1457  UPDAT4	JSR	COPY		PERFORM COPY
+2A18  0F 09               1458  UPDAT5	CLR	CHANGE		INDICATE LINE NOT CHANGED
+2A1A  35 F6               1459  UPDAT6	PULS	A,B,X,Y,U,PC	RESTORE & RETURN
+2A1C                      1460  *
+2A1C                      1461  * SET THE 'HORZ' VARIABLE TO THE CORRECT VALUE FOR THE CURRENT
+2A1C                      1462  * CURSOR POSITION, AND SET UP A POINTER TO THE ACTUAL LINE
+2A1C                      1463  * ON WHICH THE CURSOR IS ON (THIS WILL BE THE TEXT FILE OR
+2A1C                      1464  * THE EDIT BUFFER).
+2A1C                      1465  * ENTRY:	NONE
+2A1C                      1466  * EXIT:		U = POINTER TO CHARACTER
+2A1C                      1467  *		B = ACTUAL 'X' POSITION OF CURSOR
+2A1C                      1468  *
+2A1C  34 12               1469  POSITC	PSHS	A,X		SAVE REGISTERS
+2A1E  DE 0F               1470  	LDU	TXTPOS		GET LINE POSITION
+2A20  96 09               1471  	LDA	CHANGE		GET CHANGEED FLAG
+2A22  27 03               1472  	BEQ	POSIT1		NOT IN EDIT BUFFER
+2A24  CE 2E 6C            1473  	LDU	#E_BUFF		POINT TO EDIT BUFFER
+2A27                      1474  * LOCATE ACTUAL 'X' POSITION IN LINE
+2A27  1F 31               1475  POSIT1	TFR	U,X		'X' = TEMP ADDRESS
+2A29  0F 02               1476  	CLR	HORZ		ZERO ACTUAL 'X' POSITION
+2A2B  5F                  1477  	CLRB			ZERO B
+2A2C  D1 00               1478  POSIT2	CMPB	CX		ARE WE AT 'X' POSITION
+2A2E  24 13               1479  	BHS	POSIT4		YES, EXIT
+2A30  A6 80               1480  	LDA	,X+		GET CHAR
+2A32  2B 0F               1481  	BMI	POSIT4		EOF, EXIT
+2A34  81 0D               1482  	CMPA	#NL		NEW LINE?
+2A36  27 0B               1483  	BEQ	POSIT4		YES, EXIT
+2A38  5C                  1484  	INCB			REDUCE COUNT
+2A39  0C 02               1485  	INC	HORZ		ADVANCE 'X' POSITION
+2A3B  81 09               1486  	CMPA	#TAB		IS IT A TAB?
+2A3D  26 ED               1487  	BNE	POSIT2		NO, KEEP GOING
+2A3F  8D 5A               1488  	BSR	SKPTAB		SKIP THE TAB STOP
+2A41  20 E9               1489  	BRA	POSIT2		AND TEST AGAIN
+2A43                      1490  * IF POSITION IS < LEFT MARGIN, SCROLL SRCEEN LEFT
+2A43  96 03               1491  POSIT4	LDA	OFFSET		GET LEFT MARGIN
+2A45  91 02               1492  	CMPA	HORZ		> CURRENT POSITION?
+2A47  22 06               1493  	BHI	POSIT5		YES, HANDLE IT
+2A49                      1494  * IF POSITION > RIGHT MARGIN, SCROLL SCREEN RIGHT
+2A49  8B 50               1495  	ADDA	#COLS		OFFSET TO RIGHT MARGIN
+2A4B  91 02               1496  	CMPA	HORZ		<= CURRENT POSITION
+2A4D  22 0A               1497  	BHI	POSIT6		NO, DONT ADJUST
+2A4F  80 28               1498  POSIT5	SUBA	#COLS/2		SCROLL SCREEN LEFT
+2A51  97 03               1499  	STA	OFFSET		RESET OFFSET
+2A53  8D 8F               1500  	BSR	UPDATE		INSURE CHANGES ARE UPDATED
+2A55  0A 04               1501  	DEC	REFLAG		INSURE REFRESH OCCURS
+2A57  20 EA               1502  	BRA	POSIT4		INSURE WE HAVE DONE ENOUGH
+2A59  35 92               1503  POSIT6	PULS	A,X,PC		RESTORE & RETURN
+2A5B                      1504  *
+2A5B                      1505  * REPOSITION THE CURSOR TO THE INDICATED ADDRESS
+2A5B                      1506  * ENTRY: U = ADDRESS
+2A5B                      1507  *
+2A5B  34 56               1508  REPOS	PSHS	A,B,X,U		SAVE REGISTERS
+2A5D                      1509  * CALCULATE NEW 'Y' ADDRESS
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 27
+
+2A5D  5F                  1510  	CLRB			ZERO 'Y' POSITION
+2A5E  9E 0D               1511  	LDX	SCRTOP		GET SCREEN TOP
+2A60  AC 64               1512  REPO1	CMPX	4,S		ARE WE OVER?
+2A62  24 0D               1513  	BHS	REPO2		YES, QUIT
+2A64  A6 80               1514  	LDA	,X+		GET CHAR
+2A66  81 0D               1515  	CMPA	#NL		END OF LINE?
+2A68  26 F6               1516  	BNE	REPO1		NO, ITS OK
+2A6A  5C                  1517  	INCB			ADVANCE 'Y' POSITION
+2A6B  C1 16               1518  	CMPB	#LINES-2	OVER SCREEN?
+2A6D  23 F1               1519  	BLS	REPO1		NO, ITS OK
+2A6F  AE 64               1520  	LDX	4,S		NO SENSE LOOKING FURTHOR
+2A71                      1521  * CALCULATE NEW 'X' ADDRESS
+2A71  0F 00               1522  REPO2	CLR 	CX		ZERO 'X' POSITION
+2A73  D7 01               1523  	STB	CY		SAVE 'Y' POSITION
+2A75  11 83 30 98         1524  REPO3	CMPU	#T_BUFF		START OF FILE?
+2A79  23 0C               1525  	BLS	REPO4		YES, EXIT
+2A7B  A6 5F               1526  	LDA	-1,U		GET CHAR
+2A7D  81 0D               1527  	CMPA	#NL		START OF LINE?
+2A7F  27 06               1528  	BEQ	REPO4		YES, EXIT
+2A81  33 5F               1529  	LEAU	-1,U		REDUCE COUNT
+2A83  0C 00               1530  	INC	CX		ADVANCE POSITION
+2A85  20 EE               1531  	BRA	REPO3		AND CONTINUE
+2A87  DF 0F               1532  REPO4	STU	TXTPOS		SAVE LINE POSITION
+2A89  AE 64               1533  	LDX	4,S		RESTORE 'U'
+2A8B  9C 0D               1534  	CMPX	SCRTOP		ARE WE WITHIN SCREEN?
+2A8D  25 04               1535  	BLO	REPO5		YES, ITS OK
+2A8F  C1 16               1536  	CMPB	#LINES-2	ARE WE OVER?
+2A91  23 06               1537  	BLS	REPO6		NO, ITS OK
+2A93  0F 01               1538  REPO5	CLR	CY		RESET TO ZERO
+2A95  DF 0D               1539  	STU	SCRTOP		RESET TOP OF SCREEN
+2A97  0A 04               1540  	DEC	REFLAG		INDICATE REFRESH REQUIRED
+2A99  35 D6               1541  REPO6	PULS	A,B,X,U,PC	RESTORE & RETURN
+2A9B                      1542  *
+2A9B                      1543  * SKIP AHEAD A TAB STOP
+2A9B                      1544  *
+2A9B  96 02               1545  SKPTAB	LDA	HORZ		GET 'X' POSITION
+2A9D  85 07               1546  	BITA	#%00000111	AT TAB STOP?
+2A9F  27 04               1547  	BEQ	SKPT1		YES, WE ARE
+2AA1  0C 02               1548  	INC	HORZ		ADVANCE IT
+2AA3  20 F6               1549  	BRA	SKPTAB		AND PROCEED
+2AA5  39                  1550  SKPT1	RTS
+2AA6                      1551  *
+2AA6                      1552  * REFRESH ENTIRE SCREEN FROM TOP
+2AA6                      1553  *
+2AA6  DE 0D               1554  REFALL	LDU	SCRTOP		GET TOP OF SCREEN ADDRESS
+2AA8  5F                  1555  	CLRB			ZERO 'Y' POSITION
+2AA9  D7 04               1556  	STB	REFLAG		SET REFRESH FLAG
+2AAB                      1557  *
+2AAB                      1558  * REFRESH SCREEN:
+2AAB                      1559  * ENTRY:    U = PTR TO TEXT, B = VERT LINE
+2AAB                      1560  *
+2AAB  34 46               1561  REFSCR	PSHS	A,B,U		SAVE REGISTERS
+2AAD  96 02               1562  	LDA	HORZ		GET HORZ POSITION
+2AAF  34 02               1563  	PSHS	A		SAVE FOR LATER
+2AB1  4F                  1564  REFS1	CLRA			'X' POSITION
+2AB2  97 02               1565  	STA	HORZ		ZERO HORIZONTAL
+2AB4  BD 2B 9E            1566  	JSR	GOTOXY		MOVE CURSOR
+2AB7  A6 C4               1567  	LDA	,U		GET TEXT CHAR
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 28
+
+2AB9  2B 09               1568  	BMI	REFS2		END OF FILE
+2ABB  8D 1E               1569  	BSR	REFLIN		DISPLAY LINE
+2ABD  5C                  1570  	INCB			ADVANCE COUNT
+2ABE  C1 17               1571  	CMPB	#LINES-1	ARE WE OVER?
+2AC0  24 10               1572  	BHS	REFS3		YES, WE ARE
+2AC2  20 ED               1573  	BRA	REFS1		AND PROCEED
+2AC4                      1574  * END OF FILE ENCOUNTERED
+2AC4  BD 2B 7B            1575  REFS2	JSR	WSO		SPECIAL EFFECTS
+2AC7  3F                  1576  	SWI			SOFTWARE INTERRUPT TO DOS
+2AC8  18                  1577  	FCB	24		SYSTEM REQUEST NUMBER
+2AC9  2A 45 4F 46 2A 00   1578  	FCCZ	'*EOF*'
+2ACF  BD 2B 7F            1579  	JSR	WSE		RESET SPECIAL
+2AD2  BD 2B 73            1580  REFS3	JSR	WCD		CLEAR END OF SCREEN
+2AD5  35 02               1581  	PULS	A		RESTORE HORZ
+2AD7  97 02               1582  	STA	HORZ		RE-SAVE IT
+2AD9  35 C6               1583  	PULS	A,B,U,PC	RESTORE & RETURN
+2ADB                      1584  *
+2ADB                      1585  * REFRESH LINE:
+2ADB                      1586  * ENTRY: U = PTR LINE TO DISPLAY
+2ADB                      1587  * EXIT:  U = PTR TO NEXT LINE
+2ADB                      1588  *
+2ADB  96 03               1589  REFLIN	LDA	OFFSET		GET SCREEN OFFSET
+2ADD  8B 50               1590  	ADDA	#COLS		CALCULATE LAST POSITION
+2ADF  97 1E               1591  	STA	TEMP+1		SAVE FOR LATER
+2AE1                      1592  * DISPLAY TAGGED LINES IN SPECIAL VIDEO
+2AE1  11 93 11            1593  	CMPU	TAG		ARE WE IN TAG RANGE?
+2AE4  25 0A               1594  	BLO	REFL0A		NO, ITS OK
+2AE6  11 93 13            1595  	CMPU	TAG1		STILL IN TAG RANGE?
+2AE9  22 05               1596  	BHI	REFL0A		NO, ITS OK
+2AEB  0A 06               1597  	DEC	VIDEO		SET VIDEO FLAG
+2AED  BD 2B 7B            1598  	JSR	WSO		DISPLAY TAGG INFO
+2AF0                      1599  * SKIP ANY DATA WHICH PRECEEDS THE HORIZONTAL SCROLLING WINDOW
+2AF0  96 02               1600  REFL0A	LDA	HORZ		GET 'X' POSITION
+2AF2  91 03               1601  	CMPA	OFFSET		ARE WE LOWER?
+2AF4  24 14               1602  	BHS	REFL1		NO, EXIT
+2AF6  A6 C4               1603  	LDA	,U		GET CHAR
+2AF8  2B 40               1604  	BMI	REFL2A		END OF FILE
+2AFA  81 0D               1605  	CMPA	#NL		NEW LINE?
+2AFC  27 3C               1606  	BEQ	REFL2A		EXIT
+2AFE  33 41               1607  	LEAU	1,U		ADVANCE
+2B00  0C 02               1608  	INC	HORZ		ADVANCE HORZ
+2B02  81 09               1609  	CMPA	#TAB		IS IT A TAB?
+2B04  26 EA               1610  	BNE	REFL0A		NO, ALL IS OK
+2B06  8D 93               1611  	BSR	SKPTAB		SKIP TO NEXT TAB STOP
+2B08  20 E6               1612  	BRA	REFL0A		AND PROCEED
+2B0A                      1613  * DISPLAY ANY DATA WHICH IS WITHIN THE HORIZONTAL SCROLLING WINDOW
+2B0A  96 02               1614  REFL1	LDA	HORZ		GET 'X' POSITION
+2B0C  91 1E               1615  	CMPA	TEMP+1		ARE WE OVER?
+2B0E  24 2C               1616  	BHS	REFL3		YES, EXIT
+2B10  A6 C4               1617  	LDA	,U		GET CHAR
+2B12  2B 26               1618  	BMI	REFL2A		END OF FILE (NO EOL)
+2B14  81 0D               1619  	CMPA	#NL		NEW LINE CHAR?
+2B16  27 16               1620  	BEQ	REFL2		YES, EXIT
+2B18  33 41               1621  	LEAU	1,U		ADVANCE IT
+2B1A  81 09               1622  	CMPA	#TAB		IS IT A TAB?
+2B1C  27 04               1623  	BEQ	REFL1A		YES, HANDLE IT
+2B1E  8D 2F               1624  	BSR	WRCHR		DISPLAY THE CHARACTER
+2B20  20 E8               1625  	BRA	REFL1		AND PROCEED
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 29
+
+2B22                      1626  * TAB CHAR, ADVANCE TO TAB STOP
+2B22  3F                  1627  REFL1A	SWI			SOFTWARE INTERRUPT TO DOS
+2B23  15                  1628  	FCB	21		SYSTEM REQUEST NUMBER
+2B24  0C 02               1629  	INC	HORZ		ADVANCE POSITION
+2B26  96 02               1630  	LDA	HORZ		GET POSITION
+2B28  85 07               1631  	BITA	#%00000111	AT TAB STOP?
+2B2A  26 F6               1632  	BNE	REFL1A		NO, PROCEED
+2B2C  20 DC               1633  	BRA	REFL1		AND PROCEED
+2B2E                      1634  * END OF LINE, PRINT EOL CHAR IF ENABLED, AND CLEAR REMINDER
+2B2E  0D 08               1635  REFL2	TST	EOLFLAG		DO WE DISPLAY END OF LINE?
+2B30  2A 08               1636  	BPL	REFL2A		NO, WE DON'T
+2B32  8D 1B               1637  	BSR	WRCHR		DISPLAY END OF LINE
+2B34  96 02               1638  	LDA	HORZ		GET 'X' POSITION
+2B36  91 1E               1639  	CMPA	TEMP+1		ARE WE OVER?
+2B38  24 02               1640  	BHS	REFL3		YES, DON'T CLEAR
+2B3A  8D 3B               1641  REFL2A	BSR	WCE		CLEAR END OF LINE
+2B3C                      1642  * SKIP ANY DATA WHICH FOLLOWS THE HORIZONTAL SCROLLING WINDOW.
+2B3C  A6 C4               1643  REFL3	LDA	,U		GET CHARCTER
+2B3E  2B 06               1644  	BMI	REFL4		EOF, EXIT
+2B40  33 41               1645  	LEAU	1,U		ADVANCE
+2B42  81 0D               1646  	CMPA	#NL		NEWLINE?
+2B44  26 F6               1647  	BNE	REFL3		NO, KEEP LOOKING
+2B46                      1648  * TURN OFF SPECIAL VIDEO
+2B46  96 06               1649  REFL4	LDA	VIDEO		SPECIAL MODE
+2B48  27 04               1650  	BEQ	REFL5		NO, ITS OK
+2B4A  0F 06               1651  	CLR	VIDEO		ZERO FLAG
+2B4C  8D 31               1652  	BSR	WSE		DISABLE SPECIAL EFFECTS
+2B4E  39                  1653  REFL5	RTS
+2B4F                      1654  *
+2B4F                      1655  * WRITE CHARACTER TO OUTPUT DEVICE: A = CHR
+2B4F                      1656  *
+2B4F  34 06               1657  WRCHR	PSHS	A,B		SAVE REGISTERS
+2B51  81 20               1658  	CMPA	#' '		CONTROL CODE
+2B53  24 14               1659  	BHS	WRCH2		NO, ITS OK
+2B55                      1660  * CONTROL CODE TO DISPLAY
+2B55  86 83               1661  	LDA	#SO		SPECIAL EFFECTS ON
+2B57  C6 84               1662  	LDB	#SE		SPECIAL EFFECTS OFF
+2B59  0D 06               1663  	TST	VIDEO		INVERSE MODE?
+2B5B  27 02               1664  	BEQ	WRCH1		NO, ITS OK
+2B5D  1E 89               1665  	EXG	A,B		SWAP MODEM
+2B5F  8D 20               1666  WRCH1	BSR	PUTCHR		SET EFFECTS
+2B61  A6 E4               1667  	LDA	,S		GET CHAR
+2B63  8B 40               1668  	ADDA	#'@'		CONVERT TO DISPLAY
+2B65  8D 1A               1669  	BSR	PUTCHR		DISPLAY
+2B67  1F 98               1670  	TFR	B,A		GET TERMINATE CHAR
+2B69                      1671  * NORMAL CHARACTER TO DISPLAY
+2B69  8D 16               1672  WRCH2	BSR	PUTCHR		OUTPUT CHAR
+2B6B  0C 02               1673  	INC	HORZ		ADVANCE POSITION
+2B6D  35 86               1674  	PULS	A,B,PC		RESTORE & RETURN
+2B6F                      1675  * SPECIAL CHRAACTER OUTPUT ROUTINES
+2B6F  86 80               1676  WCL	LDA	#CL		GET CLEAR SCREEN CHAR
+2B71  20 0E               1677  	BRA	PUTCHR		OUTPUT & RETURN
+2B73  86 82               1678  WCD	LDA	#CD		GET CLEAR TO END CHAR
+2B75  20 0A               1679  	BRA	PUTCHR		OUTPUT & RETURN
+2B77  86 81               1680  WCE	LDA	#CE		GET CLEAR LINE CHAR
+2B79  20 06               1681  	BRA	PUTCHR		OUTPUT & RETURN
+2B7B  86 83               1682  WSO	LDA	#SO		SPECIAL EFFECTS ON
+2B7D  20 02               1683  	BRA	PUTCHR		OUTPUT & RETURN
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 30
+
+2B7F  86 84               1684  WSE	LDA	#SE		SPECIAL EFFECTS OFF
+2B81                      1685  *
+2B81                      1686  * TERMINAL INDEPENDANT SCREEN HANDLING
+2B81                      1687  *
+2B81                      1688  * GOTOXY    - MOVE CURSOR POSITION A='X', B='Y'
+2B81                      1689  * GETKEY    - GET KEY FROM TTY, EXIT: A > $7F = SPECIAL CODE
+2B81                      1690  * PUTCHR    - WRITE CHAR(A), A > 80 = SPECIAL CODE
+2B81                      1691  *
+2B81                      1692  * WRITE A CHARACTER TO THE DISPLAY
+2B81                      1693  *
+2B81  4D                  1694  PUTCHR	TSTA			SPECIAL CASE?
+2B82  2B 03               1695  	BMI	PUTC1		YES, HANDLE IT
+2B84  3F                  1696  	SWI			SOFTWARE INTERRUPT TO DOS
+2B85  21                  1697  	FCB	33		SYSTEM REQUEST NUMBER
+2B86  39                  1698  	RTS
+2B87                      1699  * SPECIAL STRING TO OUTPUT
+2B87  34 12               1700  PUTC1	PSHS	A,X		SAVE REGISTERS
+2B89  48                  1701  	LSLA			X2 FOR TWO BYTE ENTRIES
+2B8A  8E 2D 10            1702  	LDX	#PUTTAB		POINT TO TABLE
+2B8D  AE 86               1703  	LDX	A,X		GET DATA TO WRITE
+2B8F  3F                  1704  	SWI			SOFTWARE INTERRUPT TO DOS
+2B90  17                  1705  	FCB	23		SYSTEM REQUEST NUMBER
+2B91  35 92               1706  	PULS	A,X,PC		RESTORE & RETURN
+2B93                      1707  * MOVE TO LAST LINE OF SCREEN
+2B93  CC 00 17            1708  GOTOLST	LDD	#LINES-1	POINT TO LAST LINE
+2B96  20 06               1709  	BRA	GOTOXY		MOVE THERE
+2B98                      1710  * MOVE TO RELATIVE SCREEN ADDRESS
+2B98  96 02               1711  GOTOXX	LDA	HORZ		GET 'X' POSITION
+2B9A  90 03               1712  	SUBA	OFFSET		CONVERT TO SCREEN POSITION
+2B9C  D6 01               1713  	LDB	CY		GET 'Y' POSITION
+2B9E                      1714  *
+2B9E                      1715  * MOVE CURSOR POSITION
+2B9E                      1716  *
+2B9E  34 16               1717  GOTOXY	PSHS	A,B,X		SAVE CHARS
+2BA0  BE 2D 0E            1718  	LDX	GXYPTR		POINT TO BUFFER
+2BA3  A6 80               1719  GOTOXY1	LDA	,X+		GET CHAR
+2BA5  27 1D               1720  	BEQ	GOTOXY6		END, EXIT
+2BA7  2B 04               1721  	BMI	GOTOXY3		SPECIAL CODE
+2BA9                      1722  * NORMAL CHARACTER, DISPLAY IT
+2BA9  3F                  1723  GOTOXY2	SWI			SOFTWARE INTERRUPT TO DOS
+2BAA  21                  1724  	FCB	33		SYSTEM REQUEST NUMBER
+2BAB  20 F6               1725  	BRA	GOTOXY1		AND PROCEED
+2BAD                      1726  * SPECIAL TRANSLATED (X/Y) CODE
+2BAD  E6 E4               1727  GOTOXY3	LDB	,S		GET 'X' POSITION
+2BAF  85 40               1728  	BITA	#%01000000	IS IT 'X'?
+2BB1  27 02               1729  	BEQ	GOTOXY4		YES, ALL IS OK
+2BB3  E6 61               1730  	LDB	1,S		GET 'Y' POSITION
+2BB5  EB 80               1731  GOTOXY4	ADDB	,X+		INCLUDE OFFSET
+2BB7  85 20               1732  	BITA	#%00100000	DECIMAL?
+2BB9  26 04               1733  	BNE	GOTOXY5		YES, DO DECIMAL
+2BBB  1F 98               1734  	TFR	B,A		GET CHAR
+2BBD  20 EA               1735  	BRA	GOTOXY2		OUTPUT & PROCEED
+2BBF  4F                  1736  GOTOXY5	CLRA			ZERO HIGH
+2BC0  3F                  1737  	SWI			SOFTWARE INTERRUPT TO DOS
+2BC1  1A                  1738  	FCB	26		SYSTEM REQUEST NUMBER
+2BC2  20 DF               1739  	BRA	GOTOXY1		AND PROCEED
+2BC4  35 96               1740  GOTOXY6	PULS	A,B,X,PC	RESTORE & RETURN
+2BC6                      1741  *
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 31
+
+2BC6                      1742  * GET AN INPUT KEY FROM THE TERMINAL
+2BC6                      1743  *
+2BC6  34 54               1744  GETKEY	PSHS	B,X,U		SAVE REGS
+2BC8  CE 2D 1C            1745  GETK1	LDU	#GETKTAB	POINT TO KEY TABLE
+2BCB  C6 80               1746  	LDB	#$80		FIRST FUNCTION CODE
+2BCD  8E 2D 02            1747  GETK2	LDX	#GKBUFF		POINT TO KEY BUFFER
+2BD0  A6 80               1748  GETK3	LDA	,X+		GET CHAR
+2BD2  27 22               1749  	BEQ	GETK6		PARTIAL MATCH
+2BD4  A1 C4               1750  	CMPA	,U		GET CHAR FROM TABLE
+2BD6  26 04               1751  	BNE	GETK4		DOSN'T MATCH
+2BD8  33 41               1752  	LEAU	1,U		ADVANCE
+2BDA  20 F4               1753  	BRA	GETK3		KEEP LOOKING
+2BDC                      1754  * CHAR DID NOT MATCH, ADVANCE TO NEXT
+2BDC  A6 C0               1755  GETK4	LDA	,U+		GET CHAR
+2BDE  26 FC               1756  	BNE	GETK4		KEEP LOOKING
+2BE0  5C                  1757  	INCB			ADVANCE FUNCTION CODE
+2BE1  A6 C4               1758  	LDA	,U		END OF TABLE?
+2BE3  26 E8               1759  	BNE	GETK2		NO, KEEP LOOKING
+2BE5                      1760  * HIT END OF TABLE, NO MATCHES
+2BE5                      1761  * REMOVE AND RETURN ONE CHAR FROM THE INPUT
+2BE5  8E 2D 02            1762  	LDX	#GKBUFF		POINT TO BUFFER
+2BE8  A6 80               1763  	LDA	,X+		GET CHAR
+2BEA  27 0E               1764  	BEQ	GETK8		NONE, GET A KEY
+2BEC  E6 80               1765  GETK5	LDB	,X+		GET NEXT CHAR
+2BEE  E7 1E               1766  	STB	-2,X		WRITE IT
+2BF0  26 FA               1767  	BNE	GETK5		DO THEM ALL
+2BF2  84 7F               1768  	ANDA	#%01111111	INSURE NO HIGH BUT
+2BF4  35 D4               1769  	PULS	B,X,U,PC	RETURN WITH CHAR
+2BF6                      1770  * HIT END OF STRING WITH ALL MATCHES
+2BF6  A6 C4               1771  GETK6	LDA	,U		END OF STRING?
+2BF8  27 08               1772  	BEQ	GETK7		YES, WE HAVE IT
+2BFA  3F                  1773  GETK8	SWI			SOFTWARE INTERRUPT TO DOS
+2BFB  22                  1774  	FCB	34		SYSTEM REQUEST NUMBER
+2BFC  A7 1F               1775  	STA	-1,X		WRITE INTO STRING
+2BFE  6F 84               1776  	CLR	,X		ZERO END
+2C00  20 C6               1777  	BRA	GETK1		RETEST FOR MATCHES
+2C02                      1778  * WE FOUND AN INPUT STRING
+2C02  1F 98               1779  GETK7	TFR	B,A		GET CHAR
+2C04  7F 2D 02            1780  	CLR	>GKBUFF		ZERO BUFFER
+2C07  35 D4               1781  	PULS	B,X,U,PC	RESTORE & RETURN
+2C09                      1782  *
+2C09                      1783  * INFORMATIONAL AND ERROR MESSAGES
+2C09                      1784  *
+2C09  49 6E 76 61 6C 69 + 1785  UNKMSG	FCCZ	'Invalid key'
+2C15  55 6E 6B 6E 6F 77 + 1786  UNCMSG	FCCZ	'Unknown command'
+2C25  49 6E 76 61 6C 69 + 1787  INVSER	FCCZ	'Invalid search string'
+2C3B  49 6E 76 61 6C 69 + 1788  INVDEST	FCCZ	'Invalid destination'
+2C4F  4E 6F 20 74 61 67 + 1789  NOTAGG	FCCZ	'No tagged lines'
+2C5F  4E 6F 74 20 66 6F + 1790  NOTFND	FCCZ	'Not found'
+2C69  4F 75 74 20 6F 66 + 1791  INEMSG	FCC	'Out of memory - Changes lost'
+2C85  07                  1792  	FCB	7
+2C86  00                  1793  NULLMSG	FCB	0
+2C87  4E 65 77 20 66 69 + 1794  NEWMSG	FCCZ	'New file'
+2C90  49 6E 73 65 72 74 + 1795  INSMSG	FCCZ	'Insert'
+2C97  4F 76 65 72 77 72 + 1796  OVWMSG	FCCZ	'Overwrite'
+2CA1  55 6E 73 61 76 65 + 1797  FCHMSG	FCCZ	"Unsaved changes, use 'qq' to quit anyway"
+2CCA                      1798  * SCREEN MODE COMMAND KEY TABLE
+2CCA  28 75               1799  CMDTAB	FDB	BACKLIN		UP ARROW
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 32
+
+2CCC  27 F8               1800  	FDB	FWDLIN		DOWN ARROW
+2CCE  27 ED               1801  	FDB	FWDCHR		RIGHT ARROW
+2CD0  28 6D               1802  	FDB	BACKCHR		LEFT ARROW
+2CD2  28 C8               1803  	FDB	BACKPAG		PAGE UP
+2CD4  28 29               1804  	FDB	FWDPAG		PAGE DOWN
+2CD6  27 E2               1805  	FDB	CUREOL		PAGE RIGHT
+2CD8  28 66               1806  	FDB	CURSOL		PAGE LEFT
+2CDA  27 7D               1807  	FDB	HOME		HOME
+2CDC  28 BC               1808  	FDB	FEND		END
+2CDE  27 0F               1809  	FDB	DELCHR		DELETE CHARACTER
+2CE0  27 04               1810  	FDB	DELPRE		DELETE PREVIOUS CHAR
+2CE2  26 9D               1811  	FDB	REDRAW		REDRAW SCREEN
+2CE4                      1812  * FUNCTION KEYS
+2CE4  21 06               1813  	FDB	ECMD		1 EXECUTE COMMAND
+2CE6  21 1D               1814  	FDB	RCMD		2 REPEAT LAST COMMAND
+2CE8  26 A2               1815  	FDB	TOGINS		3 TOGGLE INSERT MORE
+2CEA  26 9B               1816  	FDB	TOGEOL		4 TOGGLE END OF LINE DISPLAY
+2CEC  26 AF               1817  	FDB	DISCUR		5 DISPLAY CURSOR
+2CEE  27 83               1818  	FDB	CURTOP		6 CURRENT LINE TO TOP
+2CF0  27 8F               1819  	FDB	TAGLIN		7 TAG LINE(S)
+2CF2  27 2E               1820  	FDB	DELLIN		8 DELETE LINE
+2CF4  27 48               1821  	FDB	DELEOL		9 DELETE TO END OF LINE
+2CF6  27 71               1822  	FDB	INSDEL		10 INSERT DELETED LINE
+2CF8  27 BE               1823  	FDB	WRDRT		11 WORD RIGHT
+2CFA  28 49               1824  	FDB	WRDLT		12 WORD LEFT
+2CFC  26 95               1825  	FDB	UNKEY		13 UNKNOWN KEY
+2CFE  26 95               1826  	FDB	UNKEY		14 UNKNOWN KEY
+2D00  26 95               1827  	FDB	UNKEY		15 UNKNOWN KEY
+2D02                      1828  *
+2D02                      1829  * DATA AREAS
+2D02                      1830  *
+2D02  00 00 00 00 00      1831  GKBUFF	FCB	0,0,0,0,0	INPUT BUFFER
+2D07  00 00 00 00 00      1832  	FCB	0,0,0,0,0	FOR GET KEY
+2D0C                      1833  *
+2D0C                      1834  * OUTPUT TRANSLATION TABLES
+2D0C                      1835  *
+2D0C                      1836  * OUTPUT TRANSLATION TABLES
+2D0C  2D 1C               1837  ISTPTR	FDB	GETKTAB		INITIALIZATION STRING
+2D0E  2D 1C               1838  GXYPTR	FDB	GETKTAB		GOTO X-Y HANDLER
+2D10  2D 1C               1839  PUTTAB	FDB	GETKTAB		CLEAR SCREEN
+2D12  2D 1C               1840  	FDB	GETKTAB		CLEAR END OF LINE
+2D14  2D 1C               1841  	FDB	GETKTAB		CLEAR END OF DISPLAY
+2D16  2D 1C               1842  	FDB	GETKTAB		SPECIAL EFFECTS ON
+2D18  2D 1C               1843  	FDB	GETKTAB		SPECIAL EFFECTS OFF
+2D1A  2D 1C               1844  	FDB	GETKTAB		SCROLL FORWARD
+2D1C                      1845  * STANDARD TERMINAL KEYS INPUT LOOKUP TABLE
+2D1C  00                  1846  GETKTAB	FCB	0
+2D1D                      1847  *
+2E00                      1848  	ORG	*+$100&$FF00
+2E00                      1849  *
+2E00                      1850  * DATA AREA
+2E00                      1851  *
+2E00  00                  1852  CX	FCB	0		CURSOR 'X' POSITION
+2E01  00                  1853  CY	FCB	0		CURSOR 'Y' POSITION
+2E02  00                  1854  HORZ	FCB	0		ACTUAL HORIZONTAL POSITION
+2E03  00                  1855  OFFSET	FCB	0		OFFSET FRO START OF LINE
+2E04  00                  1856  REFLAG	FCB	0		REFRESH REQUIRED FLAG
+2E05  FF                  1857  WINDOW	FCB	-1		WINDOW MODE FLAG
+DUNFIELD 6809 ASSEMBLER: EDT SCREEN EDITOR                            PAGE: 33
+
+2E06  00                  1858  VIDEO	FCB	0		VIDEO MODE FLAG
+2E07  FF                  1859  INSFLAG	FCB	-1		INSERT/OVERWITE FLAG
+2E08  00                  1860  EOLFLAG	FCB	0		END OF LINE DISPLAY FLAG
+2E09  00                  1861  CHANGE	FCB	0		LINE CHANGED FLAG
+2E0A  00                  1862  FCHANGE	FCB	0		FILE CHANGED FLAG
+2E0B  00                  1863  EDTLEN	FCB	0		LENGTH OF EDIT BUFFER
+2E0C  00                  1864  DELLEN	FCB	0		LENGTH OF DELETE BUFFER
+2E0D  30 98               1865  SCRTOP	FDB	T_BUFF		ADDRESS OF TOP OF SCREEN
+2E0F  30 98               1866  TXTPOS	FDB	T_BUFF		ADDRESS OF START OF LINE
+2E11  00 00               1867  TAG	FDB	0		START OF TAGGED RANGE
+2E13  00 00               1868  TAG1	FDB	0		END OF TAGGED RANGE
+2E15  00 00               1869  START	FDB	0		STARTING COMMAND RANGE
+2E17  00 00               1870  END	FDB	0		ENDING COMMAND RANGE
+2E19  00 00               1871  NEWPOS	FDB	0		NEW POSITION TO MOVE TO
+2E1B  00 00               1872  ERRMSG	FDB	0		ERROR MESSAGE
+2E1D                      1873  TEMP	RMB	4		TEMPORARY STORAGE
+2E21                      1874  NAMBUF	RMB	25		SAVED FILENAME
+2E3A                      1875  COMMAND	RMB	50		COMMAND BUFFER
+2E6C                      1876  E_BUFF	RMB	256		LINE EDIT BUFFER
+2F6C                      1877  D_BUFF	RMB	300		DELETE BUFFER & STACK
+3098                      1878  STACK	EQU	*		LOCATION OF STACK
+3098                      1879  T_BUFF	EQU	*		TEXT FILE STORAGE

@@ -1,0 +1,785 @@
+DUNFIELD 6809 ASSEMBLER: D:EDIT                                       PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         9  *
+0000                        10  * EDIT: A line oriented text editor
+0000                        11  *
+0000                        12  * Copyright 1983-2005 Dave Dunfield
+0000                        13  * All rights reserved.
+0000                        14  *
+2000                        15  	ORG	OSRAM		DOS APPLICATION SPACE
+2000                        16  *
+2600                        17  RAM	EQU	OSRAM+$600	START OF AVAILABLE RAM, COMMAND BUFFER
+2680                        18  EDBUF	EQU	RAM+128		EDIT BUFFER
+2700                        19  SERBUF	EQU	EDBUF+128	SERIAL BUFFER
+290A                        20  TEMP	EQU	SERBUF+522	TEMPORARY STORAGE
+290C                        21  TEMP1	EQU	TEMP+2		TEMPORARY STORAGE
+290E                        22  SAVPTR	EQU	TEMP1+2		SAVED FILE POSITION (FOR :S AND :R)
+2910                        23  FILNAM	EQU	SAVPTR+2	SAVED FILENAME
+2929                        24  AUTSTR	EQU	FILNAM+25	STRING FOR AUTOMATIC COMMAND
+2A00                        25  STACK	EQU	RAM+1024	EDITOR STACK
+2A00                        26  TEXT	EQU	STACK		RAM TEXT AREA
+2000                        27  *
+2000  81 3F                 28  EDIT	CMPA	#'?'		HELP COMMAND
+2002  26 30                 29  	BNE	QUAL		NO, LOOK FOR QUALIFIERS
+2004  3F                    30  	SWI			SOFTWARE INTERRUPT TO DOS
+2005  19                    31  	FCB	25		SYSTEM REQUEST NUMBER
+2006  55 73 65 3A 20 45 +   32  	FCCZ	'Use: EDIT[/BATCH/QUIET] <file> [<cmd file>]'
+2032  3F                    33  	SWI			SOFTWARE INTERRUPT TO DOS
+2033  00                    34  	FCB	0		SYSTEM REQUEST NUMBER
+2034  A6 A4                 35  QUAL	LDA	,Y		GET CHARACTER FROM OPERAND
+2036  81 2F                 36  	CMPA	#'/'		QUALIFIER?
+2038  26 3B                 37  	BNE	MAIN		NO, CONTINUE
+203A  8E 25 E0              38  	LDX	#QTABLE		POINT TO QUALIFIER TABLE
+203D  3F                    39  	SWI			SOFTWARE INTERRUPT TO DOS
+203E  12                    40  	FCB	18		SYSTEM REQUEST NUMBER
+203F  C1 02                 41  	CMPB	#QMAX		IS IT VALID?
+2041  24 07                 42  	BHS	QERR		NO, GET UPSET
+2043  8E 25 EF              43  	LDX	#FCMD		POINT TO FLAG COMMAND SPACE
+2046  6F 85                 44  	CLR	B,X		SET THIS FLAG
+2048  20 EA                 45  	BRA	QUAL		CONTINUE
+204A                        46  * QUALIFIER WAS NOT FOUND
+204A  3F                    47  QERR	SWI			SOFTWARE INTERRUPT TO DOS
+204B  18                    48  	FCB	24		SYSTEM REQUEST NUMBER
+204C  49 6E 76 61 6C 69 +   49  	FCCZ	/Invalid Qualifier: '/
+2061  A6 A0                 50  	LDA	,Y+		GET CHAR
+2063  3F                    51  DSQU1	SWI			SOFTWARE INTERRUPT TO DOS
+2064  21                    52  	FCB	33		SYSTEM REQUEST NUMBER
+2065  3F                    53  	SWI			SOFTWARE INTERRUPT TO DOS
+2066  05                    54  	FCB	5		SYSTEM REQUEST NUMBER
+2067  27 04                 55  	BEQ	GOABO		YES, EXIT
+2069  81 2F                 56  	CMPA	#'/'		NEXT QUALIFIER?
+206B  26 F6                 57  	BNE	DSQU1		NO, CONTINUE
+206D  3F                    58  GOABO	SWI			SOFTWARE INTERRUPT TO DOS
+206E  19                    59  	FCB	25		SYSTEM REQUEST NUMBER
+DUNFIELD 6809 ASSEMBLER: CUBIX LINE EDITOR                            PAGE: 2
+
+206F  27 00                 60  	FCB	$27,0		QUOTE, LF, CR
+2071  86 01                 61  	LDA	#1		RETURN CODE = 1
+2073  3F                    62  	SWI			SOFTWARE INTERRUPT TO DOS
+2074  00                    63  	FCB	0		SYSTEM REQUEST NUMBER
+2075                        64  * CONTINUE WITH EDITOR
+2075  34 20                 65  MAIN	PSHS	Y		SAVE POINTER TO FILENAME
+2077  8E 29 10              66  	LDX	#FILNAM		POINT TO SAVED NAME
+207A  A6 A0                 67  EDI1	LDA	,Y+		GET CHAR FROM PARAMETER LINE
+207C  A7 80                 68  	STA	,X+		SAVE IN SAVED FILENAME
+207E  27 08                 69  	BEQ	EDI2		ZERO EXITS
+2080  81 20                 70  	CMPA	#' '		SO DUZ SPACE
+2082  27 04                 71  	BEQ	EDI2		EXIT
+2084  81 0D                 72  	CMPA	#$0D		END OF FILE?
+2086  26 F2                 73  	BNE	EDI1		NO, KEEP SAVEING
+2088  35 20                 74  EDI2	PULS	Y		RESTORE FILENAME POINTER
+208A  3F                    75  	SWI			SOFTWARE INTERRUPT TO DOS
+208B  0A                    76  	FCB	10		SYSTEM REQUEST NUMBER
+208C  26 70                 77  	BNE	ABORT		INVALID, GET UPSET
+208E  3F                    78  	SWI			SOFTWARE INTERRUPT TO DOS
+208F  44                    79  	FCB	68		SYSTEM REQUEST NUMBER
+2090  27 18                 80  	BEQ	FILEXI		IF SO, IT EXISTS
+2092  86 FF                 81  	LDA	#$FF		END OF FILE MARKER
+2094  B7 2A 00              82  	STA	TEXT		CLEAR THE FILE
+2097  7D 25 F0              83  	TST	QCMD		QUIET?
+209A  27 15                 84  	BEQ	GOEDIT		YES, DON'T DISPLAY MESSAGE
+209C  3F                    85  	SWI			SOFTWARE INTERRUPT TO DOS
+209D  19                    86  	FCB	25		SYSTEM REQUEST NUMBER
+209E  4E 45 57 20 46 49 +   87  	FCCZ	'NEW FILE:'
+20A8  20 07                 88  	BRA	GOEDIT		GET COMMAND
+20AA  8E 2A 00              89  FILEXI	LDX	#TEXT		POINT TO TEXT BUFFER
+20AD  3F                    90  	SWI			SOFTWARE INTERRUPT TO DOS
+20AE  35                    91  	FCB	53		SYSTEM REQUEST NUMBER
+20AF  26 4D                 92  	BNE	ABORT		FAILED, GIVE UP
+20B1  7D 25 EF              93  GOEDIT	TST	FCMD		IS FILE INPUT?
+20B4  26 09                 94  	BNE	GOED1		NO, SKIP IT
+20B6  3F                    95  	SWI			SOFTWARE INTERRUPT TO DOS
+20B7  0A                    96  	FCB	10		SYSTEM REQUEST NUMBER
+20B8  26 44                 97  	BNE	ABORT		UPSET
+20BA  17 04 F6              98  	LBSR	OPENR		OPEN INPUT FILE
+20BD  26 3F                 99  	BNE	ABORT		ERROR, EXIT
+20BF  CE 2A 00             100  GOED1	LDU	#TEXT		LOOK FOR TEXT
+20C2  FF 29 0E             101  	STU	SAVPTR		SAVE FOR LATER
+20C5  86 0D                102  	LDA	#$0D		GET CR
+20C7  B7 29 29             103  	STA	AUTSTR		INIT AUTO COMMAND STRING
+20CA  7D 25 F0             104  EDMSG	TST	QCMD		QUIET?
+20CD  27 08                105  	BEQ	GOCMD		NO OUTPUT
+20CF  3F                   106  	SWI			SOFTWARE INTERRUPT TO DOS
+20D0  19                   107  	FCB	25		SYSTEM REQUEST NUMBER
+20D1  45 44 49 54 3A 00    108  	FCCZ	'EDIT:'
+20D7  10 CE 2A 00          109  GOCMD	LDS	#STACK		POINT TO STACK
+20DB  17 04 42             110  	LBSR	GETLIN		GET A LINE
+20DE  3F                   111  	SWI			SOFTWARE INTERRUPT TO DOS
+20DF  04                   112  	FCB	4		SYSTEM REQUEST NUMBER
+20E0  26 05                113  	BNE	COM1		NO, TRY PRINT
+20E2  17 03 F5             114  GODISP	LBSR	DSPLIN		DISPLAY IT
+20E5  20 F0                115  	BRA	GOCMD		AND AGAIN
+20E7                       116  * LOOK FOR COMMAND
+20E7  A6 A0                117  COM1	LDA	,Y+		GET COMMAND
+DUNFIELD 6809 ASSEMBLER: CUBIX LINE EDITOR                            PAGE: 3
+
+20E9  81 61                118  	CMPA	#$61		LOWER CASE?
+20EB  25 02                119  	BLO	NOCP		NO, ITS OK
+20ED  84 5F                120  	ANDA	#$5F		CONVERT TO UPPER
+20EF  E6 A4                121  NOCP	LDB	,Y		GET NEXT CHAR
+20F1  C4 5F                122  	ANDB	#$5F		CONVERT TO UPPER
+20F3                       123  * 'QUIT' COMMAND
+20F3  81 51                124  	CMPA	#'Q'		QUIT?
+20F5  26 09                125  	BNE	PRINT		NO, TRY NEXT
+20F7  C1 55                126  	CMPB	#'U'		REQUIRE AT LEAST 'QU'
+20F9  10 26 03 5B          127  	LBNE	UNCMDB		GET UPSET
+20FD  4F                   128  	CLRA			ZERO RETURN CODE
+20FE  3F                   129  ABORT	SWI			SOFTWARE INTERRUPT TO DOS
+20FF  00                   130  	FCB	0		SYSTEM REQUEST NUMBER
+2100                       131  * 'PRINT' COMMAND
+2100  81 50                132  PRINT	CMPA	#'P'		IS IT PRINT?
+2102  26 15                133  	BNE	COM2		NO, TRY NEXT
+2104  17 04 00             134  	LBSR	GETOP1		GET OPERAND
+2107  FF 29 0A             135  PR1	STU	TEMP		SAVE FOR LATER
+210A  6D C4                136  	TST	,U		AT END OF FILE?
+210C  2B 1C                137  	BMI	EOF		YES, REPORT
+210E  17 03 CF             138  	LBSR	DSPADV		DISPLAY AND ADVANCE
+2111  5A                   139  	DECB			REDUCE COUNT
+2112  26 F3                140  	BNE	PR1		CONTINUE
+2114  FE 29 0A             141  	LDU	TEMP		BACKUP TO LAST LINE
+2117  20 BE                142  	BRA	GOCMD		BACK FOR NEXT COMMAND. 
+2119                       143  * 'NEXT' COMMAND
+2119  81 4E                144  COM2	CMPA	#'N'		IS IT 'NEXT'
+211B  26 22                145  	BNE	COM3		NO, TRY NEXT
+211D  17 03 E7             146  	LBSR	GETOP1		GET OPERAND
+2120  17 03 91             147  NEX1	LBSR	ADVLIN		ADVANCE
+2123  2B 05                148  	BMI	EOF		REPORT EOF
+2125  5A                   149  	DECB			REDUCE COUNT
+2126  26 F8                150  	BNE	NEX1		CONTINUE
+2128  20 B8                151  	BRA	GODISP		NEXT COMMAND
+212A                       152  * END OF FILE WAS FOUND
+212A  17 03 CD             153  EOF	LBSR	DSPEOF		DISPLAY END OF FILE
+212D  20 A8                154  	BRA	GOCMD		NEXT COMMAND
+212F  7D 25 F0             155  TOF	TST	QCMD		QUIET MODE?
+2132  27 A3                156  	BEQ	GOCMD		YES, DON'T DISPLAY
+2134  3F                   157  	SWI			SOFTWARE INTERRUPT TO DOS
+2135  18                   158  	FCB	24		SYSTEM REQUEST NUMBER
+2136  54 4F 46 3A 00       159  	FCCZ	'TOF:'
+213B  3F                   160  GOLFCR	SWI			SOFTWARE INTERRUPT TO DOS
+213C  16                   161  	FCB	22		SYSTEM REQUEST NUMBER
+213D  20 98                162  	BRA	GOCMD
+213F                       163  * 'UP' COMMAND
+213F  81 55                164  COM3	CMPA	#'U'		WAS IT UP?
+2141  26 0E                165  	BNE	COM4		NO, TRY NEXT
+2143  17 03 C1             166  	LBSR	GETOP1		GET OPERAND
+2146  17 03 78             167  UP1	LBSR	BAKLIN		BACKUP
+2149  26 E4                168  	BNE	TOF		TOP OF FILE
+214B  5A                   169  	DECB			REDUCE COUNT
+214C  26 F8                170  	BNE	UP1		CONTINUE
+214E  16 FF 91             171  	LBRA	GODISP		GO SHO IT
+2151                       172  * INSERT COMMAND
+2151  81 49                173  COM4	CMPA	#'I'		INSERT?
+2153  26 1E                174  	BNE	COM5		NO, TRY DELETE
+2155  7D 25 F0             175  	TST	QCMD		QUIET?
+DUNFIELD 6809 ASSEMBLER: CUBIX LINE EDITOR                            PAGE: 4
+
+2158  27 09                176  	BEQ	INSP
+215A  3F                   177  	SWI			SOFTWARE INTERRUPT TO DOS
+215B  19                   178  	FCB	25		SYSTEM REQUEST NUMBER
+215C  49 4E 50 55 54 3A +  179  	FCCZ	'INPUT:'
+2163  17 03 BA             180  INSP	LBSR	GETLIN		GET A LINE
+2166  A6 A4                181  	LDA	,Y		GET LINE
+2168  81 0D                182  	CMPA	#$0D		NULL (ZERO LENGTH)?
+216A  10 27 FF 5C          183  	LBEQ	EDMSG		IF SO, EXIT
+216E  17 03 0D             184  	LBSR	INSERT		INSERT THE LINE
+2171  20 F0                185  	BRA	INSP		GET NEXT COMMAND
+2173                       186  * BEGINNING OF FILE COMMAND
+2173  81 42                187  COM5	CMPA	#'B'		BEGIN?
+2175  26 0A                188  	BNE	COM6		NO, SKIP IT
+2177  CE 2A 00             189  	LDU	#TEXT		POINT TO BEGINNING
+217A  6D C4                190  	TST	,U		IS IT NULL
+217C  2B B1                191  	BMI	TOF		NO, DISPLAY IT
+217E  16 FF 61             192  	LBRA	GODISP		INDICATE TOP OF FILE
+2181                       193  * END OF FILE COMMAND
+2181  81 45                194  COM6	CMPA	#'E'		GO TO END OF FILE?
+2183  26 0D                195  	BNE	COM7		NO, TRY NEXT
+2185  C1 58                196  	CMPB	#'X'		IS IT EXIT
+2187  10 27 04 05          197  	LBEQ	EXIT
+218B  17 03 21             198  	LBSR	FNDEOF		LOCATE END OF FILE
+218E  33 5F                199  	LEAU	-1,U		BACKUP TO IT
+2190  20 98                200  EOF1	BRA	EOF		INDICATE WE ARE THERE
+2192                       201  * DELETE LINES COMMAND
+2192  81 44                202  COM7	CMPA	#'D'		DELETE?
+2194  26 26                203  	BNE	COM8		NO, TRY NEXT
+2196  C1 45                204  	CMPB	#'E'		IS IT 'DE'?
+2198  10 26 02 BC          205  	LBNE	UNCMDB		NO, COMPLAIN
+219C  31 21                206  	LEAY	1,Y		SKIP 'E'
+219E  17 03 66             207  	LBSR	GETOP1		GET OPERAND
+21A1  34 40                208  	PSHS	U		SAVE POINTER
+21A3  17 03 0E             209  DEL1	LBSR	ADVLIN		ADVANCE A LINE
+21A6  2B 03                210  	BMI	GODEL		GO DELETE IT
+21A8  5A                   211  	DECB			REDUCE COUNT
+21A9  26 F8                212  	BNE	DEL1		GOT FOR IT
+21AB  AE E4                213  GODEL	LDX	,S		GET POINT TO START
+21AD  A6 C0                214  GODEL1	LDA	,U+		GET CHARACTER FROM LINE
+21AF  A7 80                215  	STA	,X+		SAVE
+21B1  2A FA                216  	BPL	GODEL1		SAVE IT ALL
+21B3  35 40                217  	PULS	U		RESTORE POINTER
+21B5  A6 C4                218  EOFTST	LDA	,U		GET STATUS
+21B7  2B D7                219  	BMI	EOF1		INDICATE IF EOF
+21B9  16 FF 1B             220  	LBRA	GOCMD		GET NEXT COMMAND
+21BC                       221  * 'CHANGE' COMMAND
+21BC  81 43                222  COM8	CMPA	#'C'		TEST FOR CHANGE
+21BE  10 26 01 3E          223  	LBNE	LOCATE		NO, TRY NEXT
+21C2  C1 41                224  	CMPB	#'A'		CHANGE ALL?
+21C4  27 08                225  	BEQ	CHA1		IF SO, SKIP IT
+21C6  C1 44                226  	CMPB	#'D'		IS IT CHANGE DISPLAY?
+21C8  27 04                227  	BEQ	CHA1		YES
+21CA  C1 48                228  	CMPB	#'H'		CHANGE LINE?
+21CC  26 02                229  	BNE	CHA		NO, SKIP IT
+21CE  31 21                230  CHA1	LEAY	1,Y		SKIP
+21D0  7F 29 0B             231  CHA	CLR	TEMP+1		INDICATE NO DISPLAY
+21D3  7F 29 0C             232  	CLR	TEMP1
+21D6  7F 29 0D             233  	CLR	TEMP1+1
+DUNFIELD 6809 ASSEMBLER: CUBIX LINE EDITOR                            PAGE: 5
+
+21D9  3F                   234  	SWI			SOFTWARE INTERRUPT TO DOS
+21DA  04                   235  	FCB	4		SYSTEM REQUEST NUMBER
+21DB  10 27 02 8D          236  	LBEQ	BADOPR		NO OPERATOR
+21DF  B7 29 0A             237  	STA	TEMP		SAVE DELIMITER
+21E2  31 21                238  	LEAY	1,Y		SKIP DELIMITER
+21E4  34 40                239  	PSHS	U		SAVE U
+21E6                       240  * TEST FOR CHANGE LINE
+21E6  C1 48                241  	CMPB	#'H'		CHANGE LINE?
+21E8  26 5E                242  	BNE	CHAL		NO, TRY CHANGE ALL
+21EA  17 00 CF             243  	LBSR	DOCHG		DO CHANGE
+21ED  10 26 00 21          244  	LBNE	CNOTR		NOT FOUND
+21F1  FC 29 0C             245  CHL1	LDD	TEMP1
+21F4  C3 00 01             246  	ADDD	#1
+21F7  FD 29 0C             247  	STD	TEMP1
+21FA  17 00 C8             248  	LBSR	DOCH1		DO IT AGAIN
+21FD  27 F2                249  	BEQ	CHL1		CONTINUE
+21FF  EE E4                250  	LDU	,S		RESTORE
+2201  17 02 9C             251  	LBSR	DELETE		DELETE THIS LINE
+2204  10 8E 26 80          252  	LDY	#EDBUF		POINT TO BUFFER
+2208  17 02 73             253  	LBSR	INSERT		INSERT IT
+220B  35 40                254  	PULS	U		RESTORE
+220D  8D 15                255  	BSR	SHOCHG		DISPLAY IT
+220F  16 FE D0             256  	LBRA	GODISP
+2212  35 40                257  CNOTR	PULS	U		RESTORE TEXT POINTER
+2214  3F                   258  CNOTF	SWI			SOFTWARE INTERRUPT TO DOS
+2215  19                   259  	FCB	25		SYSTEM REQUEST NUMBER
+2216  4E 6F 74 20 66 6F +  260  	FCCZ	'Not found.'
+2221  16 FE B3             261  	LBRA	GOCMD
+2224  B6 25 F0             262  SHOCHG	LDA	QCMD
+2227  27 1E                263  	BEQ	SHOR
+2229  FC 29 0C             264  	LDD	TEMP1
+222C  27 E6                265  	BEQ	CNOTF
+222E  3F                   266  	SWI			SOFTWARE INTERRUPT TO DOS
+222F  1A                   267  	FCB	26		SYSTEM REQUEST NUMBER
+2230  3F                   268  	SWI			SOFTWARE INTERRUPT TO DOS
+2231  19                   269  	FCB	25		SYSTEM REQUEST NUMBER
+2232  20 6F 63 63 75 72 +  270  	FCCZ	' occurances changed.'
+2247  39                   271  SHOR	RTS
+2248                       272  * CHANGE ALL OCCURENCES
+2248  C1 41                273  CHAL	CMPB	#'A'		CHANGE FILE?
+224A  27 07                274  	BEQ	GOCHG		YES
+224C  C1 44                275  	CMPB	#'D'		CHANGE DISPLAY?
+224E  26 4C                276  	BNE	CHGF		NO, JUST FIRST OCCURRANCE
+2250  7A 29 0B             277  	DEC	TEMP+1		SET FLAG
+2253  CE 2A 00             278  GOCHG	LDU	#TEXT		POINT TO RAM
+2256  34 40                279  CHAL1	PSHS	U		SAVE IT
+2258  17 00 61             280  	LBSR	DOCHG		PERFORM CHANGE
+225B  26 32                281  	BNE	NEXTL		NOT ON THIS LINE
+225D  FC 29 0C             282  CHAL2	LDD	TEMP1
+2260  C3 00 01             283  	ADDD	#1
+2263  FD 29 0C             284  	STD	TEMP1
+2266  17 00 5C             285  	LBSR	DOCH1
+2269  27 F2                286  	BEQ	CHAL2
+226B  35 40                287  	PULS	U
+226D  34 60                288  	PSHS	Y,U
+226F  17 02 2E             289  	LBSR	DELETE
+2272  10 8E 26 80          290  	LDY	#EDBUF
+2276  17 02 05             291  	LBSR	INSERT
+DUNFIELD 6809 ASSEMBLER: CUBIX LINE EDITOR                            PAGE: 6
+
+2279  35 60                292  	PULS	Y,U
+227B  B6 29 0B             293  	LDA	TEMP+1		TEST FOR CHANGE DISPLAY
+227E  27 05                294  	BEQ	CHAL3		NO, OK
+2280  17 02 5D             295  	LBSR	DSPADV		DSPLAY LINE
+2283  20 0C                296  	BRA	CHAL5		TEST FOR END OF FILE
+2285  A6 C0                297  CHAL3	LDA	,U+
+2287  2B 0C                298  	BMI	CHAL4
+2289  81 0D                299  	CMPA	#$0D
+228B  26 F8                300  	BNE	CHAL3
+228D  20 02                301  	BRA	CHAL5
+228F  32 62                302  NEXTL	LEAS	2,S
+2291  A6 C4                303  CHAL5	LDA	,U
+2293  2A C1                304  	BPL	CHAL1
+2295  35 40                305  CHAL4	PULS	U
+2297  8D 8B                306  	BSR	SHOCHG
+2299  16 FE 3B             307  	LBRA	GOCMD
+229C                       308  * CHANGE FIRST OCCURANCE
+229C  17 00 1D             309  CHGF	LBSR	DOCHG
+229F  10 26 FF 6F          310  	LBNE	CNOTR
+22A3                       311  * COPY REMAINDER OF LINE OVER
+22A3  A6 C0                312  MTC3	LDA	,U+		GET CHARACTER FROM LINE
+22A5  A7 80                313  	STA	,X+		SAVE IN OUTPUT
+22A7  81 0D                314  	CMPA	#$0D		END OF LINE?
+22A9  26 F8                315  	BNE	MTC3		COPY REMAINDER OF LINE OVER
+22AB  EE E4                316  	LDU	,S		GET TEXT POINTER
+22AD  17 01 F0             317  	LBSR	DELETE		DELETE THIS LINE
+22B0  10 8E 26 80          318  	LDY	#EDBUF		POINT TO EDIT BUFFER
+22B4  17 01 C7             319  	LBSR	INSERT		PUT IT IN
+22B7  35 40                320  	PULS	U
+22B9  16 FE 26             321  	LBRA	GODISP
+22BC                       322  * PERFORM CHANGE TO TEXT, ON ENTRY, Y POINTS TO CHANGE COMMAND OPERANDS
+22BC                       323  * ON EXIT, Z FLAG IS SET IT CHANGE WAS FOUND, AND U POINTS TO REMAINDER
+22BC                       324  * OF LINE, OTHERWISE, U POINTS TO START OF NEXT LINE
+22BC  8E 26 80             325  DOCHG	LDX	#EDBUF		POINT TO EDITING BUFFER
+22BF  A6 C4                326  	LDA	,U		CHECK POSITION
+22C1  10 2B FE 65          327  	LBMI	EOF		WE ARE AT END OF TEXT
+22C5                       328  DOCH1	EQU	*
+22C5  34 70                329  MTCH1	PSHS	X,Y,U		SAVE POINTERS
+22C7  A6 A0                330  MTCH	LDA	,Y+		GET CHARACTER
+22C9  B1 29 0A             331  	CMPA	TEMP		IS IT DELIMITER?
+22CC  27 1C                332  	BEQ	MTCF		WE FOUND IT
+22CE  A6 C0                333  	LDA	,U+		GET CHAR FROM BUFFER
+22D0  A7 80                334  	STA	,X+		SAVE IN EDIT BUFFER
+22D2  81 0D                335  	CMPA	#$0D		DID WE HIT END
+22D4  27 0C                336  	BEQ	MTNOTF		NOT FOUND
+22D6  A1 3F                337  	CMPA	-1,Y		DOES IT MATCH US
+22D8  27 ED                338  	BEQ	MTCH		WE FOUND
+22DA  35 70                339  	PULS	X,Y,U		RESTORE REGS
+22DC  30 01                340  	LEAX	1,X		ADVANCE IN BUFFER
+22DE  33 41                341  	LEAU	1,U		ADVANCE IN TEXT
+22E0  20 E3                342  	BRA	MTCH1		NOT FOUND
+22E2  10 AE 62             343  MTNOTF	LDY	2,S		RESTORE
+22E5  32 66                344  	LEAS	6,S		SKIP TWO SAVED U'S
+22E7  86 01                345  	LDA	#1		CLEAR Z FLAG
+22E9  39                   346  	RTS
+22EA                       347  * INSERT CHANGE BUFFER CONTENTS
+22EA  AE E1                348  MTCF	LDX	,S++		GET POINTER TO THIS PART
+22EC  A6 A0                349  MTC1	LDA	,Y+		GET CHARACTER FROM LINE
+DUNFIELD 6809 ASSEMBLER: CUBIX LINE EDITOR                            PAGE: 7
+
+22EE  81 0D                350  	CMPA	#$0D		END OF LINE
+22F0  27 09                351  	BEQ	MTC2		INVALID OPERATOR
+22F2  B1 29 0A             352  	CMPA	TEMP		DELIMITER?
+22F5  27 04                353  	BEQ	MTC2		IF SO, QUIT
+22F7  A7 80                354  	STA	,X+		SAVE IN BUFFER
+22F9  20 F1                355  	BRA	MTC1		AND CONTINUE
+22FB  35 20                356  MTC2	PULS	Y		RESTORE Y
+22FD  32 62                357  	LEAS	2,S		SKIP SAVED U
+22FF  39                   358  	RTS
+2300                       359  * LOCATE COMMAND
+2300  81 2F                360  LOCATE	CMPA	#'/'		LOCATE?
+2302  26 2D                361  	BNE	REPEAT		NO, SKIP IT
+2304  17 01 AD             362  LOC1	LBSR	ADVLIN		ADVANCE A LINE
+2307  10 2B FE 1F          363  	LBMI	EOF		INDICATE WE HIT THE END
+230B  34 60                364  LOC2	PSHS	Y,U		SAVE POINTERS
+230D  A6 C4                365  LOC3	LDA	,U		GET CHARACTER FROM BUFFER
+230F  2B 10                366  	BMI	HITEOF		FOUND END OF FILE
+2311  A6 A0                367  	LDA	,Y+		DO WE HAVE IT
+2313  81 0D                368  	CMPA	#$0D		END OF LINE
+2315  27 0F                369  	BEQ	FNDIT		IF SO, WE FOUND
+2317  A1 C0                370  	CMPA	,U+		IS THIS IT?
+2319  27 F2                371  	BEQ	LOC3		IF CONTINUES TO MATCH, GO FOR IT
+231B  35 60                372  	PULS	Y,U		RESTORE REGS
+231D  33 41                373  	LEAU	1,U		SKIP TO NEXT
+231F  20 EA                374  	BRA	LOC2		KEEP LOOKING
+2321  33 3F                375  HITEOF	LEAU	-1,Y		BACKUP
+2323  16 FE 04             376  	LBRA	EOF		GET UPSET
+2326  A6 C2                377  FNDIT	LDA	,-U		BACKUP
+2328  81 0D                378  	CMPA	#$0D		LOOK FOR CR
+232A  26 FA                379  	BNE	FNDIT		KEEP LOOKING
+232C  33 41                380  	LEAU	1,U		SKIP AEHEAD
+232E  16 FD B1             381  	LBRA	GODISP
+2331                       382  * REPEAT A LINE
+2331  81 2B                383  REPEAT	CMPA	#'+'		REPEAT?
+2333  26 23                384  	BNE	WRITE		NO, TRY NEXT
+2335  17 01 CF             385  	LBSR	GETOP1		GET OPERAND
+2338  8E 26 80             386  	LDX	#EDBUF		POINT TO EDIT BUFFER
+233B  34 40                387  	PSHS	U		SAVE POINTER
+233D  A6 C0                388  REP1	LDA	,U+		GET CHAR. FROM TEXT
+233F  A7 80                389  	STA	,X+		SAVE IN TEXT
+2341  81 0D                390  	CMPA	#$0D		END?
+2343  26 F8                391  	BNE	REP1		NO, MOVE ENTIRE LINE
+2345  35 40                392  	PULS	U		RESTORE POINTER
+2347  F7 29 0A             393  	STB	TEMP		SAVE FOR LATER
+234A  10 8E 26 80          394  REP2	LDY	#EDBUF		POINT TO BUFFER
+234E  17 01 2D             395  	LBSR	INSERT		PUT IT IN
+2351  7A 29 0A             396  	DEC	TEMP		REDUCE COUNT
+2354  26 F4                397  	BNE	REP2		KEEP AT IT
+2356  20 56                398  	BRA	GOCMD1		GET NEXT COMMAND
+2358                       399  * WRITE FILE TO SEPERATE FILE
+2358  81 57                400  WRITE	CMPA	#'W'		IS IT 'WRITE'?
+235A  26 55                401  	BNE	READ		NO, TRY NEXT
+235C  17 01 A8             402  	LBSR	GETOP1		GET OPERAND
+235F  34 04                403  	PSHS	B		SAVE COUNT
+2361  17 02 17             404  	LBSR	UCASE		CONVERT TO UPPER
+2364  3F                   405  	SWI			SOFTWARE INTERRUPT TO DOS
+2365  0A                   406  	FCB	10		SYSTEM REQUEST NUMBER
+2366  26 46                407  	BNE	GOCMD1		INVALID, QUIT
+DUNFIELD 6809 ASSEMBLER: CUBIX LINE EDITOR                            PAGE: 8
+
+2368  E6 E0                408  	LDB	,S+		RESTORE B
+236A  26 05                409  	BNE	WRLINS		YES
+236C  17 02 2F             410  	LBSR	SAVFIL		SAVE IT
+236F  20 3D                411  	BRA	GOCMD1		QUIT
+2371  17 02 48             412  WRLINS	LBSR	OPENW		OPEN FOR WRITE
+2374  26 38                413  	BNE	GOCMD1		BAD, QUIT
+2376  1F 31                414  	TFR	U,X		COPY POINTER
+2378  10 8E 00 00          415  	LDY	#0		START WITH ZERO
+237C  A6 84                416  WRLI1	LDA	,X		GET CHAR
+237E  2B 10                417  	BMI	WRLI2		IF END, CLOSE IT
+2380  17 02 4B             418  	LBSR	WRITEC		WRITE CHAR
+2383  26 29                419  	BNE	GOCMD1		ERROR, QUIT
+2385  A6 80                420  	LDA	,X+		GET CHAR BACK
+2387  81 0D                421  	CMPA	#$0D		END OF LINE?
+2389  26 F1                422  	BNE	WRLI1		OK
+238B  31 21                423  	LEAY	1,Y		ADVANCE LINE COUNT
+238D  5A                   424  	DECB			REDUCE COUNT
+238E  26 EC                425  	BNE	WRLI1		CONTINUE
+2390  17 02 44             426  WRLI2	LBSR	CLOSE		CLOSE FILE
+2393  7D 25 F0             427  	TST	QCMD		BEING QUIET?
+2396  27 16                428  	BEQ	GOCMD1		IF SO, SAY NOTHING
+2398  1F 20                429  	TFR	Y,D		COPY TO D
+239A  3F                   430  	SWI			SOFTWARE INTERRUPT TO DOS
+239B  1A                   431  	FCB	26		SYSTEM REQUEST NUMBER
+239C  3F                   432  	SWI			SOFTWARE INTERRUPT TO DOS
+239D  19                   433  	FCB	25		SYSTEM REQUEST NUMBER
+239E  20 6C 69 6E 65 73 +  434  	FCCZ	' lines written.'
+23AE  16 FD 26             435  GOCMD1	LBRA	GOCMD		BACK FOR ANOTHER COMMAND
+23B1                       436  * READ ANOTHER FILE INTO THIS ONE
+23B1  81 52                437  READ	CMPA	#'R'		IS IT READ?
+23B3  26 2B                438  	BNE	QUERY		NO, TRY NEXT
+23B5  17 01 C3             439  	LBSR	UCASE		CONVERT TO UPPER
+23B8  3F                   440  	SWI			SOFTWARE INTERRUPT TO DOS
+23B9  0A                   441  	FCB	10		SYSTEM REQUEST NUMBER
+23BA  26 F2                442  	BNE	GOCMD1		INVALID
+23BC  A6 C4                443  	LDA	,U		ARE WE AT EOF?
+23BE  2A 06                444  	BPL	READ1		NO, DO IT HARD WAY
+23C0  1F 31                445  	TFR	U,X		POINT AT END OF FILE
+23C2  3F                   446  	SWI			SOFTWARE INTERRUPT TO DOS
+23C3  35                   447  	FCB	53		SYSTEM REQUEST NUMBER
+23C4  20 E8                448  	BRA	GOCMD1		AND CONTINUE
+23C6  17 01 EA             449  READ1	LBSR	OPENR		OPEN FILE
+23C9  26 E3                450  	BNE	GOCMD1		BAD, QUIT
+23CB  8E 26 00             451  READ2	LDX	#RAM		POINT TO RAM
+23CE  1F 12                452  	TFR	X,Y		COPY FOR LATER INSERT
+23D0  17 01 F2             453  READ3	LBSR	READC		READ A CHAR
+23D3  26 D9                454  	BNE	GOCMD1		END OF LINE
+23D5  A7 80                455  	STA	,X+		SAVE IT
+23D7  81 0D                456  	CMPA	#$0D		TEST FOR END OF LINE
+23D9  26 F5                457  	BNE	READ3		KEEP READING
+23DB  17 00 A0             458  	LBSR	INSERT		INSERT LINE
+23DE  20 EB                459  	BRA	READ2		AND GO AGAIN,
+23E0                       460  * '?' QUERY FILE
+23E0  81 3F                461  QUERY	CMPA	#'?'		IS IT QUERY?
+23E2  26 36                462  	BNE	DOSCMD		NO, TRY NEXT
+23E4  10 8E 2A 00          463  	LDY	#TEXT		POINT TO START
+23E8  8E 00 00             464  	LDX	#0		INDICATE NUMBER OF LINE
+23EB  A6 A0                465  QUE1	LDA	,Y+		
+DUNFIELD 6809 ASSEMBLER: CUBIX LINE EDITOR                            PAGE: 9
+
+23ED  2B 08                466  	BMI	QUE2		GET OUT ON END OF FILE
+23EF  81 0D                467  	CMPA	#$0D		IS IT A NEW LINE
+23F1  26 F8                468  	BNE	QUE1		NO, KEEP LOOKING
+23F3  30 01                469  	LEAX	1,X		ADVANCE
+23F5  20 F4                470  	BRA	QUE1		AND KEEP LOOKING
+23F7  31 3F                471  QUE2	LEAY	-1,Y		BACKUP TO EOF MARKER
+23F9  1F 20                472  	TFR	Y,D		COPY TO D
+23FB  83 2A 00             473  	SUBD	#TEXT		CONVERT TO SIMPLE NUMBER
+23FE  3F                   474  	SWI			SOFTWARE INTERRUPT TO DOS
+23FF  1A                   475  	FCB	26		SYSTEM REQUEST NUMBER
+2400  3F                   476  	SWI			SOFTWARE INTERRUPT TO DOS
+2401  18                   477  	FCB	24		SYSTEM REQUEST NUMBER
+2402  20 62 79 74 65 73 +  478  	FCCZ	' bytes, '
+240B  1F 10                479  	TFR	X,D		COPY NUMBER OF LINES
+240D  3F                   480  	SWI			SOFTWARE INTERRUPT TO DOS
+240E  1A                   481  	FCB	26		SYSTEM REQUEST NUMBER
+240F  3F                   482  	SWI			SOFTWARE INTERRUPT TO DOS
+2410  19                   483  	FCB	25		SYSTEM REQUEST NUMBER
+2411  20 6C 69 6E 65 73 +  484  	FCCZ	' lines'
+2418  20 1E                485  	BRA	GOCMD2		GET NEXT COMMAND
+241A                       486  * EXECUTE DOS COMMAND
+241A  81 2A                487  DOSCMD	CMPA	#'*'		IS IT DOS COMMAND?
+241C  26 0B                488  	BNE	AUTCMD		NO, TRY NEXT
+241E  17 01 5A             489  	LBSR	UCASE		CONVERT TO UPPER CASE
+2421  34 40                490  	PSHS	U		SAVE TEXT POINTER
+2423  3F                   491  	SWI			SOFTWARE INTERRUPT TO DOS
+2424  64                   492  	FCB	100		SYSTEM REQUEST NUMBER
+2425  35 40                493  	PULS	U		RESTORE POINTER
+2427  20 0F                494  	BRA	GOCMD2		BACK FOR NEXT COMMAND
+2429                       495  * SET AUTOMATIC COMMAND
+2429  81 24                496  AUTCMD	CMPA	#'$'		SET AUTO?
+242B  26 0E                497  	BNE	SAVREST		NO, TRY NEXT
+242D  8E 29 29             498  	LDX	#AUTSTR		POINT TO STRING
+2430  A6 A0                499  AUT1	LDA	,Y+		GET STRING
+2432  A7 80                500  	STA	,X+		SAVE
+2434  81 0D                501  	CMPA	#$0D		END OF LINE?
+2436  26 F8                502  	BNE	AUT1		CONTINUE
+2438  16 FC 9C             503  GOCMD2	LBRA	GOCMD		BACK FOR MORE
+243B                       504  * SAVE AND RESTORE
+243B  81 3A                505  SAVREST CMPA	#':'		IS IT COLON COMMAND
+243D  26 1B                506  	BNE	UNCMD		NO, TRY NEXT
+243F  C1 53                507  	CMPB	#'S'		IS IT A SAVE?
+2441  26 06                508  	BNE	REST1		IS IT A REPEAT?
+2443  FF 29 0E             509  	STU	SAVPTR		SAVE IT
+2446  16 FC 8E             510  	LBRA	GOCMD		AND GET NEXT COMMAND
+2449  C1 52                511  REST1	CMPB	#'R'		RESTORE
+244B  26 0B                512  	BNE	UNCMDB		NO, INDICATE WE ARE UPSET
+244D  FE 29 0E             513  	LDU	SAVPTR		POINT TO SAVED LOCATION
+2450  33 41                514  	LEAU	1,U		ADVANCE
+2452  17 00 6E             515  	LBSR	BAK1		POSITION TO START OF LINE
+2455  16 FC 8A             516  	LBRA	GODISP		DISPLAY IT
+2458                       517  * DISPLAY VALUE FROM B ACCUMULATOR AS ERROR MESSAGE
+2458  1F 98                518  UNCMDB	TFR	B,A		COPY
+245A                       519  * COMMAND WAS NOT RECOGNIZED
+245A  3F                   520  UNCMD	SWI			SOFTWARE INTERRUPT TO DOS
+245B  18                   521  	FCB	24		SYSTEM REQUEST NUMBER
+245C  07                   522  	FCB	$07
+245D  3F 45 44 49 54 3A +  523  	FCCZ	'?EDIT: '
+DUNFIELD 6809 ASSEMBLER: CUBIX LINE EDITOR                            PAGE: 10
+
+2465  17 00 8A             524  	LBSR	PUTCHR
+2468  3F                   525  	SWI			SOFTWARE INTERRUPT TO DOS
+2469  16                   526  	FCB	22		SYSTEM REQUEST NUMBER
+246A  20 0F                527  	BRA	GCMD
+246C                       528  * BAD OPERAND
+246C  3F                   529  BADOPR	SWI			SOFTWARE INTERRUPT TO DOS
+246D  19                   530  	FCB	25		SYSTEM REQUEST NUMBER
+246E  42 61 64 20 6F 70 +  531  	FCCZ	'Bad operand.'
+247B  16 FC 59             532  GCMD	LBRA	GOCMD
+247E                       533  *
+247E                       534  * INSERT A LINE(Y) INTO THE TEXT
+247E                       535  *
+247E  5F                   536  INSERT	CLRB			START WITH ZERO
+247F  34 60                537  	PSHS	Y,U		SAVE POINTERS
+2481  A6 A0                538  INS1	LDA	,Y+		GET CHARACTER FROM LINE
+2483  5C                   539  	INCB			ADVANCE COUNTER
+2484  81 0D                540  	CMPA	#$0D		IS IT CR?
+2486  26 F9                541  	BNE	INS1		NO, KEEP LOOKING
+2488  8D 25                542  	BSR	FNDEOF		LOCATE END OF FILE
+248A  30 C5                543  	LEAX	B,U		ADVANCE FOR REST
+248C  A6 C2                544  INS2	LDA	,-U		SKIP BACK
+248E  A7 82                545  	STA	,-X		SAVE BACK
+2490  11 A3 62             546  	CMPU	2,S		ARE WE OVER
+2493  22 F7                547  	BHI	INS2		CONTINUE
+2495  35 60                548  	PULS	Y,U		RESTORE POSITION
+2497  A6 A0                549  INS3	LDA	,Y+		GET CHAR
+2499  A7 C0                550  	STA	,U+		SAVE
+249B  81 0D                551  	CMPA	#$0D		END OF LINE?
+249D  26 F8                552  	BNE	INS3		NO, CONTINUE
+249F  39                   553  	RTS
+24A0                       554  *
+24A0                       555  * DELETE A LINE FROM THE TEXT(U)
+24A0                       556  *
+24A0  34 40                557  DELETE	PSHS	U		SAVE POINTER
+24A2  17 00 0F             558  	LBSR	ADVLIN		ADVANCE A LINE
+24A5  AE E4                559  	LDX	,S		GET POINTER
+24A7  A6 C0                560  DELI1	LDA	,U+		GET CHAR FROM TEXT
+24A9  A7 80                561  	STA	,X+		SAVE IN RAM
+24AB  2A FA                562  	BPL	DELI1		DO IT ALL
+24AD  35 C0                563  	PULS	U,PC		GO HOME
+24AF                       564  *
+24AF                       565  * FINDS END OF FILE
+24AF                       566  *
+24AF  A6 C0                567  FNDEOF	LDA	,U+		GET CHAR FROM FILE
+24B1  2A FC                568  	BPL	FNDEOF		KEEP LOOKING
+24B3  39                   569  	RTS
+24B4                       570  *
+24B4                       571  * ADVANCE A LINE
+24B4                       572  *
+24B4  A6 C0                573  ADVLIN	LDA	,U+		GET CHAR FROM LINE
+24B6  2B 06                574  	BMI	ADVEOF		END OF FILE
+24B8  81 0D                575  	CMPA	#$0D		END OF LINE?
+24BA  26 F8                576  	BNE	ADVLIN		NO, KEEP LOOKING
+24BC  4F                   577  	CLRA			ZERO RET
+24BD  39                   578  	RTS
+24BE  33 5F                579  ADVEOF	LEAU	-1,U		BACKUP
+24C0  39                   580  	RTS
+24C1                       581  *
+DUNFIELD 6809 ASSEMBLER: CUBIX LINE EDITOR                            PAGE: 11
+
+24C1                       582  * BACKUP A LINE
+24C1                       583  *
+24C1  33 5F                584  BAKLIN	LEAU	-1,U		BACK TO CR
+24C3  11 83 2A 00          585  BAK1	CMPU	#TEXT		ARE WE OVER
+24C7  25 0B                586  	BLO	BAKTOF		AT TOP OF FILE
+24C9  27 08                587  	BEQ	FNDTOP		WE FOUND THE TOP
+24CB  A6 C2                588  	LDA	,-U		GET CHAR
+24CD  81 0D                589  	CMPA	#$0D		ARE WE OVER
+24CF  26 F2                590  	BNE	BAK1		NO, KEEP LOOKING
+24D1  33 41                591  	LEAU	1,U		SKIP AHEAD
+24D3  39                   592  FNDTOP	RTS
+24D4  CE 2A 00             593  BAKTOF	LDU	#TEXT
+24D7  86 FF                594  	LDA	#$FF		SET M FLAG
+24D9  39                   595  	RTS
+24DA                       596  *
+24DA                       597  * DISPLAY A LINE
+24DA                       598  *
+24DA  34 40                599  DSPLIN	PSHS	U		SAVE REG
+24DC  8D 02                600  	BSR	DSPADV		DISPLAY
+24DE  35 C0                601  	PULS	U,PC
+24E0  6D C4                602  DSPADV	TST	,U		END OF TEXT?
+24E2  2B 16                603  	BMI	DSPEOF		IF SO, QUIT
+24E4  A6 C0                604  	LDA	,U+		GET CHAR
+24E6  8D 0A                605  	BSR	PUTCHR		OUTPUT
+24E8  81 0D                606  	CMPA	#$0D		END OF LINE
+24EA  26 F4                607  	BNE	DSPADV		CONTINUE
+24EC  86 0D                608  LFCR	LDA	#$0D		CR
+24EE  8D 02                609  	BSR	PUTCHR
+24F0  86 0A                610  	LDA	#$0A		LF
+24F2  7D 25 F0             611  PUTCHR	TST	QCMD		QUIET?
+24F5  27 02                612  	BEQ	PUTQC		SKIP IT
+24F7  3F                   613  	SWI			SOFTWARE INTERRUPT TO DOS
+24F8  21                   614  	FCB	33		SYSTEM REQUEST NUMBER
+24F9  39                   615  PUTQC	RTS
+24FA  7D 25 F0             616  DSPEOF	TST	QCMD
+24FD  27 FA                617  	BEQ	PUTQC
+24FF  3F                   618  	SWI			SOFTWARE INTERRUPT TO DOS
+2500  19                   619  	FCB	25		SYSTEM REQUEST NUMBER
+2501  45 4F 46 3A 00       620  	FCCZ	'EOF:'
+2506  39                   621  	RTS
+2507                       622  *
+2507                       623  * GET AN OPERAND
+2507                       624  *
+2507  3F                   625  GETOP1	SWI			SOFTWARE INTERRUPT TO DOS
+2508  04                   626  	FCB	4		SYSTEM REQUEST NUMBER
+2509  27 0E                627  	BEQ	DEFAU1		DEFAULT TO ONE
+250B  3F                   628  	SWI			SOFTWARE INTERRUPT TO DOS
+250C  08                   629  	FCB	8		SYSTEM REQUEST NUMBER
+250D  10 26 FB C6          630  	LBNE	GOCMD		NO, SKIP OT
+2511  1F 10                631  	TFR	X,D		COPY TO D
+2513  4D                   632  	TSTA			NON ZERO HIGH BYTE
+2514  10 26 FF 54          633  	LBNE	BADOPR		INVALID OPERAND
+2518  39                   634  	RTS
+2519  CC 00 01             635  DEFAU1	LDD	#1		ASSUME ONE
+251C  39                   636  	RTS
+251D                       637  *
+251D                       638  * GET AN INPUT LINE FROM THE TERMINAL
+251D                       639  *
+DUNFIELD 6809 ASSEMBLER: CUBIX LINE EDITOR                            PAGE: 12
+
+251D  17 FF CC             640  GETLFCR LBSR	LFCR		NEW LINE
+2520  10 8E 26 00          641  GETLIN	LDY	#RAM		POINT TO INPUT BUFFER
+2524  5F                   642  	CLRB			START AT POSITION ZERO
+2525  86 2E                643  	LDA	#'.'		PROMPT
+2527  17 FF C8             644  	LBSR	PUTCHR		DISPLAY
+252A  7D 25 EF             645  GETL1	TST	FCMD		LOOK FOR FILE COMMAND
+252D  27 1A                646  	BEQ	FINP		FILE INPUT
+252F  3F                   647  	SWI			SOFTWARE INTERRUPT TO DOS
+2530  22                   648  	FCB	34		SYSTEM REQUEST NUMBER
+2531  81 1B                649  	CMPA	#$1B		ESCAPE <AUTO COMMAND>
+2533  27 29                650  	BEQ	DOAUTO		IF SO, HANDLE IT
+2535  81 08                651  	CMPA	#$08		BACKSPACE?
+2537  27 04                652  	BEQ	DODEL
+2539  81 7F                653  	CMPA	#$7F		DELETE?
+253B  26 11                654  	BNE	NOTDEL		NO, HANDLE AS USUAL
+253D  5D                   655  DODEL	TSTB			AT POSITION ZERO?
+253E  27 EA                656  	BEQ	GETL1		DO NOTHING
+2540  5A                   657  	DECB			BACKUP
+2541  3F                   658  	SWI			SOFTWARE INTERRUPT TO DOS
+2542  18                   659  	FCB	24		SYSTEM REQUEST NUMBER
+2543  08 20 08 00          660  	FCB	$08,$20,$08,0
+2547  20 E1                661  	BRA	GETL1
+2549  17 00 79             662  FINP	LBSR	READC		READ A CHARACTER
+254C  26 21                663  	BNE	FINEOF		FILE INPUT END OF FILE
+254E  17 FF A1             664  NOTDEL	LBSR	PUTCHR		DISPLAY
+2551  A7 A5                665  	STA	B,Y		SAVE IN BUFFER
+2553  5C                   666  	INCB			ADVANCE
+2554  2B C7                667  	BMI	GETLFCR		OVERFLOW
+2556  81 0D                668  	CMPA	#$0D		ARE WE PAST
+2558  26 D0                669  	BNE	GETL1		GO AGAIN
+255A  17 FF 8F             670  INRT	LBSR	LFCR
+255D  39                   671  	RTS
+255E  8E 29 29             672  DOAUTO	LDX	#AUTSTR		POINT TO AUTO STRING
+2561  A6 80                673  DOAUT1	LDA	,X+		GET CHAR FROM AUTO STRING
+2563  A7 A5                674  	STA	B,Y		SAVE IN INPUT
+2565  5C                   675  	INCB			ADVANCE
+2566  81 0D                676  	CMPA	#$0D		END OF LINE?
+2568  27 F0                677  	BEQ	INRT		IF SO, QUIT
+256A  17 FF 85             678  	LBSR	PUTCHR		DISPLAY
+256D  20 F2                679  	BRA	DOAUT1		CONTINUE
+256F                       680  * END OF FILE ON INPUT
+256F  3F                   681  FINEOF	SWI			SOFTWARE INTERRUPT TO DOS
+2570  19                   682  	FCB	25		SYSTEM REQUEST NUMBER
+2571  3F 45 4F 46 3F 00    683  	FCCZ	'?EOF?'
+2577  86 09                684  	LDA	#9		RC=9
+2579  3F                   685  	SWI			SOFTWARE INTERRUPT TO DOS
+257A  00                   686  	FCB	0		SYSTEM REQUEST NUMBER
+257B                       687  * CONVERT INPUT BUFFER TO UPPER-CASE
+257B  1F 21                688  UCASE	TFR	Y,X		COPY POINTER
+257D  A6 80                689  UCASE0	LDA	,X+		GET CHAR
+257F  81 61                690  	CMPA	#'A'+$20	<LC 'A'
+2581  25 08                691  	BLO	UCASE1		OK
+2583  81 7A                692  	CMPA	#'Z'+$20	>LC 'Z'
+2585  22 04                693  	BHI	UCASE1		OK
+2587  80 20                694  	SUBA	#$20		CONVERT TO UPPER
+2589  A7 1F                695  	STA	-1,X		RESAVE
+258B  81 0D                696  UCASE1	CMPA	#$0D		CR?
+258D  26 EE                697  	BNE	UCASE0		NO, KEEP CONVERTING
+DUNFIELD 6809 ASSEMBLER: CUBIX LINE EDITOR                            PAGE: 13
+
+258F  39                   698  	RTS
+2590                       699  *
+2590                       700  * EXIT EDITOR, TERMINATE AND SAVE THE FILE
+2590                       701  *
+2590  10 8E 29 10          702  EXIT	LDY	#FILNAM		POINT TO FILENAME
+2594  3F                   703  	SWI			SOFTWARE INTERRUPT TO DOS
+2595  0A                   704  	FCB	10		SYSTEM REQUEST NUMBER
+2596  8D 06                705  	BSR	SAVFIL		SAVE IT
+2598  10 26 FB 3B          706  	LBNE	GOCMD
+259C  3F                   707  	SWI			SOFTWARE INTERRUPT TO DOS
+259D  00                   708  	FCB	0		SYSTEM REQUEST NUMBER
+259E                       709  * SAVE FILE USING BLOCK WRITE
+259E  17 FF 0E             710  SAVFIL	LBSR	FNDEOF		FIND END OF FILE
+25A1  33 5F                711  	LEAU	-1,U		REDUCE BY ONE
+25A3  1F 30                712  	TFR	U,D		SAVE
+25A5  83 2A 00             713  	SUBD	#TEXT		GET SIZE OF FILE
+25A8  1F 89                714  	TFR	A,B		COPY TO B
+25AA  4F                   715  	CLRA			ZERO HIGH BYTE
+25AB  54                   716  	LSRB			512 BYTE BOUNDARIES
+25AC  5C                   717  	INCB			INCLUDE LAST SECTOR
+25AD  8E 2A 00             718  	LDX	#TEXT		POINT TO RAM BUFFER
+25B0  3F                   719  	SWI			SOFTWARE INTERRUPT TO DOS
+25B1  36                   720  	FCB	54		SYSTEM REQUEST NUMBER
+25B2  39                   721  	RTS
+25B3  34 40                722  OPENR	PSHS	U
+25B5  CE 27 00             723  	LDU	#SERBUF
+25B8  3F                   724  	SWI			SOFTWARE INTERRUPT TO DOS
+25B9  37                   725  	FCB	55		SYSTEM REQUEST NUMBER
+25BA  35 C0                726  	PULS	U,PC
+25BC  34 40                727  OPENW	PSHS	U
+25BE  CE 27 00             728  	LDU	#SERBUF
+25C1  3F                   729  	SWI			SOFTWARE INTERRUPT TO DOS
+25C2  38                   730  	FCB	56		SYSTEM REQUEST NUMBER
+25C3  35 C0                731  	PULS	U,PC
+25C5  34 40                732  READC	PSHS	U
+25C7  CE 27 00             733  	LDU	#SERBUF
+25CA  3F                   734  	SWI			SOFTWARE INTERRUPT TO DOS
+25CB  3B                   735  	FCB	59		SYSTEM REQUEST NUMBER
+25CC  35 C0                736  	PULS	U,PC
+25CE  34 40                737  WRITEC	PSHS	U
+25D0  CE 27 00             738  	LDU	#SERBUF
+25D3  3F                   739  	SWI			SOFTWARE INTERRUPT TO DOS
+25D4  3D                   740  	FCB	61		SYSTEM REQUEST NUMBER
+25D5  35 C0                741  	PULS	U,PC
+25D7  34 40                742  CLOSE	PSHS	U
+25D9  CE 27 00             743  	LDU	#SERBUF
+25DC  3F                   744  	SWI			SOFTWARE INTERRUPT TO DOS
+25DD  39                   745  	FCB	57		SYSTEM REQUEST NUMBER
+25DE  35 C0                746  	PULS	U,PC
+25E0                       747  *
+25E0                       748  * QUALIFIER TABLE
+25E0                       749  *
+25E0  82                   750  QTABLE	FCB	$82
+25E1  2F 42 41 54 43 48    751  	FCC	'/BATCH'
+25E7  82                   752  	FCB	$82
+25E8  2F 51 55 49 45 54    753  	FCC	'/QUIET'
+25EE  80                   754  	FCB	$80
+0002                       755  QMAX	EQU	2		MAX. NUMBER OF QUALIFIERS
+DUNFIELD 6809 ASSEMBLER: CUBIX LINE EDITOR                            PAGE: 14
+
+25EF                       756  * EDITOR SWITCHES
+25EF  FF                   757  FCMD	FCB	$FF		FILE COMMAND INPUT
+25F0  FF                   758  QCMD	FCB	$FF

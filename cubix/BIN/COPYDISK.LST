@@ -1,0 +1,199 @@
+DUNFIELD 6809 ASSEMBLER: D:COPYDISK                                   PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         8  *
+0000                         9  * COPYDISK: Disk to Disk direct copy utility
+0000                        10  *
+0000                        11  * Copyright 1983-2005 Dave Dunfield
+0000                        12  * All rights reserved.
+0000                        13  *
+005C                        14  MAXBUF	EQU	OSEND-BUFFER/512 # SECTORS TO BUFFER
+0000                        15  *
+2000                        16  	ORG	OSRAM		PROGRAM LOCATION
+2000                        17  * TEST FOR HELP REQUEST
+2000  81 3F                 18  CPYDSK	CMPA	#'?'		HELP?
+2002  26 3C                 19  	BNE	QUAL		NO
+2004  3F                    20  	SWI			SOFTWARE INTERRUPT TO DOS
+2005  19                    21  	FCB	25		SYSTEM REQUEST NUMBER
+2006  55 73 65 3A 20 43 +   22  	FCCZ	'Use: COPYDISK[/PROMPT/QUIET] <source drive> <dest drive>'
+203F  39                    23  	RTS
+2040                        24  * TEST FOR QUALIFIERS
+2040  A6 A4                 25  QUAL	LDA	,Y		GET CHAR FROM LINE
+2042  81 2F                 26  	CMPA	#'/'		QUALIFIER?
+2044  26 3B                 27  	BNE	MAIN		NO, START UP PGM
+2046  8E 21 E6              28  	LDX	#QTABLE		PT TO TABLE
+2049  3F                    29  	SWI			SOFTWARE INTERRUPT TO DOS
+204A  12                    30  	FCB	18		SYSTEM REQUEST NUMBER
+204B  C1 02                 31  	CMPB	#NUMQ		IN RANGE?
+204D  24 07                 32  	BHS	QERR		NO, INVALID
+204F  8E 21 F6              33  	LDX	#QFLAGS		PT TO FLAGS
+2052  6F 85                 34  	CLR	B,X		SET THE FLAG
+2054  20 EA                 35  	BRA	QUAL		GET NEXT
+2056                        36  * QUALIFIER WAS INVALID, REPORT
+2056  3F                    37  QERR	SWI			SOFTWARE INTERRUPT TO DOS
+2057  18                    38  	FCB	24		SYSTEM REQUEST NUMBER
+2058  49 6E 76 61 6C 69 +   39  	FCCZ	/Invalid qualifier: '/
+206D  A6 A0                 40  	LDA	,Y+		GET CHAR
+206F  3F                    41  QSHOW	SWI			SOFTWARE INTERRUPT TO DOS
+2070  21                    42  	FCB	33		SYSTEM REQUEST NUMBER
+2071  3F                    43  	SWI			SOFTWARE INTERRUPT TO DOS
+2072  05                    44  	FCB	5		SYSTEM REQUEST NUMBER
+2073  27 04                 45  	BEQ	QEND		EXIT
+2075  81 2F                 46  	CMPA	#'/'		ALSO TERMINATOR
+2077  26 F6                 47  	BNE	QSHOW		SHOW EM ALL
+2079  3F                    48  QEND	SWI			SOFTWARE INTERRUPT TO DOS
+207A  19                    49  	FCB	25		SYSTEM REQUEST NUMBER
+207B  27 00                 50  	FCCZ	/'/		CLOSING QUITE
+207D  86 01                 51  	LDA	#1		BAD OPERAND RC
+207F  3F                    52  ABORT	SWI			SOFTWARE INTERRUPT TO DOS
+2080  00                    53  	FCB	0		SYSTEM REQUEST NUMBER
+2081                        54  * DISK TO DISK COPY PROGRAM
+2081  3F                    55  MAIN	SWI			SOFTWARE INTERRUPT TO DOS
+2082  10                    56  	FCB	16		SYSTEM REQUEST NUMBER
+2083  26 FA                 57  	BNE	ABORT		ERROR
+2085  B7 21 FC              58  	STA	>SOURCE		SAVE
+DUNFIELD 6809 ASSEMBLER: D:COPYDISK                                   PAGE: 2
+
+2088  3F                    59  	SWI			SOFTWARE INTERRUPT TO DOS
+2089  51                    60  	FCB	81		SYSTEM REQUEST NUMBER
+208A  34 06                 61  	PSHS	A,B		SAVE
+208C  3F                    62  	SWI			SOFTWARE INTERRUPT TO DOS
+208D  10                    63  	FCB	16		SYSTEM REQUEST NUMBER
+208E  26 EF                 64  	BNE	ABORT		ERROR
+2090  B7 21 FD              65  	STA	>DEST		SAVE
+2093  3F                    66  	SWI			SOFTWARE INTERRUPT TO DOS
+2094  51                    67  	FCB	81		SYSTEM REQUEST NUMBER
+2095  10 A3 E1              68  	CMPD	,S++		MATCH?
+2098  27 1E                 69  	BEQ	MAIN1		YES
+209A  3F                    70  	SWI			SOFTWARE INTERRUPT TO DOS
+209B  19                    71  	FCB	25		SYSTEM REQUEST NUMBER
+209C  49 6E 63 6F 6D 70 +   72  	FCCZ	'Incompatable drive sizes'
+20B5  86 64                 73  	LDA	#100
+20B7  39                    74  	RTS
+20B8                        75  * COPY DISK
+20B8  FD 21 FE              76  MAIN1	STD	>DSIZE		SAVE DRIVE SIZE
+20BB  B6 21 F7              77  	LDA	>PROMPT
+20BE  26 24                 78  	BNE	CPY		DON'T PROMPT
+20C0  3F                    79  	SWI			SOFTWARE INTERRUPT TO DOS
+20C1  58                    80  	FCB	88		SYSTEM REQUEST NUMBER
+20C2  3F                    81  	SWI			SOFTWARE INTERRUPT TO DOS
+20C3  18                    82  	FCB	24		SYSTEM REQUEST NUMBER
+20C4  49 6E 73 65 72 74 +   83  	FCCZ	'Insert disks, press <return>:'
+20E2  3F                    84  	SWI			SOFTWARE INTERRUPT TO DOS
+20E3  03                    85  	FCB	3		SYSTEM REQUEST NUMBER
+20E4  B6 21 FC              86  CPY	LDA	>SOURCE		GET SOURCE DRIVE
+20E7  3F                    87  	SWI			SOFTWARE INTERRUPT TO DOS
+20E8  4C                    88  	FCB	76		SYSTEM REQUEST NUMBER
+20E9  B1 21 FD              89  	CMPA	>DEST		SAME DRIVE?
+20EC  26 29                 90  	BNE	CPY1		NO
+20EE  3F                    91  	SWI			SOFTWARE INTERRUPT TO DOS
+20EF  18                    92  	FCB	24		SYSTEM REQUEST NUMBER
+20F0  0D                    93  	FCB	$0D		CARRIAGE RETURN
+20F1  49 6E 73 65 72 74 +   94  	FCCZ	'Insert source disk, press <return>:'
+2115  3F                    95  	SWI			SOFTWARE INTERRUPT TO DOS
+2116  03                    96  	FCB	3		SYSTEM REQUEST NUMBER
+2117                        97  * READ A BUFFER INTO MEMORY
+2117  B6 21 F6              98  CPY1	LDA	>QUIET
+211A  27 0B                 99  	BEQ	QUI1
+211C  3F                   100  	SWI			SOFTWARE INTERRUPT TO DOS
+211D  19                   101  	FCB	25		SYSTEM REQUEST NUMBER
+211E  0D                   102  	FCB	$0D		CARRIAGE RETURN
+211F  52 65 61 64 69 6E +  103  	FCCZ	'Reading'
+2127  8E 22 00             104  QUI1	LDX	#BUFFER		PT TO RAM AREA
+212A  10 8E 00 5C          105  	LDY	#MAXBUF		ZERO COUNT
+212E  FC 21 F8             106  RDB1	LDD	>RSECT		GET SECTOR ID
+2131  10 B3 21 FE          107  	CMPD	>DSIZE		OVER?
+2135  24 22                108  	BHS	RDEND		YES, EXIT
+2137  7D 21 F6             109  	TST	>QUIET
+213A  27 09                110  	BEQ	QUI2		NO SECTOR COUNT
+213C  86 0D                111  	LDA	#$0D		GET CR
+213E  3F                   112  	SWI			SOFTWARE INTERRUPT TO DOS
+213F  21                   113  	FCB	33		SYSTEM REQUEST NUMBER
+2140  FC 21 F8             114  	LDD	>RSECT		RESTORE ADDRESS
+2143  3F                   115  	SWI			SOFTWARE INTERRUPT TO DOS
+2144  1A                   116  	FCB	26		SYSTEM REQUEST NUMBER
+DUNFIELD 6809 ASSEMBLER: D:COPYDISK                                   PAGE: 3
+
+2145  3F                   117  QUI2	SWI			SOFTWARE INTERRUPT TO DOS
+2146  5C                   118  	FCB	92		SYSTEM REQUEST NUMBER
+2147  10 26 00 99          119  	LBNE	EXIT		ERROR
+214B  30 89 02 00          120  	LEAX	512,X		ADVANCE
+214F  C3 00 01             121  	ADDD	#1		ADVANCE NUM
+2152  FD 21 F8             122  	STD	>RSECT		RESAVE
+2155  31 3F                123  	LEAY	-1,Y		ADVANCE COUNT
+2157  26 D5                124  	BNE	RDB1		NO, ITS OK
+2159  B6 21 FD             125  RDEND	LDA	>DEST		GET DEST
+215C  3F                   126  	SWI			SOFTWARE INTERRUPT TO DOS
+215D  4C                   127  	FCB	76		SYSTEM REQUEST NUMBER
+215E  B1 21 FC             128  	CMPA	>SOURCE		SAME AS SOURCE?
+2161  26 2E                129  	BNE	CPY2		NO
+2163  3F                   130  	SWI			SOFTWARE INTERRUPT TO DOS
+2164  18                   131  	FCB	24		SYSTEM REQUEST NUMBER
+2165  0D                   132  	FCB	$0D		CARRIAGE RETURN
+2166  49 6E 73 65 72 74 +  133  	FCCZ	'Insert destination disk, press <return>:'
+218F  3F                   134  	SWI			SOFTWARE INTERRUPT TO DOS
+2190  03                   135  	FCB	3		SYSTEM REQUEST NUMBER
+2191                       136  * WRITE A BUFFER FROM MEMORY
+2191  B6 21 F6             137  CPY2	LDA	>QUIET
+2194  27 0B                138  	BEQ	QUI3
+2196  3F                   139  	SWI			SOFTWARE INTERRUPT TO DOS
+2197  19                   140  	FCB	25		SYSTEM REQUEST NUMBER
+2198  0D                   141  	FCB	$0D		CARRIAGE RETURN
+2199  57 72 69 74 69 6E +  142  	FCCZ	'Writing'
+21A1  8E 22 00             143  QUI3	LDX	#BUFFER		PT TO RAM AREA
+21A4  10 8E 00 5C          144  	LDY	#MAXBUF		ZERO COUNT
+21A8  FC 21 FA             145  WRB1	LDD	>WSECT		GET SECTOR ID
+21AB  10 B3 21 FE          146  	CMPD	>DSIZE		OVER?
+21AF  24 20                147  	BHS	WREND		IF SO, QUIT
+21B1  7D 21 F6             148  	TST	>QUIET
+21B4  27 09                149  	BEQ	QUI4
+21B6  86 0D                150  	LDA	#$0D		CARRIAGE RETURN
+21B8  3F                   151  	SWI			SOFTWARE INTERRUPT TO DOS
+21B9  21                   152  	FCB	33		SYSTEM REQUEST NUMBER
+21BA  FC 21 FA             153  	LDD	>WSECT		RESTORE SECTOR ID
+21BD  3F                   154  	SWI			SOFTWARE INTERRUPT TO DOS
+21BE  1A                   155  	FCB	26		SYSTEM REQUEST NUMBER
+21BF  3F                   156  QUI4	SWI			SOFTWARE INTERRUPT TO DOS
+21C0  5D                   157  	FCB	93		SYSTEM REQUEST NUMBER
+21C1  26 21                158  	BNE	EXIT		ERROR
+21C3  30 89 02 00          159  	LEAX	512,X		NEXT
+21C7  C3 00 01             160  	ADDD	#1		ADVANCE
+21CA  FD 21 FA             161  	STD	>WSECT		RESAVE
+21CD  31 3F                162  	LEAY	-1,Y		ADVANCE COUNT
+21CF  26 D7                163  	BNE	WRB1		MORE
+21D1  FC 21 FA             164  WREND	LDD	>WSECT		RESTORE SECTOR
+21D4  10 B3 21 FE          165  	CMPD	>DSIZE		OVER LIMIT
+21D8  10 25 FF 08          166  	LBLO	CPY		DO IT AGAIN SAM
+21DC  B6 21 F6             167  	LDA	>QUIET
+21DF  27 02                168  	BEQ	QUI5
+21E1  3F                   169  	SWI			SOFTWARE INTERRUPT TO DOS
+21E2  16                   170  	FCB	22		SYSTEM REQUEST NUMBER
+21E3  4F                   171  QUI5	CLRA
+21E4  3F                   172  EXIT	SWI			SOFTWARE INTERRUPT TO DOS
+21E5  00                   173  	FCB	0		SYSTEM REQUEST NUMBER
+21E6                       174  * QUALIFIER TEXT TABLE
+DUNFIELD 6809 ASSEMBLER: D:COPYDISK                                   PAGE: 4
+
+21E6  82                   175  QTABLE	FCB	$82		1 CHAR MATCH
+21E7  2F 51 55 49 45 54    176  	FCC	'/QUIET'
+21ED  82                   177  	FCB	$82
+21EE  2F 50 52 4F 4D 50 +  178  	FCC	'/PROMPT'
+21F5  80                   179  	FCB	$80		END OF TABLE
+0002                       180  NUMQ	EQU	2		# OF QUALIFIERS
+21F6                       181  QFLAGS	EQU	*		QUALIFIER FLAG TABLE
+21F6  FF                   182  QUIET	FCB	$FF		DON'T DISPLAY READ/WRITES
+21F7  FF                   183  PROMPT	FCB	$FF		PROMPT FOR DISK SHANGE
+21F8                       184  * MISC VARAIBLES
+21F8  00 00                185  RSECT	FDB	0		CURRENT READ SECTOR
+21FA  00 00                186  WSECT	FDB	0		CURRENT WRITE SECTOR
+21FC                       187  SOURCE	RMB	1		SOURCE DRIVE
+21FD                       188  DEST	RMB	1		DESTINATION DRIVE
+21FE                       189  DSIZE	RMB	2		DRIVE SIZE
+2200                       190  *
+2200                       191  BUFFER	EQU	*

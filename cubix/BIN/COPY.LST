@@ -1,0 +1,512 @@
+DUNFIELD 6809 ASSEMBLER: D:COPY                                       PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         8  *
+0000                         9  * COPY: Flexible file copy utility
+0000                        10  *
+0000                        11  * Copyright 1983-2005 Dave Dunfield
+0000                        12  * All rights reserved.
+0000                        13  *
+0000                        14  DIRLOC	EQU	0		DIRECTORY LOCATION
+0032                        15  MAXBUF	EQU	50		MAX. # OF SECTORS TO BUFFER
+0000                        16  * DIRECTORY STRUCTURE
+0000                        17  	ORG	0
+0000                        18  DPREFIX	RMB	8		PREFIX
+0008                        19  DNAME	RMB	8		FILENAME
+0010                        20  DTYPE	RMB	3		FILE TYPE
+0013                        21  DDADR	RMB	2		DISK ADDRESS
+0015                        22  DRADR	RMB	2		RUN ADDRESS
+0017                        23  DATTR	RMB	1		FILE ATTRIBUTES
+0018                        24  * FILE CONTROL BLOCK STRUCTURE
+0000                        25  	ORG	0
+0000                        26  OTYPE	RMB	1		OPEN TYPE
+0001                        27  ODRIVE	RMB	1		OPEN DRIVE
+0002                        28  OFIRST	RMB	2		FIRST SECTOR
+0004                        29  OSECTOR	RMB	2		NEXT SECTOR TO BE ACCESSED
+0006                        30  OLSTSEC	RMB	2		LAST SECTOR TO BE ACCESSED
+0008                        31  OOFFSET	RMB	2		OFFSET FOR CHAR OPERATIONS
+000A                        32  * FILE PERMISSION BITS
+0080                        33  RPERM	EQU	%10000000	READ PERMISSION
+0040                        34  WPERM	EQU	%01000000	WRITE PERMISSION
+0020                        35  EPERM	EQU	%00100000	EXECUTE PERMISSION
+0010                        36  DPERM	EQU	%00010000	DELETE PERMISSION
+000A                        37  *
+2000                        38  	ORG	OSRAM		PUT IT HERE
+2000  81 3F                 39  COPY	CMPA	#'?'		HELP REQUEST?
+2002  26 43                 40  	BNE	QUAL		NO, DO COPY
+2004  3F                    41  	SWI			SOFTWARE INTERRUPT TO DOS
+2005  19                    42  	FCB	25		SYSTEM REQUEST NUMBER
+2006  55 73 65 3A 20 43 +   43  	FCCZ	'Use: COPY[/MOVE/NEW/PROT/QUIET/REPLACE] <source> <destination>'
+2045  3F                    44  ABORT	SWI			SOFTWARE INTERRUPT TO DOS
+2046  00                    45  	FCB	0		SYSTEM REQUEST NUMBER
+2047                        46  * EVALUATE QUALIFIERS
+2047  A6 A4                 47  QUAL	LDA	,Y		GET CHAR
+2049  81 2F                 48  	CMPA	#'/'		QUALIFIER?
+204B  26 3B                 49  	BNE	MAIN		NO QUALIFIERS
+204D  8E 23 A7              50  	LDX	#QTABLE		PT TO TABLE
+2050  3F                    51  	SWI			SOFTWARE INTERRUPT TO DOS
+2051  12                    52  	FCB	18		SYSTEM REQUEST NUMBER
+2052  C1 05                 53  	CMPB	#QMAX		OVER?
+2054  24 07                 54  	BHS	QERR		INVALID
+2056  8E 23 C9              55  	LDX	#QFLAGS		PT TO FLAGS
+2059  6F 85                 56  	CLR	B,X		ZAP IT
+205B  20 EA                 57  	BRA	QUAL		CONTINUE
+205D  3F                    58  QERR	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: D:COPY                                       PAGE: 2
+
+205E  18                    59  	FCB	24		SYSTEM REQUEST NUMBER
+205F  49 6E 76 61 6C 69 +   60  	FCCZ	/Invalid qualifier: '/
+2074  A6 A0                 61  	LDA	,Y+		GET CHAR
+2076  3F                    62  QERR1	SWI			SOFTWARE INTERRUPT TO DOS
+2077  21                    63  	FCB	33		SYSTEM REQUEST NUMBER
+2078  3F                    64  	SWI			SOFTWARE INTERRUPT TO DOS
+2079  05                    65  	FCB	5		SYSTEM REQUEST NUMBER
+207A  27 04                 66  	BEQ	QERR2		END, EXIT
+207C  81 2F                 67  	CMPA	#'/'		NEXT QUALIFIER
+207E  26 F6                 68  	BNE	QERR1		ITS OK
+2080  3F                    69  QERR2	SWI			SOFTWARE INTERRUPT TO DOS
+2081  19                    70  	FCB	25		SYSTEM REQUEST NUMBER
+2082  27 00                 71  	FCCZ	/'/
+2084  86 01                 72  	LDA	#1		INDICATE INVALID OPERAND
+2086  20 BD                 73  	BRA	ABORT		ERROR
+2088                        74  *
+2088                        75  * MAIN PGM
+2088                        76  *
+2088                        77  * GET SOURCE PATTERN
+2088  3F                    78  MAIN	SWI			SOFTWARE INTERRUPT TO DOS
+2089  09                    79  	FCB	9		SYSTEM REQUEST NUMBER
+208A  26 B9                 80  	BNE	ABORT		ERROR
+208C  30 1F                 81  	LEAX	-1,X		BACKUP TO DRIVE
+208E  BF 23 D3              82  	STX	>DOSBUF		SAVE PTR TO DOS BUFFER
+2091  CE 23 D9              83  	LDU	#SRCDRV		PT TO SAVED PATTERN
+2094  C6 14                 84  	LDB	#DDADR+1	NAME + DRIVE
+2096  A6 80                 85  CPY1	LDA	,X+		GET CHAR
+2098  A7 C0                 86  	STA	,U+		SAVE IN BUFFER
+209A  5A                    87  	DECB			COUNT
+209B  26 F9                 88  	BNE	CPY1		MOVE ALL
+209D                        89  * GET DEST PATTERN
+209D  3F                    90  	SWI			SOFTWARE INTERRUPT TO DOS
+209E  0E                    91  	FCB	14		SYSTEM REQUEST NUMBER
+209F  1F 13                 92  	TFR	X,U		CPY IT
+20A1  C6 0B                 93  	LDB	#DDADR-DNAME	SIZE OF NAME & TYPE
+20A3  6F C0                 94  CPY2	CLR	,U+		CLEAR IT
+20A5  5A                    95  	DECB
+20A6  26 FB                 96  	BNE	CPY2		DO AM ALL
+20A8  86 2A                 97  	LDA	#'*'
+20AA  A7 84                 98  	STA	,X		SET FILENAME
+20AC  A7 08                 99  	STA	DTYPE-DNAME,X	SET TYPE
+20AE  3F                   100  	SWI			SOFTWARE INTERRUPT TO DOS
+20AF  05                   101  	FCB	5		SYSTEM REQUEST NUMBER
+20B0  27 44                102  	BEQ	ENAM		NO, THATS ALL
+20B2  31 3F                103  	LEAY	-1,Y		BACKUP
+20B4  6F 84                104  	CLR	,X		NOWILD
+20B6  C6 08                105  	LDB	#8		8 CHARS/NAME
+20B8  3F                   106  CPY3	SWI			SOFTWARE INTERRUPT TO DOS
+20B9  05                   107  	FCB	5		SYSTEM REQUEST NUMBER
+20BA  27 3A                108  	BEQ	ENAM		THATS ALL
+20BC  81 2E                109  	CMPA	#'.'		TYPE?
+20BE  27 07                110  	BEQ	CPY4		GET TYPE
+20C0  5A                   111  	DECB			BACKUP
+20C1  2B 15                112  	BMI	BADOP		INVALID
+20C3  A7 80                113  	STA	,X+		SAVE
+20C5  20 F1                114  	BRA	CPY3		CONTINUE
+20C7  30 85                115  CPY4	LEAX	B,X		ADVANCE TO TYPE
+20C9  6F 84                116  	CLR	,X		NO WILDCARD
+DUNFIELD 6809 ASSEMBLER: D:COPY                                       PAGE: 3
+
+20CB  C6 03                117  	LDB	#3		THREE CHARS
+20CD  3F                   118  CPY5	SWI			SOFTWARE INTERRUPT TO DOS
+20CE  05                   119  	FCB	5		SYSTEM REQUEST NUMBER
+20CF  27 25                120  	BEQ	ENAM
+20D1  5A                   121  	DECB
+20D2  2B 04                122  	BMI	BADOP		INVALID
+20D4  A7 80                123  	STA	,X+		SAVE
+20D6  20 F5                124  	BRA	CPY5		KEEP GOING
+20D8  3F                   125  BADOP	SWI			SOFTWARE INTERRUPT TO DOS
+20D9  19                   126  	FCB	25		SYSTEM REQUEST NUMBER
+20DA  42 61 64 20 64 65 +  127  	FCCZ	'Bad destination pattern'
+20F2  86 01                128  	LDA	#1
+20F4  3F                   129  	SWI			SOFTWARE INTERRUPT TO DOS
+20F5  00                   130  	FCB	0		SYSTEM REQUEST NUMBER
+20F6                       131  * WE HAVE DESTIANTION FILENAME
+20F6  BE 23 D3             132  ENAM	LDX	>DOSBUF		PT TO NAME
+20F9  C6 14                133  	LDB	#DDADR+1	NAME+DRIVE
+20FB  CE 23 ED             134  	LDU	#DSTDRV
+20FE  A6 80                135  ENAM1	LDA	,X+		GET CHAR
+2100  A7 C0                136  	STA	,U+		SAV IN BUFFER
+2102  5A                   137  	DECB
+2103  26 F9                138  	BNE	ENAM1		CONTINUE
+2105                       139  * LOOK UP FILES MATCHING SOURCE PATTERN IN DIRECTORY
+2105  17 02 53             140  	LBSR	SELSRC		SELECT SOURC FILE PATTERN
+2108  CC 00 00             141  	LDD	#DIRLOC		GET DIRECTORY LOCATION
+210B  FD 23 D5             142  LOOKUP	STD	>DIRSEC		SAVE IT 
+210E  17 02 4A             143  	LBSR	SELSRC		GET SOURCE PATTERN
+2111  8E 24 15             144  	LDX	#WRKSPC		PT TO WORKSPACE
+2114  3F                   145  	SWI			SOFTWARE INTERRUPT TO DOS
+2115  5C                   146  	FCB	92		SYSTEM REQUEST NUMBER
+2116  10 26 FF 2B          147  	LBNE	ABORT		ERROR, INDICATE INVALID
+211A  86 FF                148  	LDA	#$FF
+211C  B7 23 CF             149  	STA	>DIRCHG		INDICATE NO DIR CHANGE
+211F  3F                   150  LOOK1	SWI			SOFTWARE INTERRUPT TO DOS
+2120  13                   151  	FCB	19		SYSTEM REQUEST NUMBER
+2121  27 25                152  	BEQ	CPYGO		DO IT
+2123  30 88 20             153  NXTFIL	LEAX	32,X		ADVANCE TO NEXT SECTOR
+2126  8C 26 15             154  	CMPX	#WRKSPC+512	ARE WE OVER?
+2129  25 F4                155  	BLO	LOOK1		NO, KEEP IT UP
+212B  B6 23 CF             156  	LDA	>DIRCHG		CHANGED?
+212E  26 08                157  	BNE	NXTF1		NO
+2130  FC 23 D5             158  	LDD	>DIRSEC		PT TO IT
+2133  8E 24 15             159  	LDX	#WRKSPC		PT TO DATA
+2136  3F                   160  	SWI			SOFTWARE INTERRUPT TO DOS
+2137  5D                   161  	FCB	93		SYSTEM REQUEST NUMBER
+2138  FC 23 D5             162  NXTF1	LDD	>DIRSEC		GET SECTOR
+213B  3F                   163  	SWI			SOFTWARE INTERRUPT TO DOS
+213C  4D                   164  	FCB	77		SYSTEM REQUEST NUMBER
+213D  26 CC                165  	BNE	LOOKUP		MORE, KEEP LOOKING
+213F  B6 23 CE             166  	LDA	>FOUND		DID WE LOCATE ANY
+2142  27 02                167  	BEQ	QUIT		YS, ITS OK
+2144  3F                   168  	SWI			SOFTWARE INTERRUPT TO DOS
+2145  2C                   169  	FCB	44		SYSTEM REQUEST NUMBER
+2146  3F                   170  QUIT	SWI			SOFTWARE INTERRUPT TO DOS
+2147  00                   171  	FCB	0		SYSTEM REQUEST NUMBER
+2148                       172  * FOUND A FILE, PERFORM COPY
+2148  BF 23 D7             173  CPYGO	STX	>DIRPTR		SAVE DIRECTORY PTR
+214B  7F 23 CE             174  	CLR	>FOUND		INDICATE WE FOUND FILE
+DUNFIELD 6809 ASSEMBLER: D:COPY                                       PAGE: 4
+
+214E  EC 88 15             175  	LDD	DRADR,X		GET RUN ADDRESS
+2151  FD 23 D0             176  	STD	RUNADR		SAVE
+2154  B6 23 D9             177  	LDA	>SRCDRV		GET SOURCE DRIVE?
+2157  B1 23 ED             178  	CMPA	>DSTDRV		SAME DRIVE?
+215A  26 07                179  	BNE	FRCPY		NO, FORCE COPY
+215C                       180  * IF MOVEING, FILES ON SAME DRIVE, PERFORM RENAME FUNCTION
+215C  B6 23 CB             181  	LDA	>MOVE		ARE WE MOVEING?
+215F  10 27 00 F7          182  	LBEQ	RENAME		YES, PEFORM RENAME INSTEAD
+2163                       183  * SET UP CONTROL BLOCK FOR OPEN READ FILE
+2163  A6 88 17             184  FRCPY	LDA	DATTR,X		GET FILE ATTRIBUTES
+2166  B7 23 D2             185  	STA	>ATTR		SAVE ATTRIBUTES
+2169  85 80                186  	BITA	#RPERM		CAN WE READ IT
+216B  27 34                187  	BEQ	PROERR		PROTECTION ERrOR
+216D  CE 24 01             188  	LDU	#SRCFIL		GET SOURCE FILE CTRL BLOCK
+2170  86 01                189  	LDA	#1		INDICATE READ
+2172  A7 40                190  	STA	OTYPE,U
+2174  B6 23 D9             191  	LDA	>SRCDRV		GET DRIVE
+2177  A7 41                192  	STA	ODRIVE,U
+2179  EC 88 13             193  	LDD	DDADR,X		GET DISK ADDRESS
+217C  ED 42                194  	STD	OFIRST,U	FIRST SEC IN FILE
+217E  ED 44                195  	STD	OSECTOR,U	NEXT SEC TO ACCESS
+2180  4F                   196  	CLRA
+2181  5F                   197  	CLRB
+2182  ED 46                198  	STD	OLSTSEC,U	NO LAST SECTOR
+2184  ED 48                199  	STD	OOFFSET,U	NO OFSET
+2186                       200  * OPEN DESTINATION FILE FOR WRITE
+2186  17 01 EA             201  	LBSR	SELDST		SELECT DESTINATION
+2189  3F                   202  LKFIL	SWI			SOFTWARE INTERRUPT TO DOS
+218A  44                   203  	FCB	68		SYSTEM REQUEST NUMBER
+218B  26 18                204  	BNE	CREF		NO, CREATE IT
+218D  17 01 36             205  	LBSR	ASK		PROMPT FOR ACTION
+2190  81 43                206  	CMPA	#'C'		CHANGING NAME
+2192  27 F5                207  	BEQ	LKFIL		YES
+2194  81 52                208  	CMPA	#'R'		REPLACE?
+2196  27 11                209  	BEQ	NOASK		IF SO, DO IT
+2198                       210  * SKIP TO NEXT FILE IN DIRECTORY
+2198  17 01 C0             211  GONXT	LBSR	SELSRC		GET SOURCE PATTERN
+219B  BE 23 D7             212  	LDX	>DIRPTR		GET POSITION
+219E  16 FF 82             213  	LBRA	NXTFIL		LOOK AT NEXT
+21A1                       214  * CAN'T READ OR WRITE FILE, PROTECTION ERROR
+21A1  3F                   215  PROERR	SWI			SOFTWARE INTERRUPT TO DOS
+21A2  2D                   216  	FCB	45		SYSTEM REQUEST NUMBER
+21A3  20 F3                217  	BRA	GONXT		AGAIN
+21A5                       218  * FILE DIDN'T EXIST, CREATE IT
+21A5  3F                   219  CREF	SWI			SOFTWARE INTERRUPT TO DOS
+21A6  48                   220  	FCB	72		SYSTEM REQUEST NUMBER
+21A7  26 EF                221  	BNE	GONXT		DIDN'T WORK, SKIP IT
+21A9                       222  * COPY FILE IF POSSIBLE
+21A9  A6 88 17             223  NOASK	LDA	DATTR,X		GET ATTRIBUTES
+21AC  85 40                224  	BITA	#WPERM		CAN WE WRITE
+21AE  27 F1                225  	BEQ	PROERR		INVALID
+21B0  B6 23 C9             226  	LDA	>QUIET
+21B3  27 0B                227  	BEQ	QUI1
+21B5  3F                   228  	SWI			SOFTWARE INTERRUPT TO DOS
+21B6  18                   229  	FCB	24		SYSTEM REQUEST NUMBER
+21B7  43 6F 70 79 20 00    230  	FCCZ	'Copy '
+21BD  17 01 63             231  	LBSR	SHOSRC		SHO DRIVE
+21C0  CE 24 0B             232  QUI1	LDU	#DSTFIL		POINT TO BUFFER
+DUNFIELD 6809 ASSEMBLER: D:COPY                                       PAGE: 5
+
+21C3  86 02                233  	LDA	#2		WRITE
+21C5  A7 40                234  	STA	OTYPE,U
+21C7  B6 23 ED             235  	LDA	>DSTDRV		DRIVE
+21CA  A7 41                236  	STA	ODRIVE,U
+21CC  EC 88 13             237  	LDD	DDADR,X		GET ADDRESS
+21CF  ED 42                238  	STD	OFIRST,U
+21D1  ED 44                239  	STD	OSECTOR,U
+21D3  4F                   240  	CLRA
+21D4  5F                   241  	CLRB
+21D5  ED 46                242  	STD	OLSTSEC,U	NO LAST
+21D7  ED 48                243  	STD	OOFFSET,U	NO OFFSET
+21D9  FC 23 D0             244  	LDD	>RUNADR		GET RUN ADDRESS
+21DC  ED 88 15             245  	STD	DRADR,X		SET IT
+21DF  7D 23 CC             246  	TST	>ATFLG		SET ATTRIBUTES?
+21E2  26 06                247  	BNE	SETA1		NO, SKIP IT
+21E4  B6 23 D2             248  	LDA	>ATTR		GET ATTRS
+21E7  A7 88 17             249  	STA	DATTR,X		SAVE EM
+21EA  3F                   250  SETA1	SWI			SOFTWARE INTERRUPT TO DOS
+21EB  55                   251  	FCB	85		SYSTEM REQUEST NUMBER
+21EC                       252  * MOVE DATA FROM SOURCE TO DEST
+21EC  CE 24 01             253  MVDAT	LDU	#SRCFIL		PT TO SOURCE
+21EF  8E 26 15             254  	LDX	#BUFFER		PT TO BUFFER
+21F2  10 8E 00 32          255  	LDY	#MAXBUF		MAX # SECS TO BUFFER
+21F6  3F                   256  MVD1	SWI			SOFTWARE INTERRUPT TO DOS
+21F7  3A                   257  	FCB	58		SYSTEM REQUEST NUMBER
+21F8  26 22                258  	BNE	MVD3		END OF FILE
+21FA  30 89 02 00          259  	LEAX	512,X		ADVANCE TO NEXT
+21FE  31 3F                260  	LEAY	-1,Y		REDUCE COUNT
+2200  26 F4                261  	BNE	MVD1		KEEP GOING
+2202  CE 24 0B             262  	LDU	#DSTFIL		PT TO DEST
+2205  8E 26 15             263  	LDX	#BUFFER
+2208  10 8E 00 32          264  	LDY	#MAXBUF
+220C  3F                   265  MVD2	SWI			SOFTWARE INTERRUPT TO DOS
+220D  3C                   266  	FCB	60		SYSTEM REQUEST NUMBER
+220E  10 26 FF 86          267  	LBNE	GONXT		ERROR, DO NEXT
+2212  30 89 02 00          268  	LEAX	512,X		NEXT SECTOR IN MEM
+2216  31 3F                269  	LEAY	-1,Y		REDUCE COUNT
+2218  26 F2                270  	BNE	MVD2		DO EM ALL
+221A  20 D0                271  	BRA	MVDAT		BACK TO SOURCE
+221C                       272  * END OF FILE, WRITE LAST BUFFER
+221C  CE 24 0B             273  MVD3	LDU	#DSTFIL		PT TO DEST
+221F  8E 26 15             274  	LDX	#BUFFER		PT TO DATA
+2222  10 8C 00 32          275  MVD4	CMPY	#MAXBUF		ANY LEFT
+2226  24 0E                276  	BHS	MVD5		NO, CLOSE IT
+2228  3F                   277  	SWI			SOFTWARE INTERRUPT TO DOS
+2229  3C                   278  	FCB	60		SYSTEM REQUEST NUMBER
+222A  10 26 FF 6A          279  	LBNE	GONXT		ERROR
+222E  30 89 02 00          280  	LEAX	512,X		ADVANCE
+2232  31 21                281  	LEAY	1,Y		CONTINUE
+2234  20 EC                282  	BRA	MVD4		DO EM ALL
+2236                       283  * CLOSE FILE AND PROCEED
+2236  3F                   284  MVD5	SWI			SOFTWARE INTERRUPT TO DOS
+2237  39                   285  	FCB	57		SYSTEM REQUEST NUMBER
+2238  26 1D                286  	BNE	GONXT1		ERROR
+223A                       287  * IF MOVEING, DELETE SOURCE FILE
+223A  B6 23 CB             288  	LDA	>MOVE		ARE WE MOVEING
+223D  26 18                289  	BNE	GONXT1		NO, ITS OK
+223F  17 01 00             290  	LBSR	GETSRC		GET SOURCE NAME
+DUNFIELD 6809 ASSEMBLER: D:COPY                                       PAGE: 6
+
+2242  B6 23 C9             291  	LDA	>QUIET
+2245  27 0E                292  	BEQ	QUI2
+2247  3F                   293  	SWI			SOFTWARE INTERRUPT TO DOS
+2248  18                   294  	FCB	24		SYSTEM REQUEST NUMBER
+2249  44 65 6C 65 74 65 +  295  	FCCZ	'Delete '
+2251  3F                   296  	SWI			SOFTWARE INTERRUPT TO DOS
+2252  1E                   297  	FCB	30		SYSTEM REQUEST NUMBER
+2253  3F                   298  	SWI			SOFTWARE INTERRUPT TO DOS
+2254  16                   299  	FCB	22		SYSTEM REQUEST NUMBER
+2255  3F                   300  QUI2	SWI			SOFTWARE INTERRUPT TO DOS
+2256  49                   301  	FCB	73		SYSTEM REQUEST NUMBER
+2257  16 FF 3E             302  GONXT1	LBRA	GONXT		DO IT AGAIN
+225A                       303  *
+225A                       304  * 'MOVE' QUALIFIER, FILES ON SAME DISK, RENAME FILE
+225A                       305  *
+225A  17 01 16             306  RENAME	LBSR	SELDST		GET DESTINATION FILENAME
+225D  3F                   307  	SWI			SOFTWARE INTERRUPT TO DOS
+225E  13                   308  	FCB	19		SYSTEM REQUEST NUMBER
+225F  10 27 FF 35          309  	LBEQ	GONXT		DO NEXT
+2263  3F                   310  REN1	SWI			SOFTWARE INTERRUPT TO DOS
+2264  44                   311  	FCB	68		SYSTEM REQUEST NUMBER
+2265  26 37                312  	BNE	REN4		NO, OK TO RENAME
+2267  17 00 5C             313  	LBSR	ASK		PROMPT FOR ACTION
+226A  81 43                314  	CMPA	#'C'		CHANGE NAME?
+226C  27 F5                315  	BEQ	REN1		IF SO, DO IT AGAIN SAM
+226E  81 52                316  	CMPA	#'R'		REPLACE?
+2270  10 26 FF 24          317  	LBNE	GONXT		NO, SKIP IT & GET NEXT
+2274  B6 23 C9             318  	LDA	>QUIET
+2277  27 0E                319  	BEQ	QUI3		NO MESSAGE
+2279  3F                   320  	SWI			SOFTWARE INTERRUPT TO DOS
+227A  18                   321  	FCB	24		SYSTEM REQUEST NUMBER
+227B  44 65 6C 65 74 65 +  322  	FCCZ	'Delete '
+2283  3F                   323  	SWI			SOFTWARE INTERRUPT TO DOS
+2284  1E                   324  	FCB	30		SYSTEM REQUEST NUMBER
+2285  3F                   325  	SWI			SOFTWARE INTERRUPT TO DOS
+2286  16                   326  	FCB	22		SYSTEM REQUEST NUMBER
+2287  3F                   327  QUI3	SWI			SOFTWARE INTERRUPT TO DOS
+2288  49                   328  	FCB	73		SYSTEM REQUEST NUMBER
+2289  10 26 FF 0B          329  	LBNE	GONXT		ERROR
+228D                       330  * DELETE IN OUR COPY OF DIRECTORY
+228D  8E 24 15             331  	LDX	#WRKSPC		PT TO OUR DATA
+2290  3F                   332  REN2	SWI			SOFTWARE INTERRUPT TO DOS
+2291  13                   333  	FCB	19		SYSTEM REQUEST NUMBER
+2292  26 02                334  	BNE	REN3		NO, DON'T ERASE
+2294  6F 84                335  	CLR	,X		ZAP IT
+2296  30 88 20             336  REN3	LEAX	32,X		ADVANCE
+2299  8C 26 15             337  	CMPX	#WRKSPC+512	OVER?
+229C  25 F2                338  	BLO	REN2		NO, KEEP GOING
+229E                       339  * SWAP FILENAME
+229E  BE 23 D7             340  REN4	LDX	>DIRPTR		GET DIR POSITION
+22A1  B6 23 C9             341  	LDA	>QUIET
+22A4  27 0B                342  	BEQ	QUI4		KEEP MOUTH SHUT
+22A6  3F                   343  	SWI			SOFTWARE INTERRUPT TO DOS
+22A7  18                   344  	FCB	24		SYSTEM REQUEST NUMBER
+22A8  4D 6F 76 65 20 00    345  	FCCZ	'Move '
+22AE  17 00 72             346  	LBSR	SHOSRC		DISPLAY
+22B1  10 BE 23 D3          347  QUI4	LDY	>DOSBUF		GET DOS BUFFER
+22B5  31 21                348  	LEAY	1,Y		ADVANCE
+DUNFIELD 6809 ASSEMBLER: D:COPY                                       PAGE: 7
+
+22B7  C6 13                349  	LDB	#DDADR		SIZE
+22B9  A6 A0                350  REN5	LDA	,Y+		CHAR FROM DOS
+22BB  A7 80                351  	STA	,X+		UPDATE DIRECT
+22BD  5A                   352  	DECB			REDUCE COUNT
+22BE  26 F9                353  	BNE	REN5		AND CONTINUE
+22C0  7F 23 CF             354  	CLR	>DIRCHG		INDICATE DIR CHANGED
+22C3  16 FE D2             355  	LBRA	GONXT		GET NEXT FILE
+22C6                       356  * ASK ABOUT FILE
+22C6  B6 23 CD             357  ASK	LDA	>NEW		NEW FILES ONLY?
+22C9  27 57                358  	BEQ	ASKRTS		IF SO, EXIT
+22CB  86 52                359  	LDA	#'R'		INDICATE REPLACE
+22CD  7D 23 CA             360  	TST	>REPL		ARE WE REPLACING
+22D0  27 50                361  	BEQ	ASKRTS		EXIT
+22D2  3F                   362  	SWI			SOFTWARE INTERRUPT TO DOS
+22D3  18                   363  	FCB	24		SYSTEM REQUEST NUMBER
+22D4  46 69 6C 65 20 00    364  	FCCZ	'File '
+22DA  3F                   365  	SWI			SOFTWARE INTERRUPT TO DOS
+22DB  1E                   366  	FCB	30		SYSTEM REQUEST NUMBER
+22DC  3F                   367  	SWI			SOFTWARE INTERRUPT TO DOS
+22DD  18                   368  	FCB	24		SYSTEM REQUEST NUMBER
+22DE  20 65 78 69 73 74 +  369  	FCCZ	' exists(Skip/Replace/Change name)?'
+2301  3F                   370  	SWI			SOFTWARE INTERRUPT TO DOS
+2302  22                   371  	FCB	34		SYSTEM REQUEST NUMBER
+2303  3F                   372  	SWI			SOFTWARE INTERRUPT TO DOS
+2304  21                   373  	FCB	33		SYSTEM REQUEST NUMBER
+2305  84 5F                374  	ANDA	#$5F		CONVERT TO UPPER
+2307  3F                   375  	SWI			SOFTWARE INTERRUPT TO DOS
+2308  16                   376  	FCB	22		SYSTEM REQUEST NUMBER
+2309  81 43                377  	CMPA	#'C'		CHANGING?
+230B  26 15                378  	BNE	ASKRTS		NO
+230D  3F                   379  ASK1	SWI			SOFTWARE INTERRUPT TO DOS
+230E  18                   380  	FCB	24		SYSTEM REQUEST NUMBER
+230F  4E 65 77 20 6E 61 +  381  	FCCZ	'New name: '
+231A  3F                   382  	SWI			SOFTWARE INTERRUPT TO DOS
+231B  03                   383  	FCB	3		SYSTEM REQUEST NUMBER
+231C  3F                   384  	SWI			SOFTWARE INTERRUPT TO DOS
+231D  0A                   385  	FCB	10		SYSTEM REQUEST NUMBER
+231E  26 ED                386  	BNE	ASK1		GET IT WRITE
+2320  86 43                387  	LDA	#'C'		INDICATE CHANGE
+2322  39                   388  ASKRTS	RTS
+2323                       389  * SHOW SOURCE FILE IDENTIFIER
+2323  34 12                390  SHOSRC	PSHS	A,X		SAVE REGS
+2325  B6 23 D9             391  	LDA	>SRCDRV		GET SOURCE DRIVE
+2328  8B 41                392  	ADDA	#'A'		CONVERT
+232A  3F                   393  	SWI			SOFTWARE INTERRUPT TO DOS
+232B  21                   394  	FCB	33		SYSTEM REQUEST NUMBER
+232C  86 3A                395  	LDA	#':'		COLON
+232E  3F                   396  	SWI			SOFTWARE INTERRUPT TO DOS
+232F  21                   397  	FCB	33		SYSTEM REQUEST NUMBER
+2330  BE 23 D7             398  	LDX	>DIRPTR		GET PTR
+2333  3F                   399  	SWI			SOFTWARE INTERRUPT TO DOS
+2334  1F                   400  	FCB	31		SYSTEM REQUEST NUMBER
+2335  3F                   401  	SWI			SOFTWARE INTERRUPT TO DOS
+2336  18                   402  	FCB	24		SYSTEM REQUEST NUMBER
+2337  20 74 6F 20 00       403  	FCCZ	' to '
+233C  3F                   404  	SWI			SOFTWARE INTERRUPT TO DOS
+233D  1E                   405  	FCB	30		SYSTEM REQUEST NUMBER
+233E  3F                   406  	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: D:COPY                                       PAGE: 8
+
+233F  16                   407  	FCB	22		SYSTEM REQUEST NUMBER
+2340  35 92                408  	PULS	A,X,PC
+2342                       409  * GET SOURCE FILENAME INTO DOS BUFFER
+2342  34 30                410  GETSRC	PSHS	X,Y		SAVE REGS
+2344  BE 23 D7             411  	LDX	>DIRPTR		GET DIRECTORY POINTER
+2347  B6 23 D9             412  	LDA	>SRCDRV		GET SOURCE DRIVE
+234A  10 BE 23 D3          413  	LDY	>DOSBUF		PT TO DOS BUFFER
+234E  A7 A0                414  	STA	,Y+		SAVE IT
+2350  C6 13                415  	LDB	#DDADR		LENGTH
+2352  A6 80                416  GETS1	LDA	,X+		GET LENGTH
+2354  A7 A0                417  	STA	,Y+		SAVE IT
+2356  5A                   418  	DECB			BACKUP
+2357  26 F9                419  	BNE	GETS1		DO IT AGAIN
+2359  35 B0                420  	PULS	X,Y,PC
+235B                       421  * SELECT SOURCE FILENAME PATTERN
+235B  34 36                422  SELSRC	PSHS	A,B,X,Y		SAVE REGS
+235D  BE 23 D3             423  	LDX	>DOSBUF		GET DOS BUFFER
+2360  10 8E 23 D9          424  	LDY	#SRCDRV		PT TO SAVED
+2364  A6 A4                425  	LDA	,Y		GET DRIVE
+2366  3F                   426  	SWI			SOFTWARE INTERRUPT TO DOS
+2367  4C                   427  	FCB	76		SYSTEM REQUEST NUMBER
+2368  C6 14                428  	LDB	#DDADR+1	NAME+DRIVE
+236A  A6 A0                429  SELS1	LDA	,Y+		GET CHAR
+236C  A7 80                430  	STA	,X+		SAVE
+236E  5A                   431  	DECB			REDUCE COUNT
+236F  26 F9                432  	BNE	SELS1		MOVE ALL
+2371  35 B6                433  	PULS	A,B,X,Y,PC
+2373                       434  * SELECT DESTINATION PATTERN ('U' PTS TO SUBSTITUTE NAME)
+2373  34 36                435  SELDST	PSHS	A,B,X,Y		SAVE REGS
+2375  FE 23 D7             436  	LDU	>DIRPTR		GET SUBSTITURE FILENAME
+2378  10 8E 23 ED          437  	LDY	#DSTDRV		PT TP DEST
+237C  BE 23 D3             438  	LDX	>DOSBUF		GET BUFFER
+237F  A6 A0                439  	LDA	,Y+		GET DRIVE
+2381  A7 80                440  	STA	,X+		WRITE IT
+2383  C6 13                441  	LDB	#DDADR		LENGTH OF NAME
+2385  A6 A0                442  SELD1	LDA	,Y+		GET CHAR FROM DEST
+2387  81 2A                443  	CMPA	#'*'		WILDCARD
+2389  27 09                444  	BEQ	SELD3		HANDLE
+238B  A7 80                445  	STA	,X+		SAVE IN DOS
+238D  33 41                446  	LEAU	1,U		ADVANCE PATTERN
+238F  5A                   447  	DECB			REDUCE COUNT
+2390  26 F3                448  	BNE	SELD1		CONTINUE
+2392  35 B6                449  SELD2	PULS	A,B,X,Y,PC
+2394  A6 C0                450  SELD3	LDA	,U+		GET CHAR FROM SOURCE
+2396  A7 80                451  	STA	,X+		SAVE IN DEST
+2398  5A                   452  	DECB			REDUCE COUNT
+2399  27 F7                453  	BEQ	SELD2		END, QUIT
+239B  C1 0B                454  	CMPB	#DDADR-DNAME	AT NAME?
+239D  27 E6                455  	BEQ	SELD1		YES
+239F  C1 03                456  	CMPB	#DDADR-DTYPE	AT TYPE?
+23A1  27 E2                457  	BEQ	SELD1		YES
+23A3  31 21                458  	LEAY	1,Y		ADVANCE
+23A5  20 ED                459  	BRA	SELD3		KEEP GOING
+23A7                       460  * QUALIFIER TABLES
+23A7  82                   461  QTABLE	FCB	$82
+23A8  2F 51 55 49 45 54    462  	FCC	'/QUIET'
+23AE  82                   463  	FCB	$82
+23AF  2F 52 45 50 4C 41 +  464  	FCC	'/REPLACE'
+DUNFIELD 6809 ASSEMBLER: D:COPY                                       PAGE: 9
+
+23B7  82                   465  	FCB	$82
+23B8  2F 4D 4F 56 45       466  	FCC	'/MOVE'
+23BD  82                   467  	FCB	$82
+23BE  2F 50 52 4F 54       468  	FCC	'/PROT'
+23C3  82                   469  	FCB	$82
+23C4  2F 4E 45 57          470  	FCC	'/NEW'
+23C8  80                   471  	FCB	$80
+0005                       472  QMAX	EQU	5		# QUALIFIERS
+23C9                       473  QFLAGS	EQU	*
+23C9  FF                   474  QUIET	FCB	$FF		QUIET FLAG
+23CA  FF                   475  REPL	FCB	$FF		REPLACE FLAG
+23CB  FF                   476  MOVE	FCB	$FF		MOVE FLAG
+23CC  FF                   477  ATFLG	FCB	$FF		ATRIBUTE COPY
+23CD  FF                   478  NEW	FCB	$FF		NEW FILES ONLY
+23CE                       479  * MISC RAM VARIABLES
+23CE  FF                   480  FOUND	FCB	$FF		FOUND FILES FLAG
+23CF                       481  DIRCHG	RMB	1		DIRECTORY CHANGED
+23D0                       482  RUNADR	RMB	2		FILE RUN ADDRESS
+23D2                       483  ATTR	RMB	1		FILE ATTRIBUTES
+23D3                       484  DOSBUF	RMB	2		PTR TO DOS FILNAME
+23D5                       485  DIRSEC	RMB	2		CURRENT DIRECTORY SECTOR
+23D7                       486  DIRPTR	RMB	2		DIR POINTER
+23D9                       487  SRCDRV	RMB	1		SOURCE DRIVE
+23DA                       488  SRCPAT	RMB	DDADR		SOURCE FIELNAME BUFFER
+23ED                       489  DSTDRV	RMB	1		DESTINATION DRIVE
+23EE                       490  DSTPAT	RMB	DDADR		DESTINATION FILENAME BUFFER
+2401                       491  SRCFIL	RMB	10		SOURCE FILE CONTROL BLOCK
+240B                       492  DSTFIL	RMB	10		DESTINATION FILE CONTROL BLOCK
+2415                       493  WRKSPC	RMB	512		WORK SECTOR
+2615                       494  BUFFER	EQU	*		BUFFER DATA HERE

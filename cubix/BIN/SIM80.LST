@@ -1,0 +1,1544 @@
+DUNFIELD 6809 ASSEMBLER: D:SIM80                                      PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         9  *
+0000                        10  * 8080 microprocessor emulator, allowing software for the Intel 8080
+0000                        11  * to be executed on the Motorola 6809.
+0000                        12  *
+0000                        13  * The following operations/instruction are not supported
+0000                        14  * by the simulator:
+0000                        15  *
+0000                        16  *  1).... ENABLE/DISABLE INTERRUPTS (EI, DI)
+0000                        17  *  2).... PARITY FLAG, (JPE, JPO, CPE, CPO, RPE, RPO)
+0000                        18  *  3..... INPUT/OUTPUT INSTRUCTIONS, (IN, OUT)
+0000                        19  *
+0000                        20  * If the simulator encounters an unsupported opcode, an opcode
+0000                        21  * which is not defined, or a "HALT" instruction, it will display
+0000                        22  * an appropriate message and terminate.
+0000                        23  *
+0000                        24  * The 8080 "OUT" instruction is used to communicate with the 6809
+0000                        25  * operating system, via the "SSR" interface, the port number given
+0000                        26  * in the "OUT" instruction is taken to be the number of the system
+0000                        27  * call to be executed. The 8080 'BC' register pair is mapped into
+0000                        28  * the 6809 'D' (A&B) accumulator, the 'DE' register pair is mapped
+0000                        29  * into 'Y', and the 'HL' register pair is mapped into 'X'. When the
+0000                        30  * function returns, the registers will be mapped back, and the 8080
+0000                        31  * 'A' register will contain the DOS return code. No flags are set.
+0000                        32  *
+0000                        33  * Copyright 1983-2005 Dave Dunfield
+0000                        34  * All rights reserved.
+0000                        35  *
+0000                        36  * DIRECTORY STRUCTURE
+0000                        37  	ORG	0
+0000                        38  DPREFIX	RMB	8
+0008                        39  DNAME	RMB	8
+0010                        40  DTYPE	RMB	3
+0013                        41  DDADR	RMB	2
+0015                        42  DRADR	RMB	2
+0017                        43  DATTR	RMB	1
+0018                        44  * FILE PERMISSIONS
+0080                        45  RPERM	EQU	%10000000	READ PERMISSION
+0040                        46  WPERM	EQU	%01000000	WRITE PERMISSION
+0020                        47  EPERM	EQU	%00100000	EXECUTE PERMISSION
+0010                        48  DPERM	EQU	%00010000	DELETE PERMISSION
+0018                        49  * DOS RETURN CODES
+0003                        50  RCPRO	EQU	3		PROTECTION VIOLATION
+0018                        51  *
+2000                        52  	ORG	OSRAM		DOS UTILITY SPACE
+2000                        53  * PROGRAM ENTRY
+2000  20 1F                 54  	BRA	SIM80
+2002                        55  * 8080 PROCESSOR REGISTER SET
+2002  00                    56  AREG	FCB	0		SAVED A REGISTER
+2003  00                    57  CCREG	FCB	0		SAVED CONDITION CODES
+2004  00                    58  BREG	FCB	0		SAVED B REGISTER
+2005  00                    59  CREG	FCB	0		SAVED C REGISTER
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 2
+
+2006  00                    60  DREG	FCB	0		SAVED D REGISTER
+2007  00                    61  EREG	FCB	0		SAVED E REGISTER
+2008  00                    62  HREG	FCB	0		SAVED H REGISTER
+2009  00                    63  LREG	FCB	0		SAVED L REGISTER
+200A  DB FF                 64  SREG	FDB	OSEND		SAVED STACK POINTER
+200C                        65  * SIMULATOR LOCAL STORAGE
+200C                        66  QFLAGS	EQU	*		QUALIFIER FLAGS START HERE
+200C  FF                    67  DEBUG	FCB	$FF		DEBUG ENABLED
+200D  FF                    68  TRACE	FCB	$FF		TRACE MODE ENABLED
+200E  FF                    69  SNGLST	FCB	$FF		SINGLE STEP DISPLAY
+200F  00 00 00 00 00 00 +   70  BRKPTS	FDB	0,0,0,0		BREAKPOINT TABLE (0-3)
+2017  00 00 00 00 00 00 +   71  	FDB	0,0,0,0		BREAKPOINT TABLE (4-7)
+201F  00 00                 72  TEMP	FDB	0		TEMPORARY STORAGE
+2021                        73  *
+2021  81 3F                 74  SIM80	CMPA	#'?'		HELP REQUEST?
+2023  26 2C                 75  	BNE	QUAL		NO
+2025  3F                    76  	SWI			SOFTWARE INTERRUPT TO DOS
+2026  19                    77  	FCB	25		SYSTEM REQUEST NUMBER
+2027  55 73 65 3A 20 53 +   78  	FCCZ	'Use: SIM80[/DEBUG] <8080 code filename>'
+204F  3F                    79  	SWI			SOFTWARE INTERRUPT TO DOS
+2050  00                    80  	FCB	0		SYSTEM REQUEST NUMBER
+2051                        81  * EVALUATE QUALIFIERS
+2051  A6 A4                 82  QUAL	LDA	,Y		GET CHAR
+2053  81 2F                 83  	CMPA	#'/'		QUALIFIER?
+2055  26 3B                 84  	BNE	MAIN		NO QUALIFIERS
+2057  8E 2B A7              85  	LDX	#QTABLE		PT TO TABLE
+205A  3F                    86  	SWI			SOFTWARE INTERRUPT TO DOS
+205B  12                    87  	FCB	18		SYSTEM REQUEST NUMBER
+205C  C1 01                 88  	CMPB	#QMAX		OVER?
+205E  24 07                 89  	BHS	QERR		INVALID
+2060  8E 20 0C              90  	LDX	#QFLAGS		PT TO FLAGS
+2063  6F 85                 91  	CLR	B,X		ZAP IT
+2065  20 EA                 92  	BRA	QUAL		CONTINUE
+2067  3F                    93  QERR	SWI			SOFTWARE INTERRUPT TO DOS
+2068  18                    94  	FCB	24		SYSTEM REQUEST NUMBER
+2069  49 6E 76 61 6C 69 +   95  	FCCZ	/Invalid qualifier: '/
+207E  A6 A0                 96  	LDA	,Y+		GET CHAR
+2080  3F                    97  QERR1	SWI			SOFTWARE INTERRUPT TO DOS
+2081  21                    98  	FCB	33		SYSTEM REQUEST NUMBER
+2082  3F                    99  	SWI			SOFTWARE INTERRUPT TO DOS
+2083  05                   100  	FCB	5		SYSTEM REQUEST NUMBER
+2084  27 04                101  	BEQ	QERR2		END, EXIT
+2086  81 2F                102  	CMPA	#'/'		NEXT QUALIFIER
+2088  26 F6                103  	BNE	QERR1		ITS OK
+208A  3F                   104  QERR2	SWI			SOFTWARE INTERRUPT TO DOS
+208B  19                   105  	FCB	25		SYSTEM REQUEST NUMBER
+208C  27 00                106  	FCCZ	/'/
+208E  86 01                107  	LDA	#1		INDICATE INVALID OPERAND
+2090  3F                   108  	SWI			SOFTWARE INTERRUPT TO DOS
+2091  00                   109  	FCB	0		SYSTEM REQUEST NUMBER
+2092                       110  * MAIN PROGRAM
+2092  86 20                111  MAIN	LDA	#=AREG		POINT TO DIRECT PAGE
+2094  1F 8B                112  	TFR	A,DP		SET UP DP
+2096                       113  	SETDP	=AREG		LET ASSEMBLER IN ON IT
+2096  3F                   114  	SWI			SOFTWARE INTERRUPT TO DOS
+2097  0B                   115  	FCB	11		SYSTEM REQUEST NUMBER
+2098  26 1A                116  	BNE	ABO1		ERROR
+209A  CC 38 30             117  	LDD	#'80'		GET TYPE
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 3
+
+209D  ED 84                118  	STD	,X		SET IT
+209F  6F 02                119  	CLR	2,X		ZERO LAST
+20A1  3F                   120  	SWI			SOFTWARE INTERRUPT TO DOS
+20A2  04                   121  	FCB	4		SYSTEM REQUEST NUMBER
+20A3  10 BF 20 06          122  	STY	DREG		POINT D-E TO PARAMETERS
+20A7  3F                   123  	SWI			SOFTWARE INTERRUPT TO DOS
+20A8  45                   124  	FCB	69		SYSTEM REQUEST NUMBER
+20A9  26 09                125  	BNE	ABO1		ERROR
+20AB  A6 88 17             126  	LDA	DATTR,X		GET ATTRIBUTES
+20AE  85 20                127  	BITA	#EPERM		OK TO EXECUTE?
+20B0  26 04                128  	BNE	OKEXE		YES, ITS OK
+20B2  3F                   129  	SWI			SOFTWARE INTERRUPT TO DOS
+20B3  2D                   130  	FCB	45		SYSTEM REQUEST NUMBER
+20B4  3F                   131  ABO1	SWI			SOFTWARE INTERRUPT TO DOS
+20B5  00                   132  	FCB	0		SYSTEM REQUEST NUMBER
+20B6  AE 88 15             133  OKEXE	LDX	DRADR,X		GET LOAD ADDRESS
+20B9  1F 13                134  	TFR	X,U		COPY TO 8080 PC
+20BB  3F                   135  	SWI			SOFTWARE INTERRUPT TO DOS
+20BC  35                   136  	FCB	53		SYSTEM REQUEST NUMBER
+20BD  26 F5                137  	BNE	ABO1		FAILED, REPORT ERROR
+20BF  7D 20 0C             138  	TST	DEBUG		ARE WE DEBUGGING?
+20C2  10 26 02 42          139  	LBNE	NXTINS		NO, FULL SPEED AHEAD
+20C6  3F                   140  	SWI			SOFTWARE INTERRUPT TO DOS
+20C7  18                   141  	FCB	24		SYSTEM REQUEST NUMBER
+20C8  45 6E 74 72 79 20 +  142  	FCCZ	'Entry point = $'
+20D8  1F 30                143  	TFR	U,D		GET STARTING PC
+20DA  3F                   144  	SWI			SOFTWARE INTERRUPT TO DOS
+20DB  1B                   145  	FCB	27		SYSTEM REQUEST NUMBER
+20DC  3F                   146  BUGLF	SWI			SOFTWARE INTERRUPT TO DOS
+20DD  16                   147  	FCB	22		SYSTEM REQUEST NUMBER
+20DE  3F                   148  BUGGER	SWI			SOFTWARE INTERRUPT TO DOS
+20DF  18                   149  	FCB	24		SYSTEM REQUEST NUMBER
+20E0  38 30 38 30 3E 20 +  150  	FCCZ	'8080> '	PROMPT
+20E7  3F                   151  	SWI			SOFTWARE INTERRUPT TO DOS
+20E8  03                   152  	FCB	3		SYSTEM REQUEST NUMBER
+20E9  3F                   153  	SWI			SOFTWARE INTERRUPT TO DOS
+20EA  04                   154  	FCB	4		SYSTEM REQUEST NUMBER
+20EB  27 F1                155  	BEQ	BUGGER		IF NULL, IGNORE
+20ED  8E 2B AF             156  	LDX	#DCMD		POINT TO COMMAND TABLE
+20F0  3F                   157  	SWI			SOFTWARE INTERRUPT TO DOS
+20F1  12                   158  	FCB	18		SYSTEM REQUEST NUMBER
+20F2  5D                   159  	TSTB			IS IT SET COMMAND
+20F3  10 26 00 71          160  	LBNE	DSPCMD		NO, TRY CLEAR
+20F7  8E 2B D6             161  	LDX	#DOPT		POINT TO OPTION TABLE
+20FA  3F                   162  	SWI			SOFTWARE INTERRUPT TO DOS
+20FB  12                   163  	FCB	18		SYSTEM REQUEST NUMBER
+20FC                       164  * SET PSW, BC, DE, HL, SP
+20FC  C1 04                165  	CMPB	#4		IS IT S SET REG?
+20FE  22 14                166  	BHI	SPC		NO, TRY SET PC
+2100  58                   167  	ASLB			CONVERT TO TWO TIMES OFFSET
+2101  8E 20 02             168  	LDX	#AREG		POINT TO PSW
+2104  3A                   169  	ABX			ADD IN OFFSET
+2105  34 10                170  	PSHS	X		SAVE OFFSET
+2107  3F                   171  	SWI			SOFTWARE INTERRUPT TO DOS
+2108  07                   172  	FCB	7		SYSTEM REQUEST NUMBER
+2109  1F 10                173  	TFR	X,D		COPY TO D
+210B  35 10                174  	PULS	X		RESTORE REGISTER
+210D  26 02                175  	BNE	BGBAK		IF INVALID, DON'T SAVE
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 4
+
+210F  ED 84                176  	STD	,X		SET REGISTER
+2111  16 FF CA             177  BGBAK	LBRA	BUGGER		DO IT AGAIN
+2114                       178  * SET PC
+2114  C0 05                179  SPC	SUBB	#5		IS IT SET PC?
+2116  26 08                180  	BNE	STRACE		NO, TRY SET TRACE MODE
+2118  3F                   181  	SWI			SOFTWARE INTERRUPT TO DOS
+2119  07                   182  	FCB	7		SYSTEM REQUEST NUMBER
+211A  26 F5                183  	BNE	BGBAK		GIVE UP IF INVALID
+211C  1F 13                184  	TFR	X,U		SET PC
+211E  20 F1                185  	BRA	BGBAK		DO IT AGAIN
+2120                       186  * SET TRACE MODE
+2120  5A                   187  STRACE	DECB			IS IT TRACE?
+2121  26 05                188  	BNE	NTRACE		NO, TRY SET TRACE OFF
+2123  7F 20 0D             189  	CLR	TRACE		SET TRACE MODE
+2126  20 E9                190  	BRA	BGBAK		RETURN
+2128                       191  * SET TRACE OFF
+2128  5A                   192  NTRACE	DECB			TRACE OFF?
+2129  26 07                193  	BNE	SETBRK		NO, TRY SET BREAKPOINT
+212B  86 FF                194  	LDA	#$FF		GET OFF FLAG
+212D  B7 20 0D             195  	STA	TRACE		SAVE
+2130  20 DF                196  	BRA	BGBAK		AND RETRUN
+2132                       197  * SET UP A BREAKPOINT
+2132  5A                   198  SETBRK	DECB			IS IT A BREAKPOINT?
+2133  26 1D                199  	BNE	BADOPT		IT'S A BAD OPTION
+2135  3F                   200  	SWI			SOFTWARE INTERRUPT TO DOS
+2136  06                   201  	FCB	6		SYSTEM REQUEST NUMBER
+2137  10 26 FF A3          202  	LBNE	BUGGER		IT'S BAD, GET UPSET
+213B  10 83 00 08          203  	CMPD	#8		OVER?
+213F  24 11                204  	BHS	BADOPT		INDICATE BAD
+2141  8E 20 0F             205  	LDX	#BRKPTS		POINT TO BREAKPOINT TABLE
+2144  58                   206  	ASLB			CONVERT TO OFFSET
+2145  3A                   207  	ABX			GET ADDRESS INTIO TABLE
+2146  34 10                208  	PSHS	X		SAVE IT
+2148  3F                   209  	SWI			SOFTWARE INTERRUPT TO DOS
+2149  07                   210  	FCB	7		SYSTEM REQUEST NUMBER
+214A  1F 10                211  	TFR	X,D		COPY TO D
+214C  35 10                212  	PULS	X		RESTORE
+214E  ED 84                213  	STD	,X		SAVE VALUE
+2150  20 BF                214  	BRA	BGBAK		RETURN
+2152  3F                   215  BADOPT	SWI			SOFTWARE INTERRUPT TO DOS
+2153  18                   216  	FCB	24		SYSTEM REQUEST NUMBER
+2154  49 6E 76 61 6C 69 +  217  	FCCZ	'Invalid operand.'
+2165  16 FF 74             218  	LBRA	BUGLF
+2168                       219  * DISPLAY COMMAND
+2168  5A                   220  DSPCMD	DECB			DISPLAY?
+2169  26 40                221  	BNE	MEMCMD		NO, TRY MEMORY
+216B  3F                   222  	SWI			SOFTWARE INTERRUPT TO DOS
+216C  18                   223  	FCB	24		SYSTEM REQUEST NUMBER
+216D  50 43 3D 00          224  	FCCZ	'PC='
+2171  1F 30                225  	TFR	U,D
+2173  3F                   226  	SWI			SOFTWARE INTERRUPT TO DOS
+2174  1B                   227  	FCB	27		SYSTEM REQUEST NUMBER
+2175  17 01 50             228  	LBSR	DSPRG		OUTPUT REGISTERS
+2178  3F                   229  	SWI			SOFTWARE INTERRUPT TO DOS
+2179  19                   230  	FCB	25		SYSTEM REQUEST NUMBER
+217A  42 72 65 61 6B 70 +  231  	FCCZ	'Breakpoints:'
+2187  5F                   232  	CLRB
+2188  8E 20 0F             233  	LDX	#BRKPTS		POINT TO BREAKPOINT TABLE
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 5
+
+218B  1F 98                234  OTBRK	TFR	B,A		GET NUMBER
+218D  8B 30                235  	ADDA	#$30		CONVERT TO ASCII
+218F  3F                   236  	SWI			SOFTWARE INTERRUPT TO DOS
+2190  21                   237  	FCB	33		SYSTEM REQUEST NUMBER
+2191  86 3D                238  	LDA	#'='
+2193  3F                   239  	SWI			SOFTWARE INTERRUPT TO DOS
+2194  21                   240  	FCB	33		SYSTEM REQUEST NUMBER
+2195  34 04                241  	PSHS	B
+2197  EC 81                242  	LDD	,X++		GET VALUE
+2199  3F                   243  	SWI			SOFTWARE INTERRUPT TO DOS
+219A  1B                   244  	FCB	27		SYSTEM REQUEST NUMBER
+219B  35 04                245  	PULS	B		RESTORE B
+219D  5C                   246  	INCB			ADVANCE
+219E  C1 07                247  	CMPB	#7		PAST LIMIT?
+21A0  10 22 FF 38          248  	LBHI	BUGLF
+21A4  3F                   249  	SWI			SOFTWARE INTERRUPT TO DOS
+21A5  18                   250  	FCB	24		SYSTEM REQUEST NUMBER
+21A6  2C 20 00             251  	FCCZ	', '
+21A9  20 E0                252  	BRA	OTBRK		AND CONTINUE
+21AB                       253  * MEMORY DISPLAY COMMAND
+21AB  5A                   254  MEMCMD	DECB			IS IT MEMORY?
+21AC  26 51                255  	BNE	STCMD		NO, TRY STORE
+21AE  3F                   256  	SWI			SOFTWARE INTERRUPT TO DOS
+21AF  07                   257  	FCB	7		SYSTEM REQUEST NUMBER
+21B0  10 26 FF 2A          258  	LBNE	BUGGER		IT'S A BUGGER IF ITS BAD
+21B4  BF 20 1F             259  	STX	TEMP		SAVE FOR LATER
+21B7  3F                   260  	SWI			SOFTWARE INTERRUPT TO DOS
+21B8  07                   261  	FCB	7		SYSTEM REQUEST NUMBER
+21B9  10 26 FF 21          262  	LBNE	BUGGER		ALSO BAD
+21BD  10 BE 20 1F          263  	LDY	TEMP		GET DATA
+21C1  BF 20 1F             264  	STX	TEMP		SAVE ENDING ADDRESS
+21C4  1F 20                265  SHMEM	TFR	Y,D		GET ADDRESS
+21C6  3F                   266  	SWI			SOFTWARE INTERRUPT TO DOS
+21C7  1B                   267  	FCB	27		SYSTEM REQUEST NUMBER
+21C8  34 20                268  	PSHS	Y		SAVE POINTER
+21CA  C6 10                269  	LDB	#16		16 BYTES/LINE
+21CC  3F                   270  OTBYT	SWI			SOFTWARE INTERRUPT TO DOS
+21CD  15                   271  	FCB	21		SYSTEM REQUEST NUMBER
+21CE  A6 A0                272  	LDA	,Y+		GET BYTE
+21D0  3F                   273  	SWI			SOFTWARE INTERRUPT TO DOS
+21D1  1C                   274  	FCB	28		SYSTEM REQUEST NUMBER
+21D2  5A                   275  	DECB			REDUCE COUNT
+21D3  26 F7                276  	BNE	OTBYT		DISPLAY ENTIRE LINE
+21D5  3F                   277  	SWI			SOFTWARE INTERRUPT TO DOS
+21D6  15                   278  	FCB	21		SYSTEM REQUEST NUMBER
+21D7  3F                   279  	SWI			SOFTWARE INTERRUPT TO DOS
+21D8  15                   280  	FCB	21		SYSTEM REQUEST NUMBER
+21D9  35 20                281  	PULS	Y		RESTORE POINTER
+21DB  C6 10                282  	LDB	#16		16 BYTES/LINE
+21DD  A6 A0                283  OTASC	LDA	,Y+		GET DATA
+21DF  81 20                284  	CMPA	#' '		PRRINTABLE?
+21E1  25 06                285  	BLO	UNPRT		NO
+21E3  81 7F                286  	CMPA	#$7F		PRINTABLE?
+21E5  24 02                287  	BHS	UNPRT		NO
+21E7  20 02                288  	BRA	ASCEND
+21E9  86 2E                289  UNPRT	LDA	#'.'
+21EB  3F                   290  ASCEND	SWI			SOFTWARE INTERRUPT TO DOS
+21EC  21                   291  	FCB	33		SYSTEM REQUEST NUMBER
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 6
+
+21ED  5A                   292  	DECB			BACKUP COUNT
+21EE  26 ED                293  	BNE	OTASC
+21F0  3F                   294  	SWI			SOFTWARE INTERRUPT TO DOS
+21F1  16                   295  	FCB	22		SYSTEM REQUEST NUMBER
+21F2  10 BC 20 1F          296  	CMPY	TEMP		OVER END
+21F6  22 04                297  	BHI	BUG1
+21F8  3F                   298  	SWI			SOFTWARE INTERRUPT TO DOS
+21F9  23                   299  	FCB	35		SYSTEM REQUEST NUMBER
+21FA  26 C8                300  	BNE	SHMEM
+21FC  16 FE DF             301  BUG1	LBRA	BUGGER
+21FF                       302  * STORE COMMAND
+21FF  5A                   303  STCMD	DECB			ZIS IT?
+2200  26 1B                304  	BNE	EXICMD		NO, TRY EXIT
+2202  3F                   305  	SWI			SOFTWARE INTERRUPT TO DOS
+2203  07                   306  	FCB	7		SYSTEM REQUEST NUMBER
+2204  10 26 FE D6          307  	LBNE	BUGGER		QUIT
+2208  34 10                308  ST1	PSHS	X		SAVE ADDRESS
+220A  3F                   309  	SWI			SOFTWARE INTERRUPT TO DOS
+220B  07                   310  	FCB	7		SYSTEM REQUEST NUMBER
+220C  1F 10                311  	TFR	X,D
+220E  35 10                312  	PULS	X		GET ADDRESS BACK
+2210  10 26 FE CA          313  	LBNE	BUGGER
+2214  E7 80                314  	STB	,X+		SAVE IN MEMORY
+2216  3F                   315  	SWI			SOFTWARE INTERRUPT TO DOS
+2217  04                   316  	FCB	4		SYSTEM REQUEST NUMBER
+2218  26 EE                317  	BNE	ST1		KEEP GOING
+221A  16 FE C1             318  	LBRA	BUGGER
+221D  5A                   319  EXICMD	DECB			IS IT EXIT
+221E  26 03                320  	BNE	GOCMD		NO, TRY GO
+2220  4F                   321  	CLRA			SET ZERO RC
+2221  3F                   322  	SWI			SOFTWARE INTERRUPT TO DOS
+2222  00                   323  	FCB	0		SYSTEM REQUEST NUMBER
+2223                       324  * DEBUG RUN
+2223  5A                   325  GOCMD	DECB
+2224  26 06                326  	BNE	STEP		NO, TRY STEP
+2226  5A                   327  	DECB			GET $FF
+2227  B7 20 0E             328  	STA	SNGLST		INSURE NO SINGLE STEP
+222A  20 1E                329  	BRA	GOEXE
+222C  5A                   330  STEP	DECB			TRY FOR STEP
+222D  26 05                331  	BNE	BADCMD		NO, IT'S BAD
+222F  7F 20 0E             332  	CLR	SNGLST		SET SINGLE STEP MODE
+2232  20 16                333  	BRA	GOEXE		AND CONTINUE
+2234  3F                   334  BADCMD	SWI			SOFTWARE INTERRUPT TO DOS
+2235  18                   335  	FCB	24		SYSTEM REQUEST NUMBER
+2236  49 6E 76 61 6C 69 +  336  	FCCZ	'Invalid command.'
+2247  16 FE 92             337  	LBRA	BUGLF
+224A                       338  *
+224A                       339  * 8080 DEBUG EMULATOR...
+224A                       340  *
+224A  7D 20 0E             341  GOEXE	TST	SNGLST		SINGLE STEPPING?
+224D  26 11                342  	BNE	NOSNGL		DON'T SINGLE STEP
+224F  86 3A                343  	LDA	#':'		GET PROMPT
+2251  3F                   344  	SWI			SOFTWARE INTERRUPT TO DOS
+2252  21                   345  	FCB	33		SYSTEM REQUEST NUMBER
+2253  3F                   346  REA1	SWI			SOFTWARE INTERRUPT TO DOS
+2254  22                   347  	FCB	34		SYSTEM REQUEST NUMBER
+2255  81 20                348  	CMPA	#' '		SPACE
+2257  27 14                349  	BEQ	TRC1		IF SO, GO AHEAD
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 7
+
+2259  81 0D                350  	CMPA	#$0D		CR?
+225B  26 F6                351  	BNE	REA1		NO, ASK AGAIN
+225D  16 FE 7C             352  	LBRA	BUGLF		REENTER MONITOR
+2260  7D 20 0D             353  NOSNGL	TST	TRACE		ARE WE TRACEING?
+2263  26 1D                354  	BNE	NOT1		NO, DON'T DISPLAY
+2265  3F                   355  	SWI			SOFTWARE INTERRUPT TO DOS
+2266  23                   356  	FCB	35		SYSTEM REQUEST NUMBER
+2267  81 1B                357  	CMPA	#$1B		ESCAPE?
+2269  10 27 FE 71          358  	LBEQ	BUGGER		IF SO, QUIT
+226D  3F                   359  TRC1	SWI			SOFTWARE INTERRUPT TO DOS
+226E  18                   360  	FCB	24		SYSTEM REQUEST NUMBER
+226F  50 43 3D 00          361  	FCCZ	'PC='
+2273  1F 30                362  	TFR	U,D		GET PC
+2275  3F                   363  	SWI			SOFTWARE INTERRUPT TO DOS
+2276  1B                   364  	FCB	27		SYSTEM REQUEST NUMBER
+2277  3F                   365  	SWI			SOFTWARE INTERRUPT TO DOS
+2278  18                   366  	FCB	24		SYSTEM REQUEST NUMBER
+2279  20 4F 50 3D 00       367  	FCCZ	' OP='
+227E  A6 C4                368  	LDA	,U		GET OPCODE
+2280  3F                   369  	SWI			SOFTWARE INTERRUPT TO DOS
+2281  1C                   370  	FCB	28		SYSTEM REQUEST NUMBER
+2282  E6 C0                371  NOT1	LDB	,U+		GET OPCODE
+2284  4F                   372  	CLRA			ZERO HIGH BYTE
+2285  58                   373  	ASLB			X 2 FOR TWO BYTE
+2286  49                   374  	ROLA			(16 BIT) ADDRESSES IN TABLE
+2287  8E 23 1B             375  	LDX	#TABLE		POINT TO TABLE
+228A  AD 9B                376  	JSR	[D,X]		EXECUTE CODE
+228C  7D 20 0E             377  	TST	SNGLST		SINGLE STEPPING?
+228F  27 05                378  	BEQ	DSPR2
+2291  7D 20 0D             379  	TST	TRACE		ARE WE TRACING
+2294  26 02                380  	BNE	CKBRK		NO, KEEP QUIET
+2296  8D 30                381  DSPR2	BSR	DSPRG		DISPLAY REGISTERS
+2298                       382  * SEARCH FOR BREAKPOINTS
+2298  8E 20 0F             383  CKBRK	LDX	#BRKPTS		POINT TO BREAKPOINT TABLE
+229B  5F                   384  	CLRB			ZERO COUNTER
+229C  11 A3 81             385  BKCK	CMPU	,X++		IS THIS IT?
+229F  27 07                386  	BEQ	BRKFND		IF SO, SAY WE FOUND
+22A1  5C                   387  	INCB			ADVANCE
+22A2  C1 08                388  	CMPB	#8		ARE WE OVER
+22A4  25 F6                389  	BLO	BKCK		KEEP TRYING
+22A6  20 A2                390  	BRA	GOEXE		NO BREAKPOINT
+22A8                       391  * BREAKPOINT WAS FOUND
+22A8  3F                   392  BRKFND	SWI			SOFTWARE INTERRUPT TO DOS
+22A9  18                   393  	FCB	24		SYSTEM REQUEST NUMBER
+22AA  42 72 65 61 6B 70 +  394  	FCCZ	'Breakpoint '
+22B6  4F                   395  	CLRA
+22B7  3F                   396  	SWI			SOFTWARE INTERRUPT TO DOS
+22B8  1A                   397  	FCB	26		SYSTEM REQUEST NUMBER
+22B9  3F                   398  	SWI			SOFTWARE INTERRUPT TO DOS
+22BA  18                   399  	FCB	24		SYSTEM REQUEST NUMBER
+22BB  20 61 74 20 24 00    400  	FCCZ	' at $'
+22C1  1F 30                401  	TFR	U,D
+22C3  3F                   402  	SWI			SOFTWARE INTERRUPT TO DOS
+22C4  1B                   403  	FCB	27		SYSTEM REQUEST NUMBER
+22C5  16 FE 14             404  	LBRA	BUGLF
+22C8                       405  * DISPLAY REGSITERS
+22C8  3F                   406  DSPRG	SWI			SOFTWARE INTERRUPT TO DOS
+22C9  18                   407  	FCB	24		SYSTEM REQUEST NUMBER
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 8
+
+22CA  20 53 50 3D 00       408  	FCCZ	' SP='
+22CF  FC 20 0A             409  	LDD	SREG		GET SP
+22D2  3F                   410  	SWI			SOFTWARE INTERRUPT TO DOS
+22D3  1B                   411  	FCB	27		SYSTEM REQUEST NUMBER
+22D4  3F                   412  	SWI			SOFTWARE INTERRUPT TO DOS
+22D5  18                   413  	FCB	24		SYSTEM REQUEST NUMBER
+22D6  20 50 53 57 3D 00    414  	FCCZ	' PSW='
+22DC  FC 20 02             415  	LDD	AREG		GET A AND FLAGS
+22DF  3F                   416  	SWI			SOFTWARE INTERRUPT TO DOS
+22E0  1B                   417  	FCB	27		SYSTEM REQUEST NUMBER
+22E1  3F                   418  	SWI			SOFTWARE INTERRUPT TO DOS
+22E2  18                   419  	FCB	24		SYSTEM REQUEST NUMBER
+22E3  20 42 43 3D 00       420  	FCCZ	' BC='
+22E8  FC 20 04             421  	LDD	BREG
+22EB  3F                   422  	SWI			SOFTWARE INTERRUPT TO DOS
+22EC  1B                   423  	FCB	27		SYSTEM REQUEST NUMBER
+22ED  3F                   424  	SWI			SOFTWARE INTERRUPT TO DOS
+22EE  18                   425  	FCB	24		SYSTEM REQUEST NUMBER
+22EF  20 44 45 3D 00       426  	FCCZ	' DE='
+22F4  FC 20 06             427  	LDD	DREG
+22F7  3F                   428  	SWI			SOFTWARE INTERRUPT TO DOS
+22F8  1B                   429  	FCB	27		SYSTEM REQUEST NUMBER
+22F9  3F                   430  	SWI			SOFTWARE INTERRUPT TO DOS
+22FA  18                   431  	FCB	24		SYSTEM REQUEST NUMBER
+22FB  20 48 4C 3D 00       432  	FCCZ	' HL='
+2300  FC 20 08             433  	LDD	HREG
+2303  3F                   434  	SWI			SOFTWARE INTERRUPT TO DOS
+2304  1B                   435  	FCB	27		SYSTEM REQUEST NUMBER
+2305  3F                   436  	SWI			SOFTWARE INTERRUPT TO DOS
+2306  16                   437  	FCB	22		SYSTEM REQUEST NUMBER
+2307  39                   438  	RTS
+2308                       439  *
+2308                       440  * FAST 8080 SIMULATOR
+2308                       441  *
+2308  E6 C0                442  NXTINS	LDB	,U+		GET OPCODE
+230A  4F                   443  	CLRA			ZERO HIGH BYTE
+230B  58                   444  	ASLB			X 2 FOR TWO BYTE
+230C  49                   445  	ROLA			(16 BIT) ADDRESSES IN TABLE
+230D  8E 23 1B             446  	LDX	#TABLE		POINT TO TABLE
+2310  AD 9B                447  	JSR	[D,X]		EXECUTE CODE
+2312  20 F4                448  	BRA	NXTINS		AND ADVANCE
+2314                       449  *
+2314                       450  * SUBROUTINE TO	GET ADDRESS IN X REGISTERFROM OPERAND
+2314                       451  *
+2314  EC C1                452  GETADR	LDD	,U++
+2316  1E 98                453  	EXG	B,A
+2318  1F 01                454  	TFR	D,X
+231A  39                   455  	RTS
+231B                       456  * INSTRUCTION TABLE
+231B  25 22                457  TABLE	FDB	NOP		00- 8080 NOP INSTRUCTION
+231D  25 1B                458  	FDB	LXIB		01- LXI B
+231F  25 3B                459  	FDB	STAXB		02- STAX B
+2321  25 4B                460  	FDB	INXB		03- INX B
+2323  25 9F                461  	FDB	INRB		04- INR B
+2325  25 DB                462  	FDB	DCRB		05- DCR B
+2327  26 3E                463  	FDB	MVIB		06- MVI B
+2329  2A D1                464  	FDB	RLC		07- RLC
+232B  2B 6F                465  	FDB	INVOP		08-
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 9
+
+232D  26 04                466  	FDB	DADB		09- DAD B
+232F  27 99                467  	FDB	LDAXB		0A- LDAX B
+2331  25 73                468  	FDB	DCXB		0B- DCX B
+2333  25 A4                469  	FDB	INRC		0C- INRC
+2335  25 E0                470  	FDB	DCRC		0D- DCR C
+2337  26 44                471  	FDB	MVIC		0E- MVI C,X
+2339  2A E5                472  	FDB	RRC		0F- RRC
+233B  2B 6F                473  	FDB	INVOP		10-
+233D  25 23                474  	FDB	LXID		11- LXI D
+233F  25 43                475  	FDB	STAXD		12- STAX D
+2341  25 55                476  	FDB	INXD		13- INX D
+2343  25 A9                477  	FDB	INRD		14- INR D
+2345  25 E5                478  	FDB	DCRD		15- DCR D
+2347  26 4A                479  	FDB	MVID		16- MVI D,X
+2349  2A F9                480  	FDB	RAL		17- RAL
+234B  2B 6F                481  	FDB	INVOP		18-
+234D  26 09                482  	FDB	DADD		19- DAD D
+234F  27 A1                483  	FDB	LDAXD		1A- LDAX D
+2351  25 7D                484  	FDB	DCXD		1B- DCX D
+2353  25 AE                485  	FDB	INRE		1C- INR E
+2355  25 EA                486  	FDB	DCRE		1D- DCR E
+2357  26 50                487  	FDB	MVIE		1E- MVI E,X
+2359  2B 0E                488  	FDB	RAR		1F- RAR
+235B  2B 6F                489  	FDB	INVOP		20- (RIM)
+235D  25 2B                490  	FDB	LXIH		21- LXI H,XX
+235F  27 C6                491  	FDB	SHLD		22- SHLD
+2361  25 5F                492  	FDB	INXH		23- INX H
+2363  25 B3                493  	FDB	INRH		24- INR H
+2365  25 EF                494  	FDB	DCRH		25- DCR H
+2367  26 56                495  	FDB	MVIH		26- MVI H,X
+2369  2A A7                496  	FDB	DAA		27- DAA
+236B  2B 6F                497  	FDB	INVOP		28-
+236D  26 0E                498  	FDB	DADH		29- DAD H
+236F  27 BB                499  	FDB	LHLD		2A- LHLD
+2371  25 87                500  	FDB	DCXH		2B- DCX H
+2373  25 B8                501  	FDB	INRL		2C- INR L
+2375  25 F4                502  	FDB	DCRL		2D- DCR L
+2377  26 5C                503  	FDB	MVIL		2E- MVI L,X
+2379  26 34                504  	FDB	CMA		2F- CMA
+237B  2B 6F                505  	FDB	INVOP		30- (SIM)
+237D  25 33                506  	FDB	LXIS		31- LXI SP,XX
+237F  27 B2                507  	FDB	STA		32- STA
+2381  25 69                508  	FDB	INXS		33- INX SP
+2383  25 BD                509  	FDB	INRM		34- INR M
+2385  25 F9                510  	FDB	DCRM		35- DCR M
+2387  26 62                511  	FDB	MVIM		36- MVI M,X
+2389  26 22                512  	FDB	STC		37- STC
+238B  2B 6F                513  	FDB	INVOP		38-
+238D  25 FF                514  	FDB	DADS		39- DAD SP
+238F  27 A9                515  	FDB	LDA		3A- LDA
+2391  25 91                516  	FDB	DCXS		3B- DCX SP
+2393  25 9A                517  	FDB	INRA		3C- INR A
+2395  25 D6                518  	FDB	DCRA		3D- DCR A
+2397  26 38                519  	FDB	MVIA		3E- MVI A,XX
+2399  26 2B                520  	FDB	CMC		3F- CMC
+239B  25 22                521  	FDB	NOP		40- MOV B,B
+239D  26 94                522  	FDB	MOVBC		41- MOV B,C
+239F  26 99                523  	FDB	MOVBD		42- MOV B,D
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 10
+
+23A1  26 9E                524  	FDB	MOVBE		43- MOV B,E
+23A3  26 A3                525  	FDB	MOVBH		44- MOV B,H
+23A5  26 A8                526  	FDB	MOVBL		45- MOV B,L
+23A7  26 AD                527  	FDB	MOVBM		46- MOV B,M
+23A9  26 8F                528  	FDB	MOVBA		47- MOV B,A
+23AB  26 BA                529  	FDB	MOVCB		48- MOV C,B
+23AD  25 22                530  	FDB	NOP		49- MOV C,C
+23AF  26 BF                531  	FDB	MOVCD		4A- MOV C,D
+23B1  26 C4                532  	FDB	MOVCE		4B- MOV C,E
+23B3  26 C9                533  	FDB	MOVCH		4C- MOV C,H
+23B5  26 CE                534  	FDB	MOVCL		4D- MOV C,L
+23B7  26 D3                535  	FDB	MOVCM		4E- MOV C,M
+23B9  26 B5                536  	FDB	MOVCA		4F- MOV C,A
+23BB  26 E0                537  	FDB	MOVDB		50- MOV D,B
+23BD  26 E5                538  	FDB	MOVDC		51- MOV D,C
+23BF  25 22                539  	FDB	NOP		52- MOV D,D
+23C1  26 EA                540  	FDB	MOVDE		53- MOV D,E
+23C3  26 EF                541  	FDB	MOVDH		54- MOV D,H
+23C5  26 F4                542  	FDB	MOVDL		55- MOV D,L
+23C7  26 F9                543  	FDB	MOVDM		56- MOV D,M
+23C9  26 DB                544  	FDB	MOVDA		57- MOV D,A
+23CB  27 06                545  	FDB	MOVEB		58- MOV E,B
+23CD  27 0B                546  	FDB	MOVEC		59- MOV E,C
+23CF  27 10                547  	FDB	MOVED		5A- MOV E,D
+23D1  25 22                548  	FDB	NOP		5B- MOV E,E
+23D3  27 15                549  	FDB	MOVEH		5C- MOV E,H
+23D5  27 1A                550  	FDB	MOVEL		5D- MOV E,L
+23D7  27 1F                551  	FDB	MOVEM		5E- MOV E,M
+23D9  27 01                552  	FDB	MOVEA		5F- MOV E,A
+23DB  27 2C                553  	FDB	MOVHB		60- MOV H,B
+23DD  27 31                554  	FDB	MOVHC		61- MOV H,C
+23DF  27 36                555  	FDB	MOVHD		62- MOV H,D
+23E1  27 3B                556  	FDB	MOVHE		63- MOV H,E
+23E3  25 22                557  	FDB	NOP		64- MOV H,H
+23E5  27 40                558  	FDB	MOVHL		65- MOV H,L
+23E7  27 45                559  	FDB	MOVHM		66- MOV H,M
+23E9  27 27                560  	FDB	MOVHA		67- MOV H,A
+23EB  27 52                561  	FDB	MOVLB		68- MOV L,B
+23ED  27 57                562  	FDB	MOVLC		69- MOV L,C
+23EF  27 5C                563  	FDB	MOVLD		6A- MOV L,D
+23F1  27 61                564  	FDB	MOVLE		6B- MOV L,E
+23F3  27 66                565  	FDB	MOVLH		6C- MOV L,H
+23F5  25 22                566  	FDB	NOP		6D- MOV L,L
+23F7  27 6B                567  	FDB	MOVLM		6E- MOV L,M
+23F9  27 4D                568  	FDB	MOVLA		6F- MOV L,A
+23FB  27 78                569  	FDB	MOVMB		70- MOV M,B
+23FD  27 7D                570  	FDB	MOVMC		71- MOV M,C
+23FF  27 82                571  	FDB	MOVMD		72- MOV M,D
+2401  27 87                572  	FDB	MOVME		73- MOV M,E
+2403  27 8C                573  	FDB	MOVMH		74- MOV M,H
+2405  27 91                574  	FDB	MOVML		75- MOV M,L
+2407  2B 48                575  	FDB	HLT		76- HLT
+2409  27 73                576  	FDB	MOVMA		77- MOV M,A
+240B  26 69                577  	FDB	MOVAB		78- MOV A,B
+240D  26 6E                578  	FDB	MOVAC		79- MOV A,C
+240F  26 73                579  	FDB	MOVAD		7A- MOV A,D
+2411  26 78                580  	FDB	MOVAE		7B- MOV A,E
+2413  26 7D                581  	FDB	MOVAH		7C- MOV A,H
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 11
+
+2415  26 82                582  	FDB	MOVAL		7D- MOV A,L
+2417  26 87                583  	FDB	MOVAM		7E- MOV A,M
+2419  25 22                584  	FDB	NOP		7F- MOV A,A
+241B  28 8F                585  	FDB	ADDB		80- ADD B
+241D  28 94                586  	FDB	ADDC		81- ADD C
+241F  28 99                587  	FDB	ADDD		82- ADD D
+2421  28 9E                588  	FDB	ADDE		83- ADD E
+2423  28 A3                589  	FDB	ADDH		84- ADD H
+2425  28 A8                590  	FDB	ADDL		85- ADD L
+2427  28 AD                591  	FDB	ADDM		86- ADD M
+2429  28 8A                592  	FDB	ADDA		87- ADD A
+242B  28 C0                593  	FDB	ADCB		88- ADC B
+242D  28 C5                594  	FDB	ADCC		89- ADC C
+242F  28 CA                595  	FDB	ADCD		8A- ADC D
+2431  28 CF                596  	FDB	ADCE		8B- ADC E
+2433  28 D4                597  	FDB	ADCH		8C- ADC H
+2435  28 D9                598  	FDB	ADCL		8D- ADC L
+2437  28 DE                599  	FDB	ADCM		8E- ADC M
+2439  28 BB                600  	FDB	ADCA		8F- ADC A
+243B  28 16                601  	FDB	SUBB		90- SUB B
+243D  28 1B                602  	FDB	SUBC		91- SUB C
+243F  28 20                603  	FDB	SUBD		92- SUB D
+2441  28 25                604  	FDB	SUBE		93- SUB E
+2443  28 2A                605  	FDB	SUBH		94- SUB H
+2445  28 2F                606  	FDB	SUBL		95- SUB L
+2447  28 34                607  	FDB	SUBM		96- SUB M
+2449  28 11                608  	FDB	SUBA		97- SUB A
+244B  28 4D                609  	FDB	SBBB		98- SBB B
+244D  28 52                610  	FDB	SBBC		99- SBB C
+244F  28 57                611  	FDB	SBBD		9A- SBB D
+2451  28 5C                612  	FDB	SBBE		9B- SBB E
+2453  28 61                613  	FDB	SBBH		9C- SBB H
+2455  28 66                614  	FDB	SBBL		9D- SBB L
+2457  28 6B                615  	FDB	SBBM		9E- SBB M
+2459  28 48                616  	FDB	SBBA		9F- SBB A
+245B  29 2D                617  	FDB	ANAB		A0- ANA B
+245D  29 32                618  	FDB	ANAC		A1- ANA C
+245F  29 37                619  	FDB	ANAD		A2- ANA D
+2461  29 3C                620  	FDB	ANAE		A3- ANA E
+2463  29 41                621  	FDB	ANAH		A4- ANA H
+2465  29 46                622  	FDB	ANAL		A5- ANA L
+2467  29 4B                623  	FDB	ANAM		A6- ANA M
+2469  29 28                624  	FDB	ANAA		A7- AND A
+246B  28 FC                625  	FDB	XRAB		A8- XRA B
+246D  29 01                626  	FDB	XRAC		A9- XRA C
+246F  29 06                627  	FDB	XRAD		AA- XRA D
+2471  29 0B                628  	FDB	XRAE		AB- XRA E
+2473  29 10                629  	FDB	XRAH		AC- XRA H
+2475  29 15                630  	FDB	XRAL		AD- XRA L
+2477  29 1A                631  	FDB	XRAM		AE- XRA M
+2479  28 F7                632  	FDB	XRAA		AF- XRA A
+247B  29 5D                633  	FDB	ORAB		B0- ORA B
+247D  29 62                634  	FDB	ORAC		B1- ORA C
+247F  29 67                635  	FDB	ORAD		B2- ORA D
+2481  29 6C                636  	FDB	ORAE		B3- ORA E
+2483  29 71                637  	FDB	ORAH		B4- ORA H
+2485  29 76                638  	FDB	ORAL		B5- ORA L
+2487  29 7B                639  	FDB	ORAM		B6- ORA M
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 12
+
+2489  29 58                640  	FDB	ORAA		B7- ORA A
+248B  27 E1                641  	FDB	CMPB		B8- CMP B
+248D  27 E6                642  	FDB	CMPC		B9- CMP C
+248F  27 EB                643  	FDB	CMPD		BA- CMP D
+2491  27 F0                644  	FDB	CMPE		BB- CMP E
+2493  27 F5                645  	FDB	CMPH		BC- CMP H
+2495  27 FA                646  	FDB	CMPL		BD- CMP L
+2497  27 FF                647  	FDB	CMPM		BE- CMP M
+2499  27 DC                648  	FDB	CMPA		BF- CMP A
+249B  2A 67                649  	FDB	RNZ		C0- RNZ
+249D  2A 3F                650  	FDB	POPB		C1- POP B
+249F  29 C0                651  	FDB	JNZ		C2- JNZ
+24A1  29 B4                652  	FDB	JMP		C3- JMP
+24A3  29 F3                653  	FDB	CNZ		C4- CNZ
+24A5  2A 26                654  	FDB	PUSHB		C5- PUSH B
+24A7  28 B3                655  	FDB	ADI		C6- ADI
+24A9  2B 55                656  	FDB	UNSUPP		C7- RST 0
+24AB  2A 61                657  	FDB	RZ		C8- RZ
+24AD  2A 5C                658  	FDB	RET		C9- RET
+24AF  29 BA                659  	FDB	JZ		CA- JZ
+24B1  2B 6F                660  	FDB	INVOP		CB-
+24B3  29 ED                661  	FDB	CZ		CC- CZ
+24B5  2A 0F                662  	FDB	CALL		CD- CALL
+24B7  28 E4                663  	FDB	ACI		CE- ACI
+24B9  2B 55                664  	FDB	UNSUPP		CF- RST 1
+24BB  2A 73                665  	FDB	RNC		D0- RNC
+24BD  2A 45                666  	FDB	POPD		D1- POP D
+24BF  29 CC                667  	FDB	JNC		D2- JNC
+24C1  2B 23                668  	FDB	SYS		D3- OUT
+24C3  29 FF                669  	FDB	CNC		D4- CNC
+24C5  2A 21                670  	FDB	PUSHD		D5- PUSH D
+24C7  28 3A                671  	FDB	SUI		D6- SUI
+24C9  2B 55                672  	FDB	UNSUPP		D7- RST 2
+24CB  2A 6D                673  	FDB	RC		D8- RC
+24CD  2B 6F                674  	FDB	INVOP		D9-
+24CF  29 C6                675  	FDB	JC		DA- JC
+24D1  2B 55                676  	FDB	UNSUPP		DB- IN
+24D3  29 F9                677  	FDB	CCC		DC- CC
+24D5  2B 6F                678  	FDB	INVOP		DD-
+24D7  28 71                679  	FDB	SBI		DE- SBI
+24D9  2B 55                680  	FDB	UNSUPP		DF- RST 3
+24DB  2B 55                681  	FDB	UNSUPP		E0- RPO
+24DD  2A 4B                682  	FDB	POPH		E1- POP H
+24DF  2B 55                683  	FDB	UNSUPP		E2- JPO
+24E1  2A 92                684  	FDB	XTHL		E3- XTHL
+24E3  2B 55                685  	FDB	UNSUPP		E4- CPO
+24E5  2A 1C                686  	FDB	PUSHH		E5- PUSH H
+24E7  29 51                687  	FDB	ANI		E6- ANI
+24E9  2B 55                688  	FDB	UNSUPP		E7- RST 4
+24EB  2B 55                689  	FDB	UNSUPP		E8- RPE
+24ED  27 D1                690  	FDB	PCHL		E9- PCHL
+24EF  2B 55                691  	FDB	UNSUPP		EA- JPE
+24F1  2A 85                692  	FDB	XCHG		EB- XCHG
+24F3  2B 55                693  	FDB	UNSUPP		EC- CPE
+24F5  2B 6F                694  	FDB	INVOP		ED-
+24F7  29 20                695  	FDB	XRI		EE- XRI
+24F9  2B 55                696  	FDB	UNSUPP		EF- RST 5
+24FB  2A 7F                697  	FDB	RP		F0- RP
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 13
+
+24FD  2A 39                698  	FDB	POPP		F1- POP PSW
+24FF  29 D8                699  	FDB	JP		F2- JP
+2501  2B 55                700  	FDB	UNSUPP		F3- DI
+2503  2A 0B                701  	FDB	CP		F4- CP
+2505  2A 2B                702  	FDB	PUSHP		F5- PUSH PSW
+2507  29 81                703  	FDB	ORI		F6- ORI
+2509  2B 55                704  	FDB	UNSUPP		F7- RST 6
+250B  2A 79                705  	FDB	RM		F8- RM
+250D  27 D5                706  	FDB	SPHL		F9- SPHL
+250F  29 D2                707  	FDB	JM		FA- JM
+2511  2B 55                708  	FDB	UNSUPP		FB- ED
+2513  2A 05                709  	FDB	CM		FC- CM
+2515  2B 6F                710  	FDB	INVOP		FD-
+2517  28 05                711  	FDB	CPI		FE- CPI
+2519  2B 55                712  	FDB	UNSUPP		FF- RST 7
+251B                       713  *
+251B                       714  * 8080 INSTRUCTION HANDLERS
+251B                       715  *
+251B  EC C1                716  LXIB	LDD	,U++
+251D  1E 89                717  	EXG	A,B
+251F  FD 20 04             718  	STD	BREG
+2522  39                   719  NOP	RTS
+2523  EC C1                720  LXID	LDD	,U++
+2525  1E 89                721  	EXG	A,B
+2527  FD 20 06             722  	STD	DREG
+252A  39                   723  	RTS
+252B  EC C1                724  LXIH	LDD	,U++
+252D  1E 89                725  	EXG	A,B
+252F  FD 20 08             726  	STD	HREG
+2532  39                   727  	RTS
+2533  EC C1                728  LXIS	LDD	,U++
+2535  1E 89                729  	EXG	A,B
+2537  FD 20 0A             730  	STD	SREG
+253A  39                   731  	RTS
+253B                       732  *
+253B  B6 20 02             733  STAXB	LDA	AREG
+253E  A7 9F 20 04          734  	STA	[BREG]
+2542  39                   735  	RTS
+2543  B6 20 02             736  STAXD	LDA	AREG
+2546  A7 9F 20 06          737  	STA	[DREG]
+254A  39                   738  	RTS
+254B                       739  *
+254B  FC 20 04             740  INXB	LDD	BREG
+254E  C3 00 01             741  	ADDD	#1
+2551  FD 20 04             742  	STD	BREG
+2554  39                   743  	RTS
+2555  FC 20 06             744  INXD	LDD	DREG
+2558  C3 00 01             745  	ADDD	#1
+255B  FD 20 06             746  	STD	DREG
+255E  39                   747  	RTS
+255F  FC 20 08             748  INXH	LDD	HREG
+2562  C3 00 01             749  	ADDD	#1
+2565  FD 20 08             750  	STD	HREG
+2568  39                   751  	RTS
+2569  FC 20 0A             752  INXS	LDD	SREG
+256C  C3 00 01             753  	ADDD	#1
+256F  FD 20 0A             754  	STD	SREG
+2572  39                   755  	RTS
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 14
+
+2573                       756  *
+2573  FC 20 04             757  DCXB	LDD	BREG
+2576  83 00 01             758  	SUBD	#1
+2579  FD 20 04             759  	STD	BREG
+257C  39                   760  	RTS
+257D  FC 20 06             761  DCXD	LDD	DREG
+2580  83 00 01             762  	SUBD	#1
+2583  FD 20 06             763  	STD	DREG
+2586  39                   764  	RTS
+2587  FC 20 08             765  DCXH	LDD	HREG
+258A  83 00 01             766  	SUBD	#1
+258D  FD 20 08             767  	STD	HREG
+2590  39                   768  	RTS
+2591  FC 20 0A             769  DCXS	LDD	SREG
+2594  83 00 01             770  	SUBD	#1
+2597  FD 20 0A             771  	STD	SREG
+259A                       772  *
+259A  7C 20 02             773  INRA	INC	AREG
+259D  20 22                774  	BRA	FLNC
+259F  7C 20 04             775  INRB	INC	BREG
+25A2  20 1D                776  	BRA	FLNC
+25A4  7C 20 05             777  INRC	INC	CREG
+25A7  20 18                778  	BRA	FLNC
+25A9  7C 20 06             779  INRD	INC	DREG
+25AC  20 13                780  	BRA	FLNC
+25AE  7C 20 07             781  INRE	INC	EREG
+25B1  20 0E                782  	BRA	FLNC
+25B3  7C 20 08             783  INRH	INC	HREG
+25B6  20 09                784  	BRA	FLNC
+25B8  7C 20 09             785  INRL	INC	LREG
+25BB  20 04                786  	BRA	FLNC
+25BD  6C 9F 20 08          787  INRM	INC	[HREG]
+25C1  34 01                788  FLNC	PSHS	CC
+25C3  F6 20 03             789  	LDB	CCREG
+25C6  35 01                790  	PULS	CC
+25C8  1C FE                791  	ANDCC	#$FE		INSURE NO CARRY
+25CA  17 03 BE             792  	LBSR	FLAGS		SET FLAGS
+25CD  C4 01                793  	ANDB	#1		ISOLATE CARRY
+25CF  FA 20 03             794  	ORB	CCREG
+25D2  F7 20 03             795  	STB	CCREG
+25D5  39                   796  	RTS
+25D6                       797  *
+25D6  7A 20 02             798  DCRA	DEC	AREG
+25D9  20 E6                799  	BRA	FLNC
+25DB  7A 20 04             800  DCRB	DEC	BREG
+25DE  20 E1                801  	BRA	FLNC
+25E0  7A 20 05             802  DCRC	DEC	CREG
+25E3  20 DC                803  	BRA	FLNC
+25E5  7A 20 06             804  DCRD	DEC	DREG
+25E8  20 D7                805  	BRA	FLNC
+25EA  7A 20 07             806  DCRE	DEC	EREG
+25ED  20 D2                807  	BRA	FLNC
+25EF  7A 20 08             808  DCRH	DEC	HREG
+25F2  20 CD                809  	BRA	FLNC
+25F4  7A 20 09             810  DCRL	DEC	LREG
+25F7  20 C8                811  	BRA	FLNC
+25F9  6A 9F 20 08          812  DCRM	DEC	[HREG]
+25FD  20 C2                813  	BRA	FLNC
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 15
+
+25FF                       814  *
+25FF  FC 20 0A             815  DADS	LDD	SREG
+2602  20 0D                816  	BRA	DADE
+2604  FC 20 04             817  DADB	LDD	BREG
+2607  20 08                818  	BRA	DADE
+2609                       819  *
+2609  FC 20 06             820  DADD	LDD	DREG
+260C  20 03                821  	BRA	DADE
+260E                       822  *
+260E  FC 20 08             823  DADH	LDD	HREG
+2611  F3 20 08             824  DADE	ADDD	HREG
+2614  FD 20 08             825  	STD	HREG
+2617  25 09                826  SETCY	BCS	STC		SET CARRY IF REQUIRED
+2619  B6 20 03             827  	LDA	CCREG
+261C  84 FE                828  	ANDA	#$FE
+261E  B7 20 03             829  	STA	CCREG
+2621  39                   830  	RTS
+2622                       831  *
+2622  B6 20 03             832  STC	LDA	CCREG
+2625  8A 01                833  	ORA	#1
+2627  B7 20 03             834  	STA	CCREG
+262A  39                   835  	RTS
+262B  B6 20 03             836  CMC	LDA	CCREG
+262E  88 01                837  	EORA	#1
+2630  B7 20 03             838  	STA	CCREG
+2633  39                   839  	RTS
+2634                       840  *
+2634  73 20 02             841  CMA	COM	AREG
+2637  39                   842  	RTS
+2638                       843  *
+2638  A6 C0                844  MVIA	LDA	,U+
+263A  B7 20 02             845  	STA	AREG
+263D  39                   846  	RTS
+263E  A6 C0                847  MVIB	LDA	,U+
+2640  B7 20 04             848  	STA	BREG
+2643  39                   849  	RTS
+2644  A6 C0                850  MVIC	LDA	,U+
+2646  B7 20 05             851  	STA	CREG
+2649  39                   852  	RTS
+264A  A6 C0                853  MVID	LDA	,U+
+264C  B7 20 06             854  	STA	DREG
+264F  39                   855  	RTS
+2650  A6 C0                856  MVIE	LDA	,U+
+2652  B7 20 07             857  	STA	EREG
+2655  39                   858  	RTS
+2656  A6 C0                859  MVIH	LDA	,U+
+2658  B7 20 08             860  	STA	HREG
+265B  39                   861  	RTS
+265C  A6 C0                862  MVIL	LDA	,U+
+265E  B7 20 09             863  	STA	LREG
+2661  39                   864  	RTS
+2662  A6 C0                865  MVIM	LDA	,U+
+2664  A7 9F 20 08          866  	STA	[HREG]
+2668  39                   867  	RTS
+2669                       868  *
+2669  B6 20 04             869  MOVAB	LDA	BREG
+266C  20 1D                870  	BRA	SAVA
+266E  B6 20 05             871  MOVAC	LDA	CREG
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 16
+
+2671  20 18                872  	BRA	SAVA
+2673  B6 20 06             873  MOVAD	LDA	DREG
+2676  20 13                874  	BRA	SAVA
+2678  B6 20 07             875  MOVAE	LDA	EREG
+267B  20 0E                876  	BRA	SAVA
+267D  B6 20 08             877  MOVAH	LDA	HREG
+2680  20 09                878  	BRA	SAVA
+2682  B6 20 09             879  MOVAL	LDA	LREG
+2685  20 04                880  	BRA	SAVA
+2687  A6 9F 20 08          881  MOVAM	LDA	[HREG]
+268B  B7 20 02             882  SAVA	STA	AREG
+268E  39                   883  	RTS
+268F                       884  *
+268F  B6 20 02             885  MOVBA	LDA	AREG
+2692  20 1D                886  	BRA	SAVB
+2694  B6 20 05             887  MOVBC	LDA	CREG
+2697  20 18                888  	BRA	SAVB
+2699  B6 20 06             889  MOVBD	LDA	DREG
+269C  20 13                890  	BRA	SAVB
+269E  B6 20 07             891  MOVBE	LDA	EREG
+26A1  20 0E                892  	BRA	SAVB
+26A3  B6 20 08             893  MOVBH	LDA	HREG
+26A6  20 09                894  	BRA	SAVB
+26A8  B6 20 09             895  MOVBL	LDA	LREG
+26AB  20 04                896  	BRA	SAVB
+26AD  A6 9F 20 08          897  MOVBM	LDA	[HREG]
+26B1  B7 20 04             898  SAVB	STA	BREG
+26B4  39                   899  	RTS
+26B5                       900  *
+26B5  B6 20 02             901  MOVCA	LDA	AREG
+26B8  20 1D                902  	BRA	SAVC
+26BA  B6 20 04             903  MOVCB	LDA	BREG
+26BD  20 18                904  	BRA	SAVC
+26BF  B6 20 06             905  MOVCD	LDA	DREG
+26C2  20 13                906  	BRA	SAVC
+26C4  B6 20 07             907  MOVCE	LDA	EREG
+26C7  20 0E                908  	BRA	SAVC
+26C9  B6 20 08             909  MOVCH	LDA	HREG
+26CC  20 09                910  	BRA	SAVC
+26CE  B6 20 09             911  MOVCL	LDA	LREG
+26D1  20 04                912  	BRA	SAVC
+26D3  A6 9F 20 08          913  MOVCM	LDA	[HREG]
+26D7  B7 20 05             914  SAVC	STA	CREG
+26DA  39                   915  	RTS
+26DB                       916  *
+26DB  B6 20 02             917  MOVDA	LDA	AREG
+26DE  20 1D                918  	BRA	SAVD
+26E0  B6 20 04             919  MOVDB	LDA	BREG
+26E3  20 18                920  	BRA	SAVD
+26E5  B6 20 05             921  MOVDC	LDA	CREG
+26E8  20 13                922  	BRA	SAVD
+26EA  B6 20 07             923  MOVDE	LDA	EREG
+26ED  20 0E                924  	BRA	SAVD
+26EF  B6 20 08             925  MOVDH	LDA	HREG
+26F2  20 09                926  	BRA	SAVD
+26F4  B6 20 09             927  MOVDL	LDA	LREG
+26F7  20 04                928  	BRA	SAVD
+26F9  A6 9F 20 08          929  MOVDM	LDA	[HREG]
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 17
+
+26FD  B7 20 06             930  SAVD	STA	DREG
+2700  39                   931  	RTS
+2701                       932  *
+2701  B6 20 02             933  MOVEA	LDA	AREG
+2704  20 1D                934  	BRA	SAVE
+2706  B6 20 04             935  MOVEB	LDA	BREG
+2709  20 18                936  	BRA	SAVE
+270B  B6 20 05             937  MOVEC	LDA	CREG
+270E  20 13                938  	BRA	SAVE
+2710  B6 20 06             939  MOVED	LDA	DREG
+2713  20 0E                940  	BRA	SAVE
+2715  B6 20 08             941  MOVEH	LDA	HREG
+2718  20 09                942  	BRA	SAVE
+271A  B6 20 09             943  MOVEL	LDA	LREG
+271D  20 04                944  	BRA	SAVE
+271F  A6 9F 20 08          945  MOVEM	LDA	[HREG]
+2723  B7 20 07             946  SAVE	STA	EREG
+2726  39                   947  	RTS
+2727                       948  *
+2727  B6 20 02             949  MOVHA	LDA	AREG
+272A  20 1D                950  	BRA	SAVH
+272C  B6 20 04             951  MOVHB	LDA	BREG
+272F  20 18                952  	BRA	SAVH
+2731  B6 20 05             953  MOVHC	LDA	CREG
+2734  20 13                954  	BRA	SAVH
+2736  B6 20 06             955  MOVHD	LDA	DREG
+2739  20 0E                956  	BRA	SAVH
+273B  B6 20 07             957  MOVHE	LDA	EREG
+273E  20 09                958  	BRA	SAVH
+2740  B6 20 09             959  MOVHL	LDA	LREG
+2743  20 04                960  	BRA	SAVH
+2745  A6 9F 20 08          961  MOVHM	LDA	[HREG]
+2749  B7 20 08             962  SAVH	STA	HREG
+274C  39                   963  	RTS
+274D                       964  *
+274D  B6 20 02             965  MOVLA	LDA	AREG
+2750  20 1D                966  	BRA	SAVL
+2752  B6 20 04             967  MOVLB	LDA	BREG
+2755  20 18                968  	BRA	SAVL
+2757  B6 20 05             969  MOVLC	LDA	CREG
+275A  20 13                970  	BRA	SAVL
+275C  B6 20 06             971  MOVLD	LDA	DREG
+275F  20 0E                972  	BRA	SAVL
+2761  B6 20 07             973  MOVLE	LDA	EREG
+2764  20 09                974  	BRA	SAVL
+2766  B6 20 08             975  MOVLH	LDA	HREG
+2769  20 04                976  	BRA	SAVL
+276B  A6 9F 20 08          977  MOVLM	LDA	[HREG]
+276F  B7 20 09             978  SAVL	STA	LREG
+2772  39                   979  	RTS
+2773                       980  *
+2773  B6 20 02             981  MOVMA	LDA	AREG
+2776  20 1C                982  	BRA	SAVM
+2778  B6 20 04             983  MOVMB	LDA	BREG
+277B  20 17                984  	BRA	SAVM
+277D  B6 20 05             985  MOVMC	LDA	CREG
+2780  20 12                986  	BRA	SAVM
+2782  B6 20 06             987  MOVMD	LDA	DREG
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 18
+
+2785  20 0D                988  	BRA	SAVM
+2787  B6 20 07             989  MOVME	LDA	EREG
+278A  20 08                990  	BRA	SAVM
+278C  B6 20 08             991  MOVMH	LDA	HREG
+278F  20 03                992  	BRA	SAVM
+2791  B6 20 09             993  MOVML	LDA	LREG
+2794  A7 9F 20 08          994  SAVM	STA	[HREG]
+2798  39                   995  	RTS
+2799                       996  *
+2799  A6 9F 20 04          997  LDAXB	LDA	[BREG]
+279D  B7 20 02             998  	STA	AREG
+27A0  39                   999  	RTS
+27A1  A6 9F 20 06         1000  LDAXD	LDA	[DREG]
+27A5  B7 20 02            1001  	STA	AREG
+27A8  39                  1002  	RTS
+27A9                      1003  *
+27A9  17 FB 68            1004  LDA	LBSR	GETADR
+27AC  A6 84               1005  	LDA	,X
+27AE  B7 20 02            1006  	STA	AREG
+27B1  39                  1007  	RTS
+27B2  17 FB 5F            1008  STA	LBSR	GETADR
+27B5  B6 20 02            1009  	LDA	AREG
+27B8  A7 84               1010  	STA	,X
+27BA  39                  1011  	RTS
+27BB  17 FB 56            1012  LHLD	LBSR	GETADR
+27BE  EC 84               1013  	LDD	,X
+27C0  1E 89               1014  	EXG	A,B
+27C2  FD 20 08            1015  	STD	HREG
+27C5  39                  1016  	RTS
+27C6  17 FB 4B            1017  SHLD	LBSR	GETADR
+27C9  FC 20 08            1018  	LDD	HREG
+27CC  1E 89               1019  	EXG	A,B
+27CE  ED 84               1020  	STD	,X
+27D0  39                  1021  	RTS
+27D1  FE 20 08            1022  PCHL	LDU	HREG
+27D4  39                  1023  	RTS
+27D5  FC 20 08            1024  SPHL	LDD	HREG
+27D8  FD 20 0A            1025  	STD	SREG
+27DB  39                  1026  	RTS
+27DC                      1027  *
+27DC  F6 20 02            1028  CMPA	LDB	AREG
+27DF  20 26               1029  	BRA	CMPF
+27E1  F6 20 04            1030  CMPB	LDB	BREG
+27E4  20 21               1031  	BRA	CMPF
+27E6  F6 20 05            1032  CMPC	LDB	CREG
+27E9  20 1C               1033  	BRA	CMPF
+27EB  F6 20 06            1034  CMPD	LDB	DREG
+27EE  20 17               1035  	BRA	CMPF
+27F0  F6 20 07            1036  CMPE	LDB	EREG
+27F3  20 12               1037  	BRA	CMPF
+27F5  F6 20 08            1038  CMPH	LDB	HREG
+27F8  20 0D               1039  	BRA	CMPF
+27FA  F6 20 09            1040  CMPL	LDB	LREG
+27FD  20 08               1041  	BRA	CMPF
+27FF  E6 9F 20 08         1042  CMPM	LDB	[HREG]
+2803  20 02               1043  	BRA	CMPF
+2805  E6 C0               1044  CPI	LDB	,U+
+2807  B6 20 02            1045  CMPF	LDA	AREG
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 19
+
+280A  34 04               1046  	PSHS	B
+280C  A0 E0               1047  	SUBA	,S+
+280E  16 01 7A            1048  	LBRA	FLAGS
+2811                      1049  *
+2811  F6 20 02            1050  SUBA	LDB	AREG
+2814  20 26               1051  	BRA	SUBF
+2816  F6 20 04            1052  SUBB	LDB	BREG
+2819  20 21               1053  	BRA	SUBF
+281B  F6 20 05            1054  SUBC	LDB	CREG
+281E  20 1C               1055  	BRA	SUBF
+2820  F6 20 06            1056  SUBD	LDB	DREG
+2823  20 17               1057  	BRA	SUBF
+2825  F6 20 07            1058  SUBE	LDB	EREG
+2828  20 12               1059  	BRA	SUBF
+282A  F6 20 08            1060  SUBH	LDB	HREG
+282D  20 0D               1061  	BRA	SUBF
+282F  F6 20 09            1062  SUBL	LDB	LREG
+2832  20 08               1063  	BRA	SUBF
+2834  E6 9F 20 08         1064  SUBM	LDB	[HREG]
+2838  20 02               1065  	BRA	SUBF
+283A  E6 C0               1066  SUI	LDB	,U+
+283C  B6 20 02            1067  SUBF	LDA	AREG
+283F  F7 20 02            1068  	STB	AREG
+2842  B0 20 02            1069  	SUBA	AREG
+2845  16 01 40            1070  	LBRA	SETA
+2848                      1071  *
+2848  F6 20 02            1072  SBBA	LDB	AREG
+284B  20 26               1073  	BRA	SBBF
+284D  F6 20 04            1074  SBBB	LDB	BREG
+2850  20 21               1075  	BRA	SBBF
+2852  F6 20 05            1076  SBBC	LDB	CREG
+2855  20 1C               1077  	BRA	SBBF
+2857  F6 20 06            1078  SBBD	LDB	DREG
+285A  20 17               1079  	BRA	SBBF
+285C  F6 20 07            1080  SBBE	LDB	EREG
+285F  20 12               1081  	BRA	SBBF
+2861  F6 20 08            1082  SBBH	LDB	HREG
+2864  20 0D               1083  	BRA	SBBF
+2866  F6 20 09            1084  SBBL	LDB	LREG
+2869  20 08               1085  	BRA	SBBF
+286B  E6 9F 20 08         1086  SBBM	LDB	[HREG]
+286F  20 02               1087  	BRA	SBBF
+2871  E6 C0               1088  SBI	LDB	,U+
+2873  B6 20 02            1089  SBBF	LDA	AREG
+2876  F7 20 02            1090  	STB	AREG
+2879  F6 20 03            1091  	LDB	CCREG
+287C  C4 01               1092  	ANDB	#1
+287E  FB 20 02            1093  	ADDB	AREG
+2881  F7 20 02            1094  	STB	AREG
+2884  B0 20 02            1095  	SUBA	AREG
+2887  16 00 FE            1096  	LBRA	SETA
+288A                      1097  *
+288A  B6 20 02            1098  ADDA	LDA	AREG
+288D  20 26               1099  	BRA	ADDF
+288F  B6 20 04            1100  ADDB	LDA	BREG
+2892  20 21               1101  	BRA	ADDF
+2894  B6 20 05            1102  ADDC	LDA	CREG
+2897  20 1C               1103  	BRA	ADDF
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 20
+
+2899  B6 20 06            1104  ADDD	LDA	DREG
+289C  20 17               1105  	BRA	ADDF
+289E  B6 20 07            1106  ADDE	LDA	EREG
+28A1  20 12               1107  	BRA	ADDF
+28A3  B6 20 08            1108  ADDH	LDA	HREG
+28A6  20 0D               1109  	BRA	ADDF
+28A8  B6 20 09            1110  ADDL	LDA	LREG
+28AB  20 08               1111  	BRA	ADDF
+28AD  A6 9F 20 08         1112  ADDM	LDA	[HREG]
+28B1  20 02               1113  	BRA	ADDF
+28B3  A6 C0               1114  ADI	LDA	,U+
+28B5  BB 20 02            1115  ADDF	ADDA	AREG
+28B8  16 00 CD            1116  	LBRA	SETA
+28BB                      1117  *
+28BB  B6 20 02            1118  ADCA	LDA	AREG
+28BE  20 26               1119  	BRA	ADCF
+28C0  B6 20 04            1120  ADCB	LDA	BREG
+28C3  20 21               1121  	BRA	ADCF
+28C5  B6 20 05            1122  ADCC	LDA	CREG
+28C8  20 1C               1123  	BRA	ADCF
+28CA  B6 20 06            1124  ADCD	LDA	DREG
+28CD  20 17               1125  	BRA	ADCF
+28CF  B6 20 07            1126  ADCE	LDA	EREG
+28D2  20 12               1127  	BRA	ADCF
+28D4  B6 20 08            1128  ADCH	LDA	HREG
+28D7  20 0D               1129  	BRA	ADCF
+28D9  B6 20 09            1130  ADCL	LDA	LREG
+28DC  20 08               1131  	BRA	ADCF
+28DE  A6 9F 20 08         1132  ADCM	LDA	[HREG]
+28E2  20 02               1133  	BRA	ADCF
+28E4  A6 C0               1134  ACI	LDA	,U+
+28E6  F6 20 03            1135  ADCF	LDB	CCREG
+28E9  C4 01               1136  	ANDB	#1
+28EB  FB 20 02            1137  	ADDB	AREG
+28EE  F7 20 02            1138  	STB	AREG
+28F1  BB 20 02            1139  	ADDA	AREG
+28F4  16 00 91            1140  	LBRA	SETA
+28F7                      1141  *
+28F7  B6 20 02            1142  XRAA	LDA	AREG
+28FA  20 26               1143  	BRA	XRAF
+28FC  B6 20 04            1144  XRAB	LDA	BREG
+28FF  20 21               1145  	BRA	XRAF
+2901  B6 20 05            1146  XRAC	LDA	CREG
+2904  20 1C               1147  	BRA	XRAF
+2906  B6 20 06            1148  XRAD	LDA	DREG
+2909  20 17               1149  	BRA	XRAF
+290B  B6 20 07            1150  XRAE	LDA	EREG
+290E  20 12               1151  	BRA	XRAF
+2910  B6 20 08            1152  XRAH	LDA	HREG
+2913  20 0D               1153  	BRA	XRAF
+2915  B6 20 09            1154  XRAL	LDA	LREG
+2918  20 08               1155  	BRA	XRAF
+291A  A6 9F 20 08         1156  XRAM	LDA	[HREG]
+291E  20 02               1157  	BRA	XRAF
+2920  A6 C0               1158  XRI	LDA	,U+
+2922  B8 20 02            1159  XRAF	EORA	AREG
+2925  16 00 5E            1160  	LBRA	CLRC
+2928                      1161  *
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 21
+
+2928  B6 20 02            1162  ANAA	LDA	AREG
+292B  20 26               1163  	BRA	ANAF
+292D  B6 20 04            1164  ANAB	LDA	BREG
+2930  20 21               1165  	BRA	ANAF
+2932  B6 20 05            1166  ANAC	LDA	CREG
+2935  20 1C               1167  	BRA	ANAF
+2937  B6 20 06            1168  ANAD	LDA	DREG
+293A  20 17               1169  	BRA	ANAF
+293C  B6 20 07            1170  ANAE	LDA	EREG
+293F  20 12               1171  	BRA	ANAF
+2941  B6 20 08            1172  ANAH	LDA	HREG
+2944  20 0D               1173  	BRA	ANAF
+2946  B6 20 09            1174  ANAL	LDA	LREG
+2949  20 08               1175  	BRA	ANAF
+294B  A6 9F 20 08         1176  ANAM	LDA	[HREG]
+294F  20 02               1177  	BRA	ANAF
+2951  A6 C0               1178  ANI	LDA	,U+
+2953  B4 20 02            1179  ANAF	ANDA	AREG
+2956  20 2E               1180  	BRA	CLRC
+2958                      1181  *
+2958  B6 20 02            1182  ORAA	LDA	AREG
+295B  20 26               1183  	BRA	ORAF
+295D  B6 20 04            1184  ORAB	LDA	BREG
+2960  20 21               1185  	BRA	ORAF
+2962  B6 20 05            1186  ORAC	LDA	CREG
+2965  20 1C               1187  	BRA	ORAF
+2967  B6 20 06            1188  ORAD	LDA	DREG
+296A  20 17               1189  	BRA	ORAF
+296C  B6 20 07            1190  ORAE	LDA	EREG
+296F  20 12               1191  	BRA	ORAF
+2971  B6 20 08            1192  ORAH	LDA	HREG
+2974  20 0D               1193  	BRA	ORAF
+2976  B6 20 09            1194  ORAL	LDA	LREG
+2979  20 08               1195  	BRA	ORAF
+297B  A6 9F 20 08         1196  ORAM	LDA	[HREG]
+297F  20 02               1197  	BRA	ORAF
+2981  A6 C0               1198  ORI	LDA	,U+
+2983  BA 20 02            1199  ORAF	ORA	AREG
+2986  1C FE               1200  CLRC	ANDCC	#$FE		CLEAR CARRY
+2988  B7 20 02            1201  SETA	STA	AREG		RESAVE RESULT
+298B                      1202  * SET PROCESSOR	FLAGS
+298B  34 16               1203  FLAGS	PSHS	A,B,X		SAVE REGISTERS
+298D  1F A9               1204  	TFR	CC,B		SAVE CONDITION CODE REGISTER
+298F  C4 2D               1205  	ANDB	#$2D		REMOVE BITS WE DON'T WANT
+2991  34 04               1206  	PSHS	B		AND SAVE
+2993  86 10               1207  	LDA	#16		FOUR BIT SHIFT
+2995  3D                  1208  	MUL			AND A HAS RESULT
+2996  AA E0               1209  	ORA	,S+		ADD IN PROCESSOR FLAGS
+2998  84 0F               1210  	ANDA	#$0F		REMOVE GARBAGE
+299A  8E 29 A4            1211  	LDX	#FLGTAB		POINT TO TABLE
+299D  E6 86               1212  	LDB	A,X		GET 8080 FLAG SET
+299F  F7 20 03            1213  	STB	CCREG		SAVE
+29A2  35 96               1214  	PULS	A,B,X,PC	RESTORE REGISTERS AND RETURN
+29A4                      1215  * Conversion table for 6809 <> 8080 processor flags
+29A4  00 01 10 11 40 41 + 1216  FLGTAB	FCB	$00,$01,$10,$11,$40,$41,$50,$51
+29AC  80 81 90 91 C0 C1 + 1217  	FCB	$80,$81,$90,$91,$C0,$C1,$D0,$D1
+29B4                      1218  *
+29B4  17 F9 5D            1219  JMP	LBSR	GETADR		GET NEW PROGRAM COUNTER
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 22
+
+29B7  1F 13               1220  	TFR	X,U
+29B9  39                  1221  	RTS
+29BA  8D 23               1222  JZ	BSR	TSTZ
+29BC  26 F6               1223  	BNE	JMP
+29BE  20 1C               1224  	BRA	SK2
+29C0  8D 1D               1225  JNZ	BSR	TSTZ
+29C2  27 F0               1226  	BEQ	JMP
+29C4  20 16               1227  	BRA	SK2
+29C6  8D 1B               1228  JC	BSR	TSTC
+29C8  26 EA               1229  	BNE	JMP
+29CA  20 10               1230  	BRA	SK2
+29CC  8D 15               1231  JNC	BSR	TSTC
+29CE  27 E4               1232  	BEQ	JMP
+29D0  20 0A               1233  	BRA	SK2
+29D2  8D 13               1234  JM	BSR	TSTS
+29D4  26 DE               1235  	BNE	JMP
+29D6  20 04               1236  	BRA	SK2
+29D8  8D 0D               1237  JP	BSR	TSTS
+29DA  27 D8               1238  	BEQ	JMP
+29DC  33 42               1239  SK2	LEAU	2,U
+29DE  39                  1240  	RTS
+29DF  86 40               1241  TSTZ	LDA	#$40
+29E1  20 06               1242  	BRA	ETST
+29E3  86 01               1243  TSTC	LDA	#$1
+29E5  20 02               1244  	BRA	ETST
+29E7  86 80               1245  TSTS	LDA	#$80
+29E9  B4 20 03            1246  ETST	ANDA	CCREG
+29EC  39                  1247  	RTS
+29ED  8D F0               1248  CZ	BSR	TSTZ
+29EF  26 1E               1249  	BNE	CALL
+29F1  20 E9               1250  	BRA	SK2
+29F3  8D EA               1251  CNZ	BSR	TSTZ
+29F5  27 18               1252  	BEQ	CALL
+29F7  20 E3               1253  	BRA	SK2
+29F9  8D E8               1254  CCC	BSR	TSTC
+29FB  26 12               1255  	BNE	CALL
+29FD  20 DD               1256  	BRA	SK2
+29FF  8D E2               1257  CNC	BSR	TSTC
+2A01  27 0C               1258  	BEQ	CALL
+2A03  20 D7               1259  	BRA	SK2
+2A05  8D E0               1260  CM	BSR	TSTS
+2A07  26 06               1261  	BNE	CALL
+2A09  20 D1               1262  	BRA	SK2
+2A0B  8D DA               1263  CP	BSR	TSTS
+2A0D  26 CD               1264  	BNE	SK2
+2A0F  1F 30               1265  CALL	TFR	U,D
+2A11  C3 00 02            1266  	ADDD	#2
+2A14  8D 18               1267  	BSR	PUSH
+2A16  17 F8 FB            1268  	LBSR	GETADR
+2A19  1F 13               1269  	TFR	X,U
+2A1B  39                  1270  	RTS
+2A1C                      1271  *
+2A1C  FC 20 08            1272  PUSHH	LDD	HREG
+2A1F  20 0D               1273  	BRA	PUSH
+2A21  FC 20 06            1274  PUSHD	LDD	DREG
+2A24  20 08               1275  	BRA	PUSH
+2A26  FC 20 04            1276  PUSHB	LDD	BREG
+2A29  20 03               1277  	BRA	PUSH
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 23
+
+2A2B  FC 20 02            1278  PUSHP	LDD	AREG
+2A2E  BE 20 0A            1279  PUSH	LDX	SREG
+2A31  1E 89               1280  	EXG	A,B
+2A33  ED 83               1281  	STD	,--X
+2A35  BF 20 0A            1282  	STX	SREG
+2A38  39                  1283  	RTS
+2A39                      1284  *
+2A39  8D 16               1285  POPP	BSR	POP
+2A3B  FD 20 02            1286  	STD	AREG
+2A3E  39                  1287  	RTS
+2A3F  8D 10               1288  POPB	BSR	POP
+2A41  FD 20 04            1289  	STD	BREG
+2A44  39                  1290  	RTS
+2A45  8D 0A               1291  POPD	BSR	POP
+2A47  FD 20 06            1292  	STD	DREG
+2A4A  39                  1293  	RTS
+2A4B  8D 04               1294  POPH	BSR	POP
+2A4D  FD 20 08            1295  	STD	HREG
+2A50  39                  1296  	RTS
+2A51  BE 20 0A            1297  POP	LDX	SREG
+2A54  EC 81               1298  	LDD	,X++
+2A56  1E 89               1299  	EXG	A,B
+2A58  BF 20 0A            1300  	STX	SREG
+2A5B  39                  1301  	RTS
+2A5C                      1302  *
+2A5C  8D F3               1303  RET	BSR	POP
+2A5E  1F 03               1304  	TFR	D,U
+2A60  39                  1305  	RTS
+2A61  17 FF 7B            1306  RZ	LBSR	TSTZ
+2A64  26 F6               1307  	BNE	RET
+2A66  39                  1308  	RTS
+2A67  17 FF 75            1309  RNZ	LBSR	TSTZ
+2A6A  27 F0               1310  	BEQ	RET
+2A6C  39                  1311  	RTS
+2A6D  17 FF 73            1312  RC	LBSR	TSTC
+2A70  26 EA               1313  	BNE	RET
+2A72  39                  1314  	RTS
+2A73  17 FF 6D            1315  RNC	LBSR	TSTC
+2A76  27 E4               1316  	BEQ	RET
+2A78  39                  1317  	RTS
+2A79  17 FF 6B            1318  RM	LBSR	TSTS
+2A7C  26 DE               1319  	BNE	RET
+2A7E  39                  1320  	RTS
+2A7F  17 FF 65            1321  RP	LBSR	TSTS
+2A82  27 D8               1322  	BEQ	RET
+2A84  39                  1323  	RTS
+2A85                      1324  *
+2A85  FC 20 06            1325  XCHG	LDD	DREG
+2A88  BE 20 08            1326  	LDX	HREG
+2A8B  FD 20 08            1327  	STD	HREG
+2A8E  BF 20 06            1328  	STX	DREG
+2A91  39                  1329  	RTS
+2A92                      1330  *
+2A92  FC 20 08            1331  XTHL	LDD	HREG
+2A95  1E 89               1332  	EXG	A,B
+2A97  AE 9F 20 0A         1333  	LDX	[SREG]
+2A9B  ED 9F 20 0A         1334  	STD	[SREG]
+2A9F  1F 10               1335  	TFR	X,D
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 24
+
+2AA1  1E 89               1336  	EXG	A,B
+2AA3  FD 20 08            1337  	STD	HREG
+2AA6  39                  1338  	RTS
+2AA7                      1339  *
+2AA7  B6 20 02            1340  DAA	LDA	AREG
+2AAA  1F 89               1341  	TFR	A,B
+2AAC  C4 0F               1342  	ANDB	#$0F
+2AAE  C1 09               1343  	CMPB	#9
+2AB0  2E 07               1344  	BGT	AD6
+2AB2  F6 20 03            1345  	LDB	CCREG
+2AB5  C4 10               1346  	ANDB	#$10
+2AB7  27 02               1347  	BEQ	NOAD6
+2AB9  8B 06               1348  AD6	ADDA	#6
+2ABB  1F 89               1349  NOAD6	TFR	A,B
+2ABD  54                  1350  	LSRB
+2ABE  54                  1351  	LSRB
+2ABF  54                  1352  	LSRB
+2AC0  54                  1353  	LSRB
+2AC1  C1 09               1354  	CMPB	#9
+2AC3  2E 07               1355  	BGT	AD26
+2AC5  F6 20 03            1356  	LDB	CCREG
+2AC8  C4 01               1357  	ANDB	#1
+2ACA  27 02               1358  	BEQ	NOAD26
+2ACC  8B 60               1359  AD26	ADDA	#$60
+2ACE  16 FE B7            1360  NOAD26	LBRA	SETA
+2AD1                      1361  *
+2AD1  B6 20 02            1362  RLC	LDA	AREG
+2AD4  1F 89               1363  	TFR	A,B
+2AD6  1C FE               1364  	ANDCC	#$FE
+2AD8  C4 80               1365  	ANDB	#$80
+2ADA  27 02               1366  	BEQ	NOCY1
+2ADC  1A 01               1367  	ORCC	#1
+2ADE  49                  1368  NOCY1	ROLA
+2ADF  B7 20 02            1369  	STA	AREG
+2AE2  16 FB 32            1370  	LBRA	SETCY
+2AE5  B6 20 02            1371  RRC	LDA	AREG
+2AE8  1F 89               1372  	TFR	A,B
+2AEA  1C FE               1373  	ANDCC	#$FE
+2AEC  C4 01               1374  	ANDB	#$1
+2AEE  27 02               1375  	BEQ	NOCY2
+2AF0  1A 01               1376  	ORCC	#1
+2AF2  46                  1377  NOCY2	RORA
+2AF3  B7 20 02            1378  	STA	AREG
+2AF6  16 FB 1E            1379  	LBRA	SETCY
+2AF9                      1380  *
+2AF9  F6 20 03            1381  RAL	LDB	CCREG
+2AFC  B6 20 02            1382  	LDA	AREG
+2AFF  1C FE               1383  	ANDCC	#$FE
+2B01  C4 01               1384  	ANDB	#1
+2B03  27 02               1385  	BEQ	NOCY3
+2B05  1A 01               1386  	ORCC	#1
+2B07  49                  1387  NOCY3	ROLA
+2B08  B7 20 02            1388  	STA	AREG
+2B0B  16 FB 09            1389  	LBRA	SETCY
+2B0E  F6 20 03            1390  RAR	LDB	CCREG
+2B11  B6 20 02            1391  	LDA	AREG
+2B14  1C FE               1392  	ANDCC	#$FE
+2B16  C4 01               1393  	ANDB	#1
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 25
+
+2B18  27 02               1394  	BEQ	NOCY4
+2B1A  1A 01               1395  	ORCC	#1
+2B1C  46                  1396  NOCY4	RORA
+2B1D  B7 20 02            1397  	STA	AREG
+2B20  16 FA F4            1398  	LBRA	SETCY
+2B23                      1399  * SYSTEM SERVICES INTERFACE
+2B23  A6 C0               1400  SYS	LDA	,U+		GET OPERAND BYTE
+2B25  B7 2B 37            1401  	STA	CALNUM		SET UP SYSTEM CALL
+2B28  7F 20 02            1402  	CLR	AREG		SET ZERO RETURN CODE
+2B2B  FC 20 04            1403  	LDD	BREG		MAP B,C TO D ACCUMULATOR
+2B2E  10 BE 20 06         1404  	LDY	DREG		MAP D,E TO Y REGISTER
+2B32  BE 20 08            1405  	LDX	HREG		MAP H,L TO X REGISTER
+2B35  4D                  1406  	TSTA			Set condition code
+2B36  3F                  1407  	FCB	$3F		SWI FOR SSR INTERFACE
+2B37  00                  1408  CALNUM	FCB	0		SSR	 NUMBER
+2B38  27 03               1409  	BEQ	NORC		RETURN CODE WAS OK
+2B3A  B7 20 02            1410  	STA	AREG		SAVE RETURN CODE
+2B3D  BF 20 08            1411  NORC	STX	HREG		SET UP H-L REGISTERS
+2B40  10 BF 20 06         1412  	STY	DREG		AND NEW VALUES FOR D-E
+2B44  FD 20 04            1413  	STD	BREG		AND B,C GETS CHANGED TOO
+2B47  39                  1414  	RTS
+2B48                      1415  * HALT INSTRUCTION
+2B48  5F                  1416  HLT	CLRB			SET RC=0
+2B49  3F                  1417  	SWI			SOFTWARE INTERRUPT TO DOS
+2B4A  18                  1418  	FCB	24		SYSTEM REQUEST NUMBER
+2B4B  48 4C 54 20 61 74 + 1419  	FCCZ	'HLT at	'
+2B53  20 39               1420  	BRA	DSPADR
+2B55                      1421  * OPCODE NOT SUPPORTED BY SIMULATOR, PULL THE PLUG
+2B55  C6 02               1422  UNSUPP	LDB	#2		SET RC=2
+2B57  3F                  1423  	SWI			SOFTWARE INTERRUPT TO DOS
+2B58  18                  1424  	FCB	24		SYSTEM REQUEST NUMBER
+2B59  55 6E 73 75 70 70 + 1425  	FCCZ	'Unsupported opcode '
+2B6D  20 14               1426  	BRA	SHOWOP
+2B6F                      1427  * INVALID OPCODE WAS DETECTED, PULL THE	PLUG
+2B6F  C6 01               1428  INVOP	LDB	#1		SET RC=1
+2B71  3F                  1429  	SWI			SOFTWARE INTERRUPT TO DOS
+2B72  18                  1430  	FCB	24		SYSTEM REQUEST NUMBER
+2B73  49 6E 76 61 6C 69 + 1431  	FCCZ	'Invalid opcode	'
+2B83  A6 5F               1432  SHOWOP	LDA	-1,U
+2B85  3F                  1433  	SWI			SOFTWARE INTERRUPT TO DOS
+2B86  1C                  1434  	FCB	28		SYSTEM REQUEST NUMBER
+2B87  3F                  1435  	SWI			SOFTWARE INTERRUPT TO DOS
+2B88  18                  1436  	FCB	24		SYSTEM REQUEST NUMBER
+2B89  20 61 74 20 00      1437  	FCCZ	' at '
+2B8E  34 04               1438  DSPADR	PSHS	B
+2B90  33 5F               1439  	LEAU	-1,U
+2B92  1F 30               1440  	TFR	U,D
+2B94  3F                  1441  	SWI			SOFTWARE INTERRUPT TO DOS
+2B95  1B                  1442  	FCB	27		SYSTEM REQUEST NUMBER
+2B96  3F                  1443  	SWI			SOFTWARE INTERRUPT TO DOS
+2B97  16                  1444  	FCB	22		SYSTEM REQUEST NUMBER
+2B98  35 02               1445  	PULS	A
+2B9A  7D 20 0C            1446  	TST	DEBUG
+2B9D  26 05               1447  	BNE	TERMIT
+2B9F  32 62               1448  	LEAS	2,S
+2BA1  16 F5 3A            1449  	LBRA	BUGGER
+2BA4  4D                  1450  TERMIT	TSTA
+2BA5  3F                  1451  ABORT	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: 8080 SIMULATOR                               PAGE: 26
+
+2BA6  00                  1452  	FCB	0		SYSTEM REQUEST NUMBER
+2BA7                      1453  * QUALIFIER TABLE
+2BA7  82                  1454  QTABLE	FCB	$82
+2BA8  2F 44 45 42 55 47   1455  	FCC	'/DEBUG'
+2BAE  80                  1456  	FCB	$80
+0001                      1457  QMAX	EQU	1
+2BAF                      1458  * DEBUG COMMAND TABLE
+2BAF  82                  1459  DCMD	FCB	$82
+2BB0  53 45 54            1460  	FCC	'SET'
+2BB3  82                  1461  	FCB	$82
+2BB4  44 49 53 50 4C 41 + 1462  	FCC	'DISPLAY'
+2BBB  82                  1463  	FCB	$82
+2BBC  4D 45 4D 4F 52 59   1464  	FCC	'MEMORY'
+2BC2  83                  1465  	FCB	$83
+2BC3  53 54 4F 52 45      1466  	FCC	'STORE'
+2BC8  82                  1467  	FCB	$82
+2BC9  45 58 49 54         1468  	FCC	'EXIT'
+2BCD  82                  1469  	FCB	$82
+2BCE  47 4F               1470  	FCC	'GO'
+2BD0  83                  1471  	FCB	$83
+2BD1  53 54 45 50         1472  	FCC	'STEP'
+2BD5  80                  1473  	FCB	$80
+2BD6                      1474  * DEBUG OPTION TABLE
+2BD6  81                  1475  DOPT	FCB	$81
+2BD7  50 53 57            1476  	FCC	'PSW'
+2BDA  81                  1477  	FCB	$81
+2BDB  42 43               1478  	FCC	'BC'
+2BDD  81                  1479  	FCB	$81
+2BDE  44 45               1480  	FCC	'DE'
+2BE0  81                  1481  	FCB	$81
+2BE1  48 4C               1482  	FCC	'HL'
+2BE3  81                  1483  	FCB	$81
+2BE4  53 50               1484  	FCC	'SP'
+2BE6  82                  1485  	FCB	$82
+2BE7  50 43               1486  	FCC	'PC'
+2BE9  82                  1487  	FCB	$82
+2BEA  54 52 41 43 45      1488  	FCC	'TRACE'
+2BEF  82                  1489  	FCB	$82
+2BF0  4E 4F 54 52 41 43 + 1490  	FCC	'NOTRACE'
+2BF7  82                  1491  	FCB	$82
+2BF8  42 52 4B 50 54      1492  	FCC	'BRKPT'
+2BFD  80                  1493  	FCB	$80

@@ -1,0 +1,1853 @@
+DUNFIELD 6809 ASSEMBLER: D:RAID                                       PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         9  *
+0000                        10  * RAID: Runtime Aid for Interactive Debugging (6809 debugger)
+0000                        11  *
+0000                        12  * Copyright 1983-2005 Dave Dunfield
+0000                        13  * All rights reserved.
+0000                        14  *
+C000                        15  ROM	EQU	OSUTIL-4096	RAID PROGRAM STORAGE (JUST UNDER UTILS)
+BF60                        16  RAM	EQU	ROM-160		RAID RAM
+C000                        17  STACK	EQU	ROM		SYSTEM STACK (TOP OF RAM)
+0013                        18  DDADR	EQU	19		DIRECTORY DISK ADDRESS OFFSET
+0015                        19  DRADR	EQU	21		DIRECTORY LOAD ADDRESS
+0000                        20  *
+BF60                        21  	ORG	RAM		MONITOR RAM
+BF60                        22  *
+BF60                        23  SWIADR	RMB	2		SWI VECTOR ADDRESS
+BF62                        24  DEVICE	RMB	2		INPUT VECTOR
+BF64                        25  SAVCC	RMB	1		SAVED CONDITION CODE REGISTER
+BF65                        26  SAVA	RMB	1		SAVED 6809 A REGISTER
+BF66                        27  SAVB	RMB	1		SAVED 6809 B REGISTER
+BF67                        28  SAVDP	RMB	1		SAVED DIRECT PAGE REGISTER
+BF68                        29  SAVX	RMB	2		SAVED X REGISTER
+BF6A                        30  SAVY	RMB	2		SAVED Y REGISTER
+BF6C                        31  SAVU	RMB	2		SAVED U REGISTER
+BF6E                        32  SAVPC	RMB	2		SAVED PROGRAM COUNTER
+BF70                        33  SAVS	RMB	2		SAVED S REGISTER
+BF72                        34  TEMP	RMB	2		TEMPORARY STORAGE
+BF74                        35  HELD	RMB	1		OUTPUT IS HELD
+BF75                        36  STPFLG	RMB	1		REGISTER DISPLAY WHILE STEPPING FLAG
+BF76                        37  PTRSAV	RMB	2		SINGLE STEP AND DISASSEMBLER CODE POINTER
+BF78                        38  INSTYP	RMB	1		DISASSEMBLED INSTRUCTION TYPE
+BF79                        39  POSBYT	RMB	1		POSTBYTE STORAGE AREA
+BF7A                        40  REGIND	RMB	2		INDIRECT REGISTER ADDRESS
+BF7C                        41  BRKTAB	RMB	24		BREAKPOINT TABLE
+BF94                        42  DSPBUF	RMB	50		DISASSEMBLER DISPLAY BUFFER
+BFC6                        43  INSRAM	RMB	7		INSTRUCTION EXECUTION ADDRESS
+BFCD                        44  *
+C000                        45  	ORG	ROM		MONITOR CODE
+C000                        46  *
+C000                        47  * INITIALIZATIONS
+C000                        48  *
+C000  81 3F                 49  RAID	CMPA	#'?'		QUERY OPERAND?
+C002  26 32                 50  	BNE	RAID1		NO, ITS OK
+C004  3F                    51  	SWI			SOFTWARE INTERRUPT TO DOS
+C005  19                    52  	FCB	25		SYSTEM REQUEST NUMBER
+C006  55 73 65 3A 20 52 +   53  	FCCZ	'Use: RAID[/<device] [<load file> [<operands>]]'
+C035  39                    54  	RTS
+C036  10 CE C0 00           55  RAID1	LDS	#STACK		SET UP STACK
+C03A  8E BF 64              56  	LDX	#SAVCC		POINT TO START
+C03D  6F 80                 57  RAID2	CLR	,X+		CLEAR IT
+C03F  8C BF 94              58  	CMPX	#DSPBUF		AT BUFFER?
+C042  25 F9                 59  	BLO	RAID2		KEEP GOING
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 2
+
+C044  CC BF 60              60  	LDD	#RAM		DEFAULT STACK AT TOP OF RAM
+C047  FD BF 70              61  	STD	SAVS		SAVE IT
+C04A  86 D0                 62  	LDA	#$D0		SET CC
+C04C  B7 BF 64              63  	STA	SAVCC		SAVE IT
+C04F                        64  * GET RAID CONSOLE DEVICE
+C04F  3F                    65  	SWI			SOFTWARE INTERRUPT TO DOS
+C050  27                    66  	FCB	39		SYSTEM REQUEST NUMBER
+C051  B7 BF 62              67  	STA	>DEVICE		SET IT
+C054  A6 A4                 68  	LDA	,Y		GET CHAR
+C056  81 2F                 69  	CMPA	#'/'		QUALIFIER?
+C058  26 0D                 70  	BNE	NOQUAL		NO, ITS OK
+C05A  31 21                 71  	LEAY	1,Y		ADVANCE
+C05C  3F                    72  	SWI			SOFTWARE INTERRUPT TO DOS
+C05D  06                    73  	FCB	6		SYSTEM REQUEST NUMBER
+C05E  10 26 00 A1           74  	LBNE	ABORT		INVALID, EXIT
+C062  C4 07                 75  	ANDB	#7		INSURE IN RANGE
+C064  F7 BF 62              76  	STB	>DEVICE		SAVE IT
+C067                        77  * PATCH INTO DOS FOR VECTORS
+C067  8E C9 11              78  NOQUAL	LDX	#SWIHND		POINT TO HANDLER
+C06A  86 14                 79  	LDA	#20		SWI VECTOR
+C06C  3F                    80  	SWI			SOFTWARE INTERRUPT TO DOS
+C06D  67                    81  	FCB	103		SYSTEM REQUEST NUMBER
+C06E  FD BF 60              82  	STD	>SWIADR		SAVE OLD HANDLER ADDRESS	
+C071                        83  * IF A FILE IS SPECIFIED, LOAD IT
+C071  3F                    84  	SWI			SOFTWARE INTERRUPT TO DOS
+C072  04                    85  	FCB	4		SYSTEM REQUEST NUMBER
+C073  27 33                 86  	BEQ	NOPARM		NO, ITS OK
+C075  3F                    87  	SWI			SOFTWARE INTERRUPT TO DOS
+C076  0A                    88  	FCB	10		SYSTEM REQUEST NUMBER
+C077  10 26 00 88           89  	LBNE	ABORT		ERROR
+C07B  3F                    90  	SWI			SOFTWARE INTERRUPT TO DOS
+C07C  46                    91  	FCB	70		SYSTEM REQUEST NUMBER
+C07D  10 26 00 82           92  	LBNE	ABORT		ERROR
+C081  EC 88 13              93  	LDD	DDADR,X		GET DISK ADDRESS
+C084  AE 88 15              94  	LDX	DRADR,X		GET RUN ADDRESS
+C087  BF BF 6E              95  	STX	>SAVPC		PT TO IT
+C08A  3F                    96  	SWI			SOFTWARE INTERRUPT TO DOS
+C08B  4E                    97  	FCB	78		SYSTEM REQUEST NUMBER
+C08C  10 26 00 73           98  	LBNE	ABORT		ERROR
+C090  17 03 74              99  	LBSR	WRMSG		MESSAGE
+C093  4C 6F 61 64 65 64 +  100  	FCCZ	'Loaded at $'
+C09F  FC BF 6E             101  	LDD	>SAVPC		GET ADDR BACK
+C0A2  17 03 48             102  	LBSR	WRDOUT		OUTPUT
+C0A5  17 03 8B             103  	LBSR	LFCR		NEW LINE
+C0A8  10 BF BF 6A          104  NOPARM	STY	>SAVY		SAVE PTR
+C0AC  10 CE C0 00          105  MAIN	LDS	#STACK		FIX STACK IN CASE ERROR
+C0B0  17 03 54             106  	LBSR	WRMSG		OUTPUT MESSAGE
+C0B3  52 61 69 64 3E 20 +  107  	FCCZ	'Raid> '
+C0BA  17 03 61             108  	LBSR	GETECH		GET CHARACTER
+C0BD  17 03 6D             109  	LBSR	SPACE		OUTPUT SPACE
+C0C0  8E C0 D9             110  	LDX	#CMDTAB		LOOK UP COMMANDS
+C0C3  A1 80                111  LKCMD	CMPA	,X+		IS THIS IT
+C0C5  27 0E                112  	BEQ	CFOUND		YES
+C0C7  30 02                113  	LEAX	2,X		SKIP ADDRESS
+C0C9  6D 84                114  	TST	,X		HIT END?
+C0CB  26 F6                115  	BNE	LKCMD		NO, KEEP LOOKING
+C0CD                       116  * ERROR HAS OCCURED
+C0CD  17 03 37             117  ERROR	LBSR	WRMSG		OUTPUT MESSAGE
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 3
+
+C0D0  20 3F                118  	FCC	' ?'
+C0D2  0D                   119  	FCB	$0D
+C0D3  20 D7                120  	BRA	MAIN		TRY AGAIN
+C0D5                       121  * COMMAND WAS FOUND
+C0D5  AD 94                122  CFOUND	JSR	[,X]		EXECUTE CODE
+C0D7  20 D3                123  	BRA	MAIN		AND TRY AGAIN
+C0D9                       124  * COMMAND LOOKUP TABLE
+C0D9  4D                   125  CMDTAB	FCB	'M'		DISPLAY MEMORY
+C0DA  C1 05                126  	FDB	MEMORY		ADDRESS OF HANDLER
+C0DC  45                   127  	FCB	'E'		SUBSTITUTE MEMORY
+C0DD  C1 58                128  	FDB	SUBMEM
+C0DF  51                   129  	FCB	'Q'		EXIT DEBUGGER
+C0E0  C0 F8                130  	FDB	QUIT
+C0E2  44                   131  	FCB	'D'		DISASSEMBLE
+C0E3  C1 9F                132  	FDB	DISASM
+C0E5  52                   133  	FCB	'R'		DISPLAY REGISTERS
+C0E6  C1 C5                134  	FDB	DISREG
+C0E8  43                   135  	FCB	'C'		CHANGE REGISTER
+C0E9  C2 41                136  	FDB	CHGREG
+C0EB  56                   137  	FCB	'V'		VIEW BREAKPOINTS
+C0EC  C2 9A                138  	FDB	DSPBRK
+C0EE  42                   139  	FCB	'B'		SET BREAKPOINT
+C0EF  C2 D0                140  	FDB	SETBRK
+C0F1  53                   141  	FCB	'S'		STEP
+C0F2  C2 F4                142  	FDB	GOSTEP
+C0F4  47                   143  	FCB	'G'		GO
+C0F5  C3 2B                144  	FDB	GOEXEC
+C0F7  00                   145  	FCB	0		MARK END OF TABLE
+C0F8                       146  *
+C0F8                       147  * 'Q'UIT & RETURN TO OS
+C0F8                       148  *
+C0F8  17 03 38             149  QUIT	LBSR	LFCR		NEW LINE
+C0FB  BE BF 60             150  	LDX	>SWIADR		GET VECTOR
+C0FE  86 14                151  	LDA	#20		SWI VECTOR
+C100  3F                   152  	SWI			SOFTWARE INTERRUPT TO DOS
+C101  67                   153  	FCB	103		SYSTEM REQUEST NUMBER
+C102  4F                   154  	CLRA
+C103  3F                   155  ABORT	SWI			SOFTWARE INTERRUPT TO DOS
+C104  00                   156  	FCB	0		SYSTEM REQUEST NUMBER
+C105                       157  *
+C105                       158  * 'M'EMORY COMMAND, DISPLAY MEMORY
+C105                       159  *
+C105  17 02 7C             160  MEMORY	LBSR	GETRNG		GET ADDRESS
+C108  26 C3                161  	BNE	ERROR		INVALID
+C10A  FD BF 72             162  	STD	TEMP		SAVE
+C10D  17 03 23             163  MEM1	LBSR	LFCR		NEW LINE
+C110  17 03 2F             164  	LBSR	CHKCHR		CHECK FOR CHAR
+C113  10 27 FF 95          165  	LBEQ	MAIN		ESCAPE, QUIT
+C117  1F 10                166  	TFR	X,D		GET ADDRESS
+C119  34 06                167  	PSHS	A,B		SAVE FOR LATER
+C11B  17 02 CF             168  	LBSR	WRDOUT		DISPLAY
+C11E  C6 10                169  	LDB	#16		DISPLAY 16 TO A LINE
+C120  17 03 0A             170  MEM2	LBSR	SPACE		OUTPUT A SPACE
+C123  C5 03                171  	BITB	#3		ON A BOUNDARY?
+C125  26 03                172  	BNE	MEM3		NO, SPACE
+C127  17 03 03             173  	LBSR	SPACE		EXTRA SPACE
+C12A  A6 80                174  MEM3	LDA	,X+		GET BYTE
+C12C  17 02 C2             175  	LBSR	HEXOUT		DISPLAY
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 4
+
+C12F  5A                   176  	DECB			REDUCE COUNT
+C130  26 EE                177  	BNE	MEM2		CONTINUE
+C132  C6 04                178  	LDB	#4		FOUR SPACE
+C134  17 02 F6             179  MEM4	LBSR	SPACE		DISPLAY A SPACE
+C137  5A                   180  	DECB			REDUCE COUNT
+C138  26 FA                181  	BNE	MEM4		CONTINUE
+C13A  35 10                182  	PULS	X		RESTORE X
+C13C  C6 10                183  	LDB	#16		COUNT OF 16
+C13E  A6 80                184  MEM5	LDA	,X+		GET CHAR
+C140  81 20                185  	CMPA	#' '		<SPACE
+C142  25 04                186  	BLO	MEM6		CONVERT TO DOT
+C144  81 7F                187  	CMPA	#$7F		PRINTABLE?
+C146  25 02                188  	BLO	MEM7		OK TO DISPLAY
+C148  86 2E                189  MEM6	LDA	#'.'		CHANGE TO DOT
+C14A  17 02 F2             190  MEM7	LBSR	PUTCHR		OUTPUT
+C14D  5A                   191  	DECB			REDUCE COUNT
+C14E  26 EE                192  	BNE	MEM5		DISPLAY THEM ALL
+C150  BC BF 72             193  	CMPX	TEMP		PAST END?
+C153  23 B8                194  	BLS	MEM1		NO, KEEP GOING
+C155  16 02 DB             195  	LBRA	LFCR		NEW LINE
+C158                       196  *
+C158                       197  * 'E'DIT MEMORY COMMAND
+C158                       198  *
+C158  17 02 4A             199  SUBMEM	LBSR	GETADR		GET ADDRESS
+C15B  10 26 FF 6E          200  	LBNE	ERROR		INVALID
+C15F  1F 01                201  	TFR	D,X		COPY
+C161  17 02 CF             202  SUBM1	LBSR	LFCR		NEW LINE
+C164  1F 10                203  	TFR	X,D		GET ADDRESS
+C166  17 02 84             204  	LBSR	WRDOUT		OUTPUT
+C169  C6 08                205  	LDB	#8		NEW COUNT
+C16B  17 02 BF             206  SUBM2	LBSR	SPACE		SEPERATOR
+C16E  A6 84                207  	LDA	,X		GET BYTE
+C170  17 02 7E             208  	LBSR	HEXOUT		DISPLAY
+C173  86 2D                209  	LDA	#'-'		PROMPT
+C175  17 02 C7             210  	LBSR	PUTCHR		OUTPUT
+C178  17 02 37             211  	LBSR	GETBYT		GET A BYTE
+C17B  26 09                212  	BNE	SUBM4		INVALID
+C17D  A7 84                213  	STA	,X		RESAVE
+C17F  30 01                214  SUBM3	LEAX	1,X		ADVANCE
+C181  5A                   215  	DECB			REDUCE COUNT
+C182  26 E7                216  	BNE	SUBM2		MORE, CONTINUE
+C184  20 DB                217  	BRA	SUBM1		NEW LINE
+C186  81 D6                218  SUBM4	CMPA	#$0D-$37	CR?
+C188  10 27 02 A7          219  	LBEQ	LFCR		IF SO, QUIT
+C18C  81 E9                220  	CMPA	#' '-$37	SPACE?
+C18E  26 05                221  	BNE	SUBM5		NO
+C190  17 02 9A             222  	LBSR	SPACE		FILL FOR TWO DIGITS
+C193  20 EA                223  	BRA	SUBM3		ADVANCE
+C195  81 D1                224  SUBM5	CMPA	#$08-$37	BACKSPACE?
+C197  10 26 FF 32          225  	LBNE	ERROR		INVALID
+C19B  30 1F                226  	LEAX	-1,X		BACKUP
+C19D  20 C2                227  	BRA	SUBM1		NEW LINE
+C19F                       228  *
+C19F                       229  * 'D'ISASSEMBLE MEMORY COMMAND
+C19F                       230  *
+C19F  17 01 E2             231  DISASM	LBSR	GETRNG		GET ADDRESS
+C1A2  10 26 FF 27          232  	LBNE	ERROR		INVALID, QUIT
+C1A6  1F 12                233  	TFR	X,Y		COPY TO Y
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 5
+
+C1A8  FD BF 72             234  	STD	TEMP		SAVE
+C1AB  17 02 85             235  	LBSR	LFCR		NEW LINE
+C1AE  CE BF 94             236  	LDU	#DSPBUF		POINT TO INPUT BUFFER
+C1B1  17 05 24             237  DISS1	LBSR	DISASS		DISASSEMBLE
+C1B4  1F 31                238  	TFR	U,X		COPY
+C1B6  17 02 58             239  	LBSR	WRLIN		OUTPUT
+C1B9  17 02 86             240  	LBSR	CHKCHR		END?
+C1BC  27 06                241  	BEQ	DISS2		YES, QUIT
+C1BE  10 BC BF 72          242  	CMPY	TEMP		OVER?
+C1C2  25 ED                243  	BLO	DISS1		TRY AGAIN
+C1C4  39                   244  DISS2	RTS
+C1C5                       245  *
+C1C5                       246  * 'R'EGISTER DISPLAY COMMAND
+C1C5                       247  *
+C1C5  8E C2 0F             248  DISREG	LDX	#REGTXT		POINT TO TEXT
+C1C8  10 8E BF 64          249  	LDY	#SAVCC		POINT TO VALUE
+C1CC  8D 31                250  	BSR	RSUB1		'CC='
+C1CE  17 02 40             251  	LBSR	WRLIN		' ['
+C1D1  CE C2 39             252  	LDU	#CCBITS		POINT TO BIT TABLE
+C1D4  E6 3F                253  	LDB	-1,Y		GET BITS BACK
+C1D6  34 20                254  	PSHS	Y		SAVE POINTER
+C1D8  10 8E 00 08          255  	LDY	#8		EIGHT BITS IN BYTE
+C1DC  A6 C0                256  REGB1	LDA	,U+		GET BIT IDENTIFIER
+C1DE  58                   257  	ASLB			IS IT SET?
+C1DF  25 02                258  	BCS	RBITS		YES, DISPLAY IT
+C1E1  86 2D                259  	LDA	#'-'		NO, DISPLAY DASH
+C1E3  17 02 59             260  RBITS	LBSR	PUTCHR		OUTPUT A CHARACTER
+C1E6  31 3F                261  	LEAY	-1,Y		REDUCE COUNT
+C1E8  26 F2                262  	BNE	REGB1		MORE TO GO
+C1EA  35 20                263  	PULS	Y		RESTORE Y
+C1EC  8D 11                264  	BSR	RSUB1		'] A='
+C1EE  8D 0F                265  	BSR	RSUB1		' B='
+C1F0  8D 0D                266  	BSR	RSUB1		' DP='
+C1F2  8D 13                267  	BSR	RSUB2		' X='
+C1F4  8D 11                268  	BSR	RSUB2		' Y='
+C1F6  8D 0F                269  	BSR	RSUB2		' U='
+C1F8  8D 0D                270  	BSR	RSUB2		' PC='
+C1FA  8D 0B                271  	BSR	RSUB2		' S='
+C1FC  16 02 34             272  	LBRA	LFCR		QUIT
+C1FF                       273  * DISPLAY 8 BIT REGISTER VALUE
+C1FF  17 02 0F             274  RSUB1	LBSR	WRLIN		OUTPUT BYTE VALUE
+C202  A6 A0                275  	LDA	,Y+		GET REGISTER VALUE
+C204  16 01 EA             276  	LBRA	HEXOUT		OUTPUT IN HEX
+C207                       277  * DISPLAY 16 BIT REGISTER VALUE
+C207  17 02 07             278  RSUB2	LBSR	WRLIN		OUTPUT WORD VALUE
+C20A  EC A1                279  	LDD	,Y++		GET REGISTER VALUE
+C20C  16 01 DE             280  	LBRA	WRDOUT		OUTPUT IN HEX
+C20F                       281  * TABLE OF TEXT FOR REGISTER DISPLAY
+C20F  43 43 3D 00          282  REGTXT	FCCZ	'CC='
+C213  20 5B 00             283  	FCCZ	' ['
+C216  5D 20 41 3D 00       284  	FCCZ	'] A='
+C21B  20 42 3D 00          285  	FCCZ	' B='
+C21F  20 44 50 3D 00       286  	FCCZ	' DP='
+C224  20 58 3D 00          287  	FCCZ	' X='
+C228  20 59 3D 00          288  	FCCZ	' Y='
+C22C  20 55 3D 00          289  	FCCZ	' U='
+C230  20 50 43 3D 00       290  	FCCZ	' PC='
+C235  20 53 3D 00          291  	FCCZ	' S='
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 6
+
+C239                       292  * TABLE OF CONDITION CODE BIT MEANINGS
+C239  45 46 48 49 4E 5A +  293  CCBITS	FCC	'EFHINZVC'
+C241                       294  *
+C241                       295  * 'C'HANGE REGISTER COMMAND
+C241                       296  *
+C241  17 01 DA             297  CHGREG	LBSR	GETECH		GET OPERAND
+C244  81 20                298  	CMPA	#' '		A+B?
+C246  27 27                299  	BEQ	CHG4		YES
+C248  8E C2 90             300  	LDX	#CHGTAB		POINT TO TABLE
+C24B  5F                   301  	CLRB			ZERO INDICATOR
+C24C  A1 84                302  CHG1	CMPA	,X		IS THIS IT?
+C24E  27 08                303  	BEQ	CHG2		YES
+C250  5C                   304  	INCB			ADVANCE COUNT
+C251  6D 80                305  	TST	,X+		END OF TABLE
+C253  26 F7                306  	BNE	CHG1		NO, KEEP TRYING
+C255  16 FE 75             307  	LBRA	ERROR		INDICATE ERROR
+C258  17 01 D2             308  CHG2	LBSR	SPACE		OUTPUT SPACE
+C25B  8E BF 64             309  	LDX	#SAVCC		POINT TO START OF REGISTERS
+C25E  C1 04                310  	CMPB	#4		16 BIT?
+C260  24 1B                311  	BHS	R16		YES
+C262  30 85                312  	LEAX	B,X		OFFSET TO ADDRESS
+C264  17 01 4B             313  	LBSR	GETBYT		GET NEW VALUE
+C267  10 26 FE 62          314  	LBNE	ERROR		INVALID
+C26B  A7 84                315  	STA	,X		SAVE IN REGISTER
+C26D  20 1E                316  	BRA	CHG3		AND QUIT
+C26F  17 01 95             317  CHG4	LBSR	WRMSG		OUTPUT MESSAGE
+C272  5B 41 42 5D 20 00    318  	FCCZ	'[AB] '
+C278  8E BF 65             319  	LDX	#SAVA		POINT TO 'D'
+C27B  20 07                320  	BRA	R17		MAKE LIKE 16 BIT REG
+C27D  30 04                321  R16	LEAX	4,X		OFFSET TO 16 BIT REGISTERS
+C27F  C0 04                322  	SUBB	#4		CONVERT TO ZERO ORIGIN
+C281  58                   323  	ASLB			DOUBLE FOR WORD VALUES
+C282  30 85                324  	LEAX	B,X		MOVE TO CORRECT OFFSET
+C284  17 01 1E             325  R17	LBSR	GETADR		GET WORD VALUE
+C287  10 26 FE 42          326  	LBNE	ERROR		INVALID
+C28B  ED 84                327  	STD	,X		SET REGISTER VALUE
+C28D  16 01 A3             328  CHG3	LBRA	LFCR		QUIT
+C290                       329  * TABLE OF REGISTER NAMES
+C290  43 41 42 44 58 59 +  330  CHGTAB	FCCZ	'CABDXYUPS'
+C29A                       331  *
+C29A                       332  * 'V'IEW BREAKPOINTS
+C29A                       333  *
+C29A  86 30                334  DSPBRK	LDA	#'0'		START WITH BRKPT ZERO
+C29C  8E BF 7C             335  	LDX	#BRKTAB		POINT TO TABLE
+C29F  34 02                336  DSPB1	PSHS	A		SAVE NUMBER
+C2A1  86 42                337  	LDA	#'B'		PRECEDE WITH 'B'
+C2A3  17 01 99             338  	LBSR	PUTCHR 		OUTPUT
+C2A6  A6 E4                339  	LDA	,S		GET NUMBER BACK
+C2A8  17 01 94             340  	LBSR	PUTCHR		OUTPUT
+C2AB  86 3D                341  	LDA	#'='		AND FOLLOW WITH '='
+C2AD  17 01 8F             342  	LBSR	PUTCHR		OUTPUT
+C2B0  EC 81                343  	LDD	,X++		GET VALUE
+C2B2  26 0A                344  	BNE	DSPB2		NON-ZERO, DISPLAY
+C2B4  17 01 50             345  	LBSR	WRMSG		OUTPUT MESSAGE INSTEAD
+C2B7  2A 2A 2A 2A 00       346  	FCCZ	'****'
+C2BC  20 03                347  	BRA	DSPB3		CONTINUE
+C2BE  17 01 2C             348  DSPB2	LBSR	WRDOUT		OUTPUT VALUE
+C2C1  17 01 69             349  DSPB3	LBSR	SPACE		SEPERATE WITH SPACE
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 7
+
+C2C4  30 01                350  	LEAX	1,X		SKIP OPCODE SAVE
+C2C6  35 02                351  	PULS	A		RESTORE NUMBER
+C2C8  4C                   352  	INCA			ADVANCE
+C2C9  81 38                353  	CMPA	#'8'		BEYOND END?
+C2CB  25 D2                354  	BLO	DSPB1		NO, CONTINUE
+C2CD  16 01 63             355  	LBRA	LFCR		NEW LINE AND QUIT
+C2D0                       356  *
+C2D0                       357  * 'B'REAKPOINT COMMAND
+C2D0                       358  *
+C2D0  17 01 4B             359  SETBRK	LBSR	GETECH		GET CHARACTER
+C2D3  80 30                360  	SUBA	#'0'		CONVERT TO NUMBER
+C2D5  81 08                361  	CMPA	#8		IN RANGE?
+C2D7  10 24 FD F2          362  	LBHS	ERROR		NO, QUIT
+C2DB  34 02                363  	PSHS	A		SAVE NUMBER
+C2DD  48                   364  	ASLA			DOUBLE FOR 16 BIT VALUES
+C2DE  AB E0                365  	ADDA	,S+		TRIPLE FOR OPCODE BYTE
+C2E0  8E BF 7C             366  	LDX	#BRKTAB		POINT TO BREAKPOINT TABLE
+C2E3  30 86                367  	LEAX	A,X		ADVANCE TO BREAKPOINT
+C2E5  17 01 45             368  	LBSR	SPACE		SEPERATE WITH SPACE
+C2E8  17 00 BA             369  	LBSR	GETADR		GET VALUE
+C2EB  10 26 FD DE          370  	LBNE	ERROR		INVALID
+C2EF  ED 84                371  	STD	,X		SAVE IN TABLE
+C2F1  16 01 3F             372  	LBRA	LFCR		NEW LINE AND QUIT
+C2F4                       373  *
+C2F4                       374  * 'S'TEP COMMAND
+C2F4                       375  *
+C2F4  17 00 AE             376  GOSTEP	LBSR	GETADR		GET ADDRESS
+C2F7  27 08                377  	BEQ	GOS1		ADDRESS SUPPLIED, GO
+C2F9  81 E9                378  	CMPA	#' '-$37	WAS IT SPACE?
+C2FB  10 26 FD CE          379  	LBNE	ERROR		NO, ERROR
+C2FF  20 03                380  	BRA	GOS2		CONTINUE
+C301  FD BF 6E             381  GOS1	STD	SAVPC		SAVE NEW ADDRESS
+C304  17 01 2C             382  GOS2	LBSR	LFCR		OUTPUT MESSAGE
+C307  17 01 5C             383  GOSTP1	LBSR	STEPDI		STEP AND DISPLAY INSTRUCTION
+C30A  7D BF 75             384  	TST	STPFLG		DISPLAY REGISTERS?
+C30D  2B 03                385  	BMI	NODSR		NO, DON'T DISPLAY
+C30F  17 FE B3             386  STPREG	LBSR	DISREG		DISPLAY REGISTERS
+C312  17 0C 47             387  NODSR	LBSR	GETCHR		GET KEY FROM TERMINAL
+C315  81 3F                388  	CMPA	#'?'		DISPLAY REGS?
+C317  27 F6                389  	BEQ	STPREG		IF SO, DISPLAY
+C319  81 20                390  	CMPA	#' '		STEP TO NEXT?
+C31B  27 EA                391  	BEQ	GOSTP1		IF SO, STEP
+C31D  81 1B                392  	CMPA	#$1B		EXIT STEPPING?
+C31F  27 09                393  	BEQ	GOSTP2		IF SO, QUIT
+C321  81 0D                394  	CMPA	#$0D		TOGGLE REGISTER DISPLAY?
+C323  26 ED                395  	BNE	NODSR		IF NOT, IGNORE
+C325  73 BF 75             396  	COM	STPFLG		TOGGLE DISPLAY FLAG
+C328  20 E8                397  	BRA	NODSR		GET NEXT KEY
+C32A  39                   398  GOSTP2	RTS
+C32B                       399  *
+C32B                       400  * 'G'O COMMAND
+C32B                       401  *
+C32B  17 00 77             402  GOEXEC	LBSR	GETADR		GET ADDRESS FROM TERMINAL
+C32E  27 07                403  	BEQ	GOEX1		IF ENTERED, EXECUTE THERE
+C330  81 E9                404  	CMPA	#' '-$37	WAS IT SPACE?
+C332  27 06                405  	BEQ	GOEX2		YES, CONTINUE FROM LAST PC
+C334  16 FD 96             406  	LBRA	ERROR		INVALID KEY, ABORT
+C337  FD BF 6E             407  GOEX1	STD	SAVPC		SAVE NEW PROGRAM COUNTER
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 8
+
+C33A  17 00 CA             408  GOEX2	LBSR	WRMSG		OUTPUT MESSAGE
+C33D  20 2D 3E 24 00       409  	FCCZ	' ->$'
+C342  FC BF 6E             410  	LDD	SAVPC		GET PC ADDRESS
+C345  17 00 A5             411  	LBSR	WRDOUT		DISPLAY ON TERMINAL
+C348  17 00 E8             412  	LBSR	LFCR		NEW LINE
+C34B                       413  * STEP ONE INST. BEFORE INSERTING BREAKPOINTS, SO THAT BREAKPOINTS
+C34B                       414  * CAN BE USED WITHIN LOOPS ETC
+C34B  17 01 2A             415  	LBSR	STEP		STEP ONE INSTRUCTION
+C34E                       416  * INSERT BREAKPOINTS
+C34E  8E BF 7C             417  	LDX	#BRKTAB		POINT TO BREAKPOINT TABLE
+C351  C6 08                418  	LDB	#8		EIGHT BREAKPOINTS
+C353  10 AE 81             419  GOEX3	LDY	,X++		GET BREAKPOINT ADDRESS
+C356  27 08                420  	BEQ	GOEX4		NO BREAKPOINT, QUIT
+C358  A6 A4                421  	LDA	,Y		GET OPCODE
+C35A  A7 84                422  	STA	,X		SAVE IN TABLE
+C35C  86 3F                423  	LDA	#$3F		GET 'SWI' BREAKPOINT OPCODE
+C35E  A7 A4                424  	STA	,Y		SAVE IN CODE SPACE
+C360  30 01                425  GOEX4	LEAX	1,X		ADVANCE TO NEXT IN TABLE
+C362  5A                   426  	DECB			REDUCE COUNT OF BRKPTS
+C363  26 EE                427  	BNE	GOEX3		DO ALL EIGHT
+C365  10 FE BF 70          428  	LDS	SAVS		RESTORE STACK POINTER
+C369  B6 BF 64             429  	LDA	SAVCC		GET SAVED CC
+C36C  F6 BF 67             430  	LDB	SAVDP		GET SAVED DPR
+C36F  34 06                431  	PSHS	A,B		SAVE ON STACK FOR LAST RESTORE
+C371  FC BF 65             432  	LDD	SAVA		RESTORE A, B REGISTERS
+C374  BE BF 68             433  	LDX	SAVX		RESTORE X REGISTER
+C377  10 BE BF 6A          434  	LDY	SAVY		RESTORE Y REGISTER
+C37B  FE BF 6C             435  	LDU	SAVU		RESTORE U REGISTER
+C37E  35 09                436  	PULS	CC,DP		RESTORE CC + DP
+C380  6E 9F BF 6E          437  	JMP	[SAVPC]		EXECUTE USER PGM
+C384                       438  *
+C384                       439  * GETS A RANGE OF ADDRESS, RETURNS WITH START IN X, END IN D
+C384                       440  *
+C384  8D 1F                441  GETRNG	BSR	GETADR		GET FIRST
+C386  26 1C                442  	BNE	GRGRTS		INDICATE INVALID
+C388  1F 01                443  	TFR	D,X		SAVE
+C38A  86 2C                444  	LDA	#','		GET COMMA
+C38C  17 00 B0             445  	LBSR	PUTCHR		OUTPUT
+C38F  8D 14                446  	BSR	GETADR		GET ADDRESS
+C391  27 11                447  	BEQ	GRGRTS		RANGE IS OK
+C393  81 E9                448  	CMPA	#' '-$37	SPACE?
+C395  26 0D                449  	BNE	GRGRTS		NO, INVALID
+C397  17 00 6D             450  	LBSR	WRMSG		OUTPUT MESSAGE
+C39A  46 46 46 46 00       451  	FCCZ	'FFFF'
+C39F  CC FF FF             452  	LDD	#$FFFF		ASSUME TOP OF RAM
+C3A2  1A 04                453  	ORCC	#4		INDICATE OK
+C3A4  39                   454  GRGRTS	RTS
+C3A5                       455  *
+C3A5                       456  * GETS AN ADDRESS (IN D) FROM THE INPUT DEVICE
+C3A5                       457  *
+C3A5  8D 0B                458  GETADR	BSR	GETBYT		GET A BYTE
+C3A7  26 1E                459  	BNE	GETB1		INVALID
+C3A9  1F 89                460  	TFR	A,B		COPY FOR LATER
+C3AB  8D 05                461  	BSR	GETBYT		GET NEXT BYTE
+C3AD  26 18                462  	BNE	GETB1		INVALID
+C3AF  1E 89                463  	EXG	A,B		PUT HIGH FIRST
+C3B1  39                   464  	RTS
+C3B2                       465  *
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 9
+
+C3B2                       466  * GETS A SINGLE BYTE (IN HEX) FROM THE INPUT DEVICE
+C3B2                       467  *
+C3B2  8D 20                468  GETBYT	BSR	GETNIB		GET NIBBLE
+C3B4  26 12                469  	BNE	GETB3		BAD
+C3B6  48                   470  	ASLA			ROTATE
+C3B7  48                   471  	ASLA			INTO
+C3B8  48                   472  	ASLA			HIGH
+C3B9  48                   473  	ASLA			NIBBLE
+C3BA  34 02                474  	PSHS	A		SAVE
+C3BC  8D 16                475  	BSR	GETNIB		GET NIBBLE
+C3BE  26 05                476  	BNE	GETB2		INVALID
+C3C0  AA E0                477  	ORA	,S+		INSERT HIGH
+C3C2  1A 04                478  GETB4	ORCC	#$04		SET 'Z' FLAG
+C3C4  39                   479  	RTS
+C3C5  32 61                480  GETB2	LEAS	1,S		SKIP SAVED NAME
+C3C7  39                   481  GETB1	RTS
+C3C8  81 F0                482  GETB3	CMPA	#$27-$37	SINGLE QUOTE?
+C3CA  26 FB                483  	BNE	GETB1		NO, ABORT
+C3CC  17 0B 8D             484  	LBSR	GETCHR		GET A CHARACTER
+C3CF  17 00 6D             485  	LBSR	PUTCHR		ECHO ON TERM
+C3D2  20 EE                486  	BRA	GETB4		INDICATE OK, AND RETURN
+C3D4                       487  *
+C3D4                       488  * GETS A SINGLE HEX NIBBLE FROM THE INPUT DEVICE
+C3D4                       489  *
+C3D4  17 00 47             490  GETNIB	LBSR	GETECH		GET CHAR
+C3D7  80 30                491  	SUBA	#'0'		CONVERT
+C3D9  81 09                492  	CMPA	#9		NUMERIC?
+C3DB  23 0A                493  	BLS	GETN1		YES, OK
+C3DD  80 07                494  	SUBA	#7		CONVERT TO ALPHA
+C3DF  81 0A                495  	CMPA	#$A		UNDER?
+C3E1  25 07                496  	BLO	GETN2		YES, BAD
+C3E3  81 0F                497  	CMPA	#$F		OVER?
+C3E5  22 03                498  	BHI	GETN2		INDICATE BAD
+C3E7  1A 04                499  GETN1	ORCC	#$04		SET 'Z' FLAG, INDICATE OK
+C3E9  39                   500  	RTS
+C3EA  1C FB                501  GETN2	ANDCC	#$FB		CLEAR 'Z' FLAG, INDICATE INVALID
+C3EC  39                   502  	RTS
+C3ED                       503  *
+C3ED                       504  * OUTPUT A WORD (IN HEX) FROM REGISTER D
+C3ED                       505  *
+C3ED  8D 02                506  WRDOUT	BSR	HEXOUT		OUTPUT FIRST BYTE
+C3EF  1F 98                507  	TFR	B,A		COPY
+C3F1                       508  *
+C3F1                       509  * OUTPUT A BYTE (IN HEX) FROM REGISTER A
+C3F1                       510  *
+C3F1  34 02                511  HEXOUT	PSHS	A		SAVE
+C3F3  44                   512  	LSRA			ROTATE
+C3F4  44                   513  	LSRA			UPPER NIBBLE
+C3F5  44                   514  	LSRA			INTO
+C3F6  44                   515  	LSRA			LOWER
+C3F7  8D 02                516  	BSR	HOUT		OUTPUT
+C3F9  35 02                517  	PULS	A		RESTORE
+C3FB                       518  *
+C3FB                       519  * OUTPUT A NIBBLE (IN HEX) FROM REGISTER A
+C3FB                       520  *
+C3FB  84 0F                521  HOUT	ANDA	#$0F		REMOVE OTHER HALF
+C3FD  8B 30                522  	ADDA	#'0'		CONVERT TO PRINTABLE
+C3FF  81 39                523  	CMPA	#'9'		IS IT IN RANGE?
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 10
+
+C401  23 02                524  	BLS	HOUT1		YES, ITS OK
+C403  8B 07                525  	ADDA	#7		CONVERT TO ALPHA
+C405  20 38                526  HOUT1	BRA	PUTCHR		OUTPUT CHARACTER
+C407                       527  *
+C407                       528  * WRITE ERROR MESSAGE FOLLOWING TEXT
+C407                       529  *
+C407  34 10                530  WRMSG	PSHS	X		SAVE X
+C409  AE 62                531  	LDX	2,S		GET OLD PC
+C40B  8D 04                532  	BSR	WRLIN		OUTPUT LINE
+C40D  AF 62                533  	STX	2,S		UPDATE OLD PC
+C40F  35 90                534  	PULS	X,PC		RESTORE X, RETURN
+C411                       535  *
+C411                       536  * DISPLAY MESSAGE(X)
+C411                       537  *
+C411  A6 80                538  WRLIN	LDA	,X+		GET CHAR FROM MESSAGE
+C413  27 08                539  	BEQ	WRLND		END, QUIT
+C415  81 0D                540  	CMPA	#$0D		CR?
+C417  27 1A                541  	BEQ	LFCR		IF SO, NEW LINE, RETURN
+C419  8D 24                542  	BSR	PUTCHR		OUTPUT TO TERM
+C41B  20 F4                543  	BRA	WRLIN		KEEP GOING
+C41D  39                   544  WRLND	RTS
+C41E                       545  *
+C41E                       546  * GET CHAR. FROM TERMINAL, AND ECHO
+C41E                       547  *
+C41E  17 0B 3B             548  GETECH	LBSR	GETCHR		GET CHARACTER
+C421  81 20                549  	CMPA	#' '		SPACE?
+C423  25 F8                550  	BLO	WRLND		IF < DON'T DISPLAY
+C425  81 61                551  	CMPA	#$61		LOWER CASE?
+C427  25 16                552  	BLO	PUTCHR		OK
+C429  84 5F                553  	ANDA	#$5F		CONVERT TO UPPER
+C42B  20 12                554  	BRA	PUTCHR		ECHO
+C42D                       555  *
+C42D                       556  * DISPLAY A SPACE ON THE TERMINAL
+C42D                       557  *
+C42D  34 02                558  SPACE	PSHS	A		SAVE A
+C42F  86 20                559  	LDA	#' '		GET SPACE
+C431  20 08                560  	BRA	LFC1		DISLAY AND GO HOME
+C433                       561  *
+C433                       562  * DISPLAY LINE-FEED, CARRIAGE RETURN ON TERMINAL
+C433                       563  *
+C433  34 02                564  LFCR	PSHS	A		SAVE
+C435  86 0A                565  	LDA	#$0A		GET LF
+C437  8D 06                566  	BSR	PUTCHR		OUTPUT
+C439  86 0D                567  	LDA	#$0D		GET CR
+C43B  8D 02                568  LFC1	BSR	PUTCHR		OUTPUT
+C43D  35 82                569  	PULS	A,PC		RESTORE AND GO HOME
+C43F                       570  *
+C43F                       571  * WRITE A CHARACTER TO ALL ENABLED OUTPUT DEVICES
+C43F                       572  *
+C43F  16 0B 2E             573  PUTCHR	LBRA	WRCON
+C442                       574  *
+C442                       575  * CHECK FOR <ESC> FROM TERMINAL. ALSO PERFORM <LF>, <CR>
+C442                       576  * SCREEN OUTPUT FLOW CONTROL
+C442                       577  *
+C442  F6 BF 74             578  CHKCHR	LDB	HELD		GET I/O CONFIG
+C445  26 07                579  	BNE	CHKC1		ALREADY HELD
+C447  17 0B 1C             580  	LBSR	RDCON		READ TERMINAL
+C44A  81 0A                581  	CMPA	#$0A		LINE-FEED?
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 11
+
+C44C  26 15                582  	BNE	CHKC3		NO, IGNORE IT
+C44E  17 0B 0B             583  CHKC1	LBSR	GETCHR		GET KEY FROM CONSOLE
+C451  C6 FF                584  	LDB	#$FF
+C453  81 0A                585  	CMPA	#$0A		LF?
+C455  27 09                586  	BEQ	CHKC2		YES, ALLOW
+C457  5F                   587  	CLRB			DISABLE HELD BIT
+C458  81 0D                588  	CMPA	#$0D		CARRIAGE RETURN?
+C45A  27 04                589  	BEQ	CHKC2		ALLOW
+C45C  81 1B                590  	CMPA	#$1B		ESCAPE?
+C45E  26 EE                591  	BNE	CHKC1		NO, IGNORE
+C460  F7 BF 74             592  CHKC2	STB	HELD		RESAVE I/O CONFIG BYTE
+C463  81 1B                593  CHKC3	CMPA	#$1B		TEST FOR ESCAPE CHARACTER
+C465  39                   594  	RTS
+C466                       595  *
+C466                       596  * STEP ONE INSTRUCTION
+C466                       597  *
+C466  10 BE BF 6E          598  STEPDI	LDY	SAVPC		GET PC
+C46A  CE BF 94             599  	LDU	#DSPBUF		GET INPUT BUFFER
+C46D  17 02 68             600  	LBSR	DISASS		DISPLAY
+C470  8E BF 94             601  	LDX	#DSPBUF		POINT TO IT
+C473  17 FF 9B             602  	LBSR	WRLIN		DISPLAY
+C476  20 0A                603  	BRA	STEPCE		AND PERFORM STEP
+C478                       604  *
+C478                       605  * STEP WITHOUT DISPLAYING INSTRUCTION
+C478                       606  *
+C478  10 BE BF 6E          607  STEP	LDY	SAVPC		GET PROGRAM COUNTER
+C47C  CE BF 94             608  	LDU	#DSPBUF		POINT TO FREE RAM FOR DISASEMBLY OUTPUT
+C47F  17 02 56             609  	LBSR	DISASS		PERFROM DISASSEMBLY
+C482  10 BF BF 6E          610  STEPCE	STY	SAVPC		SAVE NEW PC
+C486  FE BF 76             611  	LDU	PTRSAV		GET POINTER BACK
+C489  EC C0                612  	LDD	,U+		GET OPCODE
+C48B                       613  * TEST FOR LONG CONDITIONAL BRANCHES
+C48B  81 10                614  LCBRAN	CMPA	#$10		PREFIX?
+C48D  26 12                615  	BNE	LOBRAN		NO, GOT FOR IT
+C48F  E6 C4                616  	LDB	,U		GET OPCODE
+C491  C1 22                617  	CMPB	#$22		IN RANGE?
+C493  25 0C                618  	BLO	LOBRAN		NO
+C495  C1 2F                619  	CMPB	#$2F		IN RANGE?
+C497  22 08                620  	BHI	LOBRAN		NO
+C499  A6 C0                621  	LDA	,U+		GET OPCOIDE BYTE
+C49B  17 02 18             622  	LBSR	TSTCON		TEST CONDITIONAL
+C49E  27 05                623  	BEQ	LBRAN1		YES, DO IT
+C4A0  39                   624  	RTS	
+C4A1                       625  * TEST FOR LONG BRANCHES
+C4A1  81 16                626  LOBRAN	CMPA	#$16		IS IT LBRA?
+C4A3  26 06                627  	BNE	LBRANS		NO, TRY LBSR
+C4A5  EC C1                628  LBRAN1	LDD	,U++		GET OFFSET
+C4A7  30 CB                629  	LEAX	D,U		PERFORM BRANCH
+C4A9  20 34                630  	BRA	SAVNPC		SAVE NEW PC
+C4AB                       631  * TEST FOR LONG BRANCH TO SUB
+C4AB  81 17                632  LBRANS	CMPA	#$17		'LBSR'?
+C4AD  26 06                633  	BNE	SCOBRA		NO, TRY SHORT CONDITIONALS
+C4AF  EC C1                634  	LDD	,U++		GET OFFSET
+C4B1  30 CB                635  	LEAX	D,U		SET UP ADDRESS
+C4B3  20 20                636  	BRA	SAVSTK	
+C4B5                       637  * TEST FOR SHORT CONDITIONAL BRANCHES
+C4B5  81 22                638  SCOBRA	CMPA	#$22		< 'BHI'?
+C4B7  25 0A                639  	BLO	SHBRAN		NO, TRY SHORT BRANCHES
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 12
+
+C4B9  81 2F                640  	CMPA	#$2F		> 'BLE'?
+C4BB  22 06                641  	BHI	SHBRAN		NO, TRY SHORT BRANCHES
+C4BD  17 01 F6             642  	LBSR	TSTCON		SEE OF CONDITIONAL IS OK
+C4C0  27 05                643  	BEQ	SBRAN1		YES, DO IT
+C4C2  39                   644  	RTS	
+C4C3                       645  * TEST FOR SHORT BRANCHES
+C4C3  81 20                646  SHBRAN	CMPA	#$20		SHORT BRANCH?
+C4C5  26 06                647  	BNE	SBRANS		NO, TRY SHORT BRANCH TO SUB
+C4C7  E6 C0                648  SBRAN1	LDB	,U+		GET OFFSET
+C4C9  30 C5                649  	LEAX	B,U		EMULATE JUMP
+C4CB  20 12                650  	BRA	SAVNPC		SAVE NEW PC
+C4CD                       651  * TEST FOR SHORT BRANCH TO SUBROUTINE
+C4CD  81 8D                652  SBRANS	CMPA	#$8D		'BSR'?
+C4CF  26 12                653  	BNE	TSTTFR		NO, TRY TRANSFER
+C4D1  E6 C0                654  	LDB	,U+		GET OFFSET
+C4D3  30 C5                655  	LEAX	B,U		PERFORM BRANCH
+C4D5  10 BE BF 70          656  SAVSTK	LDY	SAVS		GET STACK POINTER
+C4D9  EF A3                657  	STU	,--Y		PUSH ADDRESS
+C4DB  10 BF BF 70          658  	STY	SAVS		RESAVE
+C4DF  BF BF 6E             659  SAVNPC	STX	SAVPC		SAVE IT
+C4E2  39                   660  	RTS	
+C4E3                       661  * TEST FOR TRANSFER
+C4E3  81 1F                662  TSTTFR	CMPA	#$1F		TRANSFER?
+C4E5  26 20                663  	BNE	TSTEXG		NO, TRY EXCHANGE
+C4E7  8D 01                664  	BSR	LOKREG		LOOKUP REGISTER
+C4E9  39                   665  	RTS
+C4EA                       666  * LOOKUP REGISTER, AND SIMULATE IF PC XFER OR EXCHANGE
+C4EA  A6 C4                667  LOKREG	LDA	,U		GET POSTBYTE
+C4EC  84 0F                668  	ANDA	#$0F		REMOVE HIGH REGISTER
+C4EE  81 05                669  	CMPA	#5		IS IT PC?
+C4F0  26 10                670  	BNE	LOK1		NO, IT'S OK TO EXECUTE
+C4F2  A6 C4                671  	LDA	,U		GET REG POSTBYTE BACK
+C4F4  44                   672  	LSRA			SHIFT
+C4F5  44                   673  	LSRA			HIGH REGISTER
+C4F6  44                   674  	LSRA			TO LOW (LEAVE X 2)
+C4F7  8E CF 30             675  LOK2	LDX	#TFREGT		POINT TO TABLE
+C4FA  84 0F                676  	ANDA	#$0F		INSURE WE GET VALID REG
+C4FC  AE 86                677  	LDX	A,X		GET ADDRESS OF VARIABLE
+C4FE  EC 84                678  	LDD	,X		GET REGISTER VALUE
+C500  20 2E                679  	BRA	STDPC		SAVE IT
+C502  32 62                680  LOK1	LEAS	2,S		SKIP LAST CALL
+C504  16 01 53             681  	LBRA	NOREXE		EXECUTE NORMAL INSTRUCTION
+C507                       682  * TEST FOR EXCHANGE
+C507  81 1E                683  TSTEXG	CMPA	#$1E		IS IT EXCHANGE
+C509  26 19                684  	BNE	TSTRTS		NO, TRY RTS
+C50B  10 BE BF 6E          685  	LDY	SAVPC		GET OLD PC VALUE
+C50F  A6 C4                686  	LDA	,U		GET REGISTER
+C511  84 F0                687  	ANDA	#$F0		USE HIGH ONLY
+C513  81 50                688  	CMPA	#$50		IS PC FIRST?
+C515  26 07                689  	BNE	TSTE1		NO, SKIP
+C517  A6 C4                690  	LDA	,U		GET REG BACK
+C519  48                   691  	LSLA			DOUBLE
+C51A  8D DB                692  	BSR	LOK2		GET ADDRESS OF REG TO SWAP WITH
+C51C  20 02                693  	BRA	TSTE2		PERFORM MOVE TO PC
+C51E  8D CA                694  TSTE1	BSR	LOKREG		GET REGISTER SEE IF PC IS LOW REGISTER
+C520  10 AF 84             695  TSTE2	STY	,X		SAVE PC IN REGISTER
+C523  39                   696  	RTS
+C524                       697  * TEST FOR 'RTS' INSTRUCTIONS
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 13
+
+C524  81 39                698  TSTRTS	CMPA	#$39		IS IT 'RTS'
+C526  26 0C                699  	BNE	TPULS		NO, TRY PULS
+C528  FE BF 70             700  	LDU	SAVS		POINT TO STACK
+C52B  37 06                701  	PULU	A,B		GET DATA
+C52D  FF BF 70             702  	STU	SAVS		RESAVE SP
+C530  FD BF 6E             703  STDPC	STD	SAVPC
+C533  39                   704  	RTS
+C534                       705  * TEST FOR 'PULS' INSTRUCTION
+C534  81 35                706  TPULS	CMPA	#$35		PULLING FROM S?
+C536  26 0D                707  	BNE	TPULU		NO, TRY PULU
+C538  BE BF 70             708  	LDX	SAVS		GET SAVED 'S' REG
+C53B  10 8E CF 3C          709  	LDY	#PULSTAB	POINT TO TABLE
+C53F  8D 15                710  	BSR	DOPUL		PERFORM PULL
+C541  BF BF 70             711  	STX	SAVS		RESAVE NEW 'S' REGISTER
+C544  39                   712  	RTS	
+C545                       713  * TEST FOR A 'PULU' INSTRUCTION
+C545  81 37                714  TPULU	CMPA	#$37		IS IT 'PULU'?
+C547  26 2E                715  	BNE	JSREXT		NO, TRY JSR EXTENDED
+C549  BE BF 6C             716  	LDX	SAVU		GET SAVED 'U'
+C54C  10 8E CF 4C          717  	LDY	#PULUTAB	POINT TO TABLE
+C550  8D 04                718  	BSR	DOPUL		PERFORM PULL
+C552  BF BF 6C             719  	STX	SAVU		RESAVE 'S'
+C555  39                   720  	RTS	
+C556                       721  * PERFORM PUL OPERATIONS
+C556  A6 C4                722  DOPUL	LDA	,U		GET POSTBYTE
+C558  C6 04                723  	LDB	#4		TEST FOR FIRST FOUR BITS (8 BIT REG)
+C55A  5A                   724  DOPUL1	DECB			DECREMENT COUNT
+C55B  44                   725  	LSRA			SHIFT
+C55C  24 13                726  	BCC	DOPUL2		NOTHING, GO AGAIN
+C55E  34 06                727  	PSHS	A,B		SAVE REGS
+C560  5D                   728  	TSTB			ARE WE INTO 16 BITS?
+C561  2B 06                729  	BMI	PUL16		YES, PERFORM 16 BITS
+C563  A6 80                730  	LDA	,X+		PULL A BYTE
+C565  A7 B1                731  	STA	[,Y++]		SAVE IN REGISTER
+C567  20 04                732  	BRA	DOPUL3		GO AGAIN
+C569  EC 81                733  PUL16	LDD	,X++		GET 16 BIT VALUE
+C56B  ED B1                734  	STD	[,Y++]		SAVE IN REGISTER
+C56D  35 06                735  DOPUL3	PULS	A,B		RESTORE
+C56F  20 E9                736  	BRA	DOPUL1		CONTINUE
+C571  31 22                737  DOPUL2	LEAY	2,Y		ADVANCE
+C573  4D                   738  	TSTA			ARE WE CONE
+C574  26 E4                739  	BNE	DOPUL1		CONTINUE
+C576  39                   740  	RTS	
+C577                       741  * TEST FOR 'JSR' EXTENDED
+C577  81 BD                742  JSREXT	CMPA	#$BD		IS IT EXTENDED JSR
+C579  26 04                743  	BNE	JMPEXT		NO, TRY JUMP EXTENDED
+C57B  8D 06                744  	BSR	DJMPEX		FAKE JUMP
+C57D  20 21                745  	BRA	PSHPC		SAVE PC
+C57F                       746  * TEST FOR 'JMP' EXTENDED
+C57F  81 7E                747  JMPEXT	CMPA	#$7E		IS IT JMP EXTENDED?
+C581  26 04                748  	BNE	JSRDIR		NO, TRY JMP DIRECT
+C583  EC C1                749  DJMPEX	LDD	,U++		GET ADDRESS
+C585  20 A9                750  	BRA	STDPC		SAVE IT
+C587                       751  * TEST FOR 'JSR' DIRECT
+C587  81 9D                752  JSRDIR	CMPA	#$9D		'JSR' DIRECT PAGE?
+C589  26 04                753  	BNE	JMPDIR		NO, TRY JUMP
+C58B  8D 06                754  	BSR	DJMPDI		DO IT
+C58D  20 11                755  	BRA	PSHPC		SAVE PC
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 14
+
+C58F                       756  * TEST FOR 'JMP' DIRECT PAGE
+C58F  81 0E                757  JMPDIR	CMPA	#$0E		IS IT JUMP DIRECT PAGE?
+C591  26 07                758  	BNE	JSRIND		NO, TRY JUMP INDEXED
+C593  E6 C0                759  DJMPDI	LDB	,U+		GET LOW ADDRESS
+C595  B6 BF 67             760  	LDA	SAVDP		GET DIRECT PAGE
+C598  20 96                761  	BRA	STDPC		SAVE IT
+C59A                       762  * TEST FOR 'JSR' INDEXED
+C59A  81 AD                763  JSRIND	CMPA	#$AD		IS IT 'JSR' INDEXED?
+C59C  26 0B                764  	BNE	JMPIND		NO
+C59E  8D 0F                765  	BSR	DJMPIN		DO IT
+C5A0  BE BF 70             766  PSHPC	LDX	SAVS		GET ADDRESS
+C5A3  EF 83                767  	STU	,--X		SAVE
+C5A5  BF BF 70             768  	STX	SAVS		RESAVE
+C5A8  39                   769  	RTS	
+C5A9                       770  * TEST FOR 'JMP' INDEXED
+C5A9  81 6E                771  JMPIND	CMPA	#$6E		IS IT JUMP INDEXED?
+C5AB  10 26 00 AB          772  	LBNE	NOREXE		NO, TRY JST EXTENDED
+C5AF                       773  * FIRST POINT Y AT REGISTER INVOLVED
+C5AF  A6 C0                774  DJMPIN	LDA	,U+		GET POSTBYTE
+C5B1  34 02                775  	PSHS	A		SAVE IT
+C5B3  84 60                776  	ANDA	#$60		MASK OTHER CRAP
+C5B5  44                   777  	LSRA			CONVERT
+C5B6  44                   778  	LSRA			REGISTER
+C5B7  44                   779  	LSRA			INTO INDEX VALUE
+C5B8  44                   780  	LSRA			SHIFT IT OVER
+C5B9  8E CF 32             781  	LDX	#INDTAB		POINT TO TABLE
+C5BC  10 AE 86             782  	LDY	A,X		GET REGISTER ADDRESS
+C5BF  10 BF BF 7A          783  	STY	REGIND		SAVE IT
+C5C3  10 AE A4             784  	LDY	,Y		GET REGSTER CONTENTS
+C5C6  A6 E4                785  	LDA	,S		GET POSTBYTE BACK
+C5C8  84 9F                786  	ANDA	#$9F		MASK IT
+C5CA  2B 0C                787  	BMI	NOT5BO		NOT A FIVE BIT OFFSET
+C5CC                       788  * FIVE BIT REGISTER OFFSET
+C5CC  84 1F                789  	ANDA	#$1F		MASK FOR CRAP
+C5CE  81 10                790  	CMPA	#$10		NEGATIVE?
+C5D0  25 02                791  	BLO	SINOK		NO, IT'S OK
+C5D2  8A E0                792  	ORA	#$E0		CONVERT TO NEGATIVE
+C5D4  30 A6                793  SINOK	LEAX	A,Y		GET ADDRESS
+C5D6  20 5E                794  	BRA	XSAVPC		SAVE IT
+C5D8                       795  * TEST FOR NO OFFSET
+C5D8  84 EF                796  NOT5BO	ANDA	#$EF		REMOVE INDIRECT BIT
+C5DA  81 84                797  	CMPA	#$84		NO OFFSET?
+C5DC  26 04                798  	BNE	TOFF8		NO, TRY OFFSET OF 8
+C5DE  1F 21                799  	TFR	Y,X		COPY
+C5E0  20 54                800  	BRA	XSAVPC		SAVE IT
+C5E2                       801  * TEST FOR EIGHT BIT OFFSET
+C5E2  81 88                802  TOFF8	CMPA	#$88		8 BIT OFSET?
+C5E4  26 04                803  	BNE	TOFF16		NO, TRY 16 BIT OFFSET
+C5E6  E6 C0                804  	LDB	,U+		GET OFFSET
+C5E8  20 1A                805  	BRA	BSAVOF		GO FOR IT
+C5EA                       806  * TEST FOR 16 BIT OFFSET
+C5EA  81 89                807  TOFF16	CMPA	#$89		16 BIT OFFSET?
+C5EC  26 06                808  	BNE	TOFFA		TRY A ACCUMULATOR OFFSET
+C5EE  EC C0                809  	LDD	,U+		GET OFFSET
+C5F0  30 AB                810  	LEAX	D,Y		DO IT
+C5F2  20 42                811  	BRA	XSAVPC		SAVE IT
+C5F4                       812  * TEST FOR ACCA OFFSET
+C5F4  81 86                813  TOFFA	CMPA	#$86		OFFSET BY ACCA
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 15
+
+C5F6  26 05                814  	BNE	TOFFB		NO, TRY B
+C5F8  F6 BF 65             815  	LDB	SAVA		GET ACCA
+C5FB  20 07                816  	BRA	BSAVOF		SAVE IT
+C5FD                       817  * TEST FOR ACCB OFFSET
+C5FD  81 85                818  TOFFB	CMPA	#$85		B OFFSET
+C5FF  26 07                819  	BNE	TOFFD		NO, TRY D OFFSET
+C601  F6 BF 66             820  	LDB	SAVB		GET B
+C604  30 A5                821  BSAVOF	LEAX	B,Y		DO OFFSET
+C606  20 2E                822  	BRA	XSAVPC		SAVE IT
+C608                       823  * TEST FOR ACCD OFFSET
+C608  81 8B                824  TOFFD	CMPA	#$8B		IS IT D OFFSET?
+C60A  26 07                825  	BNE	TAINC1		NO, TRY AUTO INC
+C60C  FC BF 65             826  	LDD	SAVA		GET D ACCUMULATOR
+C60F  30 AB                827  	LEAX	D,Y		DO IT
+C611  20 23                828  	BRA	XSAVPC		SAVE IT
+C613                       829  * TEST FOR AUTO INCREMENT
+C613  81 80                830  TAINC1	CMPA	#$80		AUTO INC BY 1?
+C615  26 04                831  	BNE	TAINC2		NO, TRY AUTO INC BY 2
+C617  30 A0                832  	LEAX	,Y+		GET ADDRESS
+C619  20 16                833  	BRA	RSVREG		RESAVE REGISTER
+C61B                       834  * TEST FOR DOUBLE AUTO INCREMENT
+C61B  81 81                835  TAINC2	CMPA	#$81		AUTO INC BY 1?
+C61D  26 04                836  	BNE	TADEC1		NO, TRY AUTO DEC
+C61F  30 A1                837  	LEAX	,Y++		GET ADDRESS
+C621  20 0E                838  	BRA	RSVREG		RESAVE REGISTER
+C623                       839  * TEST FOR AUTO DECREMENT
+C623  81 82                840  TADEC1	CMPA	#$82		AUTO DEC?
+C625  26 04                841  	BNE	TADEC2		NO, TRY AUTO DEC BY TWO
+C627  30 A2                842  	LEAX	,-Y		GET ADDRESS
+C629  20 06                843  	BRA	RSVREG		RESAVE REGISTER
+C62B                       844  * TEST FOR DOUBLE AUTO DECREMENT
+C62B  81 83                845  TADEC2	CMPA	#$83		DOUBLE AUTO DEC
+C62D  26 09                846  	BNE	TPCO8		NO, TRY PC OFFSET
+C62F  30 A3                847  	LEAX	,--Y		GET OFFSET
+C631  10 AF 9F BF 7A       848  RSVREG	STY	[REGIND]	RESAVE REGISTER CONTENTS
+C636  20 16                849  XSAVPC	BRA	SAVXPC		SAVE NEW PC
+C638                       850  * TEST FOR EIGHT BIT OFFSET FROM PCR
+C638  81 8C                851  TPCO8	CMPA	#$8C		8 BIT PC RELATIVE?
+C63A  26 06                852  	BNE	TPCO16		NO, TRY 16 BIT PC RELATIVE
+C63C  E6 C0                853  	LDB	,U+		GET BYTE
+C63E  30 C5                854  	LEAX	B,U		OFFSET IT
+C640  20 0C                855  	BRA	SAVXPC		RESAVE PC
+C642                       856  * TEST FOR 16 BIT OFFSET FROM PCR
+C642  81 8D                857  TPCO16	CMPA	#$8D		16 BIT OFFSET
+C644  26 06                858  	BNE	TEIND		NO, TRY EXTENDED INDIRECT
+C646  EC C1                859  	LDD	,U++		GET VALUE
+C648  30 CB                860  	LEAX	D,U		POINT TO NEW LOCATION
+C64A  20 02                861  	BRA	SAVXPC		RESAVE
+C64C                       862  * EXTENDED ADDRESSING VIA INDEXED POSTBYTE
+C64C  AE C1                863  TEIND	LDX	,U++		GET ADDRESS
+C64E                       864  * SAVE CALCULATED ADDRESS IN REGISTER, BUT FIRST CHECK FOR INDIRECTION
+C64E  35 02                865  SAVXPC	PULS	A		RESTORE POSTBYTE
+C650  85 10                866  	BITA	#$10		INDIRECT?
+C652  27 02                867  	BEQ	NINXIN		NOT INDIRECT
+C654  AE 84                868  	LDX	,X		PERFORM A LEVEL OF INDIRECTION
+C656  BF BF 6E             869  NINXIN	STX	SAVPC		SAVE IT
+C659  39                   870  	RTS	
+C65A                       871  * NORMAL EXECUTABLE INSTRUCTION, COPY IT INTO OUR RAM, THEN EXECUTE IT
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 16
+
+C65A  33 5F                872  NOREXE	LEAU	-1,U		BACKUP TO INSTRUCTION
+C65C  8E BF C6             873  	LDX	#INSRAM		POINT TO RAM FOR INSTRUCTION
+C65F                       874  * COPY INSTRUCTION INTO RAM
+C65F  11 B3 BF 6E          875  NORE1	CMPU	SAVPC		ARE WE THERE
+C663  24 06                876  	BHS	NORE2		END OF INSTRUCTION
+C665  A6 C0                877  	LDA	,U+		GET DATA
+C667  A7 80                878  	STA	,X+		SAVE IN RAM
+C669  20 F4                879  	BRA	NORE1		CONTINUE
+C66B                       880  * INSERT A JUMP AFTER IT
+C66B  86 7E                881  NORE2	LDA	#$7E		GET 'JMP' EXTENDED INSTRUCTION
+C66D  A7 80                882  	STA	,X+		SAVE IT
+C66F  CC C6 96             883  	LDD	#NORE3		POINT AT ADDRESS TO JUMP TO
+C672  ED 84                884  	STD	,X		SAVE IT
+C674  10 FF BF 7A          885  	STS	REGIND		SAVE SP
+C678  10 FE BF 70          886  	LDS	SAVS		RESTORE STACK POINTER
+C67C  B6 BF 64             887  	LDA	SAVCC		GET CC
+C67F  F6 BF 67             888  	LDB	SAVDP		GET DP
+C682  34 06                889  	PSHS	A,B		SAVE CC AND DP
+C684  FC BF 65             890  	LDD	SAVA		RESTORE A, B
+C687  BE BF 68             891  	LDX	SAVX		RESTORE X
+C68A  10 BE BF 6A          892  	LDY	SAVY		RESTORE Y
+C68E  FE BF 6C             893  	LDU	SAVU		RESTORE U
+C691  35 09                894  	PULS	CC,DP		RESTORE CC AND DP
+C693  7E BF C6             895  	JMP	INSRAM		EXECUTE INSTRUCTION
+C696                       896  * INSTRUCTION SHOULD RETURN TO HERE
+C696  34 09                897  NORE3	PSHS	CC,DP		SAVE REGS
+C698  FD BF 65             898  	STD	SAVA		SAVE REGS
+C69B  BF BF 68             899  	STX	SAVX		SAVE X
+C69E  10 BF BF 6A          900  	STY	SAVY		SAVE Y
+C6A2  FF BF 6C             901  	STU	SAVU		SAVE U
+C6A5  35 06                902  	PULS	A,B		GET REGS BACK
+C6A7  B7 BF 64             903  	STA	SAVCC		SAVE CC
+C6AA  F7 BF 67             904  	STB	SAVDP		SAVE DP
+C6AD  10 FF BF 70          905  	STS	SAVS		SAVE STACK POINTER
+C6B1  10 FE BF 7A          906  	LDS	REGIND		RESTORE OUR STACK
+C6B5  39                   907  	RTS	
+C6B6                       908  *
+C6B6                       909  * SUBROUTINE TO EVALUATE CONDITIONAL BRANCH OPCODES, AND DETERMINE
+C6B6                       910  * IF THEY ARE TO BE EXECUTED
+C6B6                       911  *
+C6B6  C6 03                912  TSTCON	LDB	#3		TEST FOR THREE CONDITIONALS
+C6B8  81 2F                913  	CMPA	#$2F		IS IT 'BLE'?
+C6BA  26 02                914  	BNE	TSTC0		NO, ITS NORMAL
+C6BC  C6 06                915  	LDB	#6		HANDLE WRETCHED 'BLE' CASE
+C6BE  80 22                916  TSTC0	SUBA	#$22		CONVERT OPCODE TO SIMPLE INDEX
+C6C0  48                   917  	ASLA			ROTATE.
+C6C1  48                   918  	ASLA			TWICE FOR FOUR BYTE ENTRIES
+C6C2  8E CE F5             919  	LDX	#CONTAB		POINT TO TABLE
+C6C5  30 86                920  	LEAX	A,X		ADVANCE TO TABLE ENTRY
+C6C7  B6 BF 64             921  	LDA	SAVCC		GET CONDITION CODES
+C6CA  A4 80                922  	ANDA	,X+		MASK OUT NON-APPLICABLE ONES
+C6CC  A1 80                923  TSTC1	CMPA	,X+		DOES IT MATCH?
+C6CE  27 06                924  	BEQ	TSTC2		IT'S OK
+C6D0  5A                   925  	DECB			REDUCE COUNT
+C6D1  26 F9                926  	BNE	TSTC1		CONTINUE
+C6D3  86 FF                927  	LDA	#255		INDICATE CONDITIONAL NOT MET
+C6D5  39                   928  	RTS	
+C6D6  4F                   929  TSTC2	CLRA			INDICATE CONDITIONAL MET
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 17
+
+C6D7  39                   930  	RTS	
+C6D8                       931  *
+C6D8                       932  * DISASSEMBLE OPCODE POINTED TO BY Y. PLACE IN OUTPUT BUFFER POINTED TO BY U
+C6D8                       933  *
+C6D8  10 BF BF 76          934  DISASS	STY	PTRSAV		SAVE INSTRUCTION POINTER
+C6DC  34 40                935  	PSHS	U		SAVE INST POINTER
+C6DE  CC 20 1A             936  	LDD	#$2000+26	GET SPACE+NUMBER OF BYTES TO CLEAR
+C6E1  A7 C0                937  DISA1	STA	,U+		SET A SPACE
+C6E3  5A                   938  	DECB			REDUCE COUNT
+C6E4  26 FB                939  	BNE	DISA1		CONTINUE
+C6E6  8E C9 B7             940  	LDX	#OPTAB1		POINT TO GENERAL OPCODE TABLE
+C6E9  A6 A4                941  	LDA	,Y		GET DATA BYTE
+C6EB  81 10                942  	CMPA	#$10		PREFIX BYTE?
+C6ED  27 09                943  	BEQ	SETOP2		NEW TABLE
+C6EF  81 11                944  	CMPA	#$11		OTHER PREFIX BYTE
+C6F1  26 0A                945  	BNE	OPFIND		NO, IT'S OK
+C6F3  8E CC C6             946  	LDX	#OPTAB3		POINT TO THIRD TABLE
+C6F6  20 03                947  	BRA	OPFNXT		OK
+C6F8  8E CC 51             948  SETOP2	LDX	#OPTAB2		POINT TO SECOND OPERAND TABLE
+C6FB  31 21                949  OPFNXT	LEAY	1,Y		SKIP PREFIX BYTE
+C6FD                       950  * LOOK FOR OPCODE IN TABLE
+C6FD  A6 80                951  OPFIND	LDA	,X+		GET BYTE FROM TABLE
+C6FF  A1 A4                952  	CMPA	,Y		IS THIS IT?
+C701  27 0C                953  	BEQ	FNDOPC		FOUND IT
+C703  81 CF                954  	CMPA	#$CF		END OF TABLE?
+C705  27 04                955  	BEQ	BADOPC		IF SO, FAKE AN OPCODE
+C707  30 02                956  	LEAX	2,X		ADVANCE
+C709  20 F2                957  	BRA	OPFIND		KEEP LOOKING
+C70B  10 BE BF 76          958  BADOPC	LDY	PTRSAV		INSURE WE ARE AT BEGINNING
+C70F                       959  * LOCATED OPCODE, GENERATE STRING
+C70F  31 21                960  FNDOPC	LEAY	1,Y		SKIP TO POSTBYTE
+C711  A6 80                961  	LDA	,X+		GET DATA
+C713  B7 BF 78             962  	STA	INSTYP		SAVE FOR LATER
+C716  E6 84                963  	LDB	,X		GET INSTRUCTION NUMBER
+C718  86 04                964  	LDA	#4		FOUR BYTES/ENTRY
+C71A  3D                   965  	MUL			CALCULATE ENTRY OFFSET
+C71B  8E CC E1             966  	LDX	#ITABLE		POINT TO INSTRUCTION TABLE
+C71E  30 8B                967  	LEAX	D,X		ADVANCE TO IT
+C720  C6 04                968  	LDB	#4		SIZE OF INSTRIUCTION FIELD
+C722  A6 80                969  FNDO1	LDA	,X+		GET CHAR
+C724  A7 C0                970  	STA	,U+		SAVE IN OUTPUT
+C726  5A                   971  	DECB			MOVE FOUR CHARACTERS
+C727  26 F9                972  	BNE	FNDO1		CONTINUE
+C729  B6 BF 78             973  FNDO2	LDA	INSTYP		GET TYPE BITS BACK
+C72C  84 0F                974  	ANDA	#$0F		REMOVE CRAP
+C72E  10 27 01 73          975  	LBEQ	ENDIS		NO OPERANDS
+C732                       976  * INSERT SPACES FOR OPERAND
+C732  C6 20                977  	LDB	#' '		GET A SPACE
+C734  E7 C0                978  	STB	,U+		SAVE IN OUTPUT
+C736  E7 C0                979  	STB	,U+		SAVE IN OUTPUT
+C738  4A                   980  	DECA			IS 8 BIT IT IMMEDIATE?
+C739  26 06                981  	BNE	IMM16		NO, TRY 16 BIT IMMEDIATE
+C73B                       982  * EIGHT BIT IMMEDIATE ADDRESSING OPERAND
+C73B  86 23                983  IMM8	LDA	#'#'		INDICATE IMMEDIATE
+C73D  A7 C0                984  	STA	,U+		SAVE IT
+C73F  20 10                985  	BRA	OP8		QUIT
+C741                       986  * SIXTEEN BIT IMMEDIATE ADDRESSING
+C741  4A                   987  IMM16	DECA			IS THIS IT?
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 18
+
+C742  26 06                988  	BNE	DIRECT		NO, TRY DIRECT
+C744  86 23                989  	LDA	#'#'		INDICATE IMMEDIATE
+C746  A7 C0                990  	STA	,U+		SAVE IT
+C748  20 11                991  	BRA	OP16		16 BIT OPERAND
+C74A                       992  * DIRECT PAGE ADDRESSING
+C74A  4A                   993  DIRECT	DECA			IS THIS IT?
+C74B  26 0B                994  	BNE	EXTEND		NO, TRY EXTENDED
+C74D  86 3C                995  	LDA	#'<'		INDICATE DIRECT
+C74F  A7 C0                996  	STA	,U+		SAVE IT
+C751  A6 A0                997  OP8	LDA	,Y+		GET OPERAND BYTE
+C753  17 01 92             998  	LBSR	WRHEXB		OUTPUT
+C756  20 08                999  	BRA	ENDIS1		END GO HOME
+C758                      1000  * EXTENDED ADDRESSING
+C758  4A                  1001  EXTEND	DECA			IS THIS IT?
+C759  26 08               1002  	BNE	INDEX		NO, TRY INDEXED
+C75B  EC A1               1003  OP16	LDD	,Y++		GET OPCODES
+C75D  17 01 90            1004  	LBSR	WRHEXW		OUTPUT WORD
+C760  16 01 42            1005  ENDIS1	LBRA	ENDIS		GO HOME
+C763                      1006  * INDEXED ADDRESSING MODES
+C763  4A                  1007  INDEX	DECA			IS IT INDEXED?
+C764  10 26 00 CB         1008  	LBNE	PSHPUL		NO, TRY PUSH OR PUL
+C768  A6 A0               1009  	LDA	,Y+		GET POST BYTE
+C76A  B7 BF 79            1010  	STA	POSBYT		SAVE FOR LATER
+C76D                      1011  * TEST FOR FIVE BIT OFFSET
+C76D  2B 04               1012  	BMI	NO5BO		NOT A FIVE BIT OFFSET
+C76F  84 1F               1013  	ANDA	#$1F		CONVERT TO POSTBYTE
+C771  20 14               1014  	BRA	EVLX1		INSERT REGISTER AND CONTINUE
+C773                      1015  * TEST FOR INDIRECT MODE
+C773  85 10               1016  NO5BO	BITA	#$10		TEST FOR INDIRECT
+C775  27 04               1017  	BEQ	NOIND		NOT INDIRECT
+C777  C6 5B               1018  	LDB	#'['		GET OPENING
+C779  E7 C0               1019  	STB	,U+		SAVE IN OUTPUT
+C77B                      1020  * TEST FOR NO OFFSET
+C77B  84 8F               1021  NOIND	ANDA	#$8F		REMOVE REGS AND INDIRECT BIT
+C77D  81 84               1022  	CMPA	#$84		NO OFFSET?
+C77F  27 2E               1023  	BEQ	INSR1		INSERT REGISTER AND EXIT
+C781                      1024  * TEST FOR EIGHT BIT OFFSET
+C781  81 88               1025  	CMPA	#$88		EIGHT BIT OFFSET
+C783  26 07               1026  	BNE	EVL1		NO, TRY NEXT
+C785  A6 A0               1027  	LDA	,Y+		GET BYTE OFFSET
+C787  17 01 5E            1028  EVLX1	LBSR	WRHEXB		OUTPUT
+C78A  20 23               1029  	BRA	INSR1		CONTINUE
+C78C                      1030  * TEST FOR 16 BIT OFFSET
+C78C  81 89               1031  EVL1	CMPA	#$89		16 BIT OFSET?
+C78E  26 07               1032  	BNE	EVL2		NO, TRY NEXT
+C790  EC A1               1033  	LDD	,Y++		GET OPERAND
+C792  17 01 5B            1034  	LBSR	WRHEXW		OUTPUT
+C795  20 18               1035  	BRA	INSR1		INSERT REGISTER
+C797                      1036  * TEST FOR A ACCUMULATOR OFFSET
+C797  81 86               1037  EVL2	CMPA	#$86		IS IT 'A' OFFSET?
+C799  26 04               1038  	BNE	EVL3		NO, TRY NEXT
+C79B  86 41               1039  	LDA	#'A'		GET ACCA
+C79D  20 0E               1040  	BRA	SAIREG		GO HOME
+C79F                      1041  * TEST FOR B ACCUMULATOR OFFSET
+C79F  81 85               1042  EVL3	CMPA	#$85		IS IT 'B' OFFSET?
+C7A1  26 04               1043  	BNE	EVL4		NO, TRY NEXT
+C7A3  86 42               1044  	LDA	#'B'		GET B
+C7A5  20 06               1045  	BRA	SAIREG		GO HOME
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 19
+
+C7A7                      1046  * TEST FRO 'D' ACCUMULATOR OFFSET
+C7A7  81 8B               1047  EVL4	CMPA	#$8B		D OFFSET?
+C7A9  26 06               1048  	BNE	EVL5		NO, TRY NEXT
+C7AB  86 44               1049  	LDA	#'D'		GET D REGISTER
+C7AD  A7 C0               1050  SAIREG	STA	,U+		SAVE IT
+C7AF  20 2C               1051  INSR1	BRA	INSREG	
+C7B1                      1052  * TEST FOR EXTENDED INDIRECT
+C7B1  81 8F               1053  EVL5	CMPA	#$8F		EXTENDED INDIRECT?
+C7B3  26 07               1054  	BNE	EVL6		NO, TRY NEXT
+C7B5  EC A1               1055  	LDD	,Y++		GET OFFSET
+C7B7  17 01 36            1056  	LBSR	WRHEXW		OUTPUT
+C7BA  20 54               1057  	BRA	EVLFIN		AND CONTINUE
+C7BC                      1058  * TEST FOR PC OFFSET, 8 BIT
+C7BC  81 8C               1059  EVL6	CMPA	#$8C		EIGHT BIT PC OFFSET?
+C7BE  26 07               1060  	BNE	EVL7		NO, TRY NEXT
+C7C0  A6 A0               1061  	LDA	,Y+		GET OFFSET
+C7C2  17 01 23            1062  	LBSR	WRHEXB		OUTPUT
+C7C5  20 09               1063  	BRA	WRPCRG		OUTPUT PC REGISTER
+C7C7                      1064  * TEST FOR PC OFFSET, 16 BIT
+C7C7  81 8D               1065  EVL7	CMPA	#$8D		PC OFFSET?
+C7C9  26 12               1066  	BNE	INSREG		NO, INSERT REGISTER
+C7CB  EC A1               1067  	LDD	,Y++		GET OFFSET
+C7CD  17 01 20            1068  	LBSR	WRHEXW		OUTPUT
+C7D0  8E C9 82            1069  WRPCRG	LDX	#PCRG		POINT TO STRING
+C7D3  A6 80               1070  WRPR1	LDA	,X+		GET CHAR
+C7D5  A7 C0               1071  	STA	,U+		SAVE
+C7D7  81 52               1072  	CMPA	#'R'		END?
+C7D9  26 F8               1073  	BNE	WRPR1		NO, CONTINUE
+C7DB  20 33               1074  	BRA	EVLFIN		END IT NOW
+C7DD                      1075  * INSERT REGISTER BITS
+C7DD  86 2C               1076  INSREG	LDA	#','		GET COMMA
+C7DF  A7 C0               1077  	STA	,U+		SAVE IT
+C7E1  B6 BF 79            1078  	LDA	POSBYT		GET POSTBYTE
+C7E4  C6 2D               1079  	LDB	#'-'		GET MINUS
+C7E6  84 8F               1080  	ANDA	#$8F		REMOVE CRAP
+C7E8  81 82               1081  	CMPA	#$82		DECREMENT BY ONE?
+C7EA  27 06               1082  	BEQ	DEC1		DECREMENT BY ONE
+C7EC  81 83               1083  	CMPA	#$83		DECREMENT BY TWO?
+C7EE  26 04               1084  	BNE	NODEC		NO, DON'T DEC
+C7F0  E7 C0               1085  	STB	,U+		SAVE
+C7F2  E7 C0               1086  DEC1	STB	,U+		AGAIN
+C7F4  B6 BF 79            1087  NODEC	LDA	POSBYT		GET POSTBYTE
+C7F7  44                  1088  	LSRA			SHIFT
+C7F8  44                  1089  	LSRA			REGISTER
+C7F9  44                  1090  	LSRA			BITS
+C7FA  44                  1091  	LSRA			INTO
+C7FB  44                  1092  	LSRA			BOTTOM
+C7FC  C6 58               1093  	LDB	#'X'		GET 'X'
+C7FE  84 03               1094  	ANDA	#$03		REMOVE CRAP
+C800  27 0C               1095  	BEQ	EVLEND		ITS 'X'
+C802  C6 59               1096  	LDB	#'Y'		GET 'Y'
+C804  4A                  1097  	DECA			TEST FOR 'Y'
+C805  27 07               1098  	BEQ	EVLEND		YES
+C807  C6 55               1099  	LDB	#'U'		GET 'U'
+C809  4A                  1100  	DECA			TEST
+C80A  27 02               1101  	BEQ	EVLEND		ITS 'U'
+C80C  C6 53               1102  	LDB	#'S'		MUST BE 'S'
+C80E  E7 C0               1103  EVLEND	STB	,U+		SAVE IN OUTPUT
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 20
+
+C810  B6 BF 79            1104  EVLFIN	LDA	POSBYT		GET POSTBYTE
+C813  C6 2B               1105  	LDB	#'+'		GET PLUS
+C815  84 8F               1106  	ANDA	#$8F		GET TYPE
+C817  81 80               1107  	CMPA	#$80		IS IT INC BY ONE
+C819  27 06               1108  	BEQ	INC1		IF SO, WE HAVE IT
+C81B  81 81               1109  	CMPA	#$81		INC BY TWO?
+C81D  26 04               1110  	BNE	NOINC		NO INCREMENT
+C81F  E7 C0               1111  	STB	,U+		SAVE ONE
+C821  E7 C0               1112  INC1	STB	,U+		SAVE TWO
+C823  B6 BF 79            1113  NOINC	LDA	POSBYT		GET POSTBYTE
+C826  2A 08               1114  	BPL	NOIND1		FIVE BIT OFFSET
+C828  85 10               1115  	BITA	#$10		INDIRECT?
+C82A  27 04               1116  	BEQ	NOIND1		NO INDIRECT
+C82C  86 5D               1117  	LDA	#']'		CLOSING BRACE
+C82E  A7 C0               1118  	STA	,U+		SAVE IT
+C830  16 00 72            1119  NOIND1	LBRA	ENDIS		END IT
+C833                      1120  * PULS OR PULL OPCODES
+C833  4A                  1121  PSHPUL	DECA			IS IT PUSH OR PULL?
+C834  26 35               1122  	BNE	TFREXG		NO, TRY TRANSFER OR EXCHANGE
+C836  A6 A0               1123  	LDA	,Y+		GET POSTBYTE
+C838  8E C9 A6            1124  	LDX	#PSHTAB		GET 'CC'
+C83B  44                  1125  PSH1	LSRA			SHIFT OUT BITS
+C83C  24 25               1126  	BCC	PSHNXT		SKIP THIS ONE
+C83E  34 06               1127  	PSHS	A,B		SAVE REGS
+C840  EC 81               1128  	LDD	,X++		GET DATA
+C842  81 55               1129  	CMPA	#'U'		SAVEING U REGISTER
+C844  26 07               1130  	BNE	PSH4		NO, IT'S OK
+C846  7D BF 78            1131  	TST	INSTYP		SPECIAL CASE
+C849  2A 02               1132  	BPL	PSH4		OK
+C84B  86 53               1133  	LDA	#'S'		CONVERT
+C84D  A7 C0               1134  PSH4	STA	,U+		SAVE IT
+C84F  5D                  1135  	TSTB			MORE?
+C850  27 02               1136  	BEQ	PSH2		NO, SKIP IT
+C852  E7 C0               1137  	STB	,U+		SAVE
+C854  35 06               1138  PSH2	PULS	A,B		RESTORE REGS
+C856  4D                  1139  	TSTA			MORE BITS?
+C857  27 0F               1140  	BEQ	PSH3		NO, QUIT
+C859  34 02               1141  	PSHS	A		RESAVE
+C85B  86 2C               1142  	LDA	#','		GET COMMA
+C85D  A7 C0               1143  	STA	,U+		SAVE
+C85F  35 02               1144  	PULS	A		GET IT BACK
+C861  20 D8               1145  	BRA	PSH1		CONTINUE
+C863  30 02               1146  PSHNXT	LEAX	2,X		ADVANCE
+C865  4D                  1147  	TSTA			ARE WE OK
+C866  26 D3               1148  	BNE	PSH1		KEEP TRYING
+C868  16 00 3A            1149  PSH3	LBRA	ENDIS		DONE
+C86B                      1150  * TRANSFER AND EXCHANGE POSTBYTE OPCODES
+C86B  4A                  1151  TFREXG	DECA			TRANSFER OR EXCHANGE?
+C86C  26 23               1152  	BNE	SBRAN		TRY SHORT BRANCH
+C86E  A6 A4               1153  	LDA	,Y		GET POSTBYTE
+C870  44                  1154  	LSRA			SHIFT
+C871  44                  1155  	LSRA			INTO
+C872  44                  1156  	LSRA			LOW
+C873  44                  1157  	LSRA			NIBBLE
+C874  8D 0B               1158  	BSR	TFRREG		GET REGISTER
+C876  86 2C               1159  	LDA	#','		SEPERATOR
+C878  A7 C0               1160  	STA	,U+		SAVE
+C87A  A6 A0               1161  	LDA	,Y+		GET POSTBYTE AGAIN
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 21
+
+C87C  8D 03               1162  	BSR	TFRREG		PLACE IT
+C87E  16 00 24            1163  	LBRA	ENDIS		GO HOME
+C881                      1164  * CALCULATE TRANSFER REGISTER
+C881  84 0F               1165  TFRREG	ANDA	#$0F		REMOVE HIGH CRAP
+C883  48                  1166  	ASLA			MULTIPLY BY TWO
+C884  8E C9 86            1167  	LDX	#REGTAB		POINT TO TABLE
+C887  EC 86               1168  	LDD	A,X		GET REGISTER VALUE
+C889  A7 C0               1169  	STA	,U+		SAVE IT
+C88B  5D                  1170  	TSTB			SECOND BYTE?
+C88C  27 02               1171  	BEQ	TFRET		NO, SKIP IT
+C88E  E7 C0               1172  	STB	,U+		SAVE IT
+C890  39                  1173  TFRET	RTS	
+C891                      1174  * SHORT BRANCH
+C891  4A                  1175  SBRAN	DECA			SHORT BRANCH
+C892  26 08               1176  	BNE	LBRAN		NO, TRY LONG BRANCH
+C894  E6 A0               1177  	LDB	,Y+		GET OPERATOR
+C896  30 A5               1178  	LEAX	B,Y		GET NEW ADDRESS
+C898  1F 10               1179  	TFR	X,D		COPY
+C89A  20 06               1180  	BRA	SAVADR		FINISH
+C89C                      1181  * LONG BRANCH
+C89C  EC A1               1182  LBRAN	LDD	,Y++		GET OPERAND
+C89E  34 20               1183  	PSHS	Y		SAVE Y
+C8A0  E3 E1               1184  	ADDD	,S++		ADD OFFSET TO REG
+C8A2  17 00 4B            1185  SAVADR	LBSR	WRHEXW		OUTPUT WORD.    
+C8A5  86 0D               1186  ENDIS	LDA	#$0D		GET CR
+C8A7  A7 C4               1187  	STA	,U		SAVE IT
+C8A9                      1188  * INSERT ADDRESS/BYTE DATA
+C8A9  EE E4               1189  	LDU	,S		RESTORE U REGISTER
+C8AB  34 20               1190  	PSHS	Y		SAVE POINTER TO END
+C8AD  BE BF 76            1191  	LDX	PTRSAV		POINT TO STARTING ADDRESS
+C8B0  1F 10               1192  	TFR	X,D		COPY
+C8B2  17 00 45            1193  	LBSR	WRHEX		OUTPUT
+C8B5  1F 98               1194  	TFR	B,A		COPY
+C8B7  17 00 40            1195  	LBSR	WRHEX		OUTPUT
+C8BA  5F                  1196  	CLRB			START WITH ZERO
+C8BB  AC E4               1197  END1	CMPX	,S		ARE WE AT END?
+C8BD  24 0A               1198  	BHS	END2		IF SO, QUIT
+C8BF  5C                  1199  	INCB			ADVANCE
+C8C0  33 41               1200  	LEAU	1,U		ADVANCE
+C8C2  A6 80               1201  	LDA	,X+		GET BYTE
+C8C4  17 00 33            1202  	LBSR	WRHEX		OUTPUT
+C8C7  20 F2               1203  	BRA	END1		CONTINUE
+C8C9  32 62               1204  END2	LEAS	2,S		RESTORE STACK
+C8CB  EE E4               1205  	LDU	,S		RESTORE U REGISTER
+C8CD  33 C8 14            1206  	LEAU	20,U		ADVANCE TO TEXT FIELD
+C8D0  BE BF 76            1207  	LDX	PTRSAV		GET POINTER BACK
+C8D3  5A                  1208  END3	DECB			REDUCE COUNT
+C8D4  2B 10               1209  	BMI	END4		CONTINUE
+C8D6  A6 80               1210  	LDA	,X+		GO IT AGAIN
+C8D8  81 20               1211  	CMPA	#' '		< SPACE?
+C8DA  25 04               1212  	BLO	END5		YES
+C8DC  81 7F               1213  	CMPA	#$7F		> 7F?
+C8DE  25 02               1214  	BLO	END6		OK
+C8E0  86 2E               1215  END5	LDA	#'.'		CONVERT TO DOT
+C8E2  A7 C0               1216  END6	STA	,U+		SAVE
+C8E4  20 ED               1217  	BRA	END3	
+C8E6  35 C0               1218  END4	PULS	U,PC		GO HOME
+C8E8                      1219  *
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 22
+
+C8E8                      1220  * SUBROUTINES
+C8E8                      1221  *
+C8E8  34 02               1222  WRHEXB	PSHS	A		SAVE IT
+C8EA  86 24               1223  	LDA	#'$'		INDICATE HEX
+C8EC  A7 C0               1224  	STA	,U+		SAVE
+C8EE  20 08               1225  	BRA	WRHEX1		CONTINUE
+C8F0  34 04               1226  WRHEXW	PSHS	B		SAVE B
+C8F2  C6 24               1227  	LDB	#'$'		INDICATE HEX
+C8F4  E7 C0               1228  	STB	,U+		SAVE IT
+C8F6  8D 02               1229  	BSR	WRHEX		OUTPUT
+C8F8  35 02               1230  WRHEX1	PULS	A		RESTORE
+C8FA  34 02               1231  WRHEX	PSHS	A		SAVE IT
+C8FC  44                  1232  	LSRA			SHIFT
+C8FD  44                  1233  	LSRA			HIGH BYTE
+C8FE  44                  1234  	LSRA			INTO
+C8FF  44                  1235  	LSRA			LOW FOR OUTPUT
+C900  8D 02               1236  	BSR	WRHEXN		OUTPUT NIBBLE
+C902  35 02               1237  	PULS	A		RETORE
+C904  84 0F               1238  WRHEXN	ANDA	#$0F		REMOVE CRAP
+C906  8B 30               1239  	ADDA	#$30		CONVERT
+C908  81 39               1240  	CMPA	#$39		OK?
+C90A  23 02               1241  	BLS	WRNOK		OK
+C90C  8B 07               1242  	ADDA	#7		CONVERT
+C90E  A7 C0               1243  WRNOK	STA	,U+		SAVE IT
+C910  39                  1244  	RTS	
+C911                      1245  *
+C911                      1246  * SWI HANDLER
+C911                      1247  *
+C911  10 8E BF 7C         1248  SWIHND	LDY	#BRKTAB		POINT TO BREAKPOINT TABLE
+C915  AE 6A               1249  	LDX	10,S		GET STORED PC
+C917  30 1F               1250  	LEAX	-1,X		BACKUP TO BREAKPOINT ADDRESS
+C919  C6 08               1251  	LDB	#8		CHECK EIGHT BREAKPOINTS
+C91B  AC A4               1252  SWIHN1	CMPX	,Y		IS THIS IT?
+C91D  27 10               1253  	BEQ	SWIHN2		YES
+C91F  31 23               1254  	LEAY	3,Y		SKIP OPCODE
+C921  5A                  1255  	DECB			REDUCE COUNT
+C922  26 F7               1256  	BNE	SWIHN1		CONTINUE
+C924  E6 62               1257  	LDB	2,S		RESTORE B
+C926  AE 64               1258  	LDX	4,S		RESTORE X
+C928  10 AE 66            1259  	LDY	6,S		RESTORE Y
+C92B  6E 9F BF 60         1260  	JMP	[SWIADR]	NOT A BREAKPOINT, EXECUTE SWI HANDLER
+C92F  F7 BF 78            1261  SWIHN2	STB	INSTYP		SAVE BREAKPOINT NUMBER
+C932  8E BF 64            1262  	LDX	#SAVCC		POINT TO START OF SAVED REGS
+C935  C6 0A               1263  	LDB	#10		MOVE 10
+C937  A6 E0               1264  SWIHN25	LDA	,S+		GET BYTE
+C939  A7 80               1265  	STA	,X+		SAVE
+C93B  5A                  1266  	DECB			DECREMENT COUNT
+C93C  26 F9               1267  	BNE	SWIHN25		DO THEM ALL
+C93E  35 10               1268  	PULS	X		GET PC
+C940  30 1F               1269  	LEAX	-1,X		SET BACK TO REAL PC
+C942  BF BF 6E            1270  	STX	SAVPC		SAVED PC
+C945  10 FF BF 70         1271  	STS	SAVS		SAVE STACK POINTER
+C949  17 FA BB            1272  	LBSR	WRMSG		DISPLAY MESSAGE
+C94C  42 72 65 61 6B 70 + 1273  	FCCZ	'Breakpoint #'
+C959  86 38               1274  	LDA	#$38		GET NUMBER, PLUS ASCII CONVERT
+C95B  B0 BF 78            1275  	SUBA	INSTYP		CONVERT TO PROPER DIGIT
+C95E  17 FA DE            1276  	LBSR	PUTCHR		DISPLAY
+C961  17 FA CF            1277  	LBSR	LFCR		NEW LINE
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 23
+
+C964  7D BF 75            1278  	TST	STPFLG		TO WE DISPLAY
+C967  26 03               1279  	BNE	BRKRES		NO
+C969  17 F8 59            1280  	LBSR	DISREG		DISPLAY
+C96C  8E BF 7C            1281  BRKRES	LDX	#BRKTAB		POINT TO BREAKPOINT TABLE
+C96F  C6 08               1282  	LDB	#8		DO IT EIGHT TIMES
+C971  10 AE 81            1283  SWIHN3	LDY	,X++		GET REG
+C974  27 04               1284  	BEQ	SWIHN4		NO BRK, NEXT
+C976  A6 84               1285  	LDA	,X		GET OPCODE
+C978  A7 A4               1286  	STA	,Y		REPLACE IN RAM
+C97A  30 01               1287  SWIHN4	LEAX	1,X		SKIP OPCODE
+C97C  5A                  1288  	DECB			REDUCE COUNT
+C97D  26 F2               1289  	BNE	SWIHN3		GO AGAIN
+C97F  16 F7 2A            1290  	LBRA	MAIN		DO PROMPT
+C982                      1291  * CONSTANTS
+C982  2C 50 43 52         1292  PCRG	FCC	',PCR'	
+C986                      1293  * TRANSFER/EXCHANGE REGISTER TABLE
+C986  44 00               1294  REGTAB	FCCZ	'D'		0
+C988  58 00               1295  	FCCZ	'X'		1
+C98A  59 00               1296  	FCCZ	'Y'		2
+C98C  55 00               1297  	FCCZ	'U'		3
+C98E  53 00               1298  	FCCZ	'S'		4
+C990  50 43               1299  	FCC	'PC'		5
+C992  3F 00               1300  	FCCZ	'?'		6
+C994  3F 00               1301  	FCCZ	'?'		7
+C996  41 00               1302  	FCCZ	'A'		8
+C998  42 00               1303  	FCCZ	'B'		9
+C99A  43 43               1304  	FCC	'CC'		A
+C99C  44 50               1305  	FCC	'DP'		B
+C99E  3F 00               1306  	FCCZ	'?'		C
+C9A0  3F 00               1307  	FCCZ	'?'		D
+C9A2  3F 00               1308  	FCCZ	'?'		E
+C9A4  3F 00               1309  	FCCZ	'?'		F
+C9A6                      1310  * PUSH/PULL REGISTER TABLE
+C9A6  43 43               1311  PSHTAB	FCC	'CC'	
+C9A8  41 00               1312  	FCCZ	'A'	
+C9AA  42 00               1313  	FCCZ	'B'	
+C9AC  44 50               1314  	FCC	'DP'	
+C9AE  58 00               1315  	FCCZ	'X'	
+C9B0  59 00               1316  	FCCZ	'Y'	
+C9B2  55 00               1317  	FCCZ	'U'	
+C9B4  50 43 00            1318  	FCCZ	'PC'	
+C9B7                      1319  *
+C9B7                      1320  * OPCODE TABLE, OPCODE BYTE, TYPE BYTE, TEXT BYTE
+C9B7                      1321  *
+C9B7  86 01 01            1322  OPTAB1	FCB	$86,1,1		'LDA' INSTRUCTIONS
+C9BA  96 03 01            1323  	FCB	$96,3,1	
+C9BD  A6 05 01            1324  	FCB	$A6,5,1	
+C9C0  B6 04 01            1325  	FCB	$B6,4,1	
+C9C3  C6 01 02            1326  	FCB	$C6,1,2		'LDB' INSTRUCTIONS
+C9C6  D6 03 02            1327  	FCB	$D6,3,2	
+C9C9  E6 05 02            1328  	FCB	$E6,5,2	
+C9CC  F6 04 02            1329  	FCB	$F6,4,2	
+C9CF  CC 02 03            1330  	FCB	$CC,2,3		'LDD' INSTRUCTIONS
+C9D2  DC 03 03            1331  	FCB	$DC,3,3	
+C9D5  EC 05 03            1332  	FCB	$EC,5,3	
+C9D8  FC 04 03            1333  	FCB	$FC,4,3
+C9DB  CE 02 04            1334  	FCB	$CE,2,4		'LDU' INSTRUCTIONS
+C9DE  DE 03 04            1335  	FCB	$DE,3,4	
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 24
+
+C9E1  EE 05 04            1336  	FCB	$EE,5,4	
+C9E4  FE 04 04            1337  	FCB	$FE,4,4	
+C9E7  8E 02 05            1338  	FCB	$8E,2,5		'LDX' INSTRUCTIONS
+C9EA  9E 03 05            1339  	FCB	$9E,3,5	
+C9ED  AE 05 05            1340  	FCB	$AE,5,5	
+C9F0  BE 04 05            1341  	FCB	$BE,4,5	
+C9F3  97 03 06            1342  	FCB	$97,3,6		'STA' INSTRUCTINOS
+C9F6  A7 05 06            1343  	FCB	$A7,5,6	
+C9F9  B7 04 06            1344  	FCB	$B7,4,6	
+C9FC  D7 03 07            1345  	FCB	$D7,3,7		'STB' INSTRUCTIONS
+C9FF  E7 05 07            1346  	FCB	$E7,5,7	
+CA02  F7 04 07            1347  	FCB	$F7,4,7	
+CA05  DD 03 08            1348  	FCB	$DD,3,8		'STD' INSTRUCTIONS
+CA08  ED 05 08            1349  	FCB	$ED,5,8	
+CA0B  FD 04 08            1350  	FCB	$FD,4,8	
+CA0E  DF 03 09            1351  	FCB	$DF,3,9		'STU' INSTRUCTIONS
+CA11  EF 05 09            1352  	FCB	$EF,5,9	
+CA14  FF 04 09            1353  	FCB	$FF,4,9	
+CA17  9F 03 0A            1354  	FCB	$9F,3,10	'STX' INSTRUCTIONS
+CA1A  AF 05 0A            1355  	FCB	$AF,5,10
+CA1D  BF 04 0A            1356  	FCB	$BF,4,10
+CA20  3A 00 0B            1357  	FCB	$3A,0,11	'ABX'
+CA23  89 01 0C            1358  	FCB	$89,1,12	'ADCA'
+CA26  99 03 0C            1359  	FCB	$99,3,12
+CA29  A9 05 0C            1360  	FCB	$A9,5,12
+CA2C  B9 04 0C            1361  	FCB	$B9,4,12
+CA2F  C9 01 0D            1362  	FCB	$C9,1,13	'ADCB'
+CA32  D9 03 0D            1363  	FCB	$D9,3,13
+CA35  E9 05 0D            1364  	FCB	$E9,5,13
+CA38  F9 04 0D            1365  	FCB	$F9,4,13
+CA3B  8B 01 0E            1366  	FCB	$8B,1,14	'ADDA'
+CA3E  9B 03 0E            1367  	FCB	$9B,3,14
+CA41  AB 05 0E            1368  	FCB	$AB,5,14
+CA44  BB 04 0E            1369  	FCB	$BB,4,14
+CA47  CB 01 0F            1370  	FCB	$CB,1,15	'ADDB'
+CA4A  DB 03 0F            1371  	FCB	$DB,3,15
+CA4D  EB 05 0F            1372  	FCB	$EB,5,15
+CA50  FB 04 0F            1373  	FCB	$FB,4,15
+CA53  C3 02 10            1374  	FCB	$C3,2,16	'ADDD'
+CA56  D3 03 10            1375  	FCB	$D3,3,16
+CA59  E3 05 10            1376  	FCB	$E3,5,16
+CA5C  F3 04 10            1377  	FCB	$F3,4,16
+CA5F  48 00 11            1378  	FCB	$48,0,17	'ASLA'
+CA62  58 00 12            1379  	FCB	$58,0,18	'ASLB'
+CA65  08 03 13            1380  	FCB	$08,3,19	'ASL'
+CA68  68 05 13            1381  	FCB	$68,5,19
+CA6B  78 04 13            1382  	FCB	$78,4,19
+CA6E  47 00 14            1383  	FCB	$47,0,20	'ASRA'
+CA71  57 00 15            1384  	FCB	$57,0,21	'ASRB'
+CA74  07 03 16            1385  	FCB	$07,3,22	'ASR'
+CA77  67 05 16            1386  	FCB	$67,5,22
+CA7A  77 04 16            1387  	FCB	$77,4,22
+CA7D  85 01 17            1388  	FCB	$85,1,23	'BITA'
+CA80  95 03 17            1389  	FCB	$95,3,23
+CA83  A5 05 17            1390  	FCB	$A5,5,23
+CA86  B5 04 17            1391  	FCB	$B5,4,23
+CA89  C5 01 18            1392  	FCB	$C5,1,24	'BITB'
+CA8C  D5 03 18            1393  	FCB	$D5,3,24
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 25
+
+CA8F  E5 05 18            1394  	FCB	$E5,5,24
+CA92  F5 04 18            1395  	FCB	$F5,4,24
+CA95  4F 00 19            1396  	FCB	$4F,0,25	'CLRA'
+CA98  5F 00 1A            1397  	FCB	$5F,0,26	'CLRB'
+CA9B  0F 03 1B            1398  	FCB	$0F,3,27	'CLR'
+CA9E  6F 05 1B            1399  	FCB	$6F,5,27
+CAA1  7F 04 1B            1400  	FCB	$7F,4,27
+CAA4  81 01 1C            1401  	FCB	$81,1,28	'CMPA'
+CAA7  91 03 1C            1402  	FCB	$91,3,28
+CAAA  A1 05 1C            1403  	FCB	$A1,5,28
+CAAD  B1 04 1C            1404  	FCB	$B1,4,28
+CAB0  C1 01 1D            1405  	FCB	$C1,1,29	'CMPB'
+CAB3  D1 03 1D            1406  	FCB	$D1,3,29
+CAB6  E1 05 1D            1407  	FCB	$E1,5,29
+CAB9  F1 04 1D            1408  	FCB	$F1,4,29
+CABC  8C 02 1E            1409  	FCB	$8C,2,30	'CMPX'
+CABF  9C 03 1E            1410  	FCB	$9C,3,30
+CAC2  AC 05 1E            1411  	FCB	$AC,5,30
+CAC5  BC 04 1E            1412  	FCB	$BC,4,30
+CAC8  43 00 1F            1413  	FCB	$43,0,31	'COMA'
+CACB  53 00 20            1414  	FCB	$53,0,32	'COMB'
+CACE  03 03 21            1415  	FCB	$03,3,33	'COM'
+CAD1  63 05 21            1416  	FCB	$63,5,33
+CAD4  73 04 21            1417  	FCB	$73,4,33
+CAD7  3C 01 22            1418  	FCB	$3C,1,34	'CWAI'
+CADA  19 00 23            1419  	FCB	$19,0,35	'DAA'
+CADD  4A 00 24            1420  	FCB	$4A,0,36	'DECA'
+CAE0  5A 00 25            1421  	FCB	$5A,0,37	'DECB'
+CAE3  0A 03 26            1422  	FCB	$0A,3,38	'DEC'
+CAE6  6A 05 26            1423  	FCB	$6A,5,38
+CAE9  7A 04 26            1424  	FCB	$7A,4,38
+CAEC  88 01 27            1425  	FCB	$88,1,39	'EORA'
+CAEF  98 03 27            1426  	FCB	$98,3,39
+CAF2  A8 05 27            1427  	FCB	$A8,5,39
+CAF5  B8 04 27            1428  	FCB	$B8,4,39
+CAF8  C8 01 28            1429  	FCB	$C8,1,40	'EORB'
+CAFB  D8 03 28            1430  	FCB	$D8,3,40
+CAFE  E8 05 28            1431  	FCB	$E8,5,40
+CB01  F8 04 28            1432  	FCB	$F8,4,40
+CB04  1E 07 29            1433  	FCB	$1E,7,41	'EXG'
+CB07  1F 07 2A            1434  	FCB	$1F,7,42	'TFR'
+CB0A  34 06 2B            1435  	FCB	$34,6,43	'PSHS'
+CB0D  36 86 2C            1436  	FCB	$36,$86,44	'PSHU'
+CB10  35 06 2D            1437  	FCB	$35,6,45	'PULS'
+CB13  37 86 2E            1438  	FCB	$37,$86,46	'PULU'
+CB16  4C 00 2F            1439  	FCB	$4C,0,47	'INCA'
+CB19  5C 00 30            1440  	FCB	$5C,0,48	'INCB'
+CB1C  0C 03 31            1441  	FCB	$0C,3,49	'INC'
+CB1F  6C 05 31            1442  	FCB	$6C,5,49
+CB22  7C 04 31            1443  	FCB	$7C,4,49
+CB25  0E 03 32            1444  	FCB	$0E,3,50	'JMP'
+CB28  6E 05 32            1445  	FCB	$6E,5,50
+CB2B  7E 04 32            1446  	FCB	$7E,4,50
+CB2E  9D 03 33            1447  	FCB	$9D,3,51	'JSR'
+CB31  AD 05 33            1448  	FCB	$AD,5,51
+CB34  BD 04 33            1449  	FCB	$BD,4,51
+CB37  32 05 34            1450  	FCB	$32,5,52	'LEAS'
+CB3A  33 05 35            1451  	FCB	$33,5,53	'LEAU'
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 26
+
+CB3D  30 05 36            1452  	FCB	$30,5,54	'LEAX'
+CB40  31 05 37            1453  	FCB	$31,5,55	'LEAY'
+CB43  44 00 38            1454  	FCB	$44,0,56	'LSRA'
+CB46  54 00 39            1455  	FCB	$54,0,57	'LSRB'
+CB49  04 03 3A            1456  	FCB	$04,3,58	'LSR'
+CB4C  64 05 3A            1457  	FCB	$64,5,58
+CB4F  74 04 3A            1458  	FCB	$74,4,58
+CB52  3D 00 3B            1459  	FCB	$3D,0,59	'MUL'
+CB55  40 00 3C            1460  	FCB	$40,0,60	'NEGA'
+CB58  50 00 3D            1461  	FCB	$50,0,61	'NEGB'
+CB5B  00 03 3E            1462  	FCB	$00,3,62	'NEG'
+CB5E  60 05 3E            1463  	FCB	$60,5,62
+CB61  70 04 3E            1464  	FCB	$70,4,62
+CB64  12 00 3F            1465  	FCB	$12,0,63	'NOP'
+CB67  8A 01 40            1466  	FCB	$8A,1,64	'ORA'
+CB6A  9A 03 40            1467  	FCB	$9A,3,64
+CB6D  AA 05 40            1468  	FCB	$AA,5,64
+CB70  BA 04 40            1469  	FCB	$BA,4,64
+CB73  CA 01 41            1470  	FCB	$CA,1,65	'ORB'
+CB76  DA 03 41            1471  	FCB	$DA,3,65
+CB79  EA 05 41            1472  	FCB	$EA,5,65
+CB7C  FA 04 41            1473  	FCB	$FA,4,65
+CB7F  1A 01 42            1474  	FCB	$1A,1,66	'ORCC'
+CB82  84 01 43            1475  	FCB	$84,1,67	'ANDA'
+CB85  94 03 43            1476  	FCB	$94,3,67
+CB88  A4 05 43            1477  	FCB	$A4,5,67
+CB8B  B4 04 43            1478  	FCB	$B4,4,67
+CB8E  C4 01 44            1479  	FCB	$C4,1,68	'ANDB'
+CB91  D4 03 44            1480  	FCB	$D4,3,68
+CB94  E4 05 44            1481  	FCB	$E4,5,68
+CB97  F4 04 44            1482  	FCB	$F4,4,68
+CB9A  1C 01 45            1483  	FCB	$1C,1,69	'ANDCC'
+CB9D  49 00 46            1484  	FCB	$49,0,70	'ROLA'
+CBA0  59 00 47            1485  	FCB	$59,0,71	'ROLB'
+CBA3  09 03 48            1486  	FCB	$09,3,72	'ROL'
+CBA6  69 05 48            1487  	FCB	$69,5,72
+CBA9  79 04 48            1488  	FCB	$79,4,72
+CBAC  46 00 49            1489  	FCB	$46,0,73	'RORA'
+CBAF  56 00 4A            1490  	FCB	$56,0,74	'RORB'
+CBB2  06 03 4B            1491  	FCB	$06,3,75	'ROR'
+CBB5  66 05 4B            1492  	FCB	$66,5,75
+CBB8  76 04 4B            1493  	FCB	$76,4,75
+CBBB  3B 00 4C            1494  	FCB	$3B,0,76	'RTI'
+CBBE  39 00 4D            1495  	FCB	$39,0,77	'RTS'
+CBC1  82 01 4E            1496  	FCB	$82,1,78	'SBCA'
+CBC4  92 03 4E            1497  	FCB	$92,3,78
+CBC7  A2 05 4E            1498  	FCB	$A2,5,78
+CBCA  B2 04 4E            1499  	FCB	$B2,4,78
+CBCD  C2 01 4F            1500  	FCB	$C2,1,79	'SBCB'
+CBD0  D2 03 4F            1501  	FCB	$D2,3,79
+CBD3  E2 05 4F            1502  	FCB	$E2,5,79
+CBD6  F2 04 4F            1503  	FCB	$F2,4,79
+CBD9  1D 00 50            1504  	FCB	$1D,0,80
+CBDC  80 01 51            1505  	FCB	$80,1,81	'SUBA'
+CBDF  90 03 51            1506  	FCB	$90,3,81
+CBE2  A0 05 51            1507  	FCB	$A0,5,81
+CBE5  B0 04 51            1508  	FCB	$B0,4,81
+CBE8  C0 01 52            1509  	FCB	$C0,1,82	'SUBB'
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 27
+
+CBEB  D0 03 52            1510  	FCB	$D0,3,82
+CBEE  E0 05 52            1511  	FCB	$E0,5,82
+CBF1  F0 04 52            1512  	FCB	$F0,4,82
+CBF4  83 02 53            1513  	FCB	$83,2,83	'SUBD'
+CBF7  93 03 53            1514  	FCB	$93,3,83
+CBFA  A3 05 53            1515  	FCB	$A3,5,83
+CBFD  B3 04 53            1516  	FCB	$B3,4,83
+CC00  3F 01 54            1517  	FCB	$3F,1,84	'SWI' (SSR INTERFACE)
+CC03  13 00 55            1518  	FCB	$13,0,85	'SYNC'
+CC06  4D 00 56            1519  	FCB	$4D,0,86	'TSTA'
+CC09  5D 00 57            1520  	FCB	$5D,0,87	'TSTB'
+CC0C  0D 03 58            1521  	FCB	$0D,3,88	'TST'
+CC0F  6D 05 58            1522  	FCB	$6D,5,88
+CC12  7D 04 58            1523  	FCB	$7D,4,88
+CC15  16 09 63            1524  	FCB	$16,9,99	'LBRA'
+CC18  17 09 64            1525  	FCB	$17,9,100	'LBSR'
+CC1B  20 08 65            1526  	FCB	$20,8,101	'BRA'
+CC1E  21 08 66            1527  	FCB	$21,8,102	'BRN'
+CC21  22 08 67            1528  	FCB	$22,8,103	'BHI'
+CC24  23 08 68            1529  	FCB	$23,8,104	'BLS'
+CC27  24 08 69            1530  	FCB	$24,8,105	'BCC'
+CC2A  25 08 6A            1531  	FCB	$25,8,106	'BCS'
+CC2D  26 08 6B            1532  	FCB	$26,8,107	'BNE'
+CC30  27 08 6C            1533  	FCB	$27,8,108	'BEQ'
+CC33  28 08 6D            1534  	FCB	$28,8,109	'BVC'
+CC36  29 08 6E            1535  	FCB	$29,8,110	'BVS'
+CC39  2A 08 6F            1536  	FCB	$2A,8,111	'BPL'
+CC3C  2B 08 70            1537  	FCB	$2B,8,112	'BMI'
+CC3F  2C 08 71            1538  	FCB	$2C,8,113	'BGE'
+CC42  2D 08 72            1539  	FCB	$2D,8,114	'BLT'
+CC45  2E 08 73            1540  	FCB	$2E,8,115	'BGT'
+CC48  2F 08 74            1541  	FCB	$2F,8,116	'BLE'
+CC4B  8D 08 84            1542  	FCB	$8D,8,132	'BSR'
+CC4E  CF 00 00            1543  	FCB	$CF,0,0		'FCB', UNKNOWN OPCODE
+CC51                      1544  * OPERAND TABLE NUMBER TWO, $10 PREFIX INSTRUCTIONS
+CC51  83 02 59            1545  OPTAB2	FCB	$83,2,89	'CMPD'
+CC54  93 03 59            1546  	FCB	$93,3,89
+CC57  A3 05 59            1547  	FCB	$A3,5,89
+CC5A  B3 04 59            1548  	FCB	$B3,4,89
+CC5D  8C 02 5A            1549  	FCB	$8C,2,90	'CMPY'
+CC60  9C 03 5A            1550  	FCB	$9C,3,90
+CC63  AC 05 5A            1551  	FCB	$AC,5,90
+CC66  BC 04 5A            1552  	FCB	$BC,4,90
+CC69  CE 02 5B            1553  	FCB	$CE,2,91	'LDS'
+CC6C  DE 03 5B            1554  	FCB	$DE,3,91
+CC6F  EE 05 5B            1555  	FCB	$EE,5,91
+CC72  FE 04 5B            1556  	FCB	$FE,4,91
+CC75  8E 02 5C            1557  	FCB	$8E,2,92	'LDY'
+CC78  9E 03 5C            1558  	FCB	$9E,3,92
+CC7B  AE 05 5C            1559  	FCB	$AE,5,92
+CC7E  BE 04 5C            1560  	FCB	$BE,4,92
+CC81  DF 03 5D            1561  	FCB	$DF,3,93	'STS'
+CC84  EF 05 5D            1562  	FCB	$EF,5,93
+CC87  FF 04 5D            1563  	FCB	$FF,4,93
+CC8A  9F 03 5E            1564  	FCB	$9F,3,94	'STY'
+CC8D  AF 05 5E            1565  	FCB	$AF,5,94
+CC90  BF 04 5E            1566  	FCB	$BF,4,94
+CC93  3F 00 5F            1567  	FCB	$3F,0,95	'SWI2'
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 28
+
+CC96  21 09 75            1568  	FCB	$21,9,117	'LBRN'
+CC99  22 09 76            1569  	FCB	$22,9,118	'LBHI'
+CC9C  23 09 77            1570  	FCB	$23,9,119	'LBLS'
+CC9F  24 09 78            1571  	FCB	$24,9,120	'LBCC'
+CCA2  25 09 79            1572  	FCB	$25,9,121	'LBCS'
+CCA5  26 09 7A            1573  	FCB	$26,9,122	'LBNE'
+CCA8  27 09 7B            1574  	FCB	$27,9,123	'LBEQ'
+CCAB  28 09 7C            1575  	FCB	$28,9,124	'LBVC'
+CCAE  29 09 7D            1576  	FCB	$29,9,125	'LBVS'
+CCB1  2A 09 7E            1577  	FCB	$2A,9,126	'LBPL'
+CCB4  2B 09 7F            1578  	FCB	$2B,9,127	'LBMI'
+CCB7  2C 09 80            1579  	FCB	$2C,9,128	'LBGE'
+CCBA  2D 09 81            1580  	FCB	$2D,9,129	'LBLT'
+CCBD  2E 09 82            1581  	FCB	$2E,9,130	'LBGT'
+CCC0  2F 09 83            1582  	FCB	$2F,9,131	'LBLE'
+CCC3  CF 01 00            1583  	FCB	$CF,1,0	
+CCC6                      1584  * OPERAND TABLE #3, $11 PREFIXES
+CCC6  8C 02 60            1585  OPTAB3	FCB	$8C,2,96	'CMPS'
+CCC9  9C 03 60            1586  	FCB	$9C,3,96
+CCCC  AC 05 60            1587  	FCB	$AC,5,96
+CCCF  BC 04 60            1588  	FCB	$BC,4,96
+CCD2  83 02 61            1589  	FCB	$83,2,97	'CMPU'
+CCD5  93 03 61            1590  	FCB	$93,3,97
+CCD8  A3 05 61            1591  	FCB	$A3,5,97
+CCDB  B3 04 61            1592  	FCB	$B3,4,97
+CCDE  3F 00 62            1593  	FCB	$3F,0,98	'SWI3'
+CCE1                      1594  * INSTRUCTION TEXT TABLE
+CCE1  46 43 42 20         1595  ITABLE	FCC	'FCB '		0
+CCE5  4C 44 41 20         1596  	FCC	'LDA '		1
+CCE9  4C 44 42 20         1597  	FCC	'LDB '		2
+CCED  4C 44 44 20         1598  	FCC	'LDD '		3
+CCF1  4C 44 55 20         1599  	FCC	'LDU '		4
+CCF5  4C 44 58 20         1600  	FCC	'LDX '		5
+CCF9  53 54 41 20         1601  	FCC	'STA '		6
+CCFD  53 54 42 20         1602  	FCC	'STB '		7
+CD01  53 54 44 20         1603  	FCC	'STD '		8
+CD05  53 54 55 20         1604  	FCC	'STU '		9
+CD09  53 54 58 20         1605  	FCC	'STX '		10
+CD0D  41 42 58 20         1606  	FCC	'ABX '		11
+CD11  41 44 43 41         1607  	FCC	'ADCA'		12
+CD15  41 44 43 42         1608  	FCC	'ADCB'		13
+CD19  41 44 44 41         1609  	FCC	'ADDA'		14
+CD1D  41 44 44 42         1610  	FCC	'ADDB'		15
+CD21  41 44 44 44         1611  	FCC	'ADDD'		16
+CD25  41 53 4C 41         1612  	FCC	'ASLA'		17
+CD29  41 53 4C 42         1613  	FCC	'ASLB'		18
+CD2D  41 53 4C 20         1614  	FCC	'ASL '		19
+CD31  41 53 52 41         1615  	FCC	'ASRA'		20
+CD35  41 53 52 42         1616  	FCC	'ASRB'		21
+CD39  41 53 52 20         1617  	FCC	'ASR '		22
+CD3D  42 49 54 41         1618  	FCC	'BITA'		23
+CD41  42 49 54 42         1619  	FCC	'BITB'		24
+CD45  43 4C 52 41         1620  	FCC	'CLRA'		25
+CD49  43 4C 52 42         1621  	FCC	'CLRB'		26
+CD4D  43 4C 52 20         1622  	FCC	'CLR '		27
+CD51  43 4D 50 41         1623  	FCC	'CMPA'		28
+CD55  43 4D 50 42         1624  	FCC	'CMPB'		29
+CD59  43 4D 50 58         1625  	FCC	'CMPX'		30
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 29
+
+CD5D  43 4F 4D 41         1626  	FCC	'COMA'		31
+CD61  43 4F 4D 42         1627  	FCC	'COMB'		32
+CD65  43 4F 4D 20         1628  	FCC	'COM '		33
+CD69  43 57 41 49         1629  	FCC	'CWAI'		34
+CD6D  44 41 41 20         1630  	FCC	'DAA '		35
+CD71  44 45 43 41         1631  	FCC	'DECA'		36
+CD75  44 45 43 42         1632  	FCC	'DECB'		37
+CD79  44 45 43 20         1633  	FCC	'DEC '		38
+CD7D  45 4F 52 41         1634  	FCC	'EORA'		39
+CD81  45 4F 52 42         1635  	FCC	'EORB'		40
+CD85  45 58 47 20         1636  	FCC	'EXG '		41
+CD89  54 46 52 20         1637  	FCC	'TFR '		42
+CD8D  50 53 48 53         1638  	FCC	'PSHS'		43
+CD91  50 53 48 55         1639  	FCC	'PSHU'		44
+CD95  50 55 4C 53         1640  	FCC	'PULS'		45
+CD99  50 55 4C 55         1641  	FCC	'PULU'		46
+CD9D  49 4E 43 41         1642  	FCC	'INCA'		47
+CDA1  49 4E 43 42         1643  	FCC	'INCB'		48
+CDA5  49 4E 43 20         1644  	FCC	'INC '		49
+CDA9  4A 4D 50 20         1645  	FCC	'JMP '		50
+CDAD  4A 53 52 20         1646  	FCC	'JSR '		51
+CDB1  4C 45 41 53         1647  	FCC	'LEAS'		52
+CDB5  4C 45 41 55         1648  	FCC	'LEAU'		53
+CDB9  4C 45 41 58         1649  	FCC	'LEAX'		54
+CDBD  4C 45 41 59         1650  	FCC	'LEAY'		55
+CDC1  4C 53 52 41         1651  	FCC	'LSRA'		56
+CDC5  4C 53 52 42         1652  	FCC	'LSRB'		57
+CDC9  4C 53 52 20         1653  	FCC	'LSR '		58
+CDCD  4D 55 4C 20         1654  	FCC	'MUL '		59
+CDD1  4E 45 47 41         1655  	FCC	'NEGA'		60
+CDD5  4E 45 47 42         1656  	FCC	'NEGB'		61
+CDD9  4E 45 47 20         1657  	FCC	'NEG '		62
+CDDD  4E 4F 50 20         1658  	FCC	'NOP '		63
+CDE1  4F 52 41 20         1659  	FCC	'ORA '		64
+CDE5  4F 52 42 20         1660  	FCC	'ORB '		65
+CDE9  4F 52 43 43         1661  	FCC	'ORCC'		66
+CDED  41 4E 44 41         1662  	FCC	'ANDA'		67
+CDF1  41 4E 44 42         1663  	FCC	'ANDB'		68
+CDF5  41 4E 44 43         1664  	FCC	'ANDC'		69
+CDF9  52 4F 4C 41         1665  	FCC	'ROLA'		70
+CDFD  52 4F 4C 42         1666  	FCC	'ROLB'		71
+CE01  52 4F 4C 20         1667  	FCC	'ROL '		72
+CE05  52 4F 52 41         1668  	FCC	'RORA'		73
+CE09  52 4F 52 42         1669  	FCC	'RORB'		74
+CE0D  52 4F 52 20         1670  	FCC	'ROR '		75
+CE11  52 54 49 20         1671  	FCC	'RTI '		76
+CE15  52 54 53 20         1672  	FCC	'RTS '		77
+CE19  53 42 43 41         1673  	FCC	'SBCA'		78
+CE1D  53 42 43 42         1674  	FCC	'SBCB'		79
+CE21  53 45 58 20         1675  	FCC	'SEX '		80
+CE25  53 55 42 41         1676  	FCC	'SUBA'		81
+CE29  53 55 42 42         1677  	FCC	'SUBB'		82
+CE2D  53 55 42 44         1678  	FCC	'SUBD'		83
+CE31  53 53 52 20         1679  	FCC	'SSR '		84
+CE35  53 59 4E 43         1680  	FCC	'SYNC'		85
+CE39  54 53 54 41         1681  	FCC	'TSTA'		86
+CE3D  54 53 54 42         1682  	FCC	'TSTB'		87
+CE41  54 53 54 20         1683  	FCC	'TST '		88
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 30
+
+CE45  43 4D 50 44         1684  	FCC	'CMPD'		89
+CE49  43 4D 50 59         1685  	FCC	'CMPY'		90
+CE4D  4C 44 53 20         1686  	FCC	'LDS '		91
+CE51  4C 44 59 20         1687  	FCC	'LDY '		92
+CE55  53 54 53 20         1688  	FCC	'STS '		93
+CE59  53 54 59 20         1689  	FCC	'STY '		94
+CE5D  53 57 49 32         1690  	FCC	'SWI2'		95
+CE61  43 4D 50 53         1691  	FCC	'CMPS'		96
+CE65  43 4D 50 55         1692  	FCC	'CMPU'		97
+CE69  53 57 49 33         1693  	FCC	'SWI3'		98
+CE6D  4C 42 52 41         1694  	FCC	'LBRA'		99
+CE71  4C 42 53 52         1695  	FCC	'LBSR'		100
+CE75  42 52 41 20         1696  	FCC	'BRA '		101
+CE79  42 52 4E 20         1697  	FCC	'BRN '		102
+CE7D  42 48 49 20         1698  	FCC	'BHI '		103
+CE81  42 4C 53 20         1699  	FCC	'BLS '		104
+CE85  42 43 43 20         1700  	FCC	'BCC '		105
+CE89  42 43 53 20         1701  	FCC	'BCS '		106
+CE8D  42 4E 45 20         1702  	FCC	'BNE '		107
+CE91  42 45 51 20         1703  	FCC	'BEQ '		108
+CE95  42 56 43 20         1704  	FCC	'BVC '		109
+CE99  42 56 53 20         1705  	FCC	'BVS '		110
+CE9D  42 50 4C 20         1706  	FCC	'BPL '		111
+CEA1  42 4D 49 20         1707  	FCC	'BMI '		112
+CEA5  42 47 45 20         1708  	FCC	'BGE '		113
+CEA9  42 4C 54 20         1709  	FCC	'BLT '		114
+CEAD  42 47 54 20         1710  	FCC	'BGT '		115
+CEB1  42 4C 45 20         1711  	FCC	'BLE '		116
+CEB5  4C 42 52 4E         1712  	FCC	'LBRN'		117
+CEB9  4C 42 48 49         1713  	FCC	'LBHI'		118
+CEBD  4C 42 4C 53         1714  	FCC	'LBLS'		119
+CEC1  4C 42 43 43         1715  	FCC	'LBCC'		120
+CEC5  4C 42 43 53         1716  	FCC	'LBCS'		121
+CEC9  4C 42 4E 45         1717  	FCC	'LBNE'		122
+CECD  4C 42 45 51         1718  	FCC	'LBEQ'		123
+CED1  4C 42 56 43         1719  	FCC	'LBVC'		124
+CED5  4C 42 56 53         1720  	FCC	'LBVS'		125
+CED9  4C 42 50 4C         1721  	FCC	'LBPL'		126
+CEDD  4C 42 4D 49         1722  	FCC	'LBMI'		127
+CEE1  4C 42 47 45         1723  	FCC	'LBGE'		128
+CEE5  4C 42 4C 54         1724  	FCC	'LBLT'		129
+CEE9  4C 42 47 54         1725  	FCC	'LBGT'		130
+CEED  4C 42 4C 45         1726  	FCC	'LBLE'		131
+CEF1  42 53 52 20         1727  	FCC	'BSR '		132
+CEF5                      1728  *
+CEF5                      1729  * CONDITIONAL TABLE, FIRST BYTE IS MASK, NEXT THREE BYTES ARE POSSIBLE
+CEF5                      1730  * BIT SETTINGS
+CEF5                      1731  *
+CEF5  05 00 00 00         1732  CONTAB	FCB	$05,$00,$00,$00	'BHI', NO C OR Z
+CEF9  05 01 04 05         1733  	FCB	$05,$01,$04,$05	'BLS', EITHER C OR Z
+CEFD  01 00 00 00         1734  	FCB	$01,$00,$00,$00	'BCC', NO C
+CF01  01 01 01 01         1735  	FCB	$01,$01,$01,$01	'BCS', C SET
+CF05  04 00 00 00         1736  	FCB	$04,$00,$00,$00	'BNE', NO Z
+CF09  04 04 04 04         1737  	FCB	$04,$04,$04,$04	'BEQ', Z SET
+CF0D  02 00 00 00         1738  	FCB	$02,$00,$00,$00	'BVC', V CLEAR
+CF11  02 02 02 02         1739  	FCB	$02,$02,$02,$02	'BVS', V SET
+CF15  08 00 00 00         1740  	FCB	$08,$00,$00,$00	'BPL', N CLEAR
+CF19  08 08 08 08         1741  	FCB	$08,$08,$08,$08	'BMI', N SET
+DUNFIELD 6809 ASSEMBLER: RAID 6809 DEBUGGER                           PAGE: 31
+
+CF1D  0A 00 0A 0A         1742  	FCB	$0A,$00,$0A,$0A	'BGE', N=V
+CF21  0A 08 02 02         1743  	FCB	$0A,$08,$02,$02	'BLT', N -= V
+CF25  0E 0A 00 00         1744  	FCB	$0E,$0A,$00,$00	'BGT', N=V, Z=0
+CF29  0E 08 02 04         1745  	FCB	$0E,$08,$02,$04	'BLE', V-=N OR Z=1
+CF2D  0C 06 0E            1746  	FCB	$0C,$06,$0E
+CF30                      1747  * TRANSFER AND EXCHANGE REGISTER TABLE
+CF30  BF 65               1748  TFREGT	FDB	SAVA	
+CF32  BF 68               1749  INDTAB	FDB	SAVX	
+CF34  BF 6A               1750  	FDB	SAVY	
+CF36  BF 6C               1751  	FDB	SAVU	
+CF38  BF 70               1752  	FDB	SAVS	
+CF3A  BF 6E               1753  	FDB	SAVPC	
+CF3C                      1754  * PULL TABLE FOR PULS
+CF3C  BF 64               1755  PULSTAB	FDB	SAVCC	
+CF3E  BF 65               1756  	FDB	SAVA	
+CF40  BF 66               1757  	FDB	SAVB	
+CF42  BF 67               1758  	FDB	SAVDP	
+CF44  BF 68               1759  	FDB	SAVX	
+CF46  BF 6A               1760  	FDB	SAVY	
+CF48  BF 6C               1761  	FDB	SAVU
+CF4A  BF 6E               1762  	FDB	SAVPC	
+CF4C                      1763  * PULL TABLE FOR PULU
+CF4C  BF 64               1764  PULUTAB	FDB	SAVCC
+CF4E  BF 65               1765  	FDB	SAVA
+CF50  BF 66               1766  	FDB	SAVB
+CF52  BF 67               1767  	FDB	SAVDP
+CF54  BF 68               1768  	FDB	SAVX
+CF56  BF 6A               1769  	FDB	SAVY
+CF58  BF 70               1770  	FDB	SAVS
+CF5A  BF 6E               1771  	FDB	SAVPC
+CF5C                      1772  *
+CF5C  34 14               1773  GETCHR	PSHS	B,X
+CF5E  F6 BF 62            1774  	LDB	>DEVICE
+CF61  8D 17               1775  	BSR	DOSSR
+CF63  25                  1776  	FCB	37
+CF64  35 94               1777  	PULS	B,X,PC
+CF66                      1778  *
+CF66  34 14               1779  RDCON	PSHS	B,X
+CF68  F6 BF 62            1780  	LDB	>DEVICE
+CF6B  8D 0D               1781  	BSR	DOSSR
+CF6D  26                  1782  	FCB	38		READ CHAR SSR 37
+CF6E  35 94               1783  	PULS	B,X,PC
+CF70                      1784  *
+CF70  34 14               1785  WRCON	PSHS	B,X
+CF72  F6 BF 62            1786  	LDB	>DEVICE
+CF75  8D 03               1787  	BSR	DOSSR
+CF77  24                  1788  	FCB	36		WRITE CHAR SSR 36
+CF78  35 94               1789  	PULS	B,X,PC
+CF7A                      1790  * FAKE SYSTEM CALL
+CF7A  34 7F               1791  DOSSR	PSHS	CC,A,B,DP,X,Y,U
+CF7C  6E 9F BF 60         1792  	JMP	[SWIADR]

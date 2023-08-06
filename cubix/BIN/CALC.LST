@@ -1,0 +1,293 @@
+DUNFIELD 6809 ASSEMBLER: D:CALC                                       PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         8  *
+0000                         9  * CALC: Simple Programmers Desk Calculator
+0000                        10  *
+0000                        11  * Copyright 1983-2005 Dave Dunfield
+0000                        12  * All rights reserved.
+0000                        13  *
+D000                        14  	ORG	OSUTIL
+D000  10 FF D2 03           15  CALC	STS	SAVSTK		SAVE STACK POINTER
+D004  3F                    16  	SWI			SOFTWARE INTERRUPT TO DOS
+D005  04                    17  	FCB	4		SYSTEM REQUEST NUMBER
+D006  26 15                 18  	BNE	OPSUP		OPERAND WAS SUPPLIED
+D008  7A D2 02              19  	DEC	FLAG		SET INTERACTIVE FLAG
+D00B  3F                    20  CALC1	SWI			SOFTWARE INTERRUPT TO DOS
+D00C  18                    21  	FCB	24		SYSTEM REQUEST NUMBER
+D00D  43 61 6C 63 3E 00     22  	FCCZ	'Calc>'		STRING TO OUTPUT
+D013  3F                    23  	SWI			SOFTWARE INTERRUPT TO DOS
+D014  03                    24  	FCB	3		SYSTEM REQUEST NUMBER
+D015  3F                    25  	SWI			SOFTWARE INTERRUPT TO DOS
+D016  04                    26  	FCB	4		SYSTEM REQUEST NUMBER
+D017  27 1E                 27  	BEQ	CLEND		IF NOT, QUIT
+D019  8D 06                 28  	BSR	OPSUP1		CALCULATE AND DISPLAY
+D01B  20 EE                 29  	BRA	CALC1		BACK FOR MORE
+D01D                        30  * AN OPERAND WAS SUPPLIED
+D01D  81 3F                 31  OPSUP	CMPA	#'?'		HELP WANTED?
+D01F  27 18                 32  	BEQ	HELP		IF SO, GIVE IT TO HIM
+D021                        33  * EVALUATE EXPRESSIONS, AND DISPLAY RESULTS
+D021  17 01 27              34  OPSUP1	LBSR	EVAL		EVALUATE OPERANDS
+D024  34 06                 35  	PSHS	A,B		SAVE RESULT
+D026  3F                    36  	SWI			SOFTWARE INTERRUPT TO DOS
+D027  1A                    37  	FCB	26		SYSTEM REQUEST NUMBER
+D028  3F                    38  	SWI			SOFTWARE INTERRUPT TO DOS
+D029  18                    39  	FCB	24		SYSTEM REQUEST NUMBER
+D02A  20 24 00              40  	FCCZ	' $'		MESSAGE TO OUTPUT
+D02D  35 06                 41  	PULS	A,B		RESTORE VALUE
+D02F  3F                    42  	SWI			SOFTWARE INTERRUPT TO DOS
+D030  1B                    43  	FCB	27		SYSTEM REQUEST NUMBER
+D031  3F                    44  	SWI			SOFTWARE INTERRUPT TO DOS
+D032  16                    45  	FCB	22		SYSTEM REQUEST NUMBER
+D033  3F                    46  	SWI			SOFTWARE INTERRUPT TO DOS
+D034  04                    47  	FCB	4		SYSTEM REQUEST NUMBER
+D035  26 EA                 48  	BNE	OPSUP1		AND CONTINUE
+D037  4F                    49  CLEND	CLRA
+D038  39                    50  	RTS
+D039                        51  * DISPLAY HELP MESSAGE
+D039  3F                    52  HELP	SWI			SOFTWARE INTERRUPT TO DOS
+D03A  19                    53  	FCB	25		SYSTEM REQUEST NUMBER
+D03B  55 73 65 3A 20 43 +   54  	FCCZ	'Use: CALC [expression ...]'
+D056  4F                    55  	CLRA
+D057  39                    56  	RTS
+D058                        57  *
+D058                        58  * GET A VALUE FROM THE COMMAND LINE, RETURN IN 'D'
+DUNFIELD 6809 ASSEMBLER: D:CALC                                       PAGE: 2
+
+D058                        59  *
+D058  A6 A0                 60  GETVAL	LDA	,Y+		GET PRECEDING SYMBOL?
+D05A                        61  * TEST FOR '=' SWAP HIGH AND LOW BYTES
+D05A  81 3D                 62  	CMPA	#'='		IS IT A REVERSE CHARACTER?
+D05C  26 06                 63  	BNE	GETV1		IF NO, NOTHING SPECIAL TO DO
+D05E  8D F8                 64  	BSR	GETVAL		EVALUATE NEXT VALUE ELEMENT
+D060  1E 89                 65  	EXG	A,B		SWAP HIGH AND LOW
+D062  20 15                 66  	BRA	GETEN1		AND EXIT
+D064                        67  * TEST FOR '-' NEGATE VALUE
+D064  81 2D                 68  GETV1	CMPA	#'-'		IS IT NEGATE?
+D066  26 09                 69  	BNE	GETV2		NO, ITS OK
+D068  8D EE                 70  	BSR	GETVAL		EVALUATE NEXT
+D06A  4F                    71  	CLRA
+D06B  5F                    72  	CLRB
+D06C  B3 D2 00              73  	SUBD	VAL1		CALCULATE NEGATE
+D06F  20 08                 74  	BRA	GETEN1		AND EXIT
+D071                        75  * TEST FOR '~' ONE'S COMPLEMENT
+D071  81 7E                 76  GETV2	CMPA	#'~'		COMPLEMENT?
+D073  26 08                 77  	BNE	GETHEX		NO, ITS OK
+D075  8D E1                 78  	BSR	GETVAL		EVALUATE NEXT
+D077  43                    79  	COMA			COMPLEMENT HIGH
+D078  53                    80  	COMB			COMPLEMENT LOW
+D079  FD D2 00              81  GETEN1	STD	VAL1		SAVE RESULT
+D07C  39                    82  	RTS
+D07D                        83  * TEST FOR HEXIDECIMAL NUMBER
+D07D  34 10                 84  GETHEX	PSHS	X		SAVE 'X'
+D07F  8E 00 00              85  	LDX	#0		START WITH ZERO
+D082  81 24                 86  	CMPA	#'$'		IS IT A HEX NUMBER?
+D084  26 24                 87  	BNE	GETBIN		NOT A HEX NUMBER, TRY BINARY
+D086  17 01 46              88  GETH1	LBSR	TSTEXP		TEST FOR TERMINATOR
+D089  27 39                 89  	BEQ	GETEND		IF SO, LAST CHARACTER
+D08B  80 30                 90  	SUBA	#'0'		CONVERT TO BINARY
+D08D  81 0A                 91  	CMPA	#10		0-9?
+D08F  25 0A                 92  	BLO	GETH2		IF SO, IT'S OK
+D091  81 11                 93  	CMPA	#$11		< 'A'?
+D093  2D 54                 94  	BLT	SYNERR		IF SO, IT'S BAD
+D095  80 07                 95  	SUBA	#7		CONVERT TO HEX
+D097  81 10                 96  	CMPA	#$10		IS IT 0-F?
+D099  24 4E                 97  	BHS	SYNERR		IF SO, IT'S BAD
+D09B  B7 D1 FE              98  GETH2	STA	TEMP		SAVE FOR TEMPORARY VALUE
+D09E  CC 00 10              99  	LDD	#16		MULTIPLY BY 16 (SHIFT FOUR BITS)
+D0A1  3F                   100  	SWI			SOFTWARE INTERRUPT TO DOS
+D0A2  6B                   101  	FCB	107		SYSTEM REQUEST NUMBER
+D0A3  FA D1 FE             102  	ORB	TEMP		INCLUDE EXTRA DIGIT
+D0A6  1F 01                103  	TFR	D,X		REPLACE IN 'X'
+D0A8  20 DC                104  	BRA	GETH1		DO NEXT
+D0AA                       105  * TEST FOR BINARY NUMBER
+D0AA  81 25                106  GETBIN	CMPA	#'%'		IS IT BINARY?
+D0AC  26 1D                107  	BNE	GETOCT		NO, TRY OCTAL
+D0AE  17 01 1E             108  GETB1	LBSR	TSTEXP		TEST FOR A TERMINATOR
+D0B1  27 11                109  	BEQ	GETEND		IF END, CONTINUE WITH EXPRESSION
+D0B3  80 30                110  	SUBA	#'0'		CONVERT TO BINARY
+D0B5  81 01                111  	CMPA	#1		TEST FOR IN RANGE
+D0B7  22 30                112  	BHI	SYNERR		IF INVALID, SAY SO
+D0B9  34 02                113  	PSHS	A		SAVE THIS VALUE
+D0BB  1F 10                114  	TFR	X,D		COPY TO ACCUMULATOR
+D0BD  30 8B                115  	LEAX	D,X		SHIFT BY ONE BIT
+D0BF  35 04                116  	PULS	B		RESTORE VALUE
+DUNFIELD 6809 ASSEMBLER: D:CALC                                       PAGE: 3
+
+D0C1  3A                   117  	ABX			INSERT THIS BIT
+D0C2  20 EA                118  	BRA	GETB1		CONTINUE LOOKING
+D0C4                       119  * END OF EXPRESSION, EXIT
+D0C4  1F 10                120  GETEND	TFR	X,D		D = VALUE
+D0C6  FD D2 00             121  	STD	VAL1		SET VALUE
+D0C9  35 90                122  	PULS	X,PC		RESTORE & RETURN
+D0CB                       123  * TEST FOR OCTAL NUMBER
+D0CB  81 40                124  GETOCT	CMPA	#'@'		IS IT OCTAL?
+D0CD  26 38                125  	BNE	GETCHR		NO, TRY CHARACTER
+D0CF  17 00 FD             126  GETO1	LBSR	TSTEXP		TEST FOR TERMINATOR
+D0D2  27 F0                127  	BEQ	GETEND		IF END, CONTINUE
+D0D4  80 30                128  	SUBA	#'0'		CONVERT TO BINARY
+D0D6  81 07                129  	CMPA	#7		IN RANGE?
+D0D8  22 0F                130  	BHI	SYNERR		INVALID
+D0DA  B7 D1 FE             131  	STA	TEMP		SAVE TEMP
+D0DD  CC 00 08             132  	LDD	#8		MUL BY 8
+D0E0  3F                   133  	SWI			SOFTWARE INTERRUPT TO DOS
+D0E1  6B                   134  	FCB	107		SYSTEM REQUEST NUMBER
+D0E2  FA D1 FE             135  	ORB	TEMP		INCLUDE
+D0E5  1F 01                136  	TFR	D,X		COPY BACK
+D0E7  20 E6                137  	BRA	GETO1		CONTINUE
+D0E9                       138  * INVALID HEX DIGIT
+D0E9  3F                   139  SYNERR	SWI			SOFTWARE INTERRUPT TO DOS
+D0EA  19                   140  	FCB	25		SYSTEM REQUEST NUMBER
+D0EB  53 79 6E 74 61 78 +  141  	FCCZ	'Syntax Error.'
+D0F9  10 FE D2 03          142  EVARET	LDS	SAVSTK		GET STACK VALUE
+D0FD  B6 D2 02             143  	LDA	FLAG		GET INTERACTIVE FLAG
+D100  10 26 FF 07          144  	LBNE	CALC1		AND CONTINUE
+D104  86 01                145  	LDA	#1		INDICATE INVALID OPERAND
+D106  39                   146  	RTS
+D107                       147  * TEST FOR QUOTED STRING
+D107  81 27                148  GETCHR	CMPA	#$27		IS IT A QUOTE?
+D109  26 1A                149  	BNE	GETDEC		NO, TRY DECIMAL NUMBER
+D10B  A6 A0                150  GETC1	LDA	,Y+		GET CHAR
+D10D  27 DA                151  	BEQ	SYNERR		END OF LINE
+D10F  81 0D                152  	CMPA	#$0D		END OF LINE MEANS SCREWUP
+D111  27 D6                153  	BEQ	SYNERR		INVALID STRING
+D113  81 27                154  	CMPA	#$27		CLOSING QUOTE
+D115  27 AD                155  	BEQ	GETEND		OF SO, THATS IT
+D117  B7 D1 FE             156  	STA	TEMP		SAVE CHAR
+D11A  1F 10                157  	TFR	X,D		COPY TO ACCUMULATOR
+D11C  1F 98                158  	TFR	B,A		SHIFT UP
+D11E  F6 D1 FE             159  	LDB	TEMP		INCLUDE LOWER CHAR
+D121  1F 01                160  	TFR	D,X		REPLACE OLD VALUE
+D123  20 E6                161  	BRA	GETC1		GET NEXT CHARACTER
+D125                       162  * TEST FOR DECIMAL NUMBER
+D125  81 30                163  GETDEC	CMPA	#'0'		IS IT < '0'?
+D127  25 C0                164  	BLO	SYNERR		NO, IT'S NOT DECIMAL
+D129  81 39                165  	CMPA	#'9'		IS IT > '9'
+D12B  22 BC                166  	BHI	SYNERR		NO, NOT DECIMAL
+D12D  31 3F                167  	LEAY	-1,Y		BACKUP TO START OF LINE
+D12F  17 00 9D             168  GETD1	LBSR	TSTEXP		TEST FOR END OF DIGIT STRING
+D132  27 90                169  	BEQ	GETEND		IF SO, QUIT
+D134  80 30                170  	SUBA	#'0'		CONVERT TO BINARY
+D136  81 09                171  	CMPA	#9		ARE WE DECIMAL?
+D138  22 AF                172  	BHI	SYNERR		IF NOT, GET UPSET
+D13A  B7 D1 FE             173  	STA	TEMP		SAVE DIGIT
+D13D  CC 00 0A             174  	LDD	#10		MULTIPLY BY 10
+DUNFIELD 6809 ASSEMBLER: D:CALC                                       PAGE: 4
+
+D140  3F                   175  	SWI			SOFTWARE INTERRUPT TO DOS
+D141  6B                   176  	FCB	107		SYSTEM REQUEST NUMBER
+D142  FB D1 FE             177  	ADDB	TEMP		ADD IN DIGIT
+D145  89 00                178  	ADCA	#0		INSURE HIGH INCS
+D147  1F 01                179  	TFR	D,X		SAVE IN X FOR NEXT ITERATION
+D149  20 E4                180  	BRA	GETD1		KEEP GOING
+D14B                       181  *
+D14B                       182  * EVALUATE ANY OPERANDS
+D14B                       183  *
+D14B  34 10                184  EVAL	PSHS	X		SAVE 'X'
+D14D  17 FF 08             185  	LBSR	GETVAL		GET VALUE
+D150  1F 01                186  EVAL1	TFR	D,X		SAVE OLD VALUE
+D152  3F                   187  EVAL2	SWI			SOFTWARE INTERRUPT TO DOS
+D153  05                   188  	FCB	5		SYSTEM REQUEST NUMBER
+D154  26 07                189  	BNE	TRYADD		TRY ADD
+D156  1F 10                190  	TFR	X,D		GET VALUE
+D158  FD D2 00             191  EVEXIT	STD	VAL1		SET VALUE
+D15B  35 90                192  	PULS	X,PC		RESTORE & RETURN
+D15D                       193  * TEST FOR ADDITION
+D15D  81 2B                194  TRYADD	CMPA	#'+'		IS THIS ADDITION?
+D15F  26 0A                195  	BNE	TRYSUB		NO, TRY SUBTRACTION
+D161  17 FE F4             196  	LBSR	GETVAL		GET NEW OPERAND VALUE
+D164  1F 10                197  	TFR	X,D		COPY TO ACCUMULATOR
+D166  F3 D2 00             198  	ADDD	VAL1		ADD TO OLD VALUE
+D169  20 E5                199  	BRA	EVAL1		BACK TO CALLER
+D16B                       200  * TRY SUBTRACTION
+D16B  81 2D                201  TRYSUB	CMPA	#'-'		SUBTRACT?
+D16D  26 0A                202  	BNE	TRYMUL		NO, TRY MULTIPLICATION
+D16F  17 FE E6             203  	LBSR	GETVAL		EVALUATE NEXT EXPRESSION
+D172  1F 10                204  	TFR	X,D		COPY TO ACCUMULATOR FOR ARITHMITIC
+D174  B3 D2 00             205  	SUBD	VAL1		SUBTRACT NEW VALUE
+D177  20 D7                206  	BRA	EVAL1		ALL DONE
+D179                       207  * MULTIPLY OPERANDS
+D179  81 2A                208  TRYMUL	CMPA	#'*'		IS IT A MULTIPLY?
+D17B  26 07                209  	BNE	TRYDIV		NO, TRY LOGICAL OR
+D17D  17 FE D8             210  	LBSR	GETVAL		EVALUATE SECOND OPERAND
+D180  3F                   211  	SWI			SOFTWARE INTERRUPT TO DOS
+D181  6B                   212  	FCB	107		SYSTEM REQUEST NUMBER
+D182  20 CC                213  	BRA	EVAL1		ALL DONE
+D184                       214  * DIVIDE OPERATION
+D184  81 2F                215  TRYDIV	CMPA	#'/'		DIVISION?
+D186  26 07                216  	BNE	TRYMOD		NO, TRY MODULUS
+D188  17 FE CD             217  	LBSR	GETVAL		GET OPERAND
+D18B  3F                   218  	SWI			SOFTWARE INTERRUPT TO DOS
+D18C  6C                   219  	FCB	108		SYSTEM REQUEST NUMBER
+D18D  20 C3                220  	BRA	EVAL2		AND KEEP RESULT
+D18F                       221  * MODULUS OPERATION
+D18F  81 5C                222  TRYMOD	CMPA	#'\'		MODULUS?
+D191  26 07                223  	BNE	TRYOR		NO, TRY OR
+D193  17 FE C2             224  	LBSR	GETVAL		GET OPERAND
+D196  3F                   225  	SWI			SOFTWARE INTERRUPT TO DOS
+D197  6C                   226  	FCB	108		SYSTEM REQUEST NUMBER
+D198  20 B6                227  	BRA	EVAL1		RETURN REMAINDER
+D19A                       228  * LOGICAL OR OF OPERANDS
+D19A  81 7C                229  TRYOR	CMPA	#'|'		IS IT OR?
+D19C  26 0D                230  	BNE	TRYAND		NO, TRY LOGICAL AND
+D19E  17 FE B7             231  	LBSR	GETVAL		CALCULATE OPERAND VALUE
+D1A1  1F 10                232  	TFR	X,D		GET OLD VALUE
+DUNFIELD 6809 ASSEMBLER: D:CALC                                       PAGE: 5
+
+D1A3  BA D2 00             233  	ORA	VAL1		PERFORM OR
+D1A6  FA D2 01             234  	ORB	VAL1+1		ON BOTH BYTES
+D1A9  20 A5                235  	BRA	EVAL1		CONTINUE
+D1AB                       236  * LOGICAL AND OF OPERANDS
+D1AB  81 26                237  TRYAND	CMPA	#'&'		IS IT AND?
+D1AD  26 0D                238  	BNE	TRYXOR		NO, TRY XOR
+D1AF  17 FE A6             239  	LBSR	GETVAL		EVALUATE OPERANDS
+D1B2  1F 10                240  	TFR	X,D		GET OLD VALUE
+D1B4  B4 D2 00             241  	ANDA	VAL1		AND WITH OLD
+D1B7  F4 D2 01             242  	ANDB	VAL1+1		AND SECOND BYTE
+D1BA  20 94                243  	BRA	EVAL1		CONTINUE
+D1BC                       244  * EXCLUSIVE OR OPERATION
+D1BC  81 5E                245  TRYXOR	CMPA	#'^'		IS IT XOR?
+D1BE  10 26 FF 27          246  	LBNE	SYNERR		NO, ERROR
+D1C2  17 FE 93             247  	LBSR	GETVAL		EVALUATE OPERANDS
+D1C5  1F 10                248  	TFR	X,D		GET OLD VALUE
+D1C7  B8 D2 00             249  	EORA	VAL1		XOR WITH OLD
+D1CA  F8 D2 01             250  	EORB	VAL1+1		XOR SECOND BYTE
+D1CD  20 81                251  	BRA	EVAL1		CONTINUE
+D1CF                       252  *
+D1CF                       253  * TEST FOR VALID EXPRESSION ELEMENT TERMINATOR
+D1CF                       254  *
+D1CF  A6 A4                255  TSTEXP	LDA	,Y		GET CHARACTER
+D1D1  27 2A                256  	BEQ	TSTEND		TERMINATOR
+D1D3  81 2B                257  	CMPA	#'+'		PLUS SIGN
+D1D5  27 26                258  	BEQ	TSTEND		OK
+D1D7  81 2D                259  	CMPA	#'-'		MINUS SIGN
+D1D9  27 22                260  	BEQ	TSTEND		IS ALSO OK
+D1DB  81 26                261  	CMPA	#'&'		LOCAIAL AND?
+D1DD  27 1E                262  	BEQ	TSTEND		IF SO, IT'S OK
+D1DF  81 7C                263  	CMPA	#'|'		LOGICAL OR?
+D1E1  27 1A                264  	BEQ	TSTEND		IF SO, IT'S OK
+D1E3  81 5E                265  	CMPA	#'^'		EXCLUSIVE OR?
+D1E5  27 16                266  	BEQ	TSTEND		YES, ITS OK
+D1E7  81 2A                267  	CMPA	#'*'		MULTIPLY?
+D1E9  27 12                268  	BEQ	TSTEND		YES, ITS OK
+D1EB  81 2F                269  	CMPA	#'/'		DIVIDE?
+D1ED  27 0E                270  	BEQ	TSTEND		YES, ITS OK
+D1EF  81 5C                271  	CMPA	#'\'		MODULUS?
+D1F1  27 0A                272  	BEQ	TSTEND		YES, ITS OK
+D1F3  81 20                273  	CMPA	#' '		SPACE IS VALID
+D1F5  27 06                274  	BEQ	TSTEND		IF SO, QUIT
+D1F7  81 0D                275  	CMPA	#$0D		CARRIAGE RETURN IS LAST
+D1F9  27 02                276  	BEQ	TSTEND		IF NOT, SAY SO
+D1FB  31 21                277  	LEAY	1,Y		DON'T SKIP END OF LINE
+D1FD  39                   278  TSTEND	RTS
+D1FE                       279  * TEMPORARY STORAGE
+D1FE  00 00                280  TEMP	FDB	0		TEMP STORAGE
+D200  00 00                281  VAL1	FDB	0		TEMP STORAGE
+D202  00                   282  FLAG	FCB	0		INTERACTIVE FLAG
+D203                       283  SAVSTK	RMB	2		SAVED STACK POINTER

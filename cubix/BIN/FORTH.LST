@@ -1,0 +1,1361 @@
+DUNFIELD 6809 ASSEMBLER: D:FORTH                                      PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         9  *
+0000                        10  * MICRO FORTH 1.0
+0000                        11  *
+0000                        12  *    This is a small fast implementation of a forth language for
+0000                        13  * the Motorola 6809 microprocessor. It is unique in that there is
+0000                        14  * no interpreter, all words are directly executable.
+0000                        15  *
+0000                        16  * Copyright 1984-2005 Dave Dunfield
+0000                        17  * All rights reserved.
+0000                        18  *
+0000                        19  * SYSTEM EQUATES
+0000                        20  *
+0041                        21  WIDTH	EQU	65		TERMINAL SCREEN WIDTH MARGIN
+2000                        22  LSTLOK	EQU	OSRAM		POINTER TO LAST WORD PROCESSED FROM INPUT BUFFER
+2002                        23  TEMP	EQU	LSTLOK+2	TEMPORARY STORAGE
+2004                        24  INPBUF	EQU	TEMP+2		INPUT BUFFER
+2100                        25  RSTACK	EQU	LSTLOK+256	RETURN STACK
+2200                        26  DSTACK	EQU	RSTACK+256	DATA STACK
+0000                        27  *
+2200                        28  	ORG	DSTACK		BEGINNING OF FORTH CODE
+2200                        29  * INITIALIZATIONS, START UP FORTH
+2200  10 CE 21 00           30  	LDS	#RSTACK		SET UP RETURN STACK
+2204  CE 22 00              31  	LDU	#DSTACK		SET UP DATA STACK
+2207                        32  * IF DESIRED, YOU CAN IMPLEMENT A STARTUP MESSAAGE HERE
+2207                        33  * INSERT THE MESSAGE AT THE VERY END OF THIS FILE.
+2207                        34  *	LDX	#USRSPC		POINT TO STARTUP MESSAGE
+2207                        35  *	LBSR	PMSG1		DISPLAY IT
+2207  AD 9F 2B 61           36  	JSR	[BOOT+3]	EXECUTE PRESET ROUTINE (USUALLY 'QUIT')
+220B  16 05 8A              37  	LBRA	BYE		EXIT FORTH
+220E                        38  * SUBROUTINE TO OBTAIN VARIABLES ADDRESS ON STACK.
+220E                        39  * USED BY 'VARIABLE' TYPE WORDS
+220E  AE E1                 40  VARIAB	LDX	,S++		GET FOLLOWING ADDRESS
+2210  36 10                 41  	PSHU	X		SAVE
+2212  39                    42  	RTS			RETURN TO CALLER
+2213                        43  * MESSAGES
+2213  0A 0D                 44  PROMPT	FCB	$0A,$0D		NEW LINE
+2215  4F 6B 3E 00           45  	FCCZ	'Ok>'		PROMPT
+2219  45 72 72 6F 72 3A +   46  ERMSG1	FCCZ	/Error: '/	ERROR PREFIX
+2222  27 20 00              47  ERMSG2	FCCZ	/' /		ERROR SUFFIX
+2225  52 65 64 65 66 3A +   48  REDMSG	FCCZ	'Redef: '	RE-DEFINITION INDICATOR
+222D  08 20 08 00           49  DELMSG	FCB	8,' ',8,0	MESSAGE FOR CHARACTER DELETE
+2231                        50  *
+2231                        51  * START	OF USER	DICTIONARY
+2231                        52  * DICTIONARY FORMAT:
+2231                        53  *   1)	- WORD DESCRIPTOR BYTE, FORMAT:
+2231                        54  *	BIT 7	    - ALWAYS SET, INDICATES THIS IS DESCRIPTOR BYTE
+2231                        55  *	BITS 7-3    - CURRENTLY NOT USED
+2231                        56  *	BIT 2	    - NO-COMPILE BIT, WORD CANNOT BE USED IN COMPILES
+2231                        57  *	BIT 1	    - NO-INTERACTIVE BIT, WORD CANNOT BE USED INTERACTIVELY
+2231                        58  *	BIT 0	    - EXECUTE ON COMPILE BIT, COMPILER EXECUTES WORD IMMEDIATLY
+2231                        59  *		      INSTEAD OF COMPILING INTO DEFINITION
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 2
+
+2231                        60  *   2)	- WORD NAME, VARIABLE LENGTH, STORED BACKWARDS
+2231                        61  *   3)	- ADDRESS OF PREVIOUS WORD IN DICTIONARY, ADDRESS MUST POINT TO FIRST
+2231                        62  *	  BYTE OF CODE WHICH IMMEDIATLY FOLLOWS THIS FIELD IN THE WORD
+2231                        63  *
+2231                        64  *
+2231                        65  * 'DROPN' - DROPS A NUMBER OF WORDS FROM THE STACK
+2231  80                    66  	FCB	$80
+2232  4E 50 4F 52 44        67  	FCC	'NPORD'
+2237  00 00                 68  	FDB	0		** END OF DICTIONARY **
+2239  EC C1                 69  DROPN	LDD	,U++		GET OPERAND
+223B  58                    70  	ASLB			MULTIPLY BY
+223C  49                    71  	ROLA			TWO FOR WORD STACK ENTRIES
+223D  33 CB                 72  	LEAU	D,U		MOVE USER STACK
+223F  39                    73  	RTS
+2240                        74  * 'DROP' - DROP ONE WORD FROM THE STACK
+2240  80                    75  	FCB	$80
+2241  50 4F 52 44           76  	FCC	'PORD'
+2245  22 39                 77  	FDB	DROPN
+2247  33 42                 78  DROP	LEAU	2,U		MOVE STACK POINTER
+2249  39                    79  	RTS
+224A                        80  * 'DUP' - DUPLICATE TOP OF STACK
+224A  80                    81  	FCB	$80
+224B  50 55 44              82  	FCC	'PUD'
+224E  22 47                 83  	FDB	DROP
+2250  EC C4                 84  DUP	LDD	,U		GET TOP OF USER STACK
+2252  ED C3                 85  	STD	,--U		DUPLICATE
+2254  39                    86  	RTS
+2255                        87  * 'OVER' DUPLICATE ONE DOWN FROM TOP OF STACK
+2255  80                    88  	FCB	$80
+2256  52 45 56 4F           89  	FCC	'REVO'
+225A  22 50                 90  	FDB	DUP
+225C  EC 42                 91  OVER	LDD	2,U		GET ELEMENT
+225E  ED C3                 92  	STD	,--U		DUPLICATE
+2260  39                    93  	RTS
+2261                        94  * 'ROT' - ROTATE TOP THREE ELEMENTS ON STACK
+2261  80                    95  	FCB	$80
+2262  54 4F 52              96  	FCC	'TOR'
+2265  22 5C                 97  	FDB	OVER
+2267  EC 44                 98  ROT	LDD	4,U		GET BOTTOM
+2269  AE 42                 99  	LDX	2,U		GET MIDDLE
+226B  AF 44                100  	STX	4,U		PUT ON BOTTOM
+226D  20 09                101  	BRA	SWAP1		DO REST
+226F                       102  * 'SWAP' - SWAP TOP TWO ELEMENTS ON STACK
+226F  80                   103  	FCB	$80
+2270  50 41 57 53          104  	FCC	'PAWS'
+2274  22 67                105  	FDB	ROT
+2276  EC 42                106  SWAP	LDD	2,U		GET LOWER ONE
+2278  AE C4                107  SWAP1	LDX	,U		GET TOP
+227A  AF 42                108  	STX	2,U		PLACE TOP AT LOWER
+227C  ED C4                109  	STD	,U		PLACE LOWER AT TOP
+227E  39                   110  	RTS
+227F                       111  * '0=' - TEST FOR TOS EQUAL TO ZERO
+227F  80                   112  	FCB	$80
+2280  3D 30                113  	FCC	'=0'
+2282  22 76                114  	FDB	SWAP
+2284  EC C4                115  ZEQU	LDD	,U		GET TOP OF STACK
+2286  27 43                116  	BEQ	RET1		EQUAL TO ZERO?
+2288  20 51                117  	BRA	RET0		NO, RETURN ONE
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 3
+
+228A                       118  * '=' - TEST FOR EQUALITY
+228A  80                   119  	FCB	$80
+228B  3D                   120  	FCC	'='
+228C  22 84                121  	FDB	ZEQU
+228E  EC C1                122  EQUALS	LDD	,U++		GET TOP OF STACK
+2290  10 A3 C4             123  	CMPD	,U		COMPARE WITH NEXT
+2293  27 36                124  	BEQ	RET1		SAME, RETURN 1
+2295  20 44                125  	BRA	RET0		NO, RETURN ZERO
+2297                       126  * '<>' - TEST FOR NOT EQUAL
+2297  80                   127  	FCB	$80
+2298  3E 3C                128  	FCC	'><'
+229A  22 8E                129  	FDB	EQUALS
+229C  EC C1                130  NOTEQU	LDD	,U++		GET TOS
+229E  10 A3 C4             131  	CMPD	,U		COMPARE WITH NEXT
+22A1  27 38                132  	BEQ	RET0		NOT SAME, RETURN 1
+22A3  20 26                133  	BRA	RET1		NO, RETURN 0
+22A5                       134  * '>' - TEST FOR GREATER
+22A5  80                   135  	FCB	$80
+22A6  3E                   136  	FCC	'>'
+22A7  22 9C                137  	FDB	NOTEQU
+22A9  EC 42                138  GRTR	LDD	2,U		GET LOWER ELEMENT
+22AB  10 A3 C1             139  	CMPD	,U++		COMPARE WITH TOS
+22AE  2E 1B                140  	BGT	RET1		GREATER, RETURN 1
+22B0  20 29                141  	BRA	RET0		NO, RETURN FALSE
+22B2                       142  * '<' - TEST FOR LESS
+22B2  80                   143  	FCB	$80
+22B3  3C                   144  	FCC	'<'
+22B4  22 A9                145  	FDB	GRTR
+22B6  EC 42                146  LESS	LDD	2,U		GET LOWER ELEMENT
+22B8  10 A3 C1             147  	CMPD	,U++		COMPARE WITH TOS
+22BB  2D 0E                148  	BLT	RET1		LOWER, RETURN 1
+22BD  20 1C                149  	BRA	RET0		NO, RETURN FALSE
+22BF                       150  * '>=' - TEST FOR GREATER OR EQUAL TO
+22BF  80                   151  	FCB	$80
+22C0  3D 3E                152  	FCC	'=>'
+22C2  22 B6                153  	FDB	LESS
+22C4  EC 42                154  GREQU	LDD	2,U		GET LOWER
+22C6  10 A3 C1             155  	CMPD	,U++		COMPARE WITH TOS
+22C9  2D 10                156  	BLT	RET0		LESS, RETURN FALSE
+22CB  C6 01                157  RET1	LDB	#1		GET ONE
+22CD  20 0D                158  	BRA	RETS		RETURN IT
+22CF                       159  * '<=' - TEST FOR LESS OR EQUAL TO
+22CF  80                   160  	FCB	$80
+22D0  3D 3C                161  	FCC	'=<'
+22D2  22 C4                162  	FDB	GREQU
+22D4  EC 42                163  LESEQU	LDD	2,U		GET LOWER
+22D6  10 A3 C1             164  	CMPD	,U++		COMPARE WITH TOS
+22D9  2F F0                165  	BLE	RET1		LOWER OR EQUAL, RETURN ONE
+22DB  5F                   166  RET0	CLRB			GET ZERO RESULT
+22DC  4F                   167  RETS	CLRA			ZERO HIGH BYTE
+22DD  ED C4                168  	STD	,U		SAVE ON STACK
+22DF  39                   169  	RTS
+22E0                       170  * '$OUT' - OUTPUT CHARACTER TO TERMINAL
+22E0  80                   171  	FCB	$80
+22E1  54 55 4F 24          172  	FCC	'TUO$'
+22E5  22 D4                173  	FDB	LESEQU
+22E7  EC C1                174  DOLOUT	LDD	,U++		GET CHAR FROM STACK
+22E9  1F 98                175  	TFR	B,A		PUT IN RIGHT REGISTER
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 4
+
+22EB  3F                   176  	SWI			SOFTWARE INTERRUPT TO DOS
+22EC  21                   177  	FCB	33		SYSTEM REQUEST NUMBER
+22ED  39                   178  	RTS
+22EE                       179  * ' $IN' - INPUT CHARACTER FROM TERMINAL
+22EE  80                   180  	FCB	$80
+22EF  4E 49 24             181  	FCC	'NI$'
+22F2  22 E7                182  	FDB	DOLOUT
+22F4  3F                   183  DOLIN	SWI			SOFTWARE INTERRUPT TO DOS
+22F5  22                   184  	FCB	34		SYSTEM REQUEST NUMBER
+22F6  1F 89                185  	TFR	A,B		GET IN RIGHT REGISTER
+22F8  4F                   186  	CLRA			ZERO HIGH BYTE
+22F9  ED C3                187  	STD	,--U		SAVE ON STACK
+22FB  39                   188  	RTS
+22FC                       189  * 'EMIT' - OUTPUT CHARACTER TO GENERAL OUTPUT
+22FC  80                   190  	FCB	$80
+22FD  54 49 4D 45          191  	FCC	'TIME'
+2301  22 F4                192  	FDB	DOLIN
+2303  6E 9F 2B 49          193  EMIT	JMP	[DISP+3]	EXECUTE OUTPUT ROUTINE IN '(OUT)' VARIABLE
+2307                       194  * 'KEY' - GET CHARACTER FROM GENERAL INPUT
+2307  80                   195  	FCB	$80
+2308  59 45 4B             196  	FCC	'YEK'
+230B  23 03                197  	FDB	EMIT
+230D  6E 9F 2B 55          198  KEY	JMP	[INPT+3]	EXECUTE INPUT ROUTINE IN '(IN)' VARIABLE
+2311                       199  * 'U.' - OUTPUT UNSIGNED NUMBER IN CURRENT BASE
+2311  80                   200  	FCB	$80
+2312  2E 55                201  	FCC	'.U'
+2314  23 0D                202  	FDB	KEY
+2316  20 12                203  UDOT	BRA	DOT01		EXECUTE NUMBER OUTPUT ROUTINE
+2318                       204  * '.' - OUTPUT SIGNED NUMBER IN CURRENT BASE
+2318  80                   205  	FCB	$80
+2319  2E                   206  	FCC	'.'
+231A  23 16                207  	FDB	UDOT
+231C  EC C4                208  DOT	LDD	,U		GET NUMBER FROM STACK
+231E  2A 0A                209  	BPL	DOT01		IS POSITIVE, ITS OK
+2320  C6 2D                210  	LDB	#'-'		GET MINUS SIGN
+2322  36 06                211  	PSHU	A,B		SAVE ON STACK
+2324  BD 23 03             212  	JSR	EMIT		OUTPUT MINUS SIGN
+2327  BD 25 24             213  	JSR	NEG		NEGATE NUMBER
+232A  86 FF                214  DOT01	LDA	#$FF		END IF STREAM INDICATOR
+232C  34 02                215  	PSHS	A		SAVE MARKER ON RETURN STACK
+232E  FC 2B 78             216  DOT1	LDD	BASE+3		GET NUMBER BASE FROM 'BASE' VARIABLE
+2331  36 06                217  	PSHU	A,B		SAVE BASE
+2333  BD 24 79             218  	JSR	USMOD		PERFORM DIVISION
+2336  37 06                219  	PULU	A,B		GET REMAINDER
+2338  34 04                220  	PSHS	B		SAVE FOR LATER
+233A  EC C4                221  	LDD	,U		GET RESULT
+233C  26 F0                222  	BNE	DOT1		IF MORE, KEEP GOING
+233E  33 42                223  	LEAU	2,U		SKIP LAST RESULT ON STACK
+2340  E6 E0                224  DOT2	LDB	,S+		GET CHARACTER FROM STACK
+2342  10 2B 02 E8          225  	LBMI	SPACE		END OF DIGITS, OUTPUT SPACE AND EXIT
+2346  CB 30                226  	ADDB	#$30		CONVERT TO DECIMAL NUMBER
+2348  C1 39                227  	CMPB	#$39		IN RANGE?
+234A  23 02                228  	BLS	DOT3		YES, ITS OK
+234C  CB 07                229  	ADDB	#7		CONVERT TO ALPHA
+234E  36 06                230  DOT3	PSHU	A,B		SAVE ON STACK
+2350  8D B1                231  	BSR	EMIT		OUTPUT CHARACTER
+2352  20 EC                232  	BRA	DOT2		KEEP OUTPUTING
+2354                       233  * '-!' - SUBTRACT FROM SELF AND REASSIGN
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 5
+
+2354  80                   234  	FCB	$80
+2355  21 2D                235  	FCC	'!-'
+2357  23 1C                236  	FDB	DOT
+2359  AE C1                237  MSTOR	LDX	,U++		GET ADDRESS
+235B  EC 84                238  	LDD	,X		GET CONTENTS
+235D  A3 C1                239  	SUBD	,U++		SUBTRACT TOS
+235F  ED 84                240  	STD	,X		RESAVE CONTENTS
+2361  39                   241  	RTS
+2362                       242  * '+!' - ADD TO SELF AND REASSIGN
+2362  80                   243  	FCB	$80
+2363  21 2B                244  	FCC	'!+'
+2365  23 59                245  	FDB	MSTOR
+2367  AE C1                246  PSTOR	LDX	,U++		GET ADDRESS
+2369  EC 84                247  	LDD	,X		GET CONTENTS
+236B  E3 C1                248  	ADDD	,U++		ADD IS TOS
+236D  ED 84                249  	STD	,X		RESAVE CONTENTS
+236F  39                   250  	RTS
+2370                       251  * 'C!' - CHARACTER (BYTE) STORE OPERATION
+2370  80                   252  	FCB	$80
+2371  21 43                253  	FCC	'!C'
+2373  23 67                254  	FDB	PSTOR
+2375  AE C1                255  VSTORC	LDX	,U++		GET ADDRESS
+2377  EC C1                256  	LDD	,U++		GET DATA FROM STACK
+2379  E7 84                257  	STB	,X		SAVE IN VARIABLE
+237B  39                   258  	RTS
+237C                       259  * '!' - WORD STORE OPERATION
+237C  80                   260  	FCB	$80
+237D  21                   261  	FCC	'!'
+237E  23 75                262  	FDB	VSTORC
+2380  AE C1                263  VSTOR	LDX	,U++		GET ADDRESS
+2382  EC C1                264  	LDD	,U++		GET DATA
+2384  ED 84                265  	STD	,X		PERFORM STORE
+2386  39                   266  	RTS
+2387                       267  * 'C@' - CHARACTER READ OPERATION
+2387  80                   268  	FCB	$80
+2388  40 43                269  	FCC	'@C'
+238A  23 80                270  	FDB	VSTOR
+238C  E6 D4                271  VREADC	LDB	[,U]		GET CHARACTER FROM ADDRESS
+238E  4F                   272  	CLRA			ZERO HIGH BYTE
+238F  20 2E                273  	BRA	SAVSD		MOVE TO STACK
+2391                       274  * '@' - WORD READ OPERATION
+2391  80                   275  	FCB	$80
+2392  40                   276  	FCC	'@'
+2393  23 8C                277  	FDB	VREADC
+2395  EC D4                278  VREAD	LDD	[,U]		GET WORD FROM ADDRESS
+2397  20 26                279  	BRA	SAVSD		PLACE ON STACK
+2399                       280  * '2/' - DIVIDE BY TWO
+2399  80                   281  	FCB	$80
+239A  2F 32                282  	FCC	'/2'
+239C  23 95                283  	FDB	VREAD
+239E  64 C4                284  SHR	LSR	,U		SHIFT HIGH
+23A0  66 41                285  	ROR	1,U		SHIFT LOW
+23A2  39                   286  	RTS
+23A3                       287  * '2*' - MULTIPLY BY TWO
+23A3  80                   288  	FCB	$80
+23A4  2A 32                289  	FCC	'*2'
+23A6  23 9E                290  	FDB	SHR
+23A8  68 41                291  SHL	LSL	1,U		SHIFT LOW
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 6
+
+23AA  69 C4                292  	ROL	,U		SHIFT HIGH
+23AC  39                   293  	RTS
+23AD                       294  * '+' - ADD OPERATOR
+23AD  80                   295  	FCB	$80
+23AE  2B                   296  	FCC	'+'
+23AF  23 A8                297  	FDB	SHL
+23B1  EC C1                298  ADD	LDD	,U++		GET TOS
+23B3  E3 C4                299  	ADDD	,U		ADD IN NEXT
+23B5  20 08                300  	BRA	SAVSD		PLACE RESULT ON STACK
+23B7                       301  * '-' - SUBTRACT OPERATOR
+23B7  80                   302  	FCB	$80
+23B8  2D                   303  	FCC	'-'
+23B9  23 B1                304  	FDB	ADD
+23BB  EC 42                305  SUB	LDD	2,U		GET LOWER OPERAND
+23BD  A3 C1                306  	SUBD	,U++		SUBTRACT TOS
+23BF  ED C4                307  SAVSD	STD	,U		PLACE RESULT ON STACK
+23C1  39                   308  	RTS
+23C2                       309  * 'D-' DOUBLE PRECISION SUBTRACTION
+23C2  80                   310  	FCB	$80
+23C3  2D 44                311  	FCC	'-D'
+23C5  23 BB                312  	FDB	SUB
+23C7  EC 46                313  DMINUS	LDD	6,U		GET LOW WORD OF LOWER OPERAND
+23C9  A3 42                314  	SUBD	2,U		SUBTRACT LOW WORD OFF HIGHER OPERAND
+23CB  ED 46                315  	STD	6,U		RESAVE LOWER WORD OF OPERAND
+23CD  EC 44                316  	LDD	4,U		GET HIGH WORD OF LOWER OPERAND
+23CF  E2 41                317  	SBCB	1,U		SUBTRACT TOP OF STACK
+23D1  E2 C4                318  	SBCB	,U		WITH BORROW FROM PREVIOUS
+23D3  33 44                319  	LEAU	4,U		FIX UP STACK
+23D5  ED C4                320  	STD	,U		PLACE HIGH WORD OF RESULT ON STACK
+23D7  39                   321  	RTS
+23D8                       322  * 'D+' - DOUBLE PRECISION ADDITION
+23D8  80                   323  	FCB	$80
+23D9  2B 44                324  	FCC	'+D'
+23DB  23 C7                325  	FDB	DMINUS
+23DD  EC 42                326  DPLUS	LDD	2,U		GET LOW WORD OF FIRST OPERAND
+23DF  E3 46                327  	ADDD	6,U		ADD LOW WORD OF SECOND OPERAND
+23E1  ED 46                328  	STD	6,U		RESAVE
+23E3  EC C4                329  	LDD	,U		GET HIGH WORD OF FIRST
+23E5  E9 45                330  	ADCB	5,U		ADD IN HIGH WORD OF
+23E7  A9 44                331  	ADCA	4,U		SECOND WITH CARRY
+23E9  33 44                332  	LEAU	4,U		FIX UP STACK
+23EB  ED C4                333  	STD	,U		RESAVE
+23ED  39                   334  	RTS
+23EE                       335  * 'U*' - UNSIGNED MULTIPLY
+23EE  80                   336  	FCB	$80
+23EF  2A 55                337  	FCC	'*U'
+23F1  23 DD                338  	FDB	DPLUS
+23F3  A6 41                339  UMULT	LDA	1,U
+23F5  E6 43                340  	LDB	3,U
+23F7  3D                   341  	MUL
+23F8  34 06                342  	PSHS	A,B
+23FA  A6 C4                343  	LDA	,U
+23FC  E6 42                344  	LDB	2,U
+23FE  3D                   345  	MUL
+23FF  34 06                346  	PSHS	A,B
+2401  A6 41                347  	LDA	1,U
+2403  E6 42                348  	LDB	2,U
+2405  3D                   349  	MUL
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 7
+
+2406  E3 61                350  	ADDD	1,S
+2408  24 02                351  	BCC	UMUL1
+240A  6C E4                352  	INC	,S
+240C  ED 61                353  UMUL1	STD	1,S
+240E  A6 C4                354  	LDA	,U
+2410  E6 43                355  	LDB	3,U
+2412  3D                   356  	MUL
+2413  E3 61                357  	ADDD	1,S
+2415  24 02                358  	BCC	UMUL2
+2417  6C E4                359  	INC	,S
+2419  ED 61                360  UMUL2	STD	1,S
+241B  35 16                361  	PULS	D,X
+241D  ED C4                362  	STD	,U
+241F  AF 42                363  	STX	2,U
+2421  39                   364  	RTS
+2422                       365  * '*' - SIGNED MULTIPLY
+2422  80                   366  	FCB	$80
+2423  2A                   367  	FCC	'*'
+2424  23 F3                368  	FDB	UMULT
+2426  A6 41                369  MULT	LDA	1,U
+2428  E6 43                370  	LDB	3,U
+242A  3D                   371  	MUL
+242B  34 06                372  	PSHS	A,B
+242D  A6 C4                373  	LDA	,U
+242F  E6 43                374  	LDB	3,U
+2431  3D                   375  	MUL
+2432  EB E4                376  	ADDB	,S
+2434  E7 E4                377  	STB	,S
+2436  A6 41                378  	LDA	1,U
+2438  E6 42                379  	LDB	2,U
+243A  3D                   380  	MUL
+243B  EB E4                381  	ADDB	,S
+243D  E7 E4                382  	STB	,S
+243F  35 06                383  	PULS	D
+2441  33 42                384  	LEAU	2,U
+2443  ED C4                385  	STD	,U
+2445  39                   386  	RTS
+2446                       387  * 'M/MOD' - DIVISION WITH REMAINDER
+2446  80                   388  	FCB	$80
+2447  44 4F 4D 2F 4D       389  	FCC	'DOM/M'
+244C  24 26                390  	FDB	MULT
+244E  4F                   391  MSMOD	CLRA
+244F  5F                   392  	CLRB
+2450  8E 00 21             393  	LDX	#33
+2453  1C FE                394  MSMODL	ANDCC	#$FE
+2455  69 45                395  MSMODM	ROL	5,U
+2457  69 44                396  	ROL	4,U
+2459  69 43                397  	ROL	3,U
+245B  69 42                398  	ROL	2,U
+245D  30 1F                399  	LEAX	-1,X
+245F  27 0D                400  	BEQ	MSMODD
+2461  59                   401  	ROLB
+2462  49                   402  	ROLA
+2463  10 A3 C4             403  	CMPD	,U
+2466  25 EB                404  	BLO	MSMODL
+2468  A3 C4                405  	SUBD	,U
+246A  1A 01                406  	ORCC	#1
+246C  20 E7                407  	BRA	MSMODM
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 8
+
+246E  ED C4                408  MSMODD	STD	,U
+2470  39                   409  	RTS
+2471                       410  * 'U/MOD' - UNSIGNED DIVISION WITH REMAINDER
+2471  80                   411  	FCB	$80
+2472  44 4F 4D 2F 55       412  	FCC	'DOM/U'
+2477  24 4E                413  	FDB	MSMOD
+2479  EC C1                414  USMOD	LDD	,U++
+247B  6F C2                415  	CLR	,-U
+247D  6F C2                416  	CLR	,-U
+247F  ED C3                417  	STD	,--U
+2481  BD 24 4E             418  	JSR	MSMOD
+2484  EC C1                419  	LDD	,U++
+2486  ED C4                420  	STD	,U
+2488  39                   421  	RTS
+2489                       422  * '/MOD' - DIVISION GIVING REMAINDER
+2489  80                   423  	FCB	$80
+248A  44 4F 4D 2F          424  	FCC	'DOM/'
+248E  24 79                425  	FDB	USMOD
+2490  A6 42                426  SLMOD	LDA	2,U
+2492  34 02                427  	PSHS	A
+2494  2A 08                428  	BPL	SLMOD2
+2496  4F                   429  	CLRA
+2497  5F                   430  	CLRB
+2498  A3 42                431  	SUBD	2,U
+249A  ED 42                432  	STD	2,U
+249C  A6 E4                433  	LDA	,S
+249E  A8 C4                434  SLMOD2	EORA	,U
+24A0  34 02                435  	PSHS	A
+24A2  EC C4                436  	LDD	,U
+24A4  27 3A                437  	BEQ	SLMODR
+24A6  2A 07                438  	BPL	SLMOD1
+24A8  43                   439  	COMA
+24A9  53                   440  	COMB
+24AA  C3 00 01             441  	ADDD	#1
+24AD  ED C4                442  	STD	,U
+24AF  4F                   443  SLMOD1	CLRA
+24B0  5F                   444  	CLRB
+24B1  8E 00 11             445  	LDX	#17
+24B4  1C FE                446  SLMODL	ANDCC	#$FE
+24B6  69 43                447  SLMODM	ROL	3,U
+24B8  69 42                448  	ROL	2,U
+24BA  30 1F                449  	LEAX	-1,X
+24BC  27 0D                450  	BEQ	SLMODD
+24BE  59                   451  	ROLB
+24BF  49                   452  	ROLA
+24C0  10 A3 C4             453  	CMPD	,U
+24C3  25 EF                454  	BLO	SLMODL
+24C5  A3 C4                455  	SUBD	,U
+24C7  1A 01                456  	ORCC	#1
+24C9  20 EB                457  	BRA	SLMODM
+24CB  6D 61                458  SLMODD	TST	1,S
+24CD  2A 05                459  	BPL	SLMOD3
+24CF  43                   460  	COMA
+24D0  53                   461  	COMB
+24D1  C3 00 01             462  	ADDD	#1
+24D4  ED C4                463  SLMOD3	STD	,U
+24D6  6D E1                464  	TST	,S++
+24D8  2A 06                465  	BPL	SLMODR
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 9
+
+24DA  4F                   466  	CLRA
+24DB  5F                   467  	CLRB
+24DC  A3 42                468  	SUBD	2,U
+24DE  ED 42                469  	STD	2,U
+24E0  39                   470  SLMODR	RTS
+24E1                       471  * '/' - DIVISION
+24E1  80                   472  	FCB	$80
+24E2  2F                   473  	FCC	'/'
+24E3  24 90                474  	FDB	SLMOD
+24E5  8D A9                475  SLASH	BSR	SLMOD
+24E7  33 42                476  	LEAU	2,U
+24E9  39                   477  	RTS
+24EA                       478  * 'AND' - LOGICAL AND
+24EA  80                   479  	FCB	$80
+24EB  44 4E 41             480  	FCC	'DNA'
+24EE  24 E5                481  	FDB	SLASH
+24F0  EC C1                482  AND	LDD	,U++		GET TOP OF STACK
+24F2  A4 C4                483  	ANDA	,U		AND HIGH BYTE
+24F4  E4 41                484  	ANDB	1,U		AND LOW BYTE
+24F6  20 45                485  	BRA	SAVDS		SAVE RESULT AND EXIT
+24F8                       486  * 'OR' - LOGICAL OR
+24F8  80                   487  	FCB	$80
+24F9  52 4F                488  	FCC	'RO'
+24FB  24 F0                489  	FDB	AND
+24FD  EC C1                490  OR	LDD	,U++		GET TOP OF STACK
+24FF  AA C4                491  	ORA	,U		OR HIGH BYTE
+2501  EA 41                492  	ORB	1,U		OR LOW BYTE
+2503  20 38                493  	BRA	SAVDS		SAVE RESULT AND EXIT
+2505                       494  * 'XOR' - LOGCAL EXCLUSIVE OR
+2505  80                   495  	FCB	$80
+2506  52 4F 58             496  	FCC	'ROX'
+2509  24 FD                497  	FDB	OR
+250B  EC C1                498  XOR	LDD	,U++		GET TOP OF STACK
+250D  A8 C4                499  	EORA	,U		XOR HIGH BYTE
+250F  E8 41                500  	EORB	1,U		XOR LOW BYTE
+2511  20 2A                501  	BRA	SAVDS		SAVE RESULT AND EXIT
+2513                       502  * 'COM' - COMPLEMENT OPERAND
+2513  80                   503  	FCB	$80
+2514  4D 4F 43             504  	FCC	'MOC'
+2517  25 0B                505  	FDB	XOR
+2519  63 C4                506  COM	COM	,U		COMPLEMENT HIGH BYTE
+251B  63 41                507  	COM	1,U		COMPLEMENT LOW BYTE
+251D  39                   508  	RTS
+251E                       509  * 'NEG' - NEGATE OPERAND
+251E  80                   510  	FCB	$80
+251F  47 45 4E             511  	FCC	'GEN'
+2522  25 19                512  	FDB	COM
+2524  8D F3                513  NEG	BSR	COM		COMPLEMENT OPERAND
+2526  20 35                514  	BRA	ONEP		INCREMENT (TWO'S COMPLEMENT)
+2528                       515  * 'ABS' - GIVE ABSOLUTE VALUE OF OPERAND
+2528  80                   516  	FCB	$80
+2529  53 42 41             517  	FCC	'SBA'
+252C  25 24                518  	FDB	NEG
+252E  EC C4                519  ABS	LDD	,U		GET VALUE FROM STACK
+2530  2B F2                520  	BMI	NEG		NEGATIVE, CONVERT
+2532  39                   521  	RTS
+2533                       522  * '2-' - DECREMENT BY TWO
+2533  80                   523  	FCB	$80
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 10
+
+2534  2D 32                524  	FCC	'-2'
+2536  25 2E                525  	FDB	ABS
+2538  EC C4                526  TWOM	LDD	,U		GET TOP OF STACK
+253A  83 00 02             527  	SUBD	#2		DECREMENT BY TWO
+253D  ED C4                528  SAVDS	STD	,U		RESAVE TOP OF STACK
+253F  39                   529  	RTS
+2540                       530  * '2+' - INCREMENT BY TWO
+2540  80                   531  	FCB	$80
+2541  2B 32                532  	FCC	'+2'
+2543  25 38                533  	FDB	TWOM
+2545  EC C4                534  TWOP	LDD	,U		GET TOP OF STACK
+2547  C3 00 02             535  	ADDD	#2		INCREMENT BY TWO
+254A  20 F1                536  	BRA	SAVDS		RESAVE TOP OF STACK
+254C                       537  * '1-' - DECREMENT BY ONE
+254C  80                   538  	FCB	$80
+254D  2D 31                539  	FCC	'-1'
+254F  25 45                540  	FDB	TWOP
+2551  EC C4                541  ONEM	LDD	,U		GET TOP OF STACK
+2553  83 00 01             542  	SUBD	#1		DECREMENT BY ONE
+2556  20 E5                543  	BRA	SAVDS		RESAVE TOP OF STACK
+2558                       544  * '1+' - INCREMENT BY ONE
+2558  80                   545  	FCB	$80
+2559  2B 31                546  	FCC	'+1'
+255B  25 51                547  	FDB	ONEM
+255D  EC C4                548  ONEP	LDD	,U		GET TOP OF STACK
+255F  C3 00 01             549  	ADDD	#1		INCREMENT BY ONE
+2562  20 D9                550  	BRA	SAVDS		RESAVE TOP OF STACK
+2564                       551  * 'SKIP' - ADVANCE INPUT POINTER TO NON-BLANK
+2564  80                   552  	FCB	$80
+2565  50 49 4B 53          553  	FCC	'PIKS'
+2569  25 5D                554  	FDB	ONEP
+256B  10 BE 2B 6C          555  QSKIP	LDY	INPTR+3		GET CURRENT POSITION IN INPUT BUFFER
+256F  A6 A0                556  QSKI1	LDA	,Y+		GET CHARACTER FROM INPUT BUFFER
+2571  81 20                557  	CMPA	#' '		IS IT A SPACE
+2573  27 FA                558  	BEQ	QSKI1		YES, KEEP GOING
+2575  31 3F                559  	LEAY	-1,Y		BACKUP TO IT
+2577  10 BF 2B 6C          560  	STY	INPTR+3		RESAVE INPUT POINTER
+257B  4D                   561  	TSTA			TEST FOR END OF LINE
+257C  39                   562  	RTS
+257D                       563  *
+257D                       564  * SUBROUTINE TO LOOKUP WORDS IN DICTIONARY FROM INPUT LINE
+257D                       565  * ON EXIT: 'Z' IS SET IF WORD NOT FOUND
+257D                       566  *	IF WORD IS FOUND ('Z'=0), ITS ADDRESS IS STACKED ON THE
+257D                       567  *	DATA STACK, AND THE WORD DESCRIPTOR BYTE IS RETURNED IN
+257D                       568  *	THE 'A' ACCUMULATOR
+257D                       569  *
+257D  34 30                570  LOOKUP	PSHS	X,Y		SAVE REGISTERS
+257F  8D EA                571  	BSR	QSKIP		ADVANCE TO WORD
+2581  10 BF 20 00          572  	STY	LSTLOK		SAVE INCASE ERROR
+2585  BE 2B 90             573  	LDX	HERE+3		GET START OF DICTIONARY
+2588                       574  * SCAN DICTIONARY, LOOKING FOR WORD
+2588  34 10                575  LOK1	PSHS	X		SAVE CURRENT ADDRESS
+258A  30 1E                576  	LEAX	-2,X		BACKUP PAST PRECEDING ADDRESS
+258C  A6 82                577  LOK2	LDA	,-X		GET CHARACTER FROM NAME
+258E  2B 10                578  	BMI	LOK3		DECREIPTOR BYTE, START OF WORD
+2590  A1 A0                579  	CMPA	,Y+		DOES IT MATCH INPUT BUFFER?
+2592  27 F8                580  	BEQ	LOK2		YES, KEEP MATCHING TILL END OF WORD
+2594  35 10                581  LOK5	PULS	X		RESTORE POINTER
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 11
+
+2596  AE 83                582  	LDX	,--X		GET ADDRESS OF PREVIOUS WORD
+2598  27 16                583  	BEQ	LOK4		END OF DICTIONARY, QUIT
+259A  10 BE 2B 6C          584  	LDY	INPTR+3		RESTORE INPUT POINTER
+259E  20 E8                585  	BRA	LOK1		TRY FOR THIS WORD
+25A0  E6 A4                586  LOK3	LDB	,Y		GET NET CHAR FROM INPUT STREAM
+25A2  8D 0E                587  	BSR	TSTERM		IS IT A TERMINATOR?
+25A4  26 EE                588  	BNE	LOK5		NO, WORD DOES NOT MATCH
+25A6  35 06                589  	PULS	A,B		RESTORE ADDRESS OF WORD
+25A8  ED C3                590  	STD	,--U		SAVE ON STACK
+25AA  8D C3                591  	BSR	QSKI1		SKIP TO NEXT NON-BLANK
+25AC  A6 84                592  	LDA	,X		GET DESCRIPTOR BYTE
+25AE  1C FB                593  	ANDCC	#$FB		CLEAR 'Z' FLAG
+25B0  35 B0                594  LOK4	PULS	X,Y,PC
+25B2                       595  * ROUTINE TO TEST FOR TERMINATOR CHARACTER
+25B2  C1 20                596  TSTERM	CMPB	#' '		IS IT A SPACE?
+25B4  27 01                597  	BEQ	TSTER1		YES, ITS OK
+25B6  5D                   598  	TSTB			IS IT NULL (END OF LINE)?
+25B7  39                   599  TSTER1	RTS
+25B8                       600  * ''' - TICK: RETURN ADDRESS OF A WORD
+25B8  81                   601  	FCB	$81
+25B9  27                   602  	FCC	/'/
+25BA  25 6B                603  	FDB	QSKIP
+25BC  8D BF                604  TICK	BSR	LOOKUP		LOOK UP WORD
+25BE  26 F7                605  	BNE	TSTER1		FOUND, RETURN
+25C0  16 01 48             606  	LBRA	LOKERR		WORD NOT FOUND, CAUSE ERROR
+25C3                       607  * 'EXEC' - EXECUTE AT ADDRESS
+25C3  80                   608  	FCB	$80
+25C4  43 45 58 45          609  	FCC	'CEXE'
+25C8  25 BC                610  	FDB	TICK
+25CA  6E D1                611  EXEC	JMP	[,U++]		EXECUTE AT ADDRESS ON [TOS]
+25CC                       612  * 'NUMBER' - GET NUMBER FROM INPUT STREAM IN CURRENT BASE
+25CC  00 80                613  	FDB	$80
+25CE  52 45 42 4D 55 4E    614  	FCC	'REBMUN'
+25D4  25 CA                615  	FDB	EXEC
+25D6  34 30                616  NUMBER	PSHS	X,Y		SAVE REGS
+25D8  17 FF 90             617  	LBSR	QSKIP		ADVANCE TO NEXT WORD IN INPUT STREAM
+25DB  81 2D                618  	CMPA	#'-'		IS IT A NEGATIVE NUMBER?
+25DD  34 01                619  	PSHS	CC		SAVE FLAGS FO LATER TEST
+25DF  26 02                620  	BNE	NUM4		NO, NOT NEGATIVE
+25E1  31 21                621  	LEAY	1,Y		SKIP '-' SIGN
+25E3  4F                   622  NUM4	CLRA			START OFF
+25E4  5F                   623  	CLRB			WITH A ZERO RESULT
+25E5  36 06                624  	PSHU	A,B		SAVE ON STACK
+25E7  E6 A0                625  NUM2	LDB	,Y+		GET CHAR FROM SOUCE
+25E9  C0 30                626  	SUBB	#'0'		CONVERT TO BINARY
+25EB  C1 09                627  	CMPB	#9		IS IT NUMERIC DIGIT?
+25ED  23 06                628  	BLS	NUM1		YES, ITS OK
+25EF  C0 07                629  	SUBB	#7		CONVERT FROM ALPHA
+25F1  C1 0A                630  	CMPB	#$0A		IS IT A VALID NUMBER?
+25F3  25 2C                631  	BLO	NUM3		NO, CAUSE ERROR
+25F5  4F                   632  NUM1	CLRA			ZERO HIGH BYTE
+25F6  10 B3 2B 78          633  	CMPD	BASE+3		ARE WE WITHIN RANGE OF CURRENT BASE
+25FA  24 25                634  	BHS	NUM3		NO, CAUSE ERROR
+25FC  34 06                635  	PSHS	A,B		SAVE NUMBER
+25FE  FC 2B 78             636  	LDD	BASE+3		GET BASE
+2601  36 06                637  	PSHU	A,B		STACK
+2603  BD 24 26             638  	JSR	MULT		PERFORM MULTIPLY (OLD VALUE ALREADY ON DATA STACK)
+2606  35 06                639  	PULS	A,B		GET NEW DIGIT BACK
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 12
+
+2608  E3 C4                640  	ADDD	,U		ADD TO OLD VALUE
+260A  ED C4                641  	STD	,U		RESAVE OLD VALUE
+260C  E6 A4                642  	LDB	,Y		GET NEXT CHARACTER FROM NUMBER
+260E  17 FF A1             643  	LBSR	TSTERM		IS IT A TERMINATOR
+2611  26 D4                644  	BNE	NUM2		NO, KEEP EVALUATING NUMBER
+2613  10 BF 2B 6C          645  	STY	INPTR+3		RESAVE INPUT POINTER
+2617  35 31                646  	PULS	CC,X,Y		RESTORE REGISTERS
+2619  26 03                647  	BNE	NUM5		NO NEGATIVE, DON'T NEGATE
+261B  BD 25 24             648  	JSR	NEG		NEGATE VALUE
+261E  16 05 17             649  NUM5	LBRA	ONE		RETURN TRUE (SUCCESS)
+2621  35 31                650  NUM3	PULS	CC,X,Y		CLEAN UP STACK
+2623  16 05 09             651  	LBRA	ZERO		RETURN FALSE (FAILURE)
+2626                       652  * 'SPACE' - DISPLAY A SPACE ON GENERAL OUTPUT
+2626  80                   653  	FCB	$80
+2627  45 43 41 50 53       654  	FCC	'ECAPS'
+262C  25 D6                655  	FDB	NUMBER
+262E  C6 20                656  SPACE	LDB	#' '		GET A SPACE
+2630  36 06                657  	PSHU	A,B		PLACEON DATA STACK
+2632  7E 23 03             658  	JMP	EMIT		OUTPUT
+2635                       659  * 'CR' - DISPLAY CARRIAGE-RETURN, LINE-FEED ON GENERAL OUTPUT
+2635  80                   660  	FCB	$80
+2636  52 43                661  	FCC	'RC'
+2638  26 2E                662  	FDB	SPACE
+263A  CC 00 0D             663  CR	LDD	#$0D		GET CARRIAGE RETURN
+263D  36 06                664  	PSHU	A,B		PLACE ON STACK
+263F  BD 23 03             665  	JSR	EMIT		OUTPUT TO GENERAL OUTPUT
+2642  C6 0A                666  	LDB	#$0A		GET LINE-FEED
+2644  36 06                667  	PSHU	A,B		PLACE ON STACK
+2646  7E 23 03             668  	JMP	EMIT		OUTPUT TO GENERAL OUTPUT
+2649                       669  * 'READ' - READ A LINE FROM INPUT DEVICE
+2649  80                   670  	FCB	$80
+264A  44 41 45 52          671  	FCC	'DAER'
+264E  26 3A                672  	FDB	CR
+2650  8D E8                673  READ	BSR	CR		NEW LINE
+2652  10 8E 20 04          674  READNC	LDY	#INPBUF		POINT TO INPUT BUFFER
+2656  BD 23 0D             675  READ1	JSR	KEY		GET A KEY
+2659  C1 0D                676  	CMPB	#$0D		IS IT CARRIAGE RETURN
+265B  27 1C                677  	BEQ	READ2		YES, EXIT
+265D  C1 7F                678  	CMPB	#$7F		IS IT DELETE?
+265F  26 11                679  	BNE	READ3		NO, NORMAL CHARACTER
+2661                       680  * DELETE KEY, DELETE PREVIOUS CHARACTER
+2661  33 42                681  	LEAU	2,U		REMOVE KEYCODE FROM STACK
+2663  31 3F                682  	LEAY	-1,Y		BACKUP UP INPUT BUFFER POINTER
+2665  10 8C 20 04          683  	CMPY	#INPBUF		PAST BEGINNING?
+2669  25 E5                684  	BLO	READ		IF SO, RE-INITIATE READ
+266B  8E 22 2D             685  	LDX	#DELMSG		POINT TO DELETE MESSAGE
+266E  8D 1F                686  	BSR	PMSG1		DISPLAY
+2670  20 E4                687  	BRA	READ1		GO BACK FOR NEXT KEY
+2672                       688  * NORMAL KEY
+2672  E7 A0                689  READ3	STB	,Y+		SAVE KEY IN BUFFER
+2674  BD 23 03             690  	JSR	EMIT		ECHO KEY
+2677  20 DD                691  	BRA	READ1		GO BACK FOR ANOTHER
+2679                       692  * CARRIAGE RETURN, TERMINATE INPUT
+2679  33 42                693  READ2	LEAU	2,U		REMOVE KEYCODE FROM STACK
+267B  6F A4                694  	CLR	,Y		INDICATE END OF INPUT LINE
+267D  10 8E 20 04          695  	LDY	#INPBUF		POINT TO INPUT BUFFER
+2681  10 BF 2B 6C          696  	STY	INPTR+3		SET UP INPUT BUFFER POINTER
+2685  39                   697  PMSG2	RTS
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 13
+
+2686                       698  * '.MSG' - DISPLAY MESSAGE, ADDRESS ON STACK
+2686  80                   699  	FCB	$80
+2687  47 53 4D 2E          700  	FCC	'GSM.'
+268B  26 50                701  	FDB	READ
+268D  AE C1                702  PMSG	LDX	,U++		GET ADDRESS
+268F  E6 80                703  PMSG1	LDB	,X+		GET CHARACTER FROM MESSAGE
+2691  27 F2                704  	BEQ	PMSG2		END OF MESSAGE, EXIT
+2693  36 06                705  	PSHU	A,B		SAVE ON STACK
+2695  BD 23 03             706  	JSR	EMIT		OUTPUT TO GENERAL OUTPUT
+2698  20 F5                707  	BRA	PMSG1		GET NEXT CHARACTER
+269A                       708  * '.WRD' - DISPLAY A WORD ON GENERAL OUTPUT (STRING)
+269A  80                   709  	FCB	$80
+269B  44 52 57 2E          710  	FCC	'DRW.'
+269F  26 8D                711  	FDB	PMSG
+26A1  AE C1                712  PWRD	LDX	,U++		GET ADDRESS OF WORD
+26A3  E6 80                713  PWRD1	LDB	,X+		GET CHARACTER FROM WORD
+26A5  17 FF 0A             714  	LBSR	TSTERM		IS IT A TERMINATOR?
+26A8  27 DB                715  	BEQ	PMSG2		YES, QUIT
+26AA  36 06                716  	PSHU	A,B		SAVE DATA ON STACK
+26AC  BD 23 03             717  	JSR	EMIT		OUTPUT TO GENERAL OUTPUT
+26AF  20 F2                718  	BRA	PWRD1		GET NEXT WORD
+26B1                       719  * 'QUIT - GENERAL COMMAND INTERPRETER, USED TO TERMINATE WORDS
+26B1  80                   720  	FCB	$80
+26B2  54 49 55 51          721  	FCC	'TIUQ'
+26B6  26 A1                722  	FDB	PWRD
+26B8  BD 27 48             723  QUIT	JSR	RPFIX		RESET RETURN STACK
+26BB  8E 22 13             724  	LDX	#PROMPT		POINT TO PROMPT
+26BE  8D CF                725  	BSR	PMSG1		DISPLAY PROMPT
+26C0  17 FF 8F             726  	LBSR	READNC		READ A LINE OF INPUT
+26C3  BD 26 2E             727  	JSR	SPACE		SEPERATE BY A SPACE
+26C6  BD 25 6B             728  QUI1	JSR	QSKIP		ADANCE TO NON-BLANK
+26C9  27 ED                729  	BEQ	QUIT		NULL LINE, DO NOTHING
+26CB  BD 25 7D             730  	JSR	LOOKUP		LOOK UP WORD
+26CE  27 1A                731  	BEQ	QUI2		NOT FOUND, TRY NUMBER
+26D0  85 02                732  	BITA	#$02		OK TO EXECUTE INTERACTIVLY?
+26D2  26 43                733  	BNE	CONERR		NO, FORCE ERROR
+26D4  AD D1                734  	JSR	[,U++]		EXECUTE WORD
+26D6  11 83 22 00          735  	CMPU	#DSTACK		DID STACK UNDERFLOW?
+26DA  23 EA                736  	BLS	QUI1		NO, KEEP INTERPRETING
+26DC  8D 15                737  	BSR	ERROR		GENERATE ERROR MESSAGE
+26DE  53 74 61 63 6B 20 +  738  	FCCZ	'Stack empty'
+26EA                       739  * NOT A WORD, TRY FOR NUMBER
+26EA  BD 25 D6             740  QUI2	JSR	NUMBER		TRY FOR NUMBER
+26ED  EC C1                741  	LDD	,U++		GET FLAG BYTE
+26EF  27 1A                742  	BEQ	LOKERR		NOT A NUMBER. INDICATE NOT FOUND
+26F1  20 D3                743  	BRA	QUI1		KEEP INTERPRETING
+26F3                       744  * SUBROUTINE TO GENERATE ERROR MESSAGE, FIRST DISPLAYS 'ERROR:' MESSAGE,
+26F3                       745  * THEN NAME OF LAST WORD PROCESSED, THEN ERROR MESSAGE TEXT
+26F3  8E 22 19             746  ERROR	LDX	#ERMSG1		GET POINTER TO ERROR MESSAGE PREFIX
+26F6  8D 97                747  	BSR	PMSG1		DISPLAY PREFIX
+26F8  BE 20 00             748  	LDX	LSTLOK		GET ADDRESS OF LAST WORD FROM INPUT BUFFER
+26FB  8D A6                749  	BSR	PWRD1		DISPLAY WORD
+26FD  8E 22 22             750  	LDX	#ERMSG2		POINT TO ERROR MESSAGE SUFFIX
+2700  8D 8D                751  	BSR	PMSG1		DISPLAY SUFFIX
+2702  AE E1                752  	LDX	,S++		GET ADDRESS OF ERROR MESSAGE
+2704  8D 89                753  	BSR	PMSG1		DISPLAY MESSAGE
+2706  BD 27 56             754  	JSR	SPFIX		RESET DATA STACK
+2709  20 AD                755  	BRA	QUIT		AND ENTER COMMAND INTREPRETER
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 14
+
+270B                       756  * WORD WAS NOT FOUND IN THE DICTIONARY
+270B  8D E6                757  LOKERR	BSR	ERROR		GENERATE ERROR MESSAGE
+270D  4E 6F 74 20 66 6F +  758  	FCCZ	'Not found'
+2717                       759  * WORD CAN NOT BE EXECUTED INTERACTIVELY
+2717  8D DA                760  CONERR	BSR	ERROR		GENERATE ERROR MESSAGE
+2719  43 61 6E 6E 6F 74 +  761  	FCCZ	'Cannot execute'
+2728                       762  * '>R' - MOVE WORD FROM DATA TO RETURN STACK
+2728  80                   763  	FCB	$80
+2729  52 3E                764  	FCC	'R>'
+272B  26 B8                765  	FDB	QUIT
+272D  AE E4                766  TOR	LDX	,S		GET RETURN ADDRESS
+272F  EC C1                767  	LDD	,U++		GET DATA FROM DATA STACK
+2731  ED E4                768  	STD	,S		PLACE ON RETURN STACK
+2733  1F 15                769  	TFR	X,PC		RETURN TO CALLER
+2735                       770  * '<R' - MOVE WORD FROM RETURN STACK TO DATA STACK
+2735  80                   771  	FCB	$80
+2736  52 3C                772  	FCC	'R<'
+2738  27 2D                773  	FDB	TOR
+273A  AE E1                774  FROMR	LDX	,S++		GET RETURN ADDRESS
+273C  EC E1                775  	LDD	,S++		GET DATA FROM RETURN STACK
+273E  ED C3                776  	STD	,--U		PLACE ON DATA STACK
+2740  1F 15                777  	TFR	X,PC		RETURN TO CALLER
+2742                       778  * 'RP!' - RESET RETURN STACK
+2742  80                   779  	FCB	$80
+2743  21 50 52             780  	FCC	'!PR'
+2746  27 3A                781  	FDB	FROMR
+2748  35 06                782  RPFIX	PULS	A,B		GET RETURN ADDRESS
+274A  10 CE 21 00          783  	LDS	#RSTACK		RESET RETURN STACK
+274E  1F 05                784  	TFR	D,PC		RETURN TO CALLER
+2750                       785  * 'SP!' - RESET DATA STACK
+2750  80                   786  	FCB	$80
+2751  21 50 53             787  	FCC	'!PS'
+2754  27 48                788  	FDB	RPFIX
+2756  CE 22 00             789  SPFIX	LDU	#DSTACK		RESET DATA STACK
+2759  39                   790  VOC9	RTS
+275A                       791  * ''S' - OBTAIN STACK ADDRESS
+275A  80                   792  	FCB	$80
+275B  53 27                793  	FCC	/S'/
+275D  27 56                794  	FDB	SPFIX
+275F  EF C3                795  TICS	STU	,--U		SAVE DATA STACK POINTER
+2761  39                   796  	RTS
+2762                       797  * 'VLIST' - DISPLAY WORDS IN DICTIONARY
+2762  80                   798  	FCB	$80
+2763  54 53 49 4C 56       799  	FCC	'TSILV'
+2768  27 5F                800  	FDB	TICS
+276A  BE 2B 90             801  VOC	LDX	HERE+3		GET ADDRESS OF START OF DICTIONARY
+276D  BD 26 3A             802  VOC1	JSR	CR		NEW LINE
+2770  4F                   803  	CLRA			ZERO CHARACTER COUNT
+2771  34 12                804  VOC2	PSHS	A,X		SAVE COUNT, CURRENT POSITION
+2773  30 1E                805  	LEAX	-2,X		BACKUP TO WORD NAME
+2775  E6 82                806  VOC3	LDB	,-X		GET CHARACTER FROM WORD NAME
+2777  2B 09                807  	BMI	VOC4		DESCRIPTOR BYTE, END OF NAME
+2779  36 06                808  	PSHU	A,B		SAVE ON DATA STACK
+277B  BD 23 03             809  	JSR	EMIT		OUTPUT TO GENERAL OUTPUT
+277E  6C E4                810  	INC	,S		INCREMENT CHARACTER COUNT
+2780  20 F3                811  	BRA	VOC3		KEEP OUTPUTING
+2782  BD 26 2E             812  VOC4	JSR	SPACE		SEPERATE WITH A SPACE
+2785  35 12                813  	PULS	A,X		RESTORE CHARACTER COUNT, POSITION IN DICTIONARY
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 15
+
+2787  4C                   814  	INCA			ADVANCE CHARACTER COUNT FOR SPACE
+2788  AE 83                815  	LDX	,--X		GET ADDRESS OF NEXT WORD
+278A  27 CD                816  	BEQ	VOC9		END OF DICTIONARY, EXIT
+278C  81 41                817  	CMPA	#WIDTH		ARE WE BEYOND TERMINAL WIDTH?
+278E  25 E1                818  	BLO	VOC2		NO, ITS OK
+2790  20 DB                819  	BRA	VOC1		CONTINUE ON NEW LINE
+2792                       820  * 'BYE' - EXIT FORTH
+2792  80                   821  	FCB	$80
+2793  45 59 42             822  	FCC	'EYB'
+2796  27 6A                823  	FDB	VOC
+2798  3F                   824  BYE	SWI			SOFTWARE INTERRUPT TO DOS
+2799  16                   825  	FCB	22		SYSTEM REQUEST NUMBER
+279A  3F                   826  	SWI			SOFTWARE INTERRUPT TO DOS
+279B  00                   827  	FCB	0		SYSTEM REQUEST NUMBER
+279C                       828  * 'FORGET' - REMOVE ONE OR MORE WORDS FROM DICTIONARY
+279C  80                   829  	FCB	$80
+279D  54 45 47 52 4F 46    830  	FCC	'TEGROF'
+27A3  27 98                831  	FDB	BYE
+27A5  BD 25 BC             832  FORGET	JSR	TICK		LOCATE WORDS ADDRESS
+27A8  37 10                833  	PULU	X		GET ADDRESS
+27AA  8C 2B 92             834  	CMPX	#USRSPC		IS IT IN KERNAL DICTIONARY?
+27AD  25 0D                835  	BLO	PROERR		IF SO, CAN'T BE FORGOTTON
+27AF  EC 83                836  	LDD	,--X		GET ADDRESS OF PREVIOUS WORD
+27B1  FD 2B 90             837  	STD	HERE+3		NEW DICTIONARY START
+27B4  A6 82                838  FORG1	LDA	,-X		GET CHARACTER FROM NAME
+27B6  2A FC                839  	BPL	FORG1		KEEP GOING TILL WE FIND DESCRIPTOR BYTE
+27B8  BF 2B 84             840  	STX	FREE+3		NEW FREE SPACE FOR DICTIONARY
+27BB  39                   841  	RTS
+27BC                       842  * WORD IS PROTECTED, CAN'T 'FORGET' IT
+27BC  17 FF 34             843  PROERR	LBSR	ERROR		GENERATE ERROR MESSAGE
+27BF  50 72 6F 74 65 63 +  844  	FCCZ	'Protected'
+27C9                       845  * 'CREATE' - CREATE NEW WORD IN DICTIONARY
+27C9  00 80                846  	FDB	$80
+27CB  45 54 41 45 52 43    847  	FCC	'ETAERC'
+27D1  27 A5                848  	FDB	FORGET
+27D3  10 BE 2B 6C          849  CREATE	LDY	INPTR+3		GET INPUT BUFFER POSITION
+27D7  17 FD A3             850  	LBSR	LOOKUP		SEE IF IT ALREADY EXISTS
+27DA  27 0D                851  	BEQ	CRE1		NO, ITS OK
+27DC  33 42                852  	LEAU	2,U		REMOVE ADDRESS OF EXISTING WORD
+27DE  8E 22 25             853  	LDX	#REDMSG		POINT TO REDEFINITION MESSAGE
+27E1  17 FE AB             854  	LBSR	PMSG1		OUTPUT MESSAGE
+27E4  1F 21                855  	TFR	Y,X		POINT TO WORD WE ARE RE-DEFINING
+27E6  17 FE BA             856  	LBSR	PWRD1		OUTPUT WORD TO GENERAL OUTPUT
+27E9  17 FD 83             857  CRE1	LBSR	QSKI1		ADVANCE TO NEXT NON-BLANK, SAVE POINTER
+27EC  86 FF                858  	LDA	#$FF		START WITH COUNT OF -1
+27EE  E6 A0                859  CRE3	LDB	,Y+		GET CHARACTER FROM WORD
+27F0  4C                   860  	INCA			ADVANCE WORD SIZE COUNT
+27F1  17 FD BE             861  	LBSR	TSTERM		TERMINATOR CHARACTER
+27F4  26 F8                862  	BNE	CRE3		LOOK TILL WE FIND END
+27F6  31 3F                863  	LEAY	-1,Y		BACKUP TO LAST CHAR
+27F8  10 BF 2B 6C          864  	STY	INPTR+3		SAVE NEW BUFFER POSITION
+27FC  BE 2B 84             865  	LDX	FREE+3		GET ADDRESS OF FREE DICTIONARY SPACE
+27FF  C6 80                866  	LDB	#$80		GET DEFAULT DESCRIPTOR BYTE
+2801  E7 80                867  	STB	,X+		SAVE IN DICTIONARY
+2803  E6 A2                868  CRE2	LDB	,-Y		GET CHARACTER FROM NAME
+2805  E7 80                869  	STB	,X+		SAVE IN DICTIONARY
+2807  4A                   870  	DECA			REDUCE COUNT OF NAME LENGTH
+2808  26 F9                871  	BNE	CRE2		MOVE ALL OF NAME INTO DICTIONARY
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 16
+
+280A  FC 2B 90             872  	LDD	HERE+3		GET ADDRESS OF PREVIOUS ENTRY
+280D  ED 81                873  	STD	,X++		SAVE IN DICTIONARY
+280F  BF 2B 90             874  	STX	HERE+3		SAVE NEW STARTING ADDRESS
+2812  BF 2B 84             875  	STX	FREE+3		SAVE NEW FREE SPACE ADDRESS
+2815  39                   876  	RTS
+2816                       877  * 'ALLOT' - ALLOCATE SOME SPACE IN THE DICTIONARY
+2816  80                   878  	FCB	$80
+2817  54 4F 4C 4C 41       879  	FCC	'TOLLA'
+281C  27 D3                880  	FDB	CREATE
+281E  FC 2B 84             881  ALLOT	LDD	FREE+3		GET ADDRESS OF FREE DICTIOANRY SPACE
+2821  E3 C1                882  	ADDD	,U++		OFFSET BY NUMBER OF BYTES REQUESTED
+2823  FD 2B 84             883  	STD	FREE+3		RESAVE NEW FREE POINTER
+2826  39                   884  	RTS
+2827                       885  * 'VARIABLE' - CREATE A VARIABLE
+2827  80                   886  	FCB	$80
+2828  45 4C 42 41 49 52 +  887  	FCC	'ELBAIRAV'
+2830  28 1E                888  	FDB	ALLOT
+2832  8D 9F                889  VAR	BSR	CREATE		CREATE THE VARIABLE NAME
+2834  86 BD                890  	LDA	#$BD		GET A 'JSR' EXTENDED INSTRUCTION
+2836  A7 80                891  	STA	,X+		INSERT INTO DICTIONARY
+2838  CC 22 0E             892  	LDD	#VARIAB		GET ADDRESS OF VARIABLE SUBROUTINE
+283B  ED 81                893  	STD	,X++		INSERT INTO DICTIONARY
+283D  EC C1                894  	LDD	,U++		GET DEFAULT VARIABLE VALUE
+283F  ED 81                895  	STD	,X++		SAVE INTO DICTIONARY
+2841  BF 2B 84             896  	STX	FREE+3		SET NEW FREE POINTER
+2844  39                   897  	RTS
+2845                       898  * ';' - END A COLON DEFINITION, TERMINATE COMPILING
+2845  83                   899  	FCB	$83
+2846  3B                   900  	FCC	';'
+2847  28 32                901  	FDB	VAR
+2849  EC 1E                902  SEMI	LDD	-2,X		GET LAST INSTRUCTION COMPLIED
+284B  10 83 36 06          903  	CMPD	#$3606		IS IT 'PSHU A,B'?
+284F  27 0C                904  	BEQ	SEMI1		IF SO, ITS OK
+2851  A6 1D                905  	LDA	-3,X		GET INSTRUCTION FROM DICTIONARY
+2853  81 BD                906  	CMPA	#$BD		IS IT 'JSR >'?
+2855  26 06                907  	BNE	SEMI1		NO, ITS OK
+2857                       908  * CONVERT 'JSR' FOLLOWED BY 'RTS' TO SIMPLE 'JMP'
+2857  86 7E                909  	LDA	#$7E		GET 'JMP >' INSTRUCTION
+2859  A7 1D                910  	STA	-3,X		SAVE IN DICTIONARY
+285B  20 04                911  	BRA	SEMI2		TERMINATE COMPILING
+285D  86 39                912  SEMI1	LDA	#$39		GET 'RTS' INSTRUCTION
+285F  A7 80                913  	STA	,X+		SAVE IN DICTIONARY
+2861  BF 2B 84             914  SEMI2	STX	FREE+3		RESAVE FREE POINTER
+2864  7E 26 B8             915  	JMP	QUIT		RE-ENTER COMMAND INTERPRETER
+2867                       916  * ':' - COLON DEFINITION, BEGIN COMPLIING
+2867  84                   917  	FCB	$84
+2868  3A                   918  	FCC	':'
+2869  28 49                919  	FDB	SEMI
+286B  BD 27 D3             920  COLON	JSR	CREATE		CREATE NEW WORD
+286E  BD 25 6B             921  COL1	JSR	QSKIP		ADVANCE TO NON-BLANK
+2871  26 05                922  	BNE	COL11		NOT END OF LINE, ITS OK
+2873  BD 26 50             923  	JSR	READ		READ ANOTHER LINE (NO SEMICOLON YET)
+2876  20 F6                924  	BRA	COL1		AND CONTINUE SCANNING
+2878                       925  *WE HAVE A WORD, COMPILE INTO PRESENT DEFINITION
+2878  17 FD 02             926  COL11	LBSR	LOOKUP		LOOKUP WORD
+287B  26 0D                927  	BNE	COL2		FOUND, WE HAVE IT
+287D  BD 25 D6             928  	JSR	NUMBER		TRY IT AS A NUMBER
+2880  EC C1                929  	LDD	,U++		GET FLAG
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 17
+
+2882  10 27 FE 85          930  	LBEQ	LOKERR		NUMBER FAILED, ITS AN ERROR
+2886                       931  * NUMBER TO BE COMPILED INTO DICTIONARY
+2886  8D 45                932  COL12	BSR	BRCL		COMPILE LITERAL VALUE
+2888  20 E4                933  	BRA	COL1		AND KEEP SCANNING
+288A                       934  * WORD TO BE COMPILED INTO DICTIONARY
+288A  85 04                935  COL2	BITA	#$04		IS IT OK TO COMPILE?
+288C  26 18                936  	BNE	INTERR		NO, FORCE ERROR
+288E  85 01                937  	BITA	#1		DOES IT EXECUTE ON COMPILATION?
+2890  27 10                938  	BEQ	COL3		NO, NORMAL WORD
+2892  FF 20 02             939  	STU	TEMP		SAVE STACK POINTER
+2895  BE 2B 84             940  	LDX	FREE+3		GET FREE ADRESS FOR EC FUNCTIONS
+2898  AD D1                941  	JSR	[,U++]		EXECUTE WORD
+289A  11 B3 20 02          942  	CMPU	TEMP		DID IT LEAVE EXACTLY ONE WORD ON THE STACK?
+289E  26 CE                943  	BNE	COL1		NO, CONTINUE SCANNING
+28A0  20 E4                944  	BRA	COL12		SPECIAL CASE, COMPILE WORD AS LITERAL
+28A2                       945  * NORMAL WORD, COMPILE AS WORD CALL
+28A2  8D 6F                946  COL3	BSR	COMP1		COMPILE CALL TO WORD
+28A4  20 C8                947  	BRA	COL1		AND KEEP SCANNING
+28A6                       948  * NON-COMPILE WORD ENCOUNTERED
+28A6  17 FE 4A             949  INTERR	LBSR	ERROR		GENERATE ERROR MESAGE
+28A9  43 61 6E 6E 6F 74 +  950  	FCCZ	'Cannot Compile'
+28B8                       951  * '[CR]' - COMPILE A RETURN INSTRUCTION
+28B8  82                   952  	FCB	$82
+28B9  5D 52 43 5B          953  	FCC	']RC['
+28BD  28 6B                954  	FDB	COLON
+28BF  BE 2B 84             955  BRCR	LDX	FREE+3		GET FREE ADDRESS
+28C2  C6 39                956  	LDB	#$39		GET 'RTS' INSTRUCTION
+28C4  20 3B                957  	BRA	BRC11		PLACE INTO DICTIONATY
+28C6                       958  * '[CL]' - COMPILE A LITERAL VALUE
+28C6  82                   959  	FCB	$82
+28C7  5D 4C 43 5B          960  	FCC	']LC['
+28CB  28 BF                961  	FDB	BRCR
+28CD  BE 2B 84             962  BRCL	LDX	FREE+3		GET FREE ADDRES
+28D0  86 CC                963  	LDA	#$CC		GET 'LDD #' INSTRUCTION
+28D2  A7 80                964  	STA	,X+		PLACE IN DICTIONARY
+28D4  EC C1                965  	LDD	,U++		GET DATA VALUE
+28D6  ED 81                966  	STD	,X++		PLACE IN DICTIONAT
+28D8  CC 36 06             967  	LDD	#$3606		GET 'PSHU A,B' INSTRUCTION
+28DB  20 3C                968  	BRA	COMP3		PLACE IN DICTIONARY
+28DD                       969  * '[CW]' - COMPILE CALL TO A WORD INTO THE DICTIONARY
+28DD  82                   970  	FCB	$82
+28DE  5D 57 43 5B          971  	FCC	']WC['
+28E2  28 CD                972  	FDB	BRCL
+28E4  BE 2B 84             973  BRCW	LDX	FREE+3		GET FREE ADDRESS
+28E7  20 2A                974  	BRA	COMP1		COMPILE INTO DICTIONRY
+28E9                       975  * '[C2]' - COMPILE A TWO BYTE (WORD) VALUE INTO THE DICTIONARY
+28E9  82                   976  	FCB	$82
+28EA  5D 32 43 5B          977  	FCC	']2C['
+28EE  28 E4                978  	FDB	BRCW
+28F0  BE 2B 84             979  BRC2	LDX	FREE+3		GET FREE ADDRESS
+28F3  20 24                980  	BRA	COMP3		COMPILE TWO BYTE VALUE
+28F5                       981  * '[C1]' - COMPILE A SINGLE BYTE VALUE INTO THE DICTIONARY
+28F5  82                   982  	FCB	$82
+28F6  5D 31 43 5B          983  	FCC	']1C['
+28FA  28 F0                984  	FDB	BRC2
+28FC  BE 2B 84             985  BRC1	LDX	FREE+3		GET FREE ADDRESS
+28FF  EC C1                986  	LDD	,U++		GET VALUE TO COMPILE
+2901  E7 80                987  BRC11	STB	,X+		PLACE IN DICTIONARY
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 18
+
+2903  20 16                988  	BRA	COMP4		RESAVE FREE POINTER
+2905                       989  * '[FC]' - FORCE COMPILATION OF NEXT WORD, EVEN IF NORMALY AUTO-EXEC
+2905  83                   990  	FCB	$83
+2906  5D 43 46 5B          991  	FCC	']CF['
+290A  28 FC                992  	FDB	BRC1
+290C  BD 25 BC             993  BRCF	JSR	TICK		LOOKUP WORD ADDRESS
+290F  85 04                994  	BITA	#$04		CAN IT BE COMPILED?
+2911  26 93                995  	BNE	INTERR		NO, GET UPSET
+2913                       996  * COMPILE CALL TO A WORD INTO DICTIONARY
+2913  86 BD                997  COMP1	LDA	#$BD		GET 'JSR >' INSTRUCTION
+2915  A7 80                998  	STA	,X+		WRITE TO DICTIONARY
+2917  EC C1                999  COMP2	LDD	,U++		GET VALUE FROM DATE STACK
+2919  ED 81               1000  COMP3	STD	,X++		WRITE TO DICTIONARY
+291B  BF 2B 84            1001  COMP4	STX	FREE+3		RESAVE FREE POINTER
+291E  39                  1002  	RTS
+291F                      1003  * '[NI]' - CAUSE LAST (OR CURRENTLY) COMPILED WORD TO BE NON-INTERACTIVE
+291F  81                  1004  	FCB	$81
+2920  5D 49 4E 5B         1005  	FCC	']IN['
+2924  29 0C               1006  	FDB	BRCF
+2926  C6 02               1007  BRNI	LDB	#2		GET [NI] BIT
+2928  20 14               1008  	BRA	SETBIT		SET BIT IN DESCRIPTOR BYTE
+292A                      1009  * '[NC]' - CAUSE LAST (OR CURRENTLY) COMPILED WORD TO BE NON-COMPILING
+292A  81                  1010  	FCB	$81
+292B  5D 43 4E 5B         1011  	FCC	']CN['
+292F  29 26               1012  	FDB	BRNI
+2931  C6 04               1013  BRNC	LDB	#4		GET [NC] BIT
+2933  20 09               1014  	BRA	SETBIT		SET BIT IN DESCRIPTOR BYTE
+2935                      1015  * '[EC]' - CAUSE LAST (OR CURRENTLY) COMPILED WORD TO EXECUTE WHEN COMPILED
+2935  81                  1016  	FCB	$81
+2936  5D 43 45 5B         1017  	FCC	']CE['
+293A  29 31               1018  	FDB	BRNC
+293C  C6 01               1019  BREC	LDB	#1		GET [EC] BIT
+293E                      1020  * SET A BIT IN THE DESCRIPTOR BYTE FOR LAST WORD IN DICTIONARY
+293E  10 BE 2B 90         1021  SETBIT	LDY	HERE+3		GET ADDRESS OF LAST WORD IN DICTIONARY
+2942  31 3E               1022  	LEAY	-2,Y		BACKUP TO NAME
+2944  A6 A2               1023  SETB1	LDA	,-Y		GET CHAR FROM NAME
+2946  2A FC               1024  	BPL	SETB1		KEEP READING TILL WE GET DESCRIPTOR BYTE
+2948  34 04               1025  	PSHS	B		SAVE BIT TO ADD
+294A  AA E0               1026  	ORA	,S+		INCLUDE BIT IN DESCRIPTOR BYTE
+294C  A7 A4               1027  	STA	,Y		RESAVE NEW DESCRIPTOR
+294E  39                  1028  	RTS
+294F                      1029  * 'EXEC>' - COMPILE JUMP TO REMAINDER OF THIS WORD INTO NEW WORD
+294F  82                  1030  	FCB	$82
+2950  3E 43 45 58 45      1031  	FCC	'>CEXE'
+2955  29 3C               1032  	FDB	BREC
+2957  BE 2B 84            1033  DOES	LDX	FREE+3		GET ADDRESS OF FREE DICTIONARY
+295A  86 7E               1034  	LDA	#$7E		GET 'JMP >' INSTRUCTION
+295C  A7 80               1035  	STA	,X+		SAVE IN DICTIONARY
+295E  35 06               1036  	PULS	A,B		GET ADDRESS OF REMAINDER OF THIS WORD
+2960  20 B7               1037  	BRA	COMP3		COMPILE INTO DICTIONARY
+2962                      1038  * '(' - BRACE, START OF COMMENT
+2962  81                  1039  	FCB	$81
+2963  28                  1040  	FCC	'('
+2964  29 57               1041  	FDB	DOES
+2966  10 BE 2B 6C         1042  BRACE	LDY	INPTR+3		GET INPUT POINTER
+296A  A6 A0               1043  BRAC1	LDA	,Y+		GET DATA FROM BUFFER
+296C  27 0C               1044  	BEQ	BRAC3		END OF LINE
+296E  81 29               1045  	CMPA	#')'		IS IT CLOSING BRACE?
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 19
+
+2970  27 0D               1046  	BEQ	BRAC2		YES, EXIT
+2972  81 28               1047  	CMPA	#'('		IS IT NESTED OPENING BRACE?
+2974  26 F4               1048  	BNE	BRAC1		NO, ITS OK
+2976  8D F2               1049  	BSR	BRAC1		RECURSE
+2978  20 F0               1050  	BRA	BRAC1		AND KEEP LOOKING
+297A                      1051  * END OF LINE, WITH NO CLOSING COMMENT
+297A  BD 26 50            1052  BRAC3	JSR	READ		READ ANOTHER LINE
+297D  20 E7               1053  	BRA	BRACE		AND KEEP LOOKING
+297F  10 BF 2B 6C         1054  BRAC2	STY	INPTR+3		RESAVE INPUT POINTER
+2983  39                  1055  	RTS
+2984                      1056  * 'LEAVE' - EXIT INNERMOST DO LOOP
+2984  82                  1057  	FCB	$82
+2985  45 56 41 45 4C      1058  	FCC	'EVAEL'
+298A  29 66               1059  	FDB	BRACE
+298C  EC 64               1060  LEAVE	LDD	4,S		GET LOOP LIMIT
+298E  ED 62               1061  	STD	2,S		SET INDEX TO SAME VALUE
+2990  39                  1062  	RTS
+2991                      1063  * '+LOOP' - LOOP WITH VALUE TO ADD
+2991  83                  1064  	FCB	$83
+2992  50 4F 4F 4C 2B      1065  	FCC	'POOL+'
+2997  29 8C               1066  	FDB	LEAVE
+2999  37 02               1067  PLOOP	PULU	A		GET STRUCTURE TYPE
+299B  81 81               1068  	CMPA	#$81		IS IT DO LOOP?
+299D  26 5E               1069  	BNE	NSTERR		NO, NESTING ERROR
+299F  CC EC 62            1070  	LDD	#$EC62		'LDD 2,S'
+29A2  ED 81               1071  	STD	,X++		COMPILE INTO DICTIONARY
+29A4  CC E3 C1            1072  	LDD	#$E3C1		'ADDD ,U++'
+29A7  ED 81               1073  	STD	,X++		COMPILE
+29A9  86 ED               1074  	LDA	#$ED		'STD 2,S'
+29AB  A7 80               1075  	STA	,X+		COMPILE
+29AD  20 1C               1076  	BRA	LOOP1		END TERMINATE NORMALLY
+29AF                      1077  * 'LOOP' - NORMAL DO LOOP
+29AF  83                  1078  	FCB	$83
+29B0  50 4F 4F 4C         1079  	FCC	'POOL'
+29B4  29 99               1080  	FDB	PLOOP
+29B6  37 02               1081  LOOP	PULU	A		GET STRUCTURE TYPE
+29B8  81 81               1082  	CMPA	#$81		IS IT DO LOOP?
+29BA  26 41               1083  	BNE	NSTERR		NO, NESTING ERROR
+29BC  CC EC 62            1084  	LDD	#$EC62		'LDD 2,S'
+29BF  ED 81               1085  	STD	,X++		PLACE IN DICTIONARY
+29C1  CC C3 00            1086  	LDD	#$C300		'ADDD #1'
+29C4  ED 81               1087  	STD	,X++		PLACE IN DICTIONARY
+29C6  CC 01 ED            1088  	LDD	#$01ED		'STD 2,S'
+29C9  ED 81               1089  	STD	,X++		PLACE IN DICTIONARY
+29CB  CC 62 10            1090  LOOP1	LDD	#$6210		< CATCHUP > (POSTBYTE FOR STD, PREFIX FOR CMPD)
+29CE  ED 81               1091  	STD	,X++		SAVE IN DICTIONARY
+29D0  CC A3 E4            1092  	LDD	#$A3E4		'CMPD ,S'
+29D3  ED 81               1093  	STD	,X++		COMPILE
+29D5  CC 10 25            1094  	LDD	#$1025		'LBLO'
+29D8  17 00 80            1095  	LBSR	UNT1		CALCULATE OFFSET VALUE AND COMPILE
+29DB  CC 32 64            1096  	LDD	#$3264		'LEAS 4,S'
+29DE  ED 81               1097  	STD	,X++		COMPILE
+29E0  BF 2B 84            1098  COMRET	STX	FREE+3		SAVE NEW FREE POINTER
+29E3  39                  1099  	RTS
+29E4                      1100  * 'K' - THIRD INDEX VALUE FOR DO LOOP
+29E4  80                  1101  	FCB	$80
+29E5  4B                  1102  	FCC	'K'
+29E6  29 B6               1103  	FDB	LOOP
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 20
+
+29E8  EC 6C               1104  K	LDD	12,S		GET INDEX VALUE
+29EA  20 0E               1105  	BRA	IJK		SAVE IT
+29EC                      1106  * 'J' - SECOND INDEV VALUE FOR DO LOOP
+29EC  80                  1107  	FCB	$80
+29ED  4A                  1108  	FCC	'J'
+29EE  29 E8               1109  	FDB	K
+29F0  EC 68               1110  J	LDD	8,S		GET INDEX VALUE
+29F2  20 06               1111  	BRA	IJK		SAVE IT
+29F4                      1112  * 'I' FIRST INDEX VALUE FOR DO LOOP
+29F4  80                  1113  	FCB	$80
+29F5  49                  1114  	FCC	'I'
+29F6  29 F0               1115  	FDB	J
+29F8  EC 64               1116  I	LDD	4,S		GET INDEX VALUE
+29FA  ED C3               1117  IJK	STD	,--U		SAVE ON STACK
+29FC  39                  1118  	RTS
+29FD                      1119  * STRUCTURE IS NESTED IMPROPERLY
+29FD  17 FC F3            1120  NSTERR	LBSR	ERROR		GENERATE ERROR MESSAGE
+2A00  49 6D 70 72 6F 70 + 1121  	FCCZ	'Improper nesting'
+2A11                      1122  * 'DO' - START OF DO LOOP CONSTRUCT
+2A11  83                  1123  	FCB	$83
+2A12  4F 44               1124  	FCC	'OD'
+2A14  29 F8               1125  	FDB	I
+2A16  86 BD               1126  DO	LDA	#$BD		GET 'JSR >' INSTRUCTION
+2A18  A7 80               1127  	STA	,X+		COMPILE INTO DICTIONARY
+2A1A  10 8E 27 2D         1128  	LDY	#TOR		ADDRESS OF '>R' WORD
+2A1E  10 AF 81            1129  	STY	,X++		COMPILE INTO DICT
+2A21  A7 80               1130  	STA	,X+		AND ANOTHER 'JSR >'
+2A23  10 AF 81            1131  	STY	,X++		FOR ANOTHER '>R'
+2A26  86 81               1132  	LDA	#$81		INDICATE DO LOOP
+2A28  36 12               1133  	PSHU	A,X		SAVE PGM COUNTER ETC
+2A2A  20 B4               1134  	BRA	COMRET		RESAVE FREE POINTER
+2A2C                      1135  * 'FOREVER' - BEGIN LOOP FOREVER
+2A2C  83                  1136  	FCB	$83
+2A2D  52 45 56 45 52 4F + 1137  	FCC	'REVEROF'
+2A34  2A 16               1138  	FDB	DO
+2A36  37 22               1139  FOREVE	PULU	A,Y		GET LOOP CONSTRUCT IDENTIFIER
+2A38  81 80               1140  	CMPA	#$80		WAS IT A BEGIN LOOP?
+2A3A  26 C1               1141  	BNE	NSTERR		NO, IMPROPER NESTING
+2A3C  86 7E               1142  	LDA	#$7E		'JMP >' INSTRUCTION
+2A3E  A7 80               1143  	STA	,X+		PLACE IN DICTIONARY
+2A40  10 AF 81            1144  	STY	,X++		INCLUDE ADDRESS TO LOOP TO
+2A43  20 9B               1145  	BRA	COMRET		RESAVE FREE POINTER
+2A45                      1146  * 'UNTIL' - CONDITIONAL BEGIN LOOP
+2A45  83                  1147  	FCB	$83
+2A46  4C 49 54 4E 55      1148  	FCC	'LITNU'
+2A4B  2A 36               1149  	FDB	FOREVE
+2A4D  37 02               1150  UNTIL	PULU	A		GET STRUCTURE IDENTIFIER
+2A4F  81 80               1151  	CMPA	#$80		IS IT A BEGIN LOOP?
+2A51  26 AA               1152  	BNE	NSTERR		NO, BAD NESTING
+2A53  CC EC C1            1153  	LDD	#$ECC1		'LDD ,U++'
+2A56  ED 81               1154  	STD	,X++		SAVE IN DICTIONARY
+2A58  CC 10 27            1155  	LDD	#$1027		'LBEQ'
+2A5B                      1156  * COMPILE LONG BRANCH, AND CALCULATE OFFSET FROM ADDRESS ON STACK
+2A5B  ED 81               1157  UNT1	STD	,X++		SAVE IN DICTIONARY
+2A5D  30 02               1158  	LEAX	2,X		GET CURRENT ADDRESS
+2A5F  34 10               1159  	PSHS	X		SAVE ON STACK
+2A61  37 06               1160  	PULU	A,B		GET ADDRESS TO JUMP TO
+2A63  A3 E1               1161  	SUBD	,S++		CALCULATE OFFSET
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 21
+
+2A65  ED 1E               1162  	STD	-2,X		COMPILE INTO DICTIONARY
+2A67  16 FF 76            1163  COMR1	LBRA	COMRET		RESAVE FREE POINTER
+2A6A                      1164  * 'WHILE' - CONDITIONAL BEGIN LOOP
+2A6A  83                  1165  	FCB	$83
+2A6B  45 4C 49 48 57      1166  	FCC	'ELIHW'
+2A70  2A 4D               1167  	FDB	UNTIL
+2A72  37 02               1168  WHILE	PULU	A		GET STRUCTURE IDENTIFIER
+2A74  81 80               1169  	CMPA	#$80		IS IT A BEGIN LOOP?
+2A76  26 85               1170  	BNE	NSTERR		NO, IMPROPER NESTING
+2A78  CC EC C1            1171  	LDD	#$ECC1		'LDD ,U++'
+2A7B  ED 81               1172  	STD	,X++		COMPILE INTO DICTIONARY
+2A7D  CC 10 26            1173  	LDD	#$1026		'LBNE'
+2A80  20 D9               1174  	BRA	UNT1		COMPILE INTO DICT WITH OFFSET
+2A82                      1175  * 'BEGIN' - START A BEGIN LOOP
+2A82  83                  1176  	FCB	$83
+2A83  4E 49 47 45 42      1177  	FCC	'NIGEB'
+2A88  2A 72               1178  	FDB	WHILE
+2A8A  86 80               1179  BEGIN	LDA	#$80		BEGIN LOOP IDENTIFIER
+2A8C  36 12               1180  	PSHU	A,X		SAVE IT AND CURRENT POSITION
+2A8E  39                  1181  	RTS
+2A8F                      1182  * 'ENDIF' - END AN IF STATEMENT
+2A8F  83                  1183  	FCB	$83
+2A90  46 49 44 4E 45      1184  	FCC	'FIDNE'
+2A95  2A 8A               1185  	FDB	BEGIN
+2A97  37 02               1186  ENDIF	PULU	A		GET STRUCTURE IDENTIFIER
+2A99  81 82               1187  	CMPA	#$82		IS IT 'IF'?
+2A9B  10 26 FF 5E         1188  	LBNE	NSTERR		NO, BAD NESTING
+2A9F  10 AE C4            1189  	LDY	,U		GET ADDRESS
+2AA2  1F 10               1190  	TFR	X,D		GET CURRENT FREE ADDRESS
+2AA4  A3 C1               1191  	SUBD	,U++		CALCULATE OFFSET
+2AA6  ED 3E               1192  	STD	-2,Y		SAVE IN BRANCH OPERAND
+2AA8  39                  1193  	RTS
+2AA9                      1194  * 'ELSE' - ELSE CLAUSE TO AN IF STATEMENT
+2AA9  83                  1195  	FCB	$83
+2AAA  45 53 4C 45         1196  	FCC	'ESLE'
+2AAE  2A 97               1197  	FDB	ENDIF
+2AB0  86 16               1198  ELSE	LDA	#$16		'LBRA'
+2AB2  A7 80               1199  	STA	,X+		COMPILE INTO DICTIONARY
+2AB4  30 02               1200  	LEAX	2,X		SKIP TO NEXT FREE
+2AB6  34 10               1201  	PSHS	X		SAVE ADDRESS
+2AB8  8D DD               1202  	BSR	ENDIF		COMPILE IN BRANCH
+2ABA  35 10               1203  	PULS	X		RESTORE ADDRESS
+2ABC  20 11               1204  	BRA	IF1		SET UP NEW IF JUMPS
+2ABE                      1205  * 'IF' - IF CONDITION
+2ABE  83                  1206  	FCB	$83
+2ABF  46 49               1207  	FCC	'FI'
+2AC1  2A B0               1208  	FDB	ELSE
+2AC3  CC EC C1            1209  IF	LDD	#$ECC1		'LDD ,U++'
+2AC6  ED 81               1210  	STD	,X++		COMPILE
+2AC8  CC 10 27            1211  	LDD	#$1027		'LBEQ'
+2ACB  ED 81               1212  	STD	,X++		COMPILE
+2ACD  30 02               1213  	LEAX	2,X		ADVANCE TO FREE
+2ACF  86 82               1214  IF1	LDA	#$82		INDICATE IF STRUCTURE
+2AD1  36 12               1215  	PSHU	A,X		SAVE WITH ADDRESS ON STACK
+2AD3  16 FF 0A            1216  COMR2	LBRA	COMRET		RESAVE FREE POINTER
+2AD6                      1217  * '."' DISPLAY MESSAGE ON TERMINAL
+2AD6  83                  1218  	FCB	$83
+2AD7  22 2E               1219  	FCC	'".'
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 22
+
+2AD9  2A C3               1220  	FDB	IF
+2ADB  8D 0F               1221  DOTQ	BSR	QUOTE		COMPILE STRING
+2ADD  86 BD               1222  	LDA	#$BD		'JSR >'
+2ADF  A7 80               1223  	STA	,X+		COMPILE INTO DICT
+2AE1  CC 26 8D            1224  	LDD	#PMSG		DISPLAY MESSAGE
+2AE4  ED 81               1225  	STD	,X++		COMPILE INTO DICT
+2AE6  20 EB               1226  	BRA	COMR2		RESAVE FREE POINTER
+2AE8                      1227  * '"' - COMPILE STRING INTO DICTIONARY
+2AE8  83                  1228  	FCB	$83
+2AE9  22                  1229  	FCC	'"'
+2AEA  2A DB               1230  	FDB	DOTQ
+2AEC  86 8D               1231  QUOTE	LDA	#$8D		'BSR' INSTRUCTION
+2AEE  A7 81               1232  	STA	,X++		COMPILE INTO DICT
+2AF0  BD 25 6B            1233  	JSR	QSKIP		ADVANCE TO NON-BLANK
+2AF3  34 10               1234  	PSHS	X		SAVE POINTER
+2AF5  A6 A0               1235  QUO1	LDA	,Y+		GET DATA FROM INPUT BUFFER
+2AF7  27 22               1236  	BEQ	UNTERR		END OF LINE, ERROR
+2AF9  81 22               1237  	CMPA	#'"'		IS IT CLOSING QUOTE?
+2AFB  27 04               1238  	BEQ	QUO2		YES, EXIT
+2AFD  A7 80               1239  	STA	,X+		SAVE IN STRING
+2AFF  20 F4               1240  	BRA	QUO1		AND KEEP PROCESSING
+2B01  10 BF 2B 6C         1241  QUO2	STY	INPTR+3		SAVE NEW INPUT BUFFER POINTER
+2B05  6F 80               1242  	CLR	,X+		INDICATE END OF STRING
+2B07  10 AE E4            1243  	LDY	,S		GET ADDRESS OF BSR OPERAND
+2B0A  1F 10               1244  	TFR	X,D		GET CURRENT ADDRESS
+2B0C  A3 E1               1245  	SUBD	,S++		CALCULATE OFFSET FOR BSR
+2B0E  E7 3F               1246  	STB	-1,Y		SAVE IN OPERAND
+2B10  86 BD               1247  	LDA	#$BD		'JSR >'
+2B12  A7 80               1248  	STA	,X+		COMPILE INTO DICT
+2B14  CC 27 3A            1249  	LDD	#FROMR		GET '>R' ADDRESS
+2B17  ED 81               1250  	STD	,X++		COMPILE
+2B19  20 B8               1251  	BRA	COMR2		RESAVE FREE POINTER
+2B1B                      1252  * UNTERMINATED STRING
+2B1B  17 FB D5            1253  UNTERR	LBSR	ERROR		GENERATE ERROR MESSAGE
+2B1E  55 6E 74 65 72 6D + 1254  	FCCZ	'Unterminated'
+2B2B                      1255  * '0' - QUICKER ZERO
+2B2B  80                  1256  	FCB	$80
+2B2C  30                  1257  	FCC	'0'
+2B2D  2A EC               1258  	FDB	QUOTE
+2B2F  4F                  1259  ZERO	CLRA			ZERO HIGH BYTE
+2B30  5F                  1260  	CLRB			ZERO LOW BYTE
+2B31  ED C3               1261  	STD	,--U		SAVE ON DATA STACK
+2B33  39                  1262  	RTS
+2B34                      1263  * '1' - QUICKER ONE
+2B34  80                  1264  	FCB	$80
+2B35  31                  1265  	FCC	'1'
+2B36  2B 2F               1266  	FDB	ZERO
+2B38  CC 00 01            1267  ONE	LDD	#1		GET A VALUE OF ONE
+2B3B  ED C3               1268  	STD	,--U		SAVE ON STACK
+2B3D  39                  1269  	RTS
+2B3E                      1270  *
+2B3E                      1271  * VARIABLES
+2B3E                      1272  *
+2B3E                      1273  * '(OUT)' - ADDRESS OF GENERAL OUTPUT DRIVER
+2B3E  80                  1274  	FCB	$80
+2B3F  29 54 55 4F 28      1275  	FCC	')TUO('
+2B44  2B 38               1276  	FDB	ONE
+2B46  BD 22 0E            1277  DISP	JSR	VARIAB		VARIABLE SUBROUTINE
+DUNFIELD 6809 ASSEMBLER: MICRO FORTH 1.0                              PAGE: 23
+
+2B49  22 E7               1278  	FDB	DOLOUT		DEFAULT IS '$OUT'
+2B4B                      1279  * '(IN)' - ADDRESS OF GENERAL INPUT DRIVER
+2B4B  80                  1280  	FCB	$80
+2B4C  29 4E 49 28         1281  	FCC	')NI('
+2B50  2B 46               1282  	FDB	DISP
+2B52  BD 22 0E            1283  INPT	JSR	VARIAB		VARIABLE SUBROUTINE
+2B55  22 F4               1284  	FDB	DOLIN		DEFAULT IS '$IN'
+2B57                      1285  * '(GO)' - ADDRESS OF WORD TO EXECUTE AT STARTUP
+2B57  80                  1286  	FCB	$80
+2B58  29 4F 47 28         1287  	FCC	')OG('
+2B5C  2B 52               1288  	FDB	INPT
+2B5E  BD 22 0E            1289  BOOT	JSR	VARIAB		VARIABLE SUBROUTINE
+2B61  26 B8               1290  	FDB	QUIT		DEFUALT IS 'QUIT'
+2B63                      1291  * '>IN' - POINTER TO POSITION IN INPUT BUFFER
+2B63  80                  1292  	FCB	$80
+2B64  4E 49 3E            1293  	FCC	'NI>'
+2B67  2B 5E               1294  	FDB	BOOT
+2B69  BD 22 0E            1295  INPTR	JSR	VARIAB		VARIABLE SUBROUTINE
+2B6C  20 04               1296  	FDB	INPBUF		DEFAULT IS START OF BUFFER
+2B6E                      1297  * 'BASE' - CURRENT NUMBER CONVERSION BASE
+2B6E  80                  1298  	FCB	$80
+2B6F  45 53 41 42         1299  	FCC	'ESAB'
+2B73  2B 69               1300  	FDB	INPTR
+2B75  BD 22 0E            1301  BASE	JSR	VARIAB		VARIABLE SUBROUTINE
+2B78  00 0A               1302  	FDB	10		DEFAULT IS BASE 10
+2B7A                      1303  * 'FREE' - ADDRESS OF FREE MEMORY FOLLOWING DICTIONARY
+2B7A  80                  1304  	FCB	$80
+2B7B  45 45 52 46         1305  	FCC	'EERF'
+2B7F  2B 75               1306  	FDB	BASE
+2B81  BD 22 0E            1307  FREE	JSR	VARIAB		VARIABLE SUBROUTINE
+2B84  2B 92               1308  	FDB	USRSPC		DEFAULT IS END OF DICTIONARY
+2B86                      1309  * 'HERE' - ADDRESS OF LAST WORD IN DICTIONARY
+2B86  80                  1310  	FCB	$80
+2B87  45 52 45 48         1311  	FCC	'EREH'
+2B8B  2B 81               1312  	FDB	FREE
+2B8D  BD 22 0E            1313  HERE	JSR	VARIAB		VARIABLE SUBROUTINE
+2B90  2B 8D               1314  	FDB	HERE		DEFUALT IS ITSELF
+2B92                      1315  * DICTIONARY GROWS FROM HERE
+2B92                      1316  USRSPC	EQU	*

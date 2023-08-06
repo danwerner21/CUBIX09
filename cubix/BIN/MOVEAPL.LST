@@ -1,0 +1,132 @@
+DUNFIELD 6809 ASSEMBLER: D:MOVEAPL                                    PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         8  *
+0000                         9  * MOVEAPL: Move the memory origin address for an APL workspace
+0000                        10  *
+0000                        11  * Copyright 1984-2005 Dave Dunfield
+0000                        12  * All rights reserved.
+0000                        13  *
+0000                        14  * WORKSPACE DEFINTIONS
+2200                        15  	ORG	OSRAM+512
+2200                        16  FREE	RMB	2		FREE MEMORY LOCATION
+2202                        17  ORIGIN	RMB	2		ORIGIN VALUE
+2204                        18  SEED	RMB	2		RANDOM NUMBER SEED
+2206                        19  BUFSIZ	RMB	2		WORK BUFFER ALLOCATION SIZE
+2208                        20  FREMEM	RMB	2		FREE MEMORY ABOVE SYMBOL TABLE
+220A                        21  SYMTAB	EQU	*		SYMBOL TABLE STARTS HERE
+220A                        22  * FILE PERMISSIONS
+0080                        23  RPERM	EQU	%10000000	READ PERMISSION
+0040                        24  WPERM	EQU	%01000000	WRITE PERMISSION
+0020                        25  EPERM	EQU	%00100000	EXECUTE PERMISSION
+0010                        26  DPERM	EQU	%00010000	DELETE PERMISSION
+220A                        27  * DIRECTORY ENTRY DESCRIPTION
+0000                        28  	ORG	0
+0000                        29  DPREFIX	RMB	8		DIRECTORY PREFIX
+0008                        30  DNAME	RMB	8		FILENAME
+0010                        31  DTYPE	RMB	3		FILETYPE
+0013                        32  DDADR	RMB	2		DISK ADDRESS
+0015                        33  DRADR	RMB	2		RUN ADDRESS
+0017                        34  DATTR	RMB	1		FILE ATTRIBUTES
+0018                        35  DPASS	RMB	2		FILE PASSWORD
+001A                        36  *
+2000                        37  	ORG	OSRAM		SET UP POINTER TO OS RAM
+2000                        38  * PROGRAM ENTRY
+2000  81 3F                 39  MOVEAPL	CMPA	#'?'		QUERY COMMAND?
+2002  26 26                 40  	BNE	MAIN		NO, CONTINUE
+2004  3F                    41  	SWI			SOFTWARE INTERRUPT TO DOS
+2005  19                    42  	FCB	25		SYSTEM REQUEST NUMBER
+2006  55 73 65 3A 20 4D +   43  	FCCZ	'Use: MOVEAPL <filename> <address>'
+2028  3F                    44  ABORT	SWI			SOFTWARE INTERRUPT TO DOS
+2029  00                    45  	FCB	0		SYSTEM REQUEST NUMBER
+202A                        46  * PARSE THE COMMAND LINE PARAMEMTERS AND LOOKUP THE WORKSPACE FILE
+202A  3F                    47  MAIN	SWI			SOFTWARE INTERRUPT TO DOS
+202B  0B                    48  	FCB	11		SYSTEM REQUEST NUMBER
+202C  26 FA                 49  	BNE	ABORT		ERROR, QUIT
+202E  CC 41 50              50  	LDD	#'AP'		FIRST TWO
+2031  ED 84                 51  	STD	,X		SET IT UP
+2033  86 4C                 52  	LDA	#'L'		LAST
+2035  A7 02                 53  	STA	2,X		SAVE IT
+2037  3F                    54  	SWI			SOFTWARE INTERRUPT TO DOS
+2038  07                    55  	FCB	7		SYSTEM REQUEST NUMBER
+2039  26 ED                 56  	BNE	ABORT		ERROR
+203B  BF 20 BF              57  	STX	NEWADR		SAVE OFFSET
+203E  3F                    58  	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: D:MOVEAPL                                    PAGE: 2
+
+203F  45                    59  	FCB	69		SYSTEM REQUEST NUMBER
+2040  26 E6                 60  	BNE	ABORT		ERROR, INVALID
+2042  A6 88 17              61  	LDA	DATTR,X		GET FILE ATTRIBUTES
+2045  84 C0                 62  	ANDA	#RPERM+WPERM	TEST READ & WRITE PERMISSION
+2047  81 C0                 63  	CMPA	#RPERM+WPERM	INSURE BOTH ARE ENABLED
+2049  27 04                 64  	BEQ	MAIN1		ITS OK
+204B  3F                    65  	SWI			SOFTWARE INTERRUPT TO DOS
+204C  2D                    66  	FCB	45		SYSTEM REQUEST NUMBER
+204D  20 D9                 67  	BRA	ABORT		AND EXIT
+204F                        68  * CALCULATE ADJUSTMENT OFFSET & LOAD THE WORKSPACE
+204F  FC 20 BF              69  MAIN1	LDD	NEWADR		GET NEW ADDRESS
+2052  A3 88 15              70  	SUBD	DRADR,X		CALCULATE OFFSET TO NEW
+2055  FD 20 C1              71  	STD	OFFSET		SAVE OFFSET
+2058  EC 88 13              72  	LDD	DDADR,X		GET DISK ADDRESS
+205B  8E 22 00              73  	LDX	#FREE		GET WORKSPACE
+205E  3F                    74  	SWI			SOFTWARE INTERRUPT TO DOS
+205F  4E                    75  	FCB	78		SYSTEM REQUEST NUMBER
+2060  26 C6                 76  	BNE	ABORT		ERROR, EXIT
+2062                        77  * FIXUP CONSTANT POINTERS IN WORKSPACE
+2062  FC 22 00              78  	LDD	FREE		GET FREE MEMORY POINTER
+2065  F3 20 C1              79  	ADDD	OFFSET		ADJUST
+2068  FD 22 00              80  	STD	FREE		RESAVE
+206B  FC 22 08              81  	LDD	FREMEM		POINTER TO END OF SYMBOL TABLE
+206E  F3 20 C1              82  	ADDD	OFFSET		ADJUST
+2071  FD 22 08              83  	STD	FREMEM		RESAVE
+2074                        84  * RIFLE THROUGH SYMBOL TABLE, & FIX OFFSETS
+2074  8E 22 0A              85  	LDX	#SYMTAB		POINT TO SYMBOL TABLE
+2077  A6 81                 86  MAIN2	LDA	,X++		GET SYMBOL TYPE & LENGTH
+2079  1F 89                 87  	TFR	A,B		ANOTHER COPY
+207B  84 E0                 88  	ANDA	#%11100000	GET TYPE OF FUNCTION
+207D  C4 1F                 89  	ANDB	#%00011111	GET LENGTH OF NAME
+207F  27 11                 90  	BEQ	MAIN4		END OF TABLE, EXIT
+2081  30 85                 91  	LEAX	B,X		SKIP NAME
+2083  81 60                 92  	CMPA	#%01100000	IS IT A LABEL?
+2085  27 07                 93  	BEQ	MAIN3		IF SO, DON'T ADJUST
+2087  EC 84                 94  	LDD	,X		GET SYMBOL ADDRESS
+2089  F3 20 C1              95  	ADDD	OFFSET		ADD IN OFFSET
+208C  ED 84                 96  	STD	,X		RESAVE IT
+208E  30 02                 97  MAIN3	LEAX	2,X		SKIP TO NEXT
+2090  20 E5                 98  	BRA	MAIN2		AND CONTINUE
+2092                        99  * END OF TABLE HAS BEEN FOUND, COMPUTE SIZE OF WORKSPACE AND
+2092                       100  * RESAVE IT TO THE DISK. ALSO ADJUST RUN ADDRESS IN DIRECTORY.
+2092  FC 22 00             101  MAIN4	LDD	FREE		GET FREE MEMORY
+2095  B3 20 BF             102  	SUBD	NEWADR		CONVERT TO SIZE
+2098  1F 01                103  	TFR	D,X		COPY TO 'X' FOR DIVIDE
+209A  CC 02 00             104  	LDD	#512		DIVIDE BY SECTOR SIZE
+209D  3F                   105  	SWI			SOFTWARE INTERRUPT TO DOS
+209E  6C                   106  	FCB	108		SYSTEM REQUEST NUMBER
+209F  10 83 00 00          107  	CMPD	#0		ANY REMAINDER
+20A3  27 02                108  	BEQ	MAIN5		NO, ITS OK
+20A5  30 01                109  	LEAX	1,X		ADVANCE
+20A7  1F 10                110  MAIN5	TFR	X,D		SET IT UP
+20A9  8E 22 00             111  	LDX	#FREE		POINT TO WORK SPACE
+20AC  3F                   112  	SWI			SOFTWARE INTERRUPT TO DOS
+20AD  36                   113  	FCB	54		SYSTEM REQUEST NUMBER
+20AE  10 26 FF 76          114  	LBNE	ABORT		INDICATE INVALID
+20B2  3F                   115  	SWI			SOFTWARE INTERRUPT TO DOS
+20B3  44                   116  	FCB	68		SYSTEM REQUEST NUMBER
+DUNFIELD 6809 ASSEMBLER: D:MOVEAPL                                    PAGE: 3
+
+20B4  FC 20 BF             117  	LDD	NEWADR		GET NEW ADDRESS
+20B7  ED 88 15             118  	STD	DRADR,X		SET IT
+20BA  3F                   119  	SWI			SOFTWARE INTERRUPT TO DOS
+20BB  55                   120  	FCB	85		SYSTEM REQUEST NUMBER
+20BC  4F                   121  	CLRA			ZERO RETURN CODE
+20BD  3F                   122  	SWI			SOFTWARE INTERRUPT TO DOS
+20BE  00                   123  	FCB	0		SYSTEM REQUEST NUMBER
+20BF                       124  * LOCAL VARIABLES
+20BF                       125  NEWADR	RMB	2		NEW ADDRESS FOR WORKSPACE
+20C1                       126  OFFSET	RMB	2		OFFSET TO NEW ADDRESS

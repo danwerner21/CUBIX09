@@ -1,0 +1,120 @@
+DUNFIELD 6809 ASSEMBLER: D:CONCAT                                     PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         8  *
+0000                         9  * CONCAT: File concatination utility
+0000                        10  *
+0000                        11  * Copyright 1983-2005 Dave Dunfield
+0000                        12  * All rights reserved.
+0000                        13  *
+2000                        14  	ORG	OSRAM
+2000                        15  *
+2000  81 3F                 16  CONCAT	CMPA	#'?'		QUERY?
+2002  26 3F                 17  	BNE	QUAL		NO, LOOK FOR QUALIFIERS
+2004  3F                    18  	SWI			SOFTWARE INTERRUPT TO DOS
+2005  19                    19  	FCB	25		SYSTEM REQUEST NUMBER
+2006  55 73 65 3A 20 43 +   20  	FCCZ	'Use: CONCAT[/QUIET] <destination> <source1> [<source2>] ...'
+2042  39                    21  	RTS
+2043                        22  * PARSE FOR COMMAND QUALIFIERS
+2043  A6 A4                 23  QUAL	LDA	,Y		GET CHAR FROM COMMAND LINE
+2045  81 2F                 24  	CMPA	#'/'		IS IT A QUALIFIER?
+2047  26 46                 25  	BNE	MAIN		NO, CONTINUE WITH MAIN PROGRAM
+2049  30 8D 00 BA           26  	LEAX	QTABLE,PCR	POINT TO QUALIFIER TABLE
+204D  3F                    27  	SWI			SOFTWARE INTERRUPT TO DOS
+204E  12                    28  	FCB	18		SYSTEM REQUEST NUMBER
+204F  C1 01                 29  	CMPB	#QMAX		IS IT IN RANGE
+2051  24 08                 30  	BHS	QERR		IF SO, IT'S INVALID
+2053  30 8D 00 B8           31  	LEAX	QFLAGS,PCR	POINT TO QUALIFIER FLAGS
+2057  6F 85                 32  	CLR	B,X		SET THE FLAG
+2059  20 E8                 33  	BRA	QUAL		LOOK FOR ANOTHER QUALIFIER
+205B  3F                    34  QERR	SWI			SOFTWARE INTERRUPT TO DOS
+205C  18                    35  	FCB	24		SYSTEM REQUEST NUMBER
+205D  49 6E 76 61 6C 69 +   36  	FCCZ	/Invalid qualifier: '/
+2072  A6 A0                 37  	LDA	,Y+		GET CHARACTER
+2074  3F                    38  DSQU1	SWI			SOFTWARE INTERRUPT TO DOS
+2075  21                    39  	FCB	33		SYSTEM REQUEST NUMBER
+2076  A6 A0                 40  	LDA	,Y+		GET NEXT CHAR
+2078  27 0C                 41  	BEQ	GOABO		NULL IS DELIMITER
+207A  81 2F                 42  	CMPA	#'/'		START OF ANOTHER QUALIFIER?
+207C  27 08                 43  	BEQ	GOABO		IF SO, QUIT
+207E  81 20                 44  	CMPA	#' '		SPACE?
+2080  27 04                 45  	BEQ	GOABO		IF SO, QUIT
+2082  81 0D                 46  	CMPA	#$0D		END OF LINE?
+2084  26 EE                 47  	BNE	DSQU1		NO, KEEP DUMPING
+2086  3F                    48  GOABO	SWI			SOFTWARE INTERRUPT TO DOS
+2087  19                    49  	FCB	25		SYSTEM REQUEST NUMBER
+2088  27 00                 50  	FCB	$27,0		CHARACTERS TO DISPLAY
+208A  86 01                 51  	LDA	#1		INVALID OPERAND RETURN CODE
+208C  16 00 76              52  	LBRA	ABORT
+208F                        53  * OPEN OUTPUT FILE
+208F  3F                    54  MAIN	SWI			SOFTWARE INTERRUPT TO DOS
+2090  0A                    55  	FCB	10		SYSTEM REQUEST NUMBER
+2091  26 72                 56  	BNE	ABORT		ERROR
+2093  CE 21 12              57  	LDU	#OUTFIL		PT TO FILE POINTER
+2096  3F                    58  	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: D:CONCAT                                     PAGE: 2
+
+2097  38                    59  	FCB	56		SYSTEM REQUEST NUMBER
+2098  26 6B                 60  	BNE	ABORT		ERROR
+209A                        61  * OPEN INPUT FILE
+209A  3F                    62  OPENIN	SWI			SOFTWARE INTERRUPT TO DOS
+209B  0A                    63  	FCB	10		SYSTEM REQUEST NUMBER
+209C  26 61                 64  	BNE	ABORT1
+209E  8E 23 1C              65  	LDX	#RAM
+20A1  3F                    66  	SWI			SOFTWARE INTERRUPT TO DOS
+20A2  35                    67  	FCB	53		SYSTEM REQUEST NUMBER
+20A3  26 60                 68  	BNE	ABORT
+20A5  86 FF                 69  	LDA	#$FF
+20A7  A7 80                 70  	STA	,X+		INCASE EXACTLY ONE BLOCK
+20A9                        71  * WRITE TO OUTPUT
+20A9  8E 23 1C              72  	LDX	#RAM
+20AC  A6 80                 73  WR1	LDA	,X+
+20AE  2B 13                 74  	BMI	WR2
+20B0  1F 89                 75  	TFR	A,B
+20B2  3F                    76  	SWI			SOFTWARE INTERRUPT TO DOS
+20B3  3D                    77  	FCB	61		SYSTEM REQUEST NUMBER
+20B4  C1 0D                 78  	CMPB	#$0D
+20B6  26 F4                 79  	BNE	WR1
+20B8  FC 21 10              80  	LDD	LINECT
+20BB  C3 00 01              81  	ADDD	#1
+20BE  FD 21 10              82  	STD	LINECT
+20C1  20 E9                 83  	BRA	WR1
+20C3  3F                    84  WR2	SWI			SOFTWARE INTERRUPT TO DOS
+20C4  04                    85  	FCB	4		SYSTEM REQUEST NUMBER
+20C5  26 D3                 86  	BNE	OPENIN
+20C7  B6 21 0F              87  	LDA	QUIET
+20CA  27 32                 88  	BEQ	QUI1
+20CC  3F                    89  	SWI			SOFTWARE INTERRUPT TO DOS
+20CD  18                    90  	FCB	24		SYSTEM REQUEST NUMBER
+20CE  54 6F 74 61 6C 20 +   91  	FCCZ	'Total of '
+20D8  FC 21 10              92  	LDD	LINECT
+20DB  3F                    93  	SWI			SOFTWARE INTERRUPT TO DOS
+20DC  1A                    94  	FCB	26		SYSTEM REQUEST NUMBER
+20DD  3F                    95  	SWI			SOFTWARE INTERRUPT TO DOS
+20DE  19                    96  	FCB	25		SYSTEM REQUEST NUMBER
+20DF  20 6C 69 6E 65 73 +   97  	FCCZ	' lines written to output file.'
+20FE  4F                    98  QUI1	CLRA
+20FF  34 03                 99  ABORT1	PSHS	A,CC
+2101  3F                   100  	SWI			SOFTWARE INTERRUPT TO DOS
+2102  39                   101  	FCB	57		SYSTEM REQUEST NUMBER
+2103  35 03                102  	PULS	A,CC
+2105  3F                   103  ABORT	SWI			SOFTWARE INTERRUPT TO DOS
+2106  00                   104  	FCB	0		SYSTEM REQUEST NUMBER
+2107                       105  * QUALIFIER TABLE
+2107  82                   106  QTABLE	FCB	$82
+2108  2F 51 55 49 45 54    107  	FCC	'/QUIET'
+210E  80                   108  	FCB	$80		END OF TABLE
+0001                       109  QMAX	EQU	1
+210F                       110  * QUALIFIER FLAGS
+210F                       111  QFLAGS	EQU	*
+210F  FF                   112  QUIET	FCB	$FF
+2110                       113  * LOCAL RAM STORAGE
+2110  00 00                114  LINECT	FDB	0
+2112                       115  OUTFIL	RMB	522		OUTPUT BUFFER
+231C                       116  RAM	EQU	*

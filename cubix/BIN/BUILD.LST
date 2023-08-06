@@ -1,0 +1,378 @@
+DUNFIELD 6809 ASSEMBLER: D:BUILD                                      PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         9  *
+0000                        10  * BUILD: Build an executable or downloadable file from ASM output
+0000                        11  *
+0000                        12  * Copyright 1983-2005 Dave Dunfield
+0000                        13  * All rights reserved.
+0000                        14  *
+0000                        15  * DIRECTORY STRUCTURE
+0000                        16  	ORG	0
+0000                        17  DPREFIX	RMB	8
+0008                        18  DNAME	RMB	8
+0010                        19  DTYPE	RMB	3
+0013                        20  DDADR	RMB	2
+0015                        21  DRADR	RMB	2
+0017                        22  DATTR	RMB	1
+0018                        23  *
+2000                        24  	ORG	OSRAM		DOS APPLICATION PROGRAM SPACE
+2000                        25  * PROGRAM ENTRY
+2000  81 3F                 26  BUILD	CMPA	#'?'		QUERY OPERAND?
+2002  26 2E                 27  	BNE	QUAL		NO, LOOK FOR QUALIFIER
+2004  3F                    28  	SWI			SOFTWARE INTERRUPT TO DOS
+2005  19                    29  	FCB	25		SYSTEM REQUEST NUMBER
+2006  55 73 65 3A 20 42 +   30  	FCCZ	'Use: BUILD[/KEEP/MHX/QUIET] <object file>'
+2030  3F                    31  	SWI			SOFTWARE INTERRUPT TO DOS
+2031  00                    32  	FCB	0		SYSTEM REQUEST NUMBER
+2032                        33  *
+2032                        34  * PARSE	FOR QUALIFIERS
+2032                        35  *
+2032  A6 A4                 36  QUAL	LDA	,Y		GET CHAR FROM COMMAND LINE
+2034  81 2F                 37  	CMPA	#'/'		IS IT A QUALIFIER?
+2036  26 43                 38  	BNE	MAIN		NO, GET PARAMETERS
+2038  8E 22 A3              39  	LDX	#QTABLE		POINT TO QUALIFIER TABLE
+203B  3F                    40  	SWI			SOFTWARE INTERRUPT TO DOS
+203C  12                    41  	FCB	18		SYSTEM REQUEST NUMBER
+203D  C1 03                 42  	CMPB	#QMAX		IS IT IN RANGE
+203F  24 07                 43  	BHS	QERR		IF SO, IT'S INVALID
+2041  8E 22 B6              44  	LDX	#QFLAGS		POINT TO QUALIFIER FLAGS
+2044  6F 85                 45  	CLR	B,X		SET THE FLAG
+2046  20 EA                 46  	BRA	QUAL		LOOK FOR ANOTHER QUALIFIER
+2048  3F                    47  QERR	SWI			SOFTWARE INTERRUPT TO DOS
+2049  18                    48  	FCB	24		SYSTEM REQUEST NUMBER
+204A  49 6E 76 61 6C 69 +   49  	FCCZ	/Invalid qualifier: '/
+205F  A6 A0                 50  	LDA	,Y+		GET CHARACTER
+2061  3F                    51  DSQU1	SWI			SOFTWARE INTERRUPT TO DOS
+2062  21                    52  	FCB	33		SYSTEM REQUEST NUMBER
+2063  A6 A0                 53  	LDA	,Y+		GET NEXT CHAR
+2065  27 0C                 54  	BEQ	GOABO		NULL IS DELIMITER
+2067  81 2F                 55  	CMPA	#'/'		START OF ANOTHER QUALIFIER?
+2069  27 08                 56  	BEQ	GOABO		IF SO, QUIT
+206B  81 20                 57  	CMPA	#' '		SPACE?
+206D  27 04                 58  	BEQ	GOABO		IF SO, QUIT
+206F  81 0D                 59  	CMPA	#$0D		END OF LINE?
+DUNFIELD 6809 ASSEMBLER: IMAGE BUILDER                                PAGE: 2
+
+2071  26 EE                 60  	BNE	DSQU1		NO, KEEP DUMPING
+2073  3F                    61  GOABO	SWI			SOFTWARE INTERRUPT TO DOS
+2074  19                    62  	FCB	25		SYSTEM REQUEST NUMBER
+2075  27 00                 63  	FCB	$27,0		CHARACTERS TO DISPLAY
+2077  86 01                 64  	LDA	#1		INVALID OPERAND RETURN CODE
+2079  3F                    65  ABORT	SWI			SOFTWARE INTERRUPT TO DOS
+207A  00                    66  	FCB	0		SYSTEM REQUEST NUMBER
+207B                        67  * MAIN BUILD PROGRAM
+207B  3F                    68  MAIN	SWI			SOFTWARE INTERRUPT TO DOS
+207C  0B                    69  	FCB	11		SYSTEM REQUEST NUMBER
+207D  26 FA                 70  	BNE	ABORT		ERROR, EXIT
+207F  BF 22 B9              71  	STX	FILPTR		SAVE FILE POINTER
+2082  CC 4F 42              72  	LDD	#'OB'		FIRST TWO CHARS OF TYPE
+2085  ED 84                 73  	STD	,X		SAVE
+2087  86 4A                 74  	LDA	#'J'		NEXT CHAR OF TYPE
+2089  A7 02                 75  	STA	2,X		SAVE IN FILENAME
+208B  B6 22 B7              76  	LDA	MHX		ARE WE DOING A 'MHX' FILE?
+208E  10 27 01 03           77  	LBEQ	DOMHX		IF SO, BUILD IT
+2092  3F                    78  	SWI			SOFTWARE INTERRUPT TO DOS
+2093  46                    79  	FCB	70		SYSTEM REQUEST NUMBER
+2094  26 E3                 80  	BNE	ABORT		GET UPSET IF ERROR
+2096  EC 88 13              81  	LDD	DDADR,X		GET DISK ADDRESS
+2099  FD 22 C0              82  	STD	>SECTOR		SAVE FOR LATER
+209C  8E 22 C4              83  	LDX	#WRKSPC		POINT TO WORKSPACE
+209F  BF 22 C2              84  	STX	>OFFSET		SAVE OFFSET
+20A2  3F                    85  	SWI			SOFTWARE INTERRUPT TO DOS
+20A3  5C                    86  	FCB	92		SYSTEM REQUEST NUMBER
+20A4  26 D3                 87  	BNE	ABORT		ERROR
+20A6                        88  * READ OBJECT FILE, AND BUILD EXECUTABLE IMAGE IN RAM
+20A6  8E 00 00              89  	LDX	#0		ASSUME OFFSET ZERO
+20A9  17 01 CA              90  NXCHR	LBSR	RDCHR		READ CHARACTER FROM FILE
+20AC  81 CF                 91  	CMPA	#$CF		IS IT A SPECIAL CASE
+20AE  26 26                 92  	BNE	NORCHR		NO, IT'S NORMAL
+20B0  17 01 C3              93  	LBSR	RDCHR		GET NEXT CHARACTER
+20B3  81 CF                 94  	CMPA	#$CF		IS IT XPARENT '$CF'?
+20B5  27 1F                 95  	BEQ	NORCHR		IF SO, IT'S OK
+20B7  4D                    96  	TSTA			IS THIS THE END?
+20B8  27 54                 97  	BEQ	SAVMOD		IF SO, SAVE IT
+20BA  4A                    98  	DECA			TEST FOR SET ADDRESS
+20BB  26 33                 99  	BNE	INVCMD		NO, IT'S INVALID
+20BD                       100  * ADDRESS CHANGE RECORD, SET UP NEW ADDRESS
+20BD  17 01 B6             101  	LBSR	RDCHR		GET HIGH BYTE
+20C0  1F 89                102  	TFR	A,B		SAVE IN B
+20C2  17 01 B1             103  	LBSR	RDCHR		GET NEXT BYTE
+20C5  1E 89                104  	EXG	A,B		SWAP HIGH AND LOW
+20C7                       105  * IF CODE HAS ALREADY BEEN OUTPUT, CALCULATE 'X'=
+20C7                       106  * THE ADDRESS WITHIN THE OUTPUT MODULE. OTHERWISE
+20C7  7D 22 BF             107  	TST	SETADR		HAS RUN ADDRESS BEEN FIXED YET?
+20CA  27 06                108  	BEQ	NXCH1		YES, DO NOT CHANGE
+20CC  B3 22 BB             109  	SUBD	RUNADR		CONVERT TO OFFSET
+20CF  C3 26 CE             110  	ADDD	#MODBUF		OFFSET TO MUDULT
+20D2  1F 01                111  NXCH1	TFR	D,X		'X' = POINTER TO BUFFER
+20D4  20 D3                112  	BRA	NXCHR		AND GET NEXT CHAR
+20D6                       113  * NORMAL CHARACTER, SAVE IT IN THE MODULE. IF THIS IS
+20D6                       114  * THE FIRST CHARACTER OUTPUT, ESTABLISH FILE RUN ADDRESS
+20D6                       115  * AND SET UP POINTER INTO MODULE
+20D6  F6 22 BF             116  NORCHR	LDB	SETADR		HAS FLAG BEEN SET?
+20D9  26 09                117  	BNE	NORCH1		YES, ITS HAS
+DUNFIELD 6809 ASSEMBLER: IMAGE BUILDER                                PAGE: 3
+
+20DB  BF 22 BB             118  	STX	RUNADR		SET UP RUN ADDRESS
+20DE  8E 26 CE             119  	LDX	#MODBUF		BEGIN AT START OF MODULE
+20E1  7A 22 BF             120  	DEC	SETADR		INDICATE RUN ADDRESS
+20E4  A7 80                121  NORCH1	STA	,X+		SAVE IN GENERATING MODULE
+20E6  BC 22 BD             122  	CMPX	HIADR		ARE WE ABOVE OUR HIGHEST?
+20E9  23 BE                123  	BLS	NXCHR		NO, GET NEXT CHARACTER
+20EB  BF 22 BD             124  	STX	HIADR		SAVE THIS AS OUR NEW HIGH ADDRESS
+20EE  20 B9                125  	BRA	NXCHR		READ NEXT
+20F0                       126  * INVALID COMMAND
+20F0  3F                   127  INVCMD	SWI			SOFTWARE INTERRUPT TO DOS
+20F1  19                   128  	FCB	25		SYSTEM REQUEST NUMBER
+20F2  49 6E 76 61 6C 69 +  129  	FCCZ	'Invalid OBJ file format'
+210A  86 63                130  	LDA	#99		RETURN CODE
+210C  3F                   131  	SWI			SOFTWARE INTERRUPT TO DOS
+210D  00                   132  	FCB	0		SYSTEM REQUEST NUMBER
+210E                       133  * MODULE IS BUILT, SAVE IT OUT
+210E  B6 22 B6             134  SAVMOD	LDA	KEEP		DO WE KEEP FILE?
+2111  27 02                135  	BEQ	SAVM1		YES, DON'T DELETE
+2113  3F                   136  	SWI			SOFTWARE INTERRUPT TO DOS
+2114  49                   137  	FCB	73		SYSTEM REQUEST NUMBER
+2115  BE 22 B9             138  SAVM1	LDX	FILPTR		GET FILE POINTER
+2118  CC 45 58             139  	LDD	#'EX'		FIRST TWO CHARS
+211B  ED 84                140  	STD	,X		WRITE IT OUT
+211D  A7 02                141  	STA	2,X		SET LAST CHAR
+211F                       142  * DISPLAY STATS ON THE OUTPUT FILE
+211F  B6 22 B8             143  	LDA	QUIET		BEING QUIET?
+2122  27 36                144  	BEQ	SAVM2		YES, NO DISPLAY
+2124  3F                   145  	SWI			SOFTWARE INTERRUPT TO DOS
+2125  18                   146  	FCB	24		SYSTEM REQUEST NUMBER
+2126  4C 6F 61 64 20 61 +  147  	FCCZ	'Load addr= $'	MESSAGE
+2133  FC 22 BB             148  	LDD	RUNADR		GET RUN ADDRESS
+2136  3F                   149  	SWI			SOFTWARE INTERRUPT TO DOS
+2137  1B                   150  	FCB	27		SYSTEM REQUEST NUMBER
+2138  3F                   151  	SWI			SOFTWARE INTERRUPT TO DOS
+2139  16                   152  	FCB	22		SYSTEM REQUEST NUMBER
+213A  3F                   153  	SWI			SOFTWARE INTERRUPT TO DOS
+213B  18                   154  	FCB	24		SYSTEM REQUEST NUMBER
+213C  46 69 6C 65 20 53 +  155  	FCCZ	'File Size= '
+2148  FC 22 BD             156  	LDD	HIADR		GET HIGHEST ADDRESS
+214B  83 26 CE             157  	SUBD	#MODBUF		CONVERT TO OFFSET
+214E  3F                   158  	SWI			SOFTWARE INTERRUPT TO DOS
+214F  1A                   159  	FCB	26		SYSTEM REQUEST NUMBER
+2150  3F                   160  	SWI			SOFTWARE INTERRUPT TO DOS
+2151  19                   161  	FCB	25		SYSTEM REQUEST NUMBER
+2152  20 42 79 74 65 73 +  162  	FCCZ	' Bytes.'   
+215A  FC 22 BD             163  SAVM2	LDD	HIADR		GET HIGHEST ADDRESS
+215D  83 26 CE             164  	SUBD	#MODBUF		CONVERT TO OFFSET
+2160  44                   165  	LSRA			CONVERT TO SECTOR ADDR
+2161  4C                   166  	INCA			ADD ONE FOR PARTIAL SECTORS
+2162  1F 89                167  	TFR	A,B		COPY TO LOW BYTE
+2164  4F                   168  	CLRA			CLEAR HIGH BYTE
+2165  8E 26 CE             169  	LDX	#MODBUF		POINT TO MODULE BUFFER
+2168  3F                   170  	SWI			SOFTWARE INTERRUPT TO DOS
+2169  36                   171  	FCB	54		SYSTEM REQUEST NUMBER
+216A  26 27                172  	BNE	ABORT1		COULDN'T WRITE
+216C  3F                   173  	SWI			SOFTWARE INTERRUPT TO DOS
+216D  44                   174  	FCB	68		SYSTEM REQUEST NUMBER
+216E  FC 22 BB             175  	LDD	RUNADR		GET RUN ADDRESS
+DUNFIELD 6809 ASSEMBLER: IMAGE BUILDER                                PAGE: 4
+
+2171  ED 88 15             176  	STD	DRADR,X		SAVE NEW RUN ADDRESS
+2174  3F                   177  	SWI			SOFTWARE INTERRUPT TO DOS
+2175  55                   178  	FCB	85		SYSTEM REQUEST NUMBER
+2176                       179  *
+2176                       180  * INDICATE WE CREATED A FILE
+2176                       181  *
+2176  B6 22 B8             182  CREFIL	LDA	QUIET		KEEPING QUIET?
+2179  27 17                183  	BEQ	CREF1		IF SO, SAY NOTHING
+217B  3F                   184  	SWI			SOFTWARE INTERRUPT TO DOS
+217C  18                   185  	FCB	24		SYSTEM REQUEST NUMBER
+217D  4F 75 74 70 75 74 +  186  	FCCZ	'Output file is: '
+218E  3F                   187  	SWI			SOFTWARE INTERRUPT TO DOS
+218F  1E                   188  	FCB	30		SYSTEM REQUEST NUMBER
+2190  3F                   189  	SWI			SOFTWARE INTERRUPT TO DOS
+2191  16                   190  	FCB	22		SYSTEM REQUEST NUMBER
+2192  4F                   191  CREF1	CLRA			ZERO RC
+2193  3F                   192  ABORT1	SWI			SOFTWARE INTERRUPT TO DOS
+2194  00                   193  	FCB	0		SYSTEM REQUEST NUMBER
+2195                       194  *
+2195                       195  * CREATE A MOTOROLA HEX FORMAT OUTPUT FILE
+2195                       196  *
+2195  8E 26 CE             197  DOMHX	LDX	#MODBUF		POINT TO MODULE BUFFER
+2198  1F 12                198  	TFR	X,Y		SET UP OUTPUT PTR
+219A  3F                   199  	SWI			SOFTWARE INTERRUPT TO DOS
+219B  35                   200  	FCB	53		SYSTEM REQUEST NUMBER
+219C  BF 22 BD             201  	STX	HIADR		SET HIGH ADDRESS
+219F  B6 22 B6             202  	LDA	KEEP		DO WE KEEP THE FILE?
+21A2  27 02                203  	BEQ	DOMHX1		YES, DON'T DELETE
+21A4  3F                   204  	SWI			SOFTWARE INTERRUPT TO DOS
+21A5  49                   205  	FCB	73		SYSTEM REQUEST NUMBER
+21A6  BE 22 B9             206  DOMHX1	LDX	FILPTR		GET FILE POINTER
+21A9  CC 4D 48             207  	LDD	#'MH'		GET FIRST TWO CHARS
+21AC  ED 84                208  	STD	,X		SET TYPE
+21AE  86 58                209  	LDA	#'X'		GET LAST CHAR
+21B0  A7 02                210  	STA	2,X		SET LAST CHAR
+21B2  CE 24 C4             211  	LDU	#OUTFIL		GET OUTPUT PTR
+21B5  3F                   212  	SWI			SOFTWARE INTERRUPT TO DOS
+21B6  38                   213  	FCB	56		SYSTEM REQUEST NUMBER
+21B7  26 DA                214  	BNE	ABORT1		ERROR, DON'T WRITE
+21B9                       215  * WRITE THE FILE FROM THE MEMORY IMAGE
+21B9  5F                   216  GENREC	CLRB			START HERE
+21BA  8E 26 CE             217  	LDX	#MODBUF		POINT TO BUFFER
+21BD  10 BC 22 BD          218  GENR1	CMPY	HIADR		ARE WE OVER?
+21C1  10 24 FF 2B          219  	LBHS	INVCMD		INVALID
+21C5  A6 A0                220  	LDA	,Y+		GET CHAR
+21C7  81 CF                221  	CMPA	#$CF		SPECIAL CHARACTER?
+21C9  26 1C                222  	BNE	CHRNOR		NO, IT'S OK
+21CB  A6 A0                223  	LDA	,Y+		READ NEXT CHARACTER
+21CD  81 CF                224  	CMPA	#$CF		SPECIAL CHARACTER?
+21CF  27 16                225  	BEQ	CHRNOR		NORMAL CHARACTER
+21D1  4D                   226  	TSTA			IS IT END OF FILE?
+21D2  27 1E                227  	BEQ	CLOSE		IF SO, CLOSE FILE AND RETIRE
+21D4  4A                   228  	DECA			TEST FOR ADDRESS CHANGE
+21D5  10 26 FF 17          229  	LBNE	INVCMD		INVALID ENTRY
+21D9  8D 2B                230  	BSR	WRREC		WRITE OUT RECORD
+21DB  A6 A0                231  	LDA	,Y+		GET HIGH BYTE OF ADDRESS
+21DD  B7 22 BB             232  	STA	RUNADR		SET RUN ADDRESS
+21E0  A6 A0                233  	LDA	,Y+		GET LOW BYTE OF ADDRESS
+DUNFIELD 6809 ASSEMBLER: IMAGE BUILDER                                PAGE: 5
+
+21E2  B7 22 BC             234  	STA	RUNADR+1	SET LOW BYTE OF RUN ADDRESS
+21E5  20 D2                235  	BRA	GENREC		GENERATE A NEW RECORD
+21E7  A7 80                236  CHRNOR	STA	,X+		SAVE IN RECORD
+21E9  5C                   237  	INCB			ADVANCE B REGISTER
+21EA  C1 20                238  	CMPB	#32		ARE WE OVER ONE RECORD?
+21EC  25 CF                239  	BLO	GENR1		IF NOT, KEEP GOING
+21EE  8D 16                240  	BSR	WRREC		WRITE A RECORD
+21F0  20 C7                241  	BRA	GENREC		AND START A NEW ONE
+21F2                       242  *
+21F2                       243  * CLOSE FILE
+21F2                       244  *
+21F2  8D 12                245  CLOSE	BSR	WRREC		OUTPUT LAST RECORD IF ANY
+21F4  8E 22 98             246  	LDX	#S9REC		LAST MESSAGE
+21F7  A6 84                247  CLOS1	LDA	,X		GET CHARACTER FROM MESSAGE
+21F9  8D 75                248  	BSR	WRCHAR		OUTPUT CHARACTER
+21FB  A6 80                249  	LDA	,X+		GET CHAR BACK
+21FD  81 0D                250  	CMPA	#$0D		CARRIAGE RETURN?
+21FF  26 F6                251  	BNE	CLOS1		NO, KEEP GOING
+2201  3F                   252  CLSFIL	SWI			SOFTWARE INTERRUPT TO DOS
+2202  39                   253  	FCB	57		SYSTEM REQUEST NUMBER
+2203  16 FF 70             254  	LBRA	CREFIL		OUTPUT MESSAGE
+2206                       255  *
+2206                       256  * WRITES A RECORD TO THE OUTPUT FILE
+2206                       257  *
+2206  5D                   258  WRREC	TSTB			WHAT IS LENGTH?
+2207  27 52                259  	BEQ	NOREC		DON'T WRITE RECORD
+2209  CE 24 C4             260  	LDU	#OUTFIL		PT TO OUTPUT
+220C  8E 26 CE             261  	LDX	#MODBUF		POINT TO BUFFER
+220F  86 53                262  	LDA	#'S'		GET RECORD
+2211  8D 5D                263  	BSR	WRCHAR		OUTPUT CHAR
+2213  86 31                264  	LDA	#'1'		TYPE ONE
+2215  8D 59                265  	BSR	WRCHAR		OUTPUT CHAR
+2217  34 04                266  	PSHS	B		SAVE LENGTH
+2219  F7 22 C2             267  	STB	OFFSET		SAVE COUNT
+221C  CB 03                268  	ADDB	#3		ADVANCE FOR LENGTH BYTES
+221E  1F 98                269  	TFR	B,A		SAVE FOR LATER
+2220  BB 22 BB             270  	ADDA	RUNADR		ADD IN HIGH ADDRESS
+2223  BB 22 BC             271  	ADDA	RUNADR+1	AND LOW ADDRESS
+2226  B7 22 BF             272  	STA	SETADR		START CHECKSUM
+2229  1F 98                273  	TFR	B,A		RESTORE LENGTH
+222B  8D 2F                274  	BSR	WRBYTE		OUTPUT
+222D  FC 22 BB             275  	LDD	RUNADR		GET RUN ADDRESS
+2230  8D 2A                276  	BSR	WRBYTE		OUTPUT
+2232  1F 98                277  	TFR	B,A		COPY TO ACCA
+2234  8D 26                278  	BSR	WRBYTE		OUTPUT LOW ADDRESS
+2236  A6 84                279  WRE1	LDA	,X		GET BYTE OF DATA
+2238  8D 22                280  	BSR	WRBYTE		OUTPUT
+223A  A6 80                281  	LDA	,X+		GET BYTE BACK
+223C  BB 22 BF             282  	ADDA	SETADR		ADD TO CHECKSUM
+223F  B7 22 BF             283  	STA	SETADR		RESAVE CHECKSUM
+2242  7A 22 C2             284  	DEC	OFFSET		IS THIS IT?
+2245  26 EF                285  	BNE	WRE1		NO, KEEP GOING
+2247  86 FF                286  WRE2	LDA	#$FF		GET -1
+2249  B0 22 BF             287  	SUBA	SETADR		CALCULATE CHECKSUM VALUE
+224C  8D 0E                288  	BSR	WRBYTE		OUTPUT
+224E  86 0D                289  	LDA	#$0D		NEW LINE
+2250  8D 1E                290  	BSR	WRCHAR		OUTPUT CHAR
+2252  35 04                291  	PULS	B		RESTORE LENGTH
+DUNFIELD 6809 ASSEMBLER: IMAGE BUILDER                                PAGE: 6
+
+2254  4F                   292  	CLRA			ZERO HIGH BYTE
+2255  F3 22 BB             293  	ADDD	RUNADR		OFSET INTO MEMORY ADDRESS
+2258  FD 22 BB             294  	STD	RUNADR		RESAVE
+225B  39                   295  NOREC	RTS
+225C                       296  *
+225C                       297  * WRITES A BYTE IN HEX TO THE SERIAL FILE
+225C                       298  *
+225C  34 02                299  WRBYTE	PSHS	A		SAVE A REGISTER
+225E  47                   300  	ASRA
+225F  47                   301  	ASRA			ROTATE HIGH NIBBLE
+2260  47                   302  	ASRA			INTO LOW NIBBLE
+2261  47                   303  	ASRA
+2262  8D 02                304  	BSR	WRNIB		OUTPUT A NIBBLE
+2264  35 02                305  	PULS	A		RESTORE LOW NIBBLE
+2266  84 0F                306  WRNIB	ANDA	#$F		REMOVE HIGH GARBAGE
+2268  8B 30                307  	ADDA	#$30		CONVERT TO ASCII
+226A  81 3A                308  	CMPA	#$3A		IS IT '0' TO '9'
+226C  25 02                309  	BLO	WRCHAR		IF SO, IT'S OK
+226E  8B 07                310  	ADDA	#7		CONVERT TO ALPHA
+2270                       311  * WRITE A CHARACTER TO THE OUTPUT FILE
+2270  3F                   312  WRCHAR	SWI			SOFTWARE INTERRUPT TO DOS
+2271  3D                   313  	FCB	61		SYSTEM REQUEST NUMBER
+2272  27 E7                314  	BEQ	NOREC		SUCCESS, CONTINUE
+2274  3F                   315  	SWI			SOFTWARE INTERRUPT TO DOS
+2275  00                   316  	FCB	0		SYSTEM REQUEST NUMBER
+2276                       317  *
+2276                       318  * READ A CHARACTER FROM THE INPUT FILE
+2276                       319  *
+2276  34 14                320  RDCHR	PSHS	B,X		SAVE REGS
+2278  BE 22 C2             321  	LDX	>OFFSET		GET OFFSET INFO FILE
+227B  8C 24 C4             322  	CMPX	#WRKSPC+512	OVER LIMIT?
+227E  25 11                323  	BLO	RDC1		NO, WE ARE OK
+2280  FC 22 C0             324  	LDD	>SECTOR		GET SECTOR
+2283  3F                   325  	SWI			SOFTWARE INTERRUPT TO DOS
+2284  4D                   326  	FCB	77		SYSTEM REQUEST NUMBER
+2285  10 27 FE 67          327  	LBEQ	INVCMD		INVALID FILE
+2289  FD 22 C0             328  	STD	>SECTOR		RESAVE SECTOR
+228C  8E 22 C4             329  	LDX	#WRKSPC		POINT TO WORK AREA
+228F  3F                   330  	SWI			SOFTWARE INTERRUPT TO DOS
+2290  5C                   331  	FCB	92		SYSTEM REQUEST NUMBER
+2291  A6 80                332  RDC1	LDA	,X+		GET CHAR
+2293  BF 22 C2             333  	STX	>OFFSET		RESAVE OFFSET
+2296  35 94                334  	PULS	B,X,PC
+2298                       335  *
+2298                       336  * END OF FILE RECORD FOR MHX FORMAT
+2298                       337  *
+2298  53 39 30 33 30 30 +  338  S9REC	FCC	'S9030000FC'
+22A2  0D                   339  	FCB	$0D
+22A3                       340  *
+22A3                       341  * QUALIFIER  TABLE
+22A3                       342  *
+22A3  82                   343  QTABLE	FCB	$82
+22A4  2F 4B 45 45 50       344  	FCC	'/KEEP'
+22A9  82                   345  	FCB	$82
+22AA  2F 4D 48 58          346  	FCC	'/MHX'
+22AE  82                   347  	FCB	$82
+22AF  2F 51 55 49 45 54    348  	FCC	'/QUIET'
+22B5  80                   349  	FCB	$80
+DUNFIELD 6809 ASSEMBLER: IMAGE BUILDER                                PAGE: 7
+
+0003                       350  QMAX	EQU	3		TWO OUTPUT FORMATS APPLICABLE
+22B6                       351  * QUALIFIER FLAG TABLE
+22B6                       352  QFLAGS	EQU	*
+22B6  FF                   353  KEEP	FCB	$FF		KEEP '.OBJ' FILE
+22B7  FF                   354  MHX	FCB	$FF		WRITE MHX FILE
+22B8  FF                   355  QUIET	FCB	$FF		KEEP QUIET
+22B9                       356  *
+22B9  00 00                357  FILPTR	FDB	0		POINTER TO FILE SPACE
+22BB  00 00                358  RUNADR	FDB	0		FILE RUN ADDRESS
+22BD  00 00                359  HIADR	FDB	0		HIGEST ADDRESS IN GENERATION
+22BF  00                   360  SETADR	FCB	0		FLAG THAT ADDRESS HAS BEEN SET
+22C0                       361  SECTOR	RMB	2		INPUT FILE SECTOR
+22C2                       362  OFFSET	RMB	2		INPUT FILE DRIVE
+22C4                       363  WRKSPC	RMB	512		INPUT FILE BUFFER
+24C4                       364  OUTFIL	RMB	522		OUTPUT FILE BUFFER
+26CE                       365  MODBUF	EQU	*

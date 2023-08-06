@@ -1,0 +1,648 @@
+DUNFIELD 6809 ASSEMBLER: D:HEXED                                      PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         9  *
+0000                        10  * HEXED: A terminal independant screen oriented file patch utility
+0000                        11  *
+0000                        12  * Copyright 1983-2005 Dave Dunfield
+0000                        13  * All rights reserved.
+0000                        14  *
+0008                        15  HEX_D	EQU	8		START OF HEX DISPLAY
+003C                        16  TEXT_D	EQU	60		START OF TEXT
+0000                        17  *
+2000                        18  	ORG	OSRAM		APPLICATION AREA
+2000                        19  *
+2000  BE 24 D2              20  ENTRY	LDX	ISTPTR		GET INPUT STRING POINTER
+2003  3F                    21  	SWI			SOFTWARE INTERRUPT TO DOS
+2004  17                    22  	FCB	23		SYSTEM REQUEST NUMBER
+2005  3F                    23  	SWI			SOFTWARE INTERRUPT TO DOS
+2006  04                    24  	FCB	4		SYSTEM REQUEST NUMBER
+2007  81 3F                 25  	CMPA	#'?'		QUERY?
+2009  26 1A                 26  	BNE	MAIN		NO, PROCEED
+200B  3F                    27  	SWI			SOFTWARE INTERRUPT TO DOS
+200C  19                    28  	FCB	25		SYSTEM REQUEST NUMBER
+200D  55 73 65 3A 20 48 +   29  	FCCZ	'Use: HEXED <filename>'
+2023  3F                    30  	SWI			SOFTWARE INTERRUPT TO DOS
+2024  00                    31  	FCB	0		SYSTEM REQUEST NUMBER
+2025                        32  *
+2025  A6 9F 24 D4           33  MAIN	LDA	[GXYPTR]	DEFINED?
+2029  26 16                 34  	BNE	MAIN1		NO, ITS OK
+202B  3F                    35  	SWI			SOFTWARE INTERRUPT TO DOS
+202C  19                    36  	FCB	25		SYSTEM REQUEST NUMBER
+202D  54 54 59 20 6E 6F +   37  	FCCZ	'TTY not defined'
+203D  86 63                 38  	LDA	#99		RC=99
+203F  3F                    39  ABORT	SWI			SOFTWARE INTERRUPT TO DOS
+2040  00                    40  	FCB	0		SYSTEM REQUEST NUMBER
+2041  3F                    41  MAIN1	SWI			SOFTWARE INTERRUPT TO DOS
+2042  0A                    42  	FCB	10		SYSTEM REQUEST NUMBER
+2043  26 FA                 43  	BNE	ABORT		REPORT ERROR
+2045  8E 26 17              44  	LDX	#D_BUFF		POINT TO DATA BUFFER
+2048  3F                    45  	SWI			SOFTWARE INTERRUPT TO DOS
+2049  35                    46  	FCB	53		SYSTEM REQUEST NUMBER
+204A  26 F3                 47  	BNE	ABORT		REPORT ERROR
+204C  BF 25 AB              48  	STX	ENDADR		SAVE END ADDRESS
+204F  CE 26 17              49  	LDU	#D_BUFF		BEGIN AT START OF BUFFER
+2052                        50  *
+2052                        51  * VISUAL MODE MAIN LOOP
+2052                        52  *
+2052  BD 22 E5              53  VMODE1	JSR	DSCREEN		DISPLAY SCREEN
+2055                        54  * DISPLAY ANY ERROR MESSAGES
+2055  BE 25 B0              55  VMODE2	LDX	ERRMSG		ANY MSGS?
+2058  27 16                 56  	BEQ	VMODE2A		NO, ITS OK
+205A  CC 00 17              57  VERROR	LDD	#23		LAST LINE
+205D  BD 23 BE              58  	JSR	GOTOXY		RE-POSITION
+2060  BD 23 A2              59  	JSR	WSO		SPECIALS
+DUNFIELD 6809 ASSEMBLER: HEXIDECIMAL SCREEN EDITOR                    PAGE: 2
+
+2063  3F                    60  	SWI			SOFTWARE INTERRUPT TO DOS
+2064  17                    61  	FCB	23		SYSTEM REQUEST NUMBER
+2065  BD 23 A6              62  	JSR	WSE		END OF IT
+2068  BD 23 AA              63  	JSR	WCD		CLEAR END OF SCREEN
+206B  4F                    64  	CLRA			ZERO HIGH
+206C  5F                    65  	CLRB			ZERO LOW
+206D  FD 25 B0              66  	STD	ERRMSG		RESET FLAG
+2070                        67  * POSITION CURSOR TO APPRIOPRIATE POSITION
+2070  B6 25 AE              68  VMODE2A	LDA	POSIT		GET POSITION
+2073  84 0F                 69  	ANDA	#%00001111	GET 'X' POSITION
+2075  F6 25 AF              70  	LDB	MODE		GET MODE
+2078  2B 09                 71  	BMI	VMODE3		TEXT MODE
+207A                        72  * HEXIDECIMAL ENTRY MODE
+207A  34 02                 73  	PSHS	A		SAVE DATA
+207C  48                    74  	LSLA			X2
+207D  AB E0                 75  	ADDA	,S+		X3
+207F  8B 08                 76  	ADDA	#HEX_D		OFFSET TO HEX DISPLAY
+2081  20 02                 77  	BRA	VMODE4		AND PROCEED
+2083                        78  * TEXT ENTRY MODE
+2083  8B 3C                 79  VMODE3	ADDA	#TEXT_D		OFFSET TO TEXT
+2085  F6 25 AE              80  VMODE4	LDB	POSIT		GET POSITION
+2088  54                    81  	LSRB			/
+2089  54                    82  	LSRB			16
+208A  54                    83  	LSRB			TO CALC
+208B  54                    84  	LSRB			ROWS
+208C  CB 04                 85  	ADDB	#4		OFFSET TO DATA
+208E  BD 23 BE              86  	JSR	GOTOXY		POSITION CURSOR
+2091  BD 23 E6              87  VMODE5	JSR	GETKEY		GET A KEY
+2094  F6 25 AE              88  	LDB	POSIT		GET POSITION
+2097  1F 31                 89  	TFR	U,X		GET BASE ADDRESS
+2099  3A                    90  	ABX			'X' = ADDRESS IN TEXT
+209A  4D                    91  	TSTA			SPECIAL KEY?
+209B  10 2A 01 C2           92  	LBPL	ENTKEY		ENTRY KEY
+209F                        93  * REFRESH SCREEN
+209F  81 8C                 94  	CMPA	#$8C		CLEAR?
+20A1  27 AF                 95  	BEQ	VMODE1		YES, REFRESH
+20A3                        96  * UP ARROW
+20A3  81 80                 97  	CMPA	#$80		UP ARROW?
+20A5  26 21                 98  	BNE	VCMD1		NO, TRY NEXT
+20A7  C0 10                 99  	SUBB	#16		CONVERT
+20A9  24 4E                100  	BCC	SAVPOS		ITS OK
+20AB  CB 10                101  	ADDB	#16		GO BACK
+20AD  33 50                102  	LEAU	-16,U		BACKUP
+20AF                       103  * TEST FOR VALID UP RANGE
+20AF  11 83 26 17          104  TSTUP	CMPU	#D_BUFF		IN RANGE?
+20B3  24 0A                105  	BHS	REFRESH		ITS OK
+20B5  8E 24 91             106  	LDX	#HOMEMSG	HOME MESSAGE
+20B8  BF 25 B0             107  	STX	ERRMSG		DISPLAY IT
+20BB  CE 26 17             108  HOME	LDU	#D_BUFF		RESET PTR
+20BE  5F                   109  	CLRB			ZERO POSITION
+20BF  F7 25 AE             110  REFRESH	STB	POSIT		SET IT
+20C2  BD 23 44             111  	JSR	DSCR1		PARTIAL UPDATE
+20C5  7E 20 55             112  	JMP	VMODE2		AND PROCEED
+20C8                       113  * DOWN ARROW
+20C8  81 81                114  VCMD1	CMPA	#$81		DOWN ARROW?
+20CA  26 28                115  	BNE	VCMD2		NO, TRY NEXT
+20CC  CB 10                116  	ADDB	#16		NEXT LINE
+20CE  24 29                117  	BCC	SAVPOS		NO, ITS OK
+DUNFIELD 6809 ASSEMBLER: HEXIDECIMAL SCREEN EDITOR                    PAGE: 3
+
+20D0  C0 10                118  	SUBB	#16		CONVERT BACK
+20D2  33 C8 10             119  	LEAU	16,U		ADVANCE A ROW
+20D5                       120  *
+20D5  BE 25 AB             121  TSTDOWN	LDX	ENDADR		GET END
+20D8  30 89 FF 00          122  	LEAX	-256,X		CALCULATE BACK PAGE
+20DC  34 10                123  	PSHS	X		SAVE IT
+20DE  11 A3 E1             124  	CMPU	,S++		TEST IT
+20E1  23 DC                125  	BLS	REFRESH		ITS OK
+20E3  8E 24 AD             126  	LDX	#ENDMSG		GET MESSAGE
+20E6  BF 25 B0             127  	STX	ERRMSG		DISPLAY IT
+20E9  FE 25 AB             128  END	LDU	ENDADR		GET END
+20EC  33 C9 FF 00          129  	LEAU	-256,U		BACKUP SCREEN
+20F0  C6 FF                130  	LDB	#$FF		END OF SCREEN
+20F2  20 CB                131  	BRA	REFRESH		AND PROCEED
+20F4                       132  * RIGHT ARROW
+20F4  81 82                133  VCMD2	CMPA	#$82		RIGHT ARROW?
+20F6  26 07                134  	BNE	VCMD3		NO, ITS OK
+20F8  5C                   135  	INCB			ADVANCE 'B'
+20F9  F7 25 AE             136  SAVPOS	STB	POSIT		SAVE POSITION
+20FC  7E 20 55             137  	JMP	VMODE2		AND PROCEED
+20FF                       138  * LEFT ARROW
+20FF  81 83                139  VCMD3	CMPA	#$83		LEFT ARROW?
+2101  26 03                140  	BNE	VCMD4		AND PROCEED
+2103  5A                   141  	DECB			BACKUP
+2104  20 F3                142  	BRA	SAVPOS		SAVE POSITION
+2106                       143  * PAGE UP
+2106  81 84                144  VCMD4	CMPA	#$84		PAGE UP?
+2108  26 06                145  	BNE	VCMD5		NO, TRY NEXT
+210A  33 C9 FF 00          146  	LEAU	-256,U		BACKUP
+210E  20 9F                147  	BRA	TSTUP		AND TRY IT
+2110                       148  * PAGE DOWN
+2110  81 85                149  VCMD5	CMPA	#$85		PAGE DOWN?
+2112  26 06                150  	BNE	VCMD6		NO, TRY NEXT
+2114  33 C9 01 00          151  	LEAU	256,U		SKIP AHEAD
+2118  20 BB                152  	BRA	TSTDOWN		AND TRY IT
+211A                       153  * HOME & END
+211A  81 88                154  VCMD6	CMPA	#$88		HOME?
+211C  27 9D                155  	BEQ	HOME		DO IT
+211E  81 89                156  	CMPA	#$89		END?
+2120  27 C7                157  	BEQ	END		DO IT
+2122                       158  * TOGGLE DATA ENTRY MODE
+2122  81 8F                159  	CMPA	#$8F		F3?
+2124  26 06                160  	BNE	VCMD7		NO, TRY NEXT
+2126  73 25 AF             161  	COM	MODE		RESET MODE
+2129  7E 20 55             162  	JMP	VMODE2		AND PROCEED
+212C                       163  * COMMAND EXEC KEY
+212C  81 8D                164  VCMD7	CMPA	#$8D		F1?
+212E  27 10                165  	BEQ	ECMD		EXECUTE COMMAND
+2130  81 8E                166  	CMPA	#$8E		F2?
+2132  27 06                167  	BEQ	RECMD		RE-EXECUTE
+2134                       168  * INVALID KEY ENTERRED
+2134  8E 24 29             169  INVKEY	LDX	#BADKEY		POINT TO MESSAGE
+2137  7E 20 5A             170  	JMP	VERROR
+213A                       171  *
+213A                       172  * RE-EXECUTE LINE MODE COMMAND
+213A                       173  *
+213A  10 8E 25 B3          174  RECMD	LDY	#CMDBUF		SET UP PTR
+213E  20 40                175  	BRA	RECMD1		AND PROCEED
+DUNFIELD 6809 ASSEMBLER: HEXIDECIMAL SCREEN EDITOR                    PAGE: 4
+
+2140                       176  *
+2140                       177  * EXECUTE LINE MODE COMMAND
+2140                       178  *
+2140  CC 00 17             179  ECMD	LDD	#23		COMMAND INPUT LINE
+2143  BD 23 BE             180  	JSR	GOTOXY		MOVE THERE
+2146  3F                   181  	SWI			SOFTWARE INTERRUPT TO DOS
+2147  18                   182  	FCB	24		SYSTEM REQUEST NUMBER
+2148  43 6F 6D 6D 61 6E +  183  	FCCZ	'Command: '
+2152  BD 23 AA             184  	JSR	WCD		CLEAR REST
+2155                       185  * READ INPUT COMMAND
+2155  8E 25 B3             186  	LDX	#CMDBUF		POINT TO INPUT BUFFER
+2158  1F 12                187  	TFR	X,Y		SET UP PTR
+215A  BD 23 E6             188  ECMD1	JSR	GETKEY		GET A KEY
+215D  4D                   189  	TSTA			SPECIAL KEY?
+215E  2B 07                190  	BMI	ECMD2		YES, HANDLE IT
+2160  A7 80                191  	STA	,X+		WRITE IT
+2162  BD 23 91             192  	JSR	DCHAR		WRITE CHAR
+2165  20 F3                193  	BRA	ECMD1		AND PROCEED
+2167                       194  * SPECIAL KEY ENTERED
+2167  6F 84                195  ECMD2	CLR	,X		TERMINATE LINE
+2169  81 8B                196  	CMPA	#$8B		DELETE PREVIOUS?
+216B  26 0F                197  	BNE	ECMD3		NO, TRY NEXT
+216D  8C 25 B3             198  	CMPX	#CMDBUF		AT COMMAND BUFFER
+2170  23 CE                199  	BLS	ECMD		YES, DON'T DELETE
+2172  30 1F                200  	LEAX	-1,X		BACKUP
+2174  3F                   201  	SWI			SOFTWARE INTERRUPT TO DOS
+2175  18                   202  	FCB	24		SYSTEM REQUEST NUMBER
+2176  08 20 08 00          203  	FCB	8,' ',8,0	WIPE IT OUT
+217A  20 DE                204  	BRA	ECMD1		GET NEXT KEY
+217C                       205  * COMMAND KEY, RE-EXECUTE COMMAND
+217C  81 8D                206  ECMD3	CMPA	#$8D		F1?
+217E  26 B4                207  	BNE	INVKEY		INDICATE INVALID
+2180  CC 00 15             208  RECMD1	LDD	#21		RESET POINTER
+2183  BD 23 BE             209  	JSR	GOTOXY		NEW LINE
+2186  BD 23 AA             210  	JSR	WCD		CLEAR DISPLAY
+2189  3F                   211  	SWI			SOFTWARE INTERRUPT TO DOS
+218A  04                   212  	FCB	4		SYSTEM REQUEST NUMBER
+218B  27 25                213  	BEQ	ECMD3B		NULL, EXIT
+218D  BD 22 DA             214  	JSR	TOUPPER		INSURE ITS UPPERCASE
+2190  31 21                215  	LEAY	1,Y		SKIP COMMAND CHAR
+2192                       216  * 'W'RITE FILE COMMAND
+2192  81 57                217  	CMPA	#'W'		WRITE OUT FILE
+2194  26 1F                218  	BNE	ECMD4		NO, TRY NEXT
+2196  FC 25 AB             219  	LDD	ENDADR		GET END ADDRESS
+2199  83 26 17             220  	SUBD	#D_BUFF		'D' = SIZE OF FILE
+219C  1F 89                221  	TFR	A,B		B = # 256 BYTE BLOCKS
+219E  54                   222  	LSRB			B = # 512 BYTE BLOCKS
+219F  4F                   223  	CLRA			ZERO HIGH
+21A0  8E 26 17             224  	LDX	#D_BUFF		POINT TO BUFFER
+21A3  3F                   225  	SWI			SOFTWARE INTERRUPT TO DOS
+21A4  36                   226  	FCB	54		SYSTEM REQUEST NUMBER
+21A5  26 05                227  	BNE	ECMD3A		REPORT ERROR
+21A7  7F 25 AD             228  	CLR	CHANGED		INDICATE SAVED
+21AA  20 06                229  	BRA	ECMD3B		AND PROCEED
+21AC  8E 24 61             230  ECMD3A	LDX	#DOSERR		INDICATE DOS ERROR
+21AF  BF 25 B0             231  	STX	ERRMSG		SET IT
+21B2  7E 20 55             232  ECMD3B	JMP	VMODE2		RETURN TO MAIN SCREEN
+21B5                       233  * 'Q'UIT COMMAND
+DUNFIELD 6809 ASSEMBLER: HEXIDECIMAL SCREEN EDITOR                    PAGE: 5
+
+21B5  81 51                234  ECMD4	CMPA	#'Q'		QUIT?
+21B7  26 1A                235  	BNE	ECMD5		NO, TRY NEXT
+21B9  B6 25 AD             236  	LDA	CHANGED		MODIFIED?
+21BC  27 0F                237  	BEQ	ECMD4A		NO, ITS OK
+21BE  A6 A4                238  	LDA	,Y		GET NEXT
+21C0  BD 22 DA             239  	JSR	TOUPPER
+21C3  81 51                240  	CMPA	#'Q'		ANYWAY?
+21C5  27 06                241  	BEQ	ECMD4A		ITS OK
+21C7  8E 24 68             242  	LDX	#QUIMSG		POINT TO MESSAGE
+21CA  7E 20 5A             243  	JMP	VERROR		INDICATE ERROR
+21CD  BD 23 9E             244  ECMD4A	JSR	WCLS		CLEAR SCREEN
+21D0  4F                   245  	CLRA			ZERO RC
+21D1  3F                   246  	SWI			SOFTWARE INTERRUPT TO DOS
+21D2  00                   247  	FCB	0		SYSTEM REQUEST NUMBER
+21D3                       248  * 'G'OTO COMMAND
+21D3  81 47                249  ECMD5	CMPA	#'G'		GOTO?
+21D5  26 21                250  	BNE	ECMD6		NO, TRY NEXT
+21D7  8D 13                251  	BSR	CVCAP		CONVERT INPUT TO CAPS
+21D9  3F                   252  	SWI			SOFTWARE INTERRUPT TO DOS
+21DA  07                   253  	FCB	7		SYSTEM REQUEST NUMBER
+21DB  26 3A                254  	BNE	ECMD6B		REPORT ERROR
+21DD  1F 10                255  	TFR	X,D		COPY IT
+21DF  34 04                256  REPOS	PSHS	B		SAVE LOW
+21E1  5F                   257  	CLRB			ZERO LOW
+21E2  C3 26 17             258  	ADDD	#D_BUFF		OFFSET TO DATA BUFFER
+21E5  1F 03                259  	TFR	D,U		SET UP 'U'
+21E7  35 04                260  	PULS	B		RESTORE POSIT
+21E9  7E 20 D5             261  	JMP	TSTDOWN		TEST FOR IT
+21EC                       262  * CONVERT INPUT LINE TO UPPERCASE
+21EC  1F 21                263  CVCAP	TFR	Y,X		'X' = INP PTR
+21EE  A6 84                264  CVCAP1	LDA	,X		GET CHAR
+21F0  BD 22 DA             265  	JSR	TOUPPER		CONVERT TO UPPERCASE
+21F3  A7 80                266  	STA	,X+		WRITE IT BACK OUT
+21F5  26 F7                267  	BNE	CVCAP1		AND PROCEED
+21F7  39                   268  	RTS
+21F8                       269  * '/' HEXIDECIMAL SEARCH
+21F8  81 2F                270  ECMD6	CMPA	#'/'		HEX SEARCH?
+21FA  26 21                271  	BNE	ECMD7		NO, TRY NEXT
+21FC  8D EE                272  	BSR	CVCAP		CONVERT TO CAPS
+21FE  7F 25 B2             273  	CLR	TEMP		ZERO TEMP
+2201  8E 25 E5             274  	LDX	#FNDBUF		POINT TO FIND BUFFER
+2204  3F                   275  ECMD6A	SWI			SOFTWARE INTERRUPT TO DOS
+2205  04                   276  	FCB	4		SYSTEM REQUEST NUMBER
+2206  27 28                277  	BEQ	SEARCH		NO MORE OPS
+2208  34 10                278  	PSHS	X		SAVE 'X'
+220A  3F                   279  	SWI			SOFTWARE INTERRUPT TO DOS
+220B  07                   280  	FCB	7		SYSTEM REQUEST NUMBER
+220C  35 10                281  	PULS	X		RESTORE 'X'
+220E  26 07                282  	BNE	ECMD6B		REPORT ERROR
+2210  E7 80                283  	STB	,X+		WRITE IT
+2212  7C 25 B2             284  	INC	TEMP		ADVANCE COUNT
+2215  20 ED                285  	BRA	ECMD6A		AND PROCEED
+2217  8E 24 35             286  ECMD6B	LDX	#BADHEX		INDICATE INVALID
+221A  7E 20 5A             287  	JMP	VERROR		REPORT ERROR
+221D                       288  * '?' SEARCH FOR TEXT
+221D  81 3F                289  ECMD7	CMPA	#'?'		SEARCH?
+221F  26 3A                290  	BNE	ECMD8		NO, TRY NEXT
+2221  8E 25 E5             291  	LDX	#FNDBUF		POINT TO FIND BUFFER
+DUNFIELD 6809 ASSEMBLER: HEXIDECIMAL SCREEN EDITOR                    PAGE: 6
+
+2224  C6 FF                292  	LDB	#-1		BEGIN WITH -1
+2226  5C                   293  ECMD7A	INCB			ADVANCE IT
+2227  A6 A0                294  	LDA	,Y+		GET NEXT CHAR
+2229  A7 80                295  	STA	,X+		WRITE INTO FIND BUFFER
+222B  26 F9                296  	BNE	ECMD7A		CONTINUE
+222D  F7 25 B2             297  	STB	TEMP		SAVE FOR LATER
+2230                       298  * PERFORM SEARCH
+2230  1F 31                299  SEARCH	TFR	U,X		GET PTR
+2232  F6 25 AE             300  	LDB	POSIT		GET POSITION
+2235  3A                   301  	ABX			ADVANCE IT
+2236  10 8E 25 E5          302  SEARC1	LDY	#FNDBUF		POINT TO FIND BUFFER
+223A  5F                   303  	CLRB			ZERO COUNT
+223B  30 01                304  	LEAX	1,X		ADVANCE BY 1
+223D  BC 25 AB             305  SEARC2	CMPX	ENDADR		ARE WE OVER?
+2240  24 13                306  	BHS	SEARC3		YES, REPORT ERROR
+2242  A6 A0                307  	LDA	,Y+		GET CHAR
+2244  A1 85                308  	CMPA	B,X		DOES IT MATCH?
+2246  26 EE                309  	BNE	SEARC1		NO, KEEP LOOKING
+2248  5C                   310  	INCB			ADVANCE COUNT
+2249  F1 25 B2             311  	CMPB	TEMP		ARE WE OVER?
+224C  25 EF                312  	BLO	SEARC2		NO, KEEP LOOKING
+224E                       313  * WE FOUND STRING
+224E  1F 10                314  	TFR	X,D		'D' = ADDRESS
+2250  83 26 17             315  	SUBD	#D_BUFF		ADJUST TO TEXT POSITION
+2253  20 8A                316  	BRA	REPOS		POSITION US THERE
+2255                       317  * STRING WAS NOT FOUND
+2255  8E 24 57             318  SEARC3	LDX	#NOTFND		POINT TO MESSAGE
+2258  7E 20 5A             319  	JMP	VERROR		REPORT ERROR
+225B                       320  *
+225B  8E 24 47             321  ECMD8	LDX	#BADCMD		INVALID COMMAND
+225E  7E 20 5A             322  	JMP	VERROR		REPORT ERROR
+2261                       323  *
+2261                       324  * DATA ENTRY KEY PRESSED
+2261                       325  *
+2261  F6 25 AF             326  ENTKEY	LDB	MODE		GET DATA MODE
+2264  2B 11                327  	BMI	ENTK1		CHARACTER MODE
+2266  8D 46                328  	BSR	GETHEX		CONVERT HEX
+2268  48                   329  	LSLA			SHIFT
+2269  48                   330  	LSLA			OVER
+226A  48                   331  	LSLA			INTO HIGH
+226B  48                   332  	LSLA			BITS
+226C  B7 25 B2             333  	STA	TEMP		SAVE FOR LATER
+226F  BD 23 E6             334  	JSR	GETKEY		GET NEXT KEY
+2272  8D 3A                335  	BSR	GETHEX		CONVERT TO HEX
+2274  BA 25 B2             336  	ORA	TEMP		INCLUDE FIRST
+2277  A7 84                337  ENTK1	STA	,X		WRITE IN TEXT
+2279  86 FF                338  	LDA	#-1		GET CHANGED FLAG
+227B  B7 25 AD             339  	STA	CHANGED		INDICATE CHANGED
+227E                       340  * FOR CORRECT DATA, ADVANCE CURSOR POSITION
+227E  B6 25 AE             341  	LDA	POSIT		GET POSITION
+2281  7C 25 AE             342  	INC	POSIT		ADVANCE IT
+2284                       343  * UPDATE SCREEN CHARACTERS
+2284  1F 89                344  ENTK2	TFR	A,B		COPY FOR LATER
+2286  84 0F                345  	ANDA	#%00001111	GET 'X' POSITION
+2288  B7 25 B2             346  	STA	TEMP		SAVE FOR LATER
+228B  48                   347  	LSLA			X2
+228C  BB 25 B2             348  	ADDA	TEMP		x3
+228F  8B 08                349  	ADDA	#HEX_D		OFFSET TO CHAR
+DUNFIELD 6809 ASSEMBLER: HEXIDECIMAL SCREEN EDITOR                    PAGE: 7
+
+2291  54                   350  	LSRB			/
+2292  54                   351  	LSRB			16
+2293  54                   352  	LSRB			TO CALC
+2294  54                   353  	LSRB			ROWS
+2295  CB 04                354  	ADDB	#4		OFFSET TO DATA
+2297  BD 23 BE             355  	JSR	GOTOXY		POSITION CURSOR
+229A  A6 84                356  	LDA	,X		GET CHAR
+229C  3F                   357  	SWI			SOFTWARE INTERRUPT TO DOS
+229D  1C                   358  	FCB	28		SYSTEM REQUEST NUMBER
+229E  B6 25 B2             359  	LDA	TEMP		GET POSITION AGAIN
+22A1  8B 3C                360  	ADDA	#TEXT_D		CONVERT TO OFFSET
+22A3  BD 23 BE             361  	JSR	GOTOXY		MOVE THERE
+22A6  A6 84                362  	LDA	,X		GET CHAR
+22A8  BD 23 91             363  	JSR	DCHAR		DISPLAY IT
+22AB  7E 20 55             364  	JMP	VMODE2		AND RESTORE
+22AE                       365  * CONVERT CHAR IN 'A' TO HEX NIBBLE
+22AE  1F 89                366  GETHEX	TFR	A,B		SAVE CHAR
+22B0  81 30                367  	CMPA	#'0'		IN RANGE?
+22B2  25 19                368  	BLO	GETH2		BAD
+22B4  81 39                369  	CMPA	#'9'		IN RANGE?
+22B6  23 0C                370  	BLS	GETH1		GOOD
+22B8  8D 20                371  	BSR	TOUPPER		CONVERT TO UPPERCASE
+22BA  81 41                372  	CMPA	#'A'		IN RANGE?
+22BC  25 0F                373  	BLO	GETH2		BAD
+22BE  81 46                374  	CMPA	#'F'		IN RANGE?
+22C0  22 0B                375  	BHI	GETH2		BAD
+22C2  80 07                376  	SUBA	#7		PARTIAL CONVERT
+22C4                       377  * VALID HEX DIGIT ENTERED
+22C4  80 30                378  GETH1	SUBA	#'0'		TOTAL CONVERT
+22C6  1E 89                379  	EXG	A,B		SWAP
+22C8  3F                   380  	SWI			SOFTWARE INTERRUPT TO DOS
+22C9  21                   381  	FCB	33		SYSTEM REQUEST NUMBER
+22CA  1F 98                382  	TFR	B,A		GET CHAR BACK
+22CC  39                   383  	RTS
+22CD                       384  * INVALID HEX DIGIT ENTERED
+22CD  32 62                385  GETH2	LEAS	2,S		SKIP SAVED PC
+22CF  CC 24 35             386  	LDD	#BADHEX		INDICATE INVALID
+22D2  FD 25 B0             387  	STD	ERRMSG		SET MESSAGE
+22D5  B6 25 AE             388  	LDA	POSIT		GET POSITION
+22D8  20 AA                389  	BRA	ENTK2		AND FIX SCREEN
+22DA                       390  * CONVERT CHAR(A) TO UPPER CASE
+22DA  81 61                391  TOUPPER	CMPA	#'A'+$20	LOWER CASE 'A'?
+22DC  25 06                392  	BLO	TOUPP1		NO, ITS OK
+22DE  81 7A                393  	CMPA	#'Z'+$20	LOWER CASE 'Z'?
+22E0  22 02                394  	BHI	TOUPP1		NO, ITS OK
+22E2  84 5F                395  	ANDA	#%01011111	CONVERT TO UPPER
+22E4  39                   396  TOUPP1	RTS
+22E5                       397  *
+22E5                       398  * DRAW A SCREEN
+22E5                       399  *
+22E5  BD 23 9E             400  DSCREEN	JSR	WCLS		CLEAR SCREEN
+22E8  C6 1E                401  	LDB	#30		COUNT
+22EA  8D 6C                402  	BSR	DDASH		DISPLAY DASHES
+22EC  BD 23 A2             403  	JSR	WSO		SPECIAL EFFECTS ON
+22EF  3F                   404  	SWI			SOFTWARE INTERRUPT TO DOS
+22F0  18                   405  	FCB	24		SYSTEM REQUEST NUMBER
+22F1  20 48 45 58 45 44 +  406  	FCCZ	' HEXED Version 1.0 '
+2305  BD 23 A6             407  	JSR	WSE		SPECIAL EFFECTS OFF
+DUNFIELD 6809 ASSEMBLER: HEXIDECIMAL SCREEN EDITOR                    PAGE: 8
+
+2308  C6 1E                408  	LDB	#30		COUNT
+230A  8D 4C                409  	BSR	DDASH		OUTPUT DASHES
+230C  CC 00 02             410  	LDD	#$0002		NEW POSITION
+230F  BD 23 BE             411  	JSR	GOTOXY		POSITION CURSOR
+2312  3F                   412  	SWI			SOFTWARE INTERRUPT TO DOS
+2313  18                   413  	FCB	24		SYSTEM REQUEST NUMBER
+2314  46 69 6C 65 3A 20 +  414  	FCCZ	'File: '
+231B  3F                   415  	SWI			SOFTWARE INTERRUPT TO DOS
+231C  1E                   416  	FCB	30		SYSTEM REQUEST NUMBER
+231D  CC 3C 02             417  	LDD	#=TEXT_D+2	POSITION
+2320  BD 23 BE             418  	JSR	GOTOXY		POSITION CURSOR
+2323  3F                   419  	SWI			SOFTWARE INTERRUPT TO DOS
+2324  18                   420  	FCB	24		SYSTEM REQUEST NUMBER
+2325  53 69 7A 65 3A 20 +  421  	FCCZ	'Size: '
+232C  FC 25 AB             422  	LDD	ENDADR		GET END
+232F  83 26 17             423  	SUBD	#D_BUFF		CALCULATE SIZE
+2332  34 06                424  	PSHS	A,B		SAVE IT
+2334  3F                   425  	SWI			SOFTWARE INTERRUPT TO DOS
+2335  1A                   426  	FCB	26		SYSTEM REQUEST NUMBER
+2336  3F                   427  	SWI			SOFTWARE INTERRUPT TO DOS
+2337  18                   428  	FCB	24		SYSTEM REQUEST NUMBER
+2338  20 28 24 00          429  	FCCZ	' ($'
+233C  35 06                430  	PULS	A,B		RESTORE IT
+233E  3F                   431  	SWI			SOFTWARE INTERRUPT TO DOS
+233F  1B                   432  	FCB	27		SYSTEM REQUEST NUMBER
+2340  86 29                433  	LDA	#')'		CLOSING
+2342  3F                   434  	SWI			SOFTWARE INTERRUPT TO DOS
+2343  21                   435  	FCB	33		SYSTEM REQUEST NUMBER
+2344  CC 00 04             436  DSCR1	LDD	#$0004		NEW POSITION
+2347  BD 23 BE             437  	JSR	GOTOXY		POSITION CURSOR
+234A  C6 10                438  	LDB	#16		16x16 BYTE LINES
+234C  1F 31                439  	TFR	U,X		'X' = ADDR
+234E  8D 10                440  DSCR2	BSR	DLINE		DISPLAY LINE
+2350  30 88 10             441  	LEAX	16,X		ADVANCE IT
+2353  5A                   442  	DECB			REDUCE COUNT
+2354  26 F8                443  	BNE	DSCR2		AND CONTINUE
+2356  20 52                444  	BRA	WCD
+2358                       445  * DISPLAY LINE OF DASHES (B=LENGTH)
+2358  86 2D                446  DDASH	LDA	#'-'		GET DASH
+235A  3F                   447  DDASH1	SWI			SOFTWARE INTERRUPT TO DOS
+235B  21                   448  	FCB	33		SYSTEM REQUEST NUMBER
+235C  5A                   449  	DECB			REDUCE COUNT
+235D  26 FB                450  	BNE	DDASH1		AND CONTINUE
+235F  39                   451  	RTS
+2360                       452  *
+2360                       453  * DISPLAY 16 BYTE LINE(X)
+2360                       454  *
+2360  34 16                455  DLINE	PSHS	A,B,X		SAVE REG'S
+2362  1F 10                456  	TFR	X,D		GET ADDRESS
+2364  83 26 17             457  	SUBD	#D_BUFF		CONVERT ADDRESS
+2367  3F                   458  	SWI			SOFTWARE INTERRUPT TO DOS
+2368  1B                   459  	FCB	27		SYSTEM REQUEST NUMBER
+2369  86 04                460  	LDA	#HEX_D-4	# SPACES
+236B  8D 1E                461  	BSR	SPACES		DISPLAY SPACES
+236D                       462  * DISPLAY HEX FIELDS
+236D  C6 10                463  	LDB	#16		16 BYTES/LINE
+236F  A6 80                464  DLINE1	LDA	,X+		GET ADDRESS
+2371  3F                   465  	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: HEXIDECIMAL SCREEN EDITOR                    PAGE: 9
+
+2372  1C                   466  	FCB	28		SYSTEM REQUEST NUMBER
+2373  3F                   467  	SWI			SOFTWARE INTERRUPT TO DOS
+2374  15                   468  	FCB	21		SYSTEM REQUEST NUMBER
+2375  5A                   469  	DECB			REDUCE COUNT
+2376  26 F7                470  	BNE	DLINE1		DO ALL
+2378                       471  * DISPLAY TEXT FIELDS
+2378  86 04                472  	LDA	#TEXT_D-HEX_D-48
+237A  8D 0F                473  	BSR	SPACES		OUTPUT SPACES
+237C  AE 62                474  	LDX	2,S		RESTORE 'X'
+237E  C6 10                475  	LDB	#16		16 BYTES/LINE
+2380  A6 80                476  DLINE2	LDA	,X+		GET CHAR
+2382  8D 0D                477  	BSR	DCHAR		DISPLAY CHAR
+2384  5A                   478  	DECB			REDUCE COUNT
+2385  26 F9                479  	BNE	DLINE2		DO THEM ALL
+2387  3F                   480  	SWI			SOFTWARE INTERRUPT TO DOS
+2388  16                   481  	FCB	22		SYSTEM REQUEST NUMBER
+2389  35 96                482  	PULS	A,B,X,PC	RESTORE & RETURN
+238B                       483  * DISPLAY # SPACES
+238B  3F                   484  SPACES	SWI			SOFTWARE INTERRUPT TO DOS
+238C  15                   485  	FCB	21		SYSTEM REQUEST NUMBER
+238D  4A                   486  	DECA			REDUCE COUNT
+238E  26 FB                487  	BNE	SPACES		DO THEM ALL
+2390  39                   488  	RTS
+2391                       489  * DISPLAY CHARACTER
+2391  81 20                490  DCHAR	CMPA	#' '		IN RANGE?
+2393  25 04                491  	BLO	DCHAR1		NO, CONVERT
+2395  81 7F                492  	CMPA	#$7F		ALSO IN RANGE?
+2397  25 02                493  	BLO	DCHAR2		YES, ITS OK
+2399  86 2E                494  DCHAR1	LDA	#'.'		CONVERT TO DOT
+239B  3F                   495  DCHAR2	SWI			SOFTWARE INTERRUPT TO DOS
+239C  21                   496  	FCB	33		SYSTEM REQUEST NUMBER
+239D  39                   497  	RTS
+239E                       498  * WRITE SPECIAL CONTROL CHARACTERS
+239E  86 80                499  WCLS	LDA	#$80		CLEAR SCREEN
+23A0  20 0A                500  	BRA	PUTCHR
+23A2  86 83                501  WSO	LDA	#$83		SPECIAL ON
+23A4  20 06                502  	BRA	PUTCHR
+23A6  86 84                503  WSE	LDA	#$84		SPECIAL OFF
+23A8  20 02                504  	BRA	PUTCHR
+23AA  86 82                505  WCD	LDA	#$82		CLEAR DISPLAY
+23AC                       506  *
+23AC                       507  * WRITE A CHARACTER TO THE DISPLAY
+23AC                       508  *
+23AC  4D                   509  PUTCHR	TSTA			SPECIAL CASE?
+23AD  2B 03                510  	BMI	PUTC1		YES, HANDLE IT
+23AF  3F                   511  	SWI			SOFTWARE INTERRUPT TO DOS
+23B0  21                   512  	FCB	33		SYSTEM REQUEST NUMBER
+23B1  39                   513  	RTS
+23B2                       514  * SPECIAL STRING TO OUTPUT
+23B2  34 12                515  PUTC1	PSHS	A,X		SAVE REGISTERS
+23B4  48                   516  	LSLA			X2 FOR TWO BYTE ENTRIES
+23B5  8E 24 D6             517  	LDX	#PUTTAB		POINT TO TABLE
+23B8  AE 86                518  	LDX	A,X		GET DATA TO WRITE
+23BA  3F                   519  	SWI			SOFTWARE INTERRUPT TO DOS
+23BB  17                   520  	FCB	23		SYSTEM REQUEST NUMBER
+23BC  35 92                521  	PULS	A,X,PC		RESTORE & RETURN
+23BE                       522  *
+23BE                       523  * MOVE CURSOR POSITION
+DUNFIELD 6809 ASSEMBLER: HEXIDECIMAL SCREEN EDITOR                    PAGE: 10
+
+23BE                       524  *
+23BE  34 16                525  GOTOXY	PSHS	A,B,X		SAVE CHARS
+23C0  BE 24 D4             526  	LDX	GXYPTR		POINT TO BUFFER
+23C3  A6 80                527  GOTOXY1	LDA	,X+		GET CHAR
+23C5  27 1D                528  	BEQ	GOTOXY6		END, EXIT
+23C7  2B 04                529  	BMI	GOTOXY3		SPECIAL CODE
+23C9                       530  * NORMAL CHARACTER, DISPLAY IT
+23C9  3F                   531  GOTOXY2	SWI			SOFTWARE INTERRUPT TO DOS
+23CA  21                   532  	FCB	33		SYSTEM REQUEST NUMBER
+23CB  20 F6                533  	BRA	GOTOXY1		AND PROCEED
+23CD                       534  * SPECIAL TRANSLATED (X/Y) CODE
+23CD  E6 E4                535  GOTOXY3	LDB	,S		GET 'X' POSITION
+23CF  85 40                536  	BITA	#%01000000	IS IT 'X'?
+23D1  27 02                537  	BEQ	GOTOXY4		YES, ALL IS OK
+23D3  E6 61                538  	LDB	1,S		GET 'Y' POSITION
+23D5  EB 80                539  GOTOXY4	ADDB	,X+		INCLUDE OFFSET
+23D7  85 20                540  	BITA	#%00100000	DECIMAL?
+23D9  26 04                541  	BNE	GOTOXY5		YES, DO DECIMAL
+23DB  1F 98                542  	TFR	B,A		GET CHAR
+23DD  20 EA                543  	BRA	GOTOXY2		OUTPUT & PROCEED
+23DF  4F                   544  GOTOXY5	CLRA			ZERO HIGH
+23E0  3F                   545  	SWI			SOFTWARE INTERRUPT TO DOS
+23E1  1A                   546  	FCB	26		SYSTEM REQUEST NUMBER
+23E2  20 DF                547  	BRA	GOTOXY1		AND PROCEED
+23E4  35 96                548  GOTOXY6	PULS	A,B,X,PC	RESTORE & RETURN
+23E6                       549  *
+23E6                       550  * GET AN INPUT KEY FROM THE TERMINAL
+23E6                       551  *
+23E6  34 54                552  GETKEY	PSHS	B,X,U		SAVE REGS
+23E8  CE 24 E2             553  GETK1	LDU	#GETKTAB	POINT TO KEY TABLE
+23EB  C6 80                554  	LDB	#$80		FIRST FUNCTION CODE
+23ED  8E 24 C8             555  GETK2	LDX	#GETKBUF	POINT TO KEY BUFFER
+23F0  A6 80                556  GETK3	LDA	,X+		GET CHAR
+23F2  27 22                557  	BEQ	GETK6		PARTIAL MATCH
+23F4  A1 C4                558  	CMPA	,U		GET CHAR FROM TABLE
+23F6  26 04                559  	BNE	GETK4		DOSN'T MATCH
+23F8  33 41                560  	LEAU	1,U		ADVANCE
+23FA  20 F4                561  	BRA	GETK3		KEEP LOOKING
+23FC                       562  * CHAR DID NOT MATCH, ADVANCE TO NEXT
+23FC  A6 C0                563  GETK4	LDA	,U+		GET CHAR
+23FE  26 FC                564  	BNE	GETK4		KEEP LOOKING
+2400  5C                   565  	INCB			ADVANCE FUNCTION CODE
+2401  A6 C4                566  	LDA	,U		END OF TABLE?
+2403  26 E8                567  	BNE	GETK2		NO, KEEP LOOKING
+2405                       568  * HIT END OF TABLE, NO MATCHES
+2405                       569  * REMOVE AND RETURN ONE CHAR FROM THE INPUT
+2405  8E 24 C8             570  	LDX	#GETKBUF	POINT TO BUFFER
+2408  A6 80                571  	LDA	,X+		GET CHAR
+240A  27 0E                572  	BEQ	GETK8		NONE, GET A KEY
+240C  E6 80                573  GETK5	LDB	,X+		GET NEXT CHAR
+240E  E7 1E                574  	STB	-2,X		WRITE IT
+2410  26 FA                575  	BNE	GETK5		DO THEM ALL
+2412  84 7F                576  	ANDA	#%01111111	INSURE NO HIGH BUT
+2414  35 D4                577  	PULS	B,X,U,PC	RETURN WITH CHAR
+2416                       578  * HIT END OF STRING WITH ALL MATCHES
+2416  A6 C4                579  GETK6	LDA	,U		END OF STRING?
+2418  27 08                580  	BEQ	GETK7		YES, WE HAVE IT
+241A  3F                   581  GETK8	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: HEXIDECIMAL SCREEN EDITOR                    PAGE: 11
+
+241B  22                   582  	FCB	34		SYSTEM REQUEST NUMBER
+241C  A7 1F                583  	STA	-1,X		WRITE INTO STRING
+241E  6F 84                584  	CLR	,X		ZERO END
+2420  20 C6                585  	BRA	GETK1		RETEST FOR MATCHES
+2422                       586  * WE FOUND AN INPUT STRING
+2422  1F 98                587  GETK7	TFR	B,A		GET CHAR
+2424  7F 24 C8             588  	CLR	>GETKBUF	ZERO BUFFER
+2427  35 D4                589  	PULS	B,X,U,PC	RESTORE & RETURN
+2429                       590  *
+2429                       591  * STRINGS & MESSAGES
+2429                       592  *
+2429  49 6E 76 61 6C 69 +  593  BADKEY	FCCZ	'Invalid key'
+2435  49 6E 76 61 6C 69 +  594  BADHEX	FCCZ	'Invalid hex digit'
+2447  55 6E 6B 6E 6F 77 +  595  BADCMD	FCCZ	'Unknown command'
+2457  4E 6F 74 20 66 6F +  596  NOTFND	FCCZ	'Not found'
+2461  46 61 69 6C 65 64 +  597  DOSERR	FCCZ	'Failed'
+2468  55 6E 73 61 76 65 +  598  QUIMSG	FCCZ	"Unsaved changes, use 'qq' to quit anyway"
+2491  42 61 63 6B 75 70 +  599  HOMEMSG	FCCZ	'Backup beyond start of file'
+24AD  41 64 76 61 6E 63 +  600  ENDMSG	FCCZ	'Advance beyond end of file'
+24C8                       601  * GETKEY INPUT BUFFER
+24C8  00 00 00 00 00       602  GETKBUF	FCB	0,0,0,0,0	INPUT BUFFER
+24CD  00 00 00 00 00       603  	FCB	0,0,0,0,0	FOR GET KEY
+24D2                       604  * OUTPUT TRANSLATION TABLES
+24D2  24 E2                605  ISTPTR	FDB	GETKTAB		INITIALIZATION STRING
+24D4  24 E2                606  GXYPTR	FDB	GETKTAB		GOTO X-Y HANDLER
+24D6  24 E2                607  PUTTAB	FDB	GETKTAB		CLEAR SCREEN
+24D8  24 E2                608  	FDB	GETKTAB		CLEAR END OF LINE
+24DA  24 E2                609  	FDB	GETKTAB		CLEAR END OF DISPLAY
+24DC  24 E2                610  	FDB	GETKTAB		SPECIAL EFFECTS ON
+24DE  24 E2                611  	FDB	GETKTAB		SPECIAL EFFECTS OFF
+24E0  24 E2                612  	FDB	GETKTAB		SCROLL FORWARD
+24E2                       613  * STANDARD TERMINAL KEYS INPUT LOOKUP TABLE
+24E2  00                   614  GETKTAB	FCB	0		CURSOR UP
+24E3                       615  	RMB	200		SAVE KEY SPACE
+25AB                       616  *
+25AB                       617  * RESERVED VARIABLES
+25AB                       618  *
+25AB  26 17                619  ENDADR	FDB	D_BUFF		ENDING ADDRESS
+25AD  00                   620  CHANGED	FCB	0		FILE CHANGED FLAG
+25AE  00                   621  POSIT	FCB	0		CURSOR POSITION
+25AF  00                   622  MODE	FCB	0		TEXT/HEX MODE
+25B0  00 00                623  ERRMSG	FDB	0		REPORT ERROR
+25B2                       624  TEMP	RMB	1		TEMPORARY STORAGE
+25B3                       625  CMDBUF	RMB	50		COMMAND INPUT BUFFER
+25E5                       626  FNDBUF	RMB	50		FIND BUFFER
+2617                       627  D_BUFF	EQU	*		DATA BUFFER

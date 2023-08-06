@@ -1,0 +1,1065 @@
+<
+ ORG $2000
+?begin LDS #$D000
+ LDX #?temp
+?beg0 CLR ,X+
+ CMPX #?heap
+ BLS ?beg0
+ LDU #ARGV
+ LDD #?av0
+ STD ,U++
+?beg1 FCB $3F,4
+ BEQ ?beg4
+ STY ,U++
+?beg2 LDA ,Y+
+ BEQ ?beg4
+ CMPA #$0D
+ BEQ ?beg3
+ CMPA #' '
+ BNE ?beg2
+ CLR -1,Y
+ BRA ?beg1
+?beg3 CLR -1,Y
+?beg4 TFR U,D
+ SUBD #ARGV
+ LSRA
+ RORB
+ PSHS A,B
+ LDD #ARGV
+ PSHS A,B
+ JSR main
+ PULS A,B,X
+ CLRA
+ FCB $3F,0
+?av0 FCCZ '?'
+?mul PSHS D,X
+ LDA 1,S
+ LDB 3,S
+ MUL
+ PSHS A,B
+ LDA 2,S
+ LDB 5,S
+ MUL
+ ADDB ,S
+ STB ,S
+ LDA 3,S
+ LDB 4,S
+ MUL
+ ADDB ,S
+ STB ,S
+ PULS A,B
+ LEAS 4,S
+ RTS
+?sdiv PSHS A,B,X
+ EORA 2,S
+ TFR D,Y
+ LDD ,S
+ BPL ?sdiv1
+ BSR ?sdiv3
+ STD ,S
+?sdiv1 LDD 2,S
+ BPL ?sdiv2
+ BSR ?sdiv3
+ STD 2,S
+?sdiv2 TFR Y,D
+ TSTA
+ PULS A,B,X
+ BPL ?div
+ BSR ?mod
+ TFR X,D
+?sdiv3 COMA
+ COMB
+ ADDD #1
+ RTS
+?div BSR ?mod
+ TFR X,D
+ RTS
+?smod EQU *
+?mod PSHS D,X
+ CLRA
+ CLRB
+ LDX #17
+?mod1 ANDCC #%11111110
+?mod2 ROL 3,S
+ ROL 2,S
+ LEAX -1,X
+ BEQ ?mod3
+ ROLB
+ ROLA
+ CMPD ,S
+ BLO ?mod1
+ SUBD ,S
+ ORCC #00000001
+ BRA ?mod2
+?mod3 LEAS 2,S
+ PULS X,PC
+?shl EXG D,X
+ CMPX #0
+ BEQ nargs
+?shl1 LSLB
+ ROLA
+ LEAX -1,X
+ BNE ?shl1
+nargs RTS
+?shr EXG D,X
+ CMPX #0
+ BEQ nargs
+?shr1 LSRA
+ RORB
+ LEAX -1,X
+ BNE ?shr1
+ RTS
+?gt PSHS A,B
+ CMPX ,S++
+ BGT ?ret1
+ BRA ?ret0
+?ge PSHS A,B
+ CMPX ,S++
+ BGE ?ret1
+ BRA ?ret0
+?lt PSHS A,B
+ CMPX ,S++
+ BLT ?ret1
+ BRA ?ret0
+?le PSHS A,B
+ CMPX ,S++
+ BLE ?ret1
+ BRA ?ret0
+?eq PSHS A,B
+ CMPX ,S++
+ BEQ ?ret1
+?ret0 CLRA
+ CLRB
+ RTS
+?ne PSHS A,B
+ CMPX ,S++
+ BEQ ?ret0
+?ret1 LDD #1
+ RTS
+?ugt PSHS A,B
+ CMPX ,S++
+ BHI ?ret1
+ BRA ?ret0
+?uge PSHS A,B
+ CMPX ,S++
+ BHS ?ret1
+ BRA ?ret0
+?ult PSHS A,B
+ CMPX ,S++
+ BLO ?ret1
+ BRA ?ret0
+?ule PSHS A,B
+ CMPX ,S++
+ BLS ?ret1
+ BRA ?ret0
+?not CMPD #0
+ BNE ?ret0
+ BRA ?ret1
+?switch LDX ,U++
+ BEQ ?swit1
+ CMPD ,U++
+ BNE ?switch
+ JMP ,X
+?swit1 JMP [,U]
+$DD:?temp 2
+$DD:ARGV 20
+>
+?heap EQU *
+-
+abort LEAS 2,S
+ JSR putstr
+ JMP exit
+$EX:putstr
+-
+atoi LDU 2,S
+?1 LDA ,U+
+ CMPA #' '
+ BEQ ?1
+ CMPA #9
+ BEQ ?1
+ LDX #0
+ CMPA #'-'
+ PSHS CC
+ BEQ ?2
+ LEAU -1,U
+?2 LDA ,U+
+ SUBA #'0'
+ CMPA #9
+ BHI ?3
+ PSHS A
+ LDD #10
+ JSR ?mul
+ TFR D,X
+ PULS B
+ ABX Value
+ BRA ?2
+?3 TFR X,D
+ PULS CC
+ BNE ?4
+ COMA
+ COMB
+ ADDD #1
+?4 RTS
+-
+concat LSLB
+ LEAY B,S
+ LSRB
+ LDU ,Y
+?1 DECB
+ BEQ ?3
+ LDX ,--Y
+?2 LDA ,X+
+ BEQ ?1
+ STA ,U+
+ BRA ?2
+?3 CLR ,U
+ RTS
+-
+_chartype_ EQU *
+ FCB $00
+ FCB $01,$01,$01,$01,$01,$01,$01,$01
+ FCB $01,$03,$01,$01,$01,$01,$01,$01
+ FCB $01,$01,$01,$01,$01,$01,$01,$01
+ FCB $01,$01,$01,$01,$01,$01,$01,$01
+ FCB $02,$40,$40,$40,$40,$40,$40,$40
+ FCB $40,$40,$40,$40,$40,$40,$40,$40
+ FCB $04,$04,$04,$04,$04,$04,$04,$04
+ FCB $04,$04,$40,$40,$40,$40,$40,$40
+ FCB $40,$28,$28,$28,$28,$28,$28,$08
+ FCB $08,$08,$08,$08,$08,$08,$08,$08
+ FCB $08,$08,$08,$08,$08,$08,$08,$08
+ FCB $08,$08,$08,$40,$40,$40,$40,$40
+ FCB $40,$30,$30,$30,$30,$30,$30,$10
+ FCB $10,$10,$10,$10,$10,$10,$10,$10
+ FCB $10,$10,$10,$10,$10,$10,$10,$10
+ FCB $10,$10,$10,$40,$40,$40,$40,$01
+-
+enable ANDCC #%11101111
+ RTS
+disable ORCC #%00010000
+ RTS
+enablef ANDCC #%10111111
+ RTS
+disablef ORCC #%01000000
+ RTS
+-
+exit LDA 3,S
+ FCB $3F,0
+-
+_format_ LDX 2,S
+ LDU ,--X
+ STX 2,S
+?1 LDA ,U+
+ CMPA #'%'
+ BEQ ?2
+ LDX 4,S
+ STA ,X+
+ STX 4,S
+ TSTA
+ BNE ?1
+ RTS
+?2 LDA ,U
+ LDB #' '
+ CMPA #'-'
+ BNE ?3
+ ORB #%10000000
+ LEAU 1,U
+ LDA ,U
+?3 CMPA #'0'
+ BNE ?4
+ ORB #'0'
+?4 STB ?temp
+ CLRB
+?5 LDA ,U+
+ SUBA #'0'
+ CMPA #10
+ BHS ?6
+ PSHS A
+ LDA #10
+ MUL
+ ADDB ,S+
+ BRA ?5
+?6 STB ?temp+1
+ LDX 2,S
+ LDD ,--X
+ STX 2,S
+ TFR D,X
+ LDA -1,U
+ PSHS U
+ LDU 6,S
+ LDB #2
+ CMPA #'b'
+ BEQ ?8
+ LDB #8
+ CMPA #'o'
+ BEQ ?8
+ LDB #16
+ CMPA #'x'
+ BEQ ?8
+ CMPA #'u'
+ BEQ ?7
+ CMPA #'d'
+ BNE ?14
+ TFR X,D
+ TSTA
+ BPL ?7
+ COMA
+ COMB
+ ADDD #1
+ TFR D,X
+ LDA #'-'
+ STA ,U+
+ LDB ?temp+1
+ BEQ ?7
+ DEC ?temp+1
+?7 LDB #10
+?8 CLRA
+ PSHS A
+?9 TFR D,Y
+ CLRA
+ JSR ?mod
+ ADDB #'0'
+ CMPB #'9'
+ BLS ?10
+ ADDB #7
+?10 PSHS B
+ TFR Y,D
+ INCA
+ CMPX #0
+ BNE ?9
+ JSR ?19
+?11 LDB ,S+
+ BEQ ?12
+ STB ,U+
+ BRA ?11
+?12 TST ?temp
+ BPL ?13
+ JSR ?20
+?13 STU 6,S
+ PULS U
+ JMP ?1
+?14 CMPA #'s'
+ BNE ?17
+ PSHS X
+ LDA #-1
+?15 INCA
+ LDB ,X+
+ BNE ?15
+ PULS X
+ JSR ?19
+?16 LDB ,X+
+ BEQ ?12
+ STB ,U+
+ BRA ?16
+?17 TFR A,B
+ CMPA #'c'
+ BNE ?18
+ TFR X,D
+?18 LDA #1
+ JSR ?19
+ STB ,U+
+ BRA ?12
+?19 TST ?temp
+ BPL ?20
+ RTS
+?20 PSHS A,B
+ LDB ?temp+1
+ BEQ ?22
+ LDA ?temp
+ ANDA #%00111111
+?21 CMPB ,S
+ BLS ?22
+ STA ,U+
+ DECB
+ BRA ?21
+?22 PULS A,B,PC
+-
+fprintf LSLB
+ LEAU B,S
+ LBSR tempmem
+ PSHS A,B,X,U
+ PSHS U
+ JSR _format_
+ LEAS 4,S
+ PULS X,U
+ LDU ,U
+ LBRA ?fputs
+$EX:_format_
+$EX:tempmem
+$EX:fputs
+-
+isascii LDD #$007F
+ BRA ?3
+isalnum PULS X
+ BSR isdigit
+ BEQ ?2
+?1 TFR X,PC
+isalpha PULS X
+?2 BSR isupper
+ BNE ?1
+ PSHS X
+islower LDD #'az'
+ BRA ?3
+isupper LDD #'AZ'
+ BRA ?3
+isgraph LDD #$217E
+ BRA ?3
+isxdigit PULS X
+ LDD #'AF'
+ BSR ?5
+ BNE ?1
+ LDD #'af'
+ BSR ?5
+ BNE ?1
+ PSHS X
+isdigit LDD #'09'
+?3 CMPA 3,S
+ BHI ?5
+ CMPB 3,S
+ BLO ?5
+?4 LDA 2,S
+ BNE ?5
+ LDB #1
+ RTS
+?5 CLRA
+ CLRB
+ RTS
+iscntrl LDB 3,S
+ CMPB #$7F
+ BEQ ?4
+ LDD #$001F
+ BRA ?3
+ispunct LDD 2,S
+ PSHS A,B
+ BSR isalnum
+ LEAS 2,S
+ BNE ?5
+isprint LDD #$207E
+ BRA ?3
+isspace LDB 3,S
+ CMPB #' '
+ BEQ ?4
+ CMPB #9
+ BEQ ?4
+ CMPB #10
+ BEQ ?4
+ BRA ?5
+-
+setjmp PULS A,B
+ LDX ,S
+ STD ,X
+ STS 2,X
+ CLRA
+ CLRB
+ JMP [,X]
+longjmp LDX 4,S
+ LDD 2,S
+ LDS 2,X
+ JMP [,X]
+-
+?LSIZE EQU 4
+$DD:Longreg	4
+longsub LDX 4,S
+ LDU 2,S
+?bigsub LDB #?LSIZE
+ CLRA
+?1 LDA ,X
+ SBCA ,U+
+ STA ,X+
+ DECB
+ BNE ?1
+ ROLB
+ CLRA
+ RTS
+longadd LDX 4,S
+ LDU 2,S
+?bigadd LDB #?LSIZE
+ CLRA
+?2 LDA ,X
+ ADCA ,U+
+ STA ,X+
+ DECB
+ BNE ?2
+ ROLB
+ CLRA
+ RTS
+longshr LDX 2,S
+?bigshr LDB #?LSIZE
+ ABX Adjust
+ CLRA
+?3 ROR ,-X
+ DECB
+ BNE ?3
+ ROLB
+ RTS
+longshl LDX 2,S
+?bigshl CLRA
+?bigslc LDB #?LSIZE
+?4 ROL ,X+
+ DECB
+ BNE ?4
+ ROLB
+ RTS
+longdiv BSR ?10
+ LDY #?LSIZE*8+1
+?5 CLRA
+?6 LDX 4,S
+ BSR ?bigslc
+ LEAY -1,Y
+ BEQ ?14
+ LDX #Longreg
+ RORB
+ BSR ?bigslc
+ LDU 2,S
+ LDX #Longreg
+ BSR ?bigcmp
+ TSTA
+ BNE ?5
+ LDU 2,S
+ LDX #Longreg
+ BSR ?bigsub
+ ORCC #$01
+ BRA ?6
+longmul LEAS -?LSIZE,S
+ LEAX ,S
+ LDU ?LSIZE+2,S
+ BSR ?bigcpy
+ BSR ?10
+?7 LDX ?LSIZE+4,S
+ BSR ?bigshr
+ TSTB
+ BEQ ?8
+ LDX #Longreg
+ LEAU ,S
+ BSR ?bigadd
+?8 LDX ?LSIZE+4,S
+ BSR ?bigtst
+ BEQ ?9
+ LEAX ,S
+ BSR ?bigshl
+ LEAX ,S
+ BSR ?bigtst
+ BNE ?7
+?9 LEAS ?LSIZE,S
+ LDX 4,S
+ LDU #Longreg
+ BRA ?bigcpy
+?10 LDX #Longreg
+?11 LDB #?LSIZE
+?12 CLR ,X+
+ DECB
+ BNE ?12
+ RTS
+longtst LDX 2,S
+?bigtst LDA #?LSIZE
+?13 LDB ,X+
+ BNE ?14
+ DECA
+ BNE ?13
+?14 RTS
+longcmp LDX 4,S
+ LDU 2,S
+?bigcmp LDB #?LSIZE
+ ABX Adjust
+ LEAU B,U
+?15 LDA ,-X
+ SUBA ,-U
+ BLO ?16
+ BHI ?17
+ DECB
+ BNE ?15
+ RTS
+?16 LDD #-1
+ RTS
+?17 LDD #1
+ RTS
+longcpy LDX 4,S
+ LDU 2,S
+?bigcpy LDB #?LSIZE
+?18 LDA ,U+
+ STA ,X+
+ DECB
+ BNE ?18
+ RTS
+longset LDX 4,S
+ BSR ?11
+ LDX 4,S
+ LDD 2,S
+ STB ,X
+ STA 1,X
+ RTS
+-
+malloc LDU #?heap
+?1 LDA ,U
+ BEQ ?4
+ LDX 1,U
+ DECA
+ BNE ?2
+ CMPX 2,S
+ BHS ?3
+?2 LEAX 3,X
+ TFR X,D
+ LEAU D,U
+ BRA ?1
+?3 TFR X,D
+ SUBD 2,S
+ SUBD #3
+ BLS ?6
+ TFR D,Y
+ LDD 2,S
+ LEAX D,U
+ CLR 3,X
+ INC 3,X
+ STY 4,X
+ BRA ?5
+?4 TFR S,D
+ SUBD 2,S
+ SUBD #1000
+ PSHS U
+ LDX #0
+ CMPD ,S++
+ BLS ?7
+ LDD 2,S
+ LEAX D,U
+ CLR 3,X
+?5 STD 1,U
+?6 LDB #2
+ STB ,U
+ LEAX 3,U
+?7 TFR X,D
+ RTS
+free LDX 2,S
+ LEAX -3,X
+ PSHS X
+ LDU #?heap
+?8 LDA ,U
+ BEQ ?10
+ CMPU ,S
+ BEQ ?9
+ LDD 1,U
+ LEAU D,U
+ LEAU 3,U
+ BRA ?8
+?9 LDA #1
+ STA ,U
+?10 PULS X
+ LDU #?heap
+?11 LDA ,U
+ BEQ ?16
+ LDX 1,U
+ DECA
+ BNE ?14
+?12 TFR X,D
+ LEAY D,U
+ LDA 3,Y
+ BEQ ?15
+ DECA
+ BNE ?13
+ LDD 4,Y
+ LEAX D,X
+ LEAX 3,X
+ BRA ?12
+?13 STX 1,U
+?14 TFR X,D
+ LEAU D,U
+ LEAU 3,U
+ BRA ?11
+?15 CLR ,U
+?16 RTS
+-
+abs LDD 2,S
+ BPL ?1
+ COMA
+ COMB
+ ADDD #1
+?1 RTS
+max LDD 2,S
+ CMPD 4,S
+ BGE ?1
+?2 LDD 4,S
+ RTS
+min LDD 2,S
+ CMPD 4,S
+ BLE ?1
+ BRA ?2
+sqrt LDX #256
+ LDD 2,S
+ CMPD #255*255
+ BHI ?4
+ LDX #0
+?3 TFR X,D
+ JSR ?mul
+ CMPD 2,S
+ BHS ?4
+ LEAX 1,X
+ BRA ?3
+?4 TFR X,D
+ RTS
+-
+memset LDU 6,S
+ LDD 4,S
+ LDX 2,S
+?1 STB ,U+
+ LEAX -1,X
+ BNE ?1
+ RTS
+memcpy LDU 6,S
+ LDY 4,S
+ LDX 2,S
+?2 LDB ,Y+
+ STB ,U+
+ LEAX -1,X
+ BNE ?2
+ RTS
+-
+peek LDB [2,S]
+ CLRA
+ RTS
+peekw LDD [2,S]
+ RTS
+poke LDD 2,S
+ STB [4,S]
+ RTS
+pokew LDD 2,S
+ STD [4,S]
+ RTS
+-
+printf INCB
+ LSLB
+ LEAU B,S
+ LBSR tempmem
+ PSHS D
+ PSHS D
+ PSHS U
+ JSR _format_
+ LEAS 4,S
+ JSR putstr
+ PULS X,PC
+$EX:_format_
+$EX:putstr
+$EX:tempmem
+-
+rand LDD RANDSEED
+ LDX #13709
+ JSR ?mul
+ ADDD #13849
+ STD RANDSEED
+ TFR D,X
+ LDD 2,S
+ JMP ?mod
+$DD:RANDSEED 2
+-
+putstr LDX 2,S
+?putstr LDB ,X+
+ BEQ ?1
+ BSR ?putch
+ BRA ?putstr
+putch LDD 2,S
+?putch CMPB #$0A
+ BNE ?putchr
+ BSR ?putchr
+ LDB #$0D
+ BRA ?putchr
+putchr LDD 2,S
+?putchr TFR B,A
+ FCB $3F,33
+?1 RTS
+chkchr FCB $3F,35
+ BEQ ?3
+ TFR A,B
+ RTS
+chkch CLRA
+ FCB $3F,35
+ EXG A,B
+ BEQ ?2
+ CLRB
+ RTS
+getch BSR getchr
+?2 CMPB #$0D
+ BNE ?1
+ LDB #$0A
+ RTS
+getchr FCB $3F,34
+?3 TFR A,B
+ CLRA
+ RTS
+getstr LDU 4,S
+ LDX #0
+?4 BSR getch
+ CMPB #$7F
+ BEQ ?5
+ CMPB #$08
+ BEQ ?5
+ CMPB #$0A
+ BEQ ?6
+ CMPX 2,S
+ BHS ?4
+ STB ,U+
+ LEAX 1,X
+ BSR ?putchr
+ BRA ?4
+?5 CMPX #0
+ BEQ ?4
+ LDB #$08
+ BSR ?putchr
+ LDB #' '
+ BSR ?putchr
+ LDB #$08
+ BSR ?putchr
+ LEAX -1,X
+ LEAU -1,U
+ BRA ?4
+?6 CLR ,U
+ BSR ?putch
+ TFR X,D
+ RTS
+-
+sprintf LSLB
+ LEAX B,S
+ LDD ,X
+ PSHS D
+ PSHS X
+ JSR _format_
+ LEAS 4,S
+ RTS
+$EX:_format_
+-
+strlen LDX 2,S
+ CLRA
+ CLRB
+?1 TST ,X+
+ BEQ ?5
+ ADDD #1
+ BRA ?1
+strcat LDU 4,S
+?2 LDA ,U+
+ BNE ?2
+ LEAU -1,U
+ BRA ?3
+strcpy LDU 4,S
+?3 LDX 2,S
+?4 LDB ,X+
+ STB ,U+
+ BNE ?4
+?5 RTS
+-
+strcmp LDX 2,S
+ LDU 4,S
+?1 LDA ,X+
+ CMPA ,U+
+ BLO ?2
+ BHI ?3
+ TSTA
+ BNE ?1
+ CLRB
+ RTS
+?2 LDD #-1
+ RTS
+?3 LDD #1
+ RTS
+-
+strchr LDX 4,S
+ LDD 2,S
+?1 CMPB ,X
+ BEQ ?2
+ TST ,X+
+ BNE ?1
+ LDX #0
+?2 TFR X,D
+ RTS
+-
+tempmem LDX #?heap
+?1 LDA ,X+
+ BEQ ?2
+ LDD ,X++
+ LEAX D,X
+ BRA ?1
+?2 TFR X,D
+ RTS
+-
+toupper LDD 2,S
+ CMPD #'a'
+ BLO ?1
+ CMPD #'z'
+ BHI ?1
+ ANDB #%11011111
+?1 RTS
+tolower LDD 2,S
+ CMPD #'A'
+ BLO ?1
+ CMPD #'Z'
+ BHI ?1
+ ORB #%00100000
+ RTS
+-
+fopenr BSR ?4
+ FCB $3F,55
+ BEQ ?2
+?1 PSHS U
+ LBSR free
+ CLRA
+ CLRB
+ PULS U,PC
+fopenw BSR ?4
+ FCB $3F,56
+ BNE ?1
+?2 TFR U,D
+ RTS
+fclose LDU 2,S
+ CMPU #9
+ BLO ?3
+ FCB $3F,57
+?3 RTS
+?4 LDX 4,S
+?5 LDA ,X+
+ BEQ ?6
+ CMPA #'a'
+ BLO ?5
+ CMPA #'z'
+ BHI ?5
+ ANDA #$DF
+ STA -1,X
+ BRA ?5
+?6 LDY 4,S
+ FCB $3F,10
+ BNE ?7
+ LDD #522
+ PSHS A,B
+ LBSR malloc
+ LEAS 2,S
+ CMPD #0
+ BEQ ?7
+ TFR D,U
+ RTS
+?7 LEAS 2,S
+ CLRA
+ CLRB
+ RTS
+$EX:malloc
+-
+fputb LDY 6,S
+ LDX 4,S
+ LDU 2,S
+?fputb CMPX #0
+ BEQ ?2
+?1 LDB ,Y+
+ BSR ?fputr
+ LEAX -1,X
+ BNE ?1
+?2 RTS
+fputs LDX 4,S
+ LDU 2,S
+?fputs LDB ,X+
+ BEQ ?2
+ BSR ?fputc
+ BRA ?fputs
+fputc LDD 4,S
+ LDU 2,S
+?fputc CMPB #$0A
+ BNE ?fputr
+ CMPU #9
+ BLO ?3
+ LDB #$0D
+ BRA ?4
+?3 BSR ?5
+ LDB #$0D
+ BRA ?5
+fputr LDD 4,S
+ LDU 2,S
+?fputr CMPU #9
+ BLO ?5
+?4 TFR B,A
+ FCB $3F,61
+ RTS
+?5 CMPU #0
+ BNE ?6
+ TFR B,A
+ FCB $3F,33
+ RTS
+?6 PSHS B
+ TFR U,D
+ PULS A
+ DECB
+ FCB $3F,36
+ RTS
+fgetr LDU 2,S
+?fgetr CMPU #9
+ BLO ?8
+ FCB $3F,59
+ BNE ?10
+?7 TFR A,B
+ CLRA
+ RTS
+?8 CMPU #0
+ BNE ?9
+ FCB $3F,34
+ BRA ?7
+?9 TFR U,D
+ DECB
+ FCB $3F,37
+ BRA ?7
+?10 LDD #-1
+?11 RTS
+fgetc LDU 2,S
+?fgetc BSR ?fgetr
+ CMPB #$FF
+ BEQ ?10
+ CMPB #$1A
+ BEQ ?10
+ CMPA #$0A
+ BEQ ?fgetc
+ CMPB #$0D
+ BNE ?11
+ LDB #$0A
+ RTS
+fgets LDX 6,S
+ LDY 4,S
+ LDU 2,S
+?fgets BSR ?fgetc
+ TSTA
+ BEQ ?12
+ CMPX 6,S
+ BNE ?13
+ CLRA
+ CLRB
+ RTS
+?12 CMPB #$0A
+ BEQ ?13
+ STB ,X+
+ LEAY -1,Y
+ BNE ?fgets
+?13 CLR ,X
+ LDD 6,S
+ RTS
+fgetb LDY 6,S
+ LDX 4,S
+ LDU 2,S
+?fgetb CMPX #0
+ BEQ ?15
+?14 BSR ?fgetr
+ TSTA
+ BNE ?15
+ STB ,Y+
+ LEAX -1,X
+ BNE ?14
+?15 TFR Y,D
+ SUBD 6,S
+ RTS
+rewind LDU 2,S
+ CMPU #9
+ BLO ?11
+ FCB $3F,62
+ RTS
+stdin FDB 0
+stdout FDB 0
+stderr FDB 0
+-
+delete LDY 2,S
+ FCB $3F,10
+ BNE ?1
+ FCB $3F,73
+?1 TFR A,B
+ BNE ?2
+ CLRB
+?2 CLRA
+ RTS

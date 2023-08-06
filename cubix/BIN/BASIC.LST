@@ -1,0 +1,2093 @@
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         8  ;build	SET	cubix
+2000                         9  CODE	EQU	$2000
+3000                        10  RAM	EQU	$3000
+D000                        11  STACK	EQU	$D000
+0000                        12  ;
+1000                        13  __FOR	EQU	$1000
+1001                        14  __GOSUB	EQU	__FOR+1
+0000                        15  ;
+3000                        16  		ORG	RAM
+3000                        17  pgm_start	RMB	2	; Program starting line pointer
+3002                        18  runptr		RMB	2	; Executing line pointer
+3004                        19  readptr		RMB	2	; Data read line pointer
+3006                        20  dataptr		RMB	2	; Data read element pointer
+3008                        21  line		RMB	2	; Current line number
+300A                        22  randseed	RMB	2	; Random number seed
+300C                        23  temp		RMB	2	; Temporary location
+300E                        24  temp1		RMB	2	; Temporary location
+3010                        25  ctl_ptr		RMB	1	; Control stack pointer
+3011                        26  expr_type 	RMB	1	; Expression type (0=Num, 1=Char)
+3012                        27  nest		RMB	1	; Expression nesting level
+3013                        28  mode		RMB	1	; Execution mode (0=Interactive, 1=Run)
+3014                        29  keypress	RMB	1	; Key has been pressed
+3015                        30  file		RMB	2	; Active file indicator
+3017                        31  files		RMB	10*2	; File handles
+302B                        32  buffer		RMB	100	; General buffer
+308F                        33  sa1		RMB	100	; String accumulator#1
+30F3                        34  sa2		RMB	100	; String accumulator#2
+3157                        35  ctl_stk		RMB	100	; Control stack
+31BB                        36  char_vars	RMB	260*2	; Character variable pointers
+33C3                        37  num_vars	RMB	260*2	; Numeric variable values
+35CB                        38  dim_vars	RMB	260*2	; Dimensioned variable pointers
+37D3                        39  dim_check	RMB	260*2	; Dimensioned variable sizes
+39DB                        40  ?heap		EQU	*
+39DB                        41  ;
+2000                        42  	ORG	CODE
+2000  81 3F                 43  	CMPA	#'?'		; Help?
+2002  26 19                 44  	BNE	begin		; No
+2004  3F 19                 45  	FCB	$3F,25		; Output message
+2006  55 73 65 3A 20 42 +   46  	FCCZ	'Use: BASIC [program]'
+201B  3F 00                 47  	FCB	$3F,0
+201D  10 CE D0 00           48  begin	LDS	#STACK
+2021  86 30                 49  	LDA	#=RAM		; Point to RAM
+2023  1F 8B                 50  	TFR	A,DP		; Set DP
+2025                        51  	SETDP	=RAM
+2025  17 00 A0              52  _NEW:	LBSR	clrall		; Zero all of RAM
+2028  3F 04                 53  	FCB	$3F,4		; SSR 11 - check for data
+202A  27 08                 54  	BEQ	top		; Not it
+202C  17 00 C6              55  	LBSR	xload		; Load the file
+202F  9E 00                 56  	LDX	pgm_start	; Start of program
+2031  17 03 53              57  	LBSR	_run1		; Execute
+2034  10 CE D0 00           58  top:	LDS	#stack		; Reset stack
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 2
+
+2038  0F 15                 59  	CLR	file		; Reset to console
+203A  0F 16                 60  	CLR	file+1		; Reset to console
+203C  17 0D 4F              61  	LBSR	putm		; Output message
+203F  52 65 61 64 79        62  	FCC	'Ready'		; Text
+2044  0A 0D 00              63  	FCB	$0A,$0D,0	; Newline
+2047  4F                    64  top1:	CLRA			; Zero high
+2048  97 10                 65  	STA	ctl_ptr		; Disable program
+204A  97 13                 66  	STA	mode		; Not running
+204C  10 8E 30 2B           67  	LDY	#buffer		; Point to buffer
+2050  17 0D 51              68  	LBSR	gets		; Get string
+2053  17 08 4C              69  	LBSR	edit		; Do line edit
+2056  27 EF                 70  	BEQ	top1		; No prompt on edit
+2058  96 2B                 71  	LDA	buffer		; Get data
+205A  2A 06                 72  	BPL	top2		; Not a keyboard
+205C  31 21                 73  	LEAY	1,Y		; Skip keyword
+205E  8D 0A                 74  	BSR	execute		; Process keyword
+2060  20 D2                 75  	BRA	top		; next command
+2062  27 D0                 76  top2	BEQ	top		; Null line
+2064  86 01                 77  	LDA	#LET		; Assume LET
+2066  8D 02                 78  	BSR	execute		; Process LET
+2068  20 CA                 79  	BRA	top		; And continue
+206A                        80  ;
+206A                        81  ; Execute a BASIC command
+206A                        82  ;
+206A  84 7F                 83  execute:ANDA	#$7F		; Strip high bit
+206C  81 1C                 84  	CMPA	#TO		; In range
+206E  10 24 06 37           85  	LBHS	synerr		; Error
+2072  1F 89                 86  	TFR	A,B		; B = value
+2074  0F 15                 87  	CLR	file		; Reset to console
+2076  0F 16                 88  	CLR	file+1		; Reset to console
+2078  17 0C 76              89  	LBSR	switch		; Perform switch
+207B  26 A9 24 96 20 B3 +   90  	FDB	synerr,_LET,_EXIT,_LIST,_NEW,_RUN,_CLEAR
+2089  25 BC 25 D3 25 E1 +   91  	FDB	_GOSUB,_GOTO,_RETURN,_PRINT,_FOR
+2093  24 1E 21 EE 22 11 +   92  	FDB	_NEXT,_IF,_LIF,_REM,_STOP,_END,_INPUT
+20A1  24 6F 22 CE 22 EB +   93  	FDB	_DIM,_ORDER,_READ,_DATA,_POKE
+20AB  21 2B 20 F9 21 6B +   94  	FDB	_SAVE,_LOAD,_OPEN,_CLOSE
+20B3  4F                    95  _EXIT	CLRA			; Zero return code
+20B4  3F 00                 96  	FCB	$3F,0		; And exit
+20B6                        97  ; Clear program
+20B6  0D 13                 98  clrpgm:	TST	mode		; Running?
+20B8  27 0E                 99  	BEQ	clrall		; No - clear all
+20BA  9E 00                100  	LDX	pgm_start	; Get program start
+20BC  27 09                101  	BEQ	clrpg2		; No program
+20BE  17 07 77             102  clrpg1	LBSR	free		; Release it
+20C1  AE 02                103  	LDX	2,X		; Get next
+20C3  26 F9                104  	BNE	clrpg1		; Release all
+20C5  9F 00                105  	STX	pgm_start	; Zero pointer
+20C7  39                   106  clrpg2:	RTS
+20C8  8E 30 00             107  clrall:	LDX	#RAM		; Point to buffer
+20CB  6F 80                108  clra1	CLR	,X+		; Zero one byte
+20CD  8C 39 DB             109  	CMPX	#?heap		; At heap?
+20D0  23 F9                110  	BLS	clra1		; Zero it all
+20D2  39                   111  	RTS
+20D3                       112  ; Process load/save filename
+20D3  17 08 F2             113  lsname:	LBSR	evalchr		; Get string
+20D6  10 8E 30 8F          114  	LDY	#sa1		; Point to it
+20DA  8D 69                115  	BSR	ucsa1		; Convert to upper case
+20DC  3F 0B                116  lsn1	FCB	$3F,11		; Accept filename
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 3
+
+20DE  10 26 FF 52          117  	LBNE	top		; Error
+20E2  CC 42 41             118  	LDD	#'BA'		; Get .BA
+20E5  ED 84                119  	STD	,X		; Set extension
+20E7  86 53                120  	LDA	#'S'		; Get 'S'
+20E9  A7 02                121  	STA	2,X		; Set extension
+20EB  35 10                122  	PULS	X		; X = return address
+20ED  32 E9 FD F6          123  	LEAS	-522,S		; Allocate buffer
+20F1  1F 43                124  	TFR	S,U		; U = buffer
+20F3  6E 84                125  	JMP	,X
+20F5                       126  ;
+20F5                       127  ; Load program
+20F5                       128  ;
+20F5  8D E5                129  xload	BSR	lsn1		; Get name
+20F7  20 02                130  	BRA	load0
+20F9  8D D8                131  _LOAD	BSR	lsname		; Get name
+20FB  3F 37                132  load0:	FCB	$3F,55		; Open for read
+20FD  26 17                133  	BNE	load3		; Failed
+20FF  8D B5                134  	BSR	clrpgm		; Zero
+2101  DF 15                135  	STU	file		; Save file
+2103  10 8E 30 2B          136  load1:	LDY	#buffer		; Point to buffer
+2107  17 0C 9A             137  	LBSR	gets		; Get line
+210A  5D                   138  	TSTB			; End of file
+210B  27 05                139  	BEQ	load2		; Exit
+210D  17 07 92             140  	LBSR	edit		; Edit line
+2110  20 F1                141  	BRA	load1		; Do them all
+2112  DE 15                142  load2:	LDU	file		; Get FCB
+2114  3F 39                143  	FCB	$3F,57		; Closeit
+2116  0D 13                144  load3:	TST	mode		; Running?
+2118                       145  ;	LBEQ	top		; No, stop
+2118  27 0C                146  	BEQ	load4
+211A  9E 00                147  	LDX	pgm_start	; Get start
+211C  10 CE D0 00          148  	LDS	#STACK		; Reset stack
+2120  17 02 66             149  	LBSR	_run2		; And proceed
+2123  16 FF 0E             150  	LBRA	top		; And proceed
+2126  32 E9 02 0A          151  load4:	LEAS	522,S		; Clean stack
+212A  39                   152  	RTS
+212B                       153  ;
+212B                       154  ; Save program
+212B                       155  ;
+212B  8D A6                156  _SAVE	BSR	lsname		; Get name
+212D  3F 38                157  	FCB	$3F,56		; Open for write
+212F  26 0F                158  	BNE	save1		; Error - exit
+2131  DF 15                159  	STU	file		; File pointer
+2133  8E 00 00             160  	LDX	#0		; Lowest line
+2136  CE FF FF             161  	LDU	#65535		; Highest line
+2139  17 04 25             162  	LBSR	_list1		; Write the file
+213C  DE 15                163  	LDU	file		; Get FCB
+213E  3F 39                164  	FCB	$3F,57		; Close
+2140  32 E9 02 0A          165  save1	LEAS	522,S		; Clean stack
+2144  39                   166  	RTS
+2145                       167  ; Translate SA1 to upper case for Cubix filenames
+2145  34 20                168  ucsa1	PSHS	Y		; Save pointer
+2147  17 05 79             169  ucsa2	LBSR	getuc		; Get char
+214A  27 04                170  	BEQ	ucsa3		; End
+214C  A7 3F                171  	STA	-1,Y		; Set to upper
+214E  20 F7                172  	BRA	ucsa2		; Continue
+2150  35 A0                173  ucsa3	PULS	Y,PC		; Restore & return
+2152                       174  ;
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 4
+
+2152                       175  ; Get file specification
+2152                       176  ;
+2152  86 23                177  getfil:	LDA	#'#'		; Indiciator
+2154  17 05 4A             178  	LBSR	expect		; Expect it
+2157  17 08 63             179  getf1:	LBSR	evalnum		; Get number
+215A  10 83 00 09          180  	CMPD	#9		; Are we over
+215E  10 22 05 47          181  	LBHI	synerr		; Report error
+2162  58                   182  	LSLB			; x2
+2163  8E 30 17             183  	LDX	#files		; Get file
+2166  3A                   184  	ABX			; X = handle address
+2167  3A                   185  	ABX			; x2
+2168  EE 84                186  	LDU	,X		; Get handle
+216A  39                   187  	RTS
+216B                       188  ;
+216B                       189  ; Open a file for read/write
+216B                       190  ;
+216B  8D E5                191  _OPEN	BSR	getfil		; Get file number
+216D  26 54                192  	BNE	fooerr		; Already open
+216F  9F 0E                193  	STX	temp1		; Save handle pointer
+2171  17 05 2B             194  	LBSR	expectc		; ',' required
+2174  17 08 51             195  	LBSR	evalchr		; Get filename
+2177  DC 8F                196  	LDD	sa1		; Get name
+2179  80 2A                197  	SUBA	#'*'		; Device name?
+217B  27 3B                198  	BEQ	opend		; Open device
+217D  CC 02 0A             199  	LDD	#522		; File control block
+2180  17 06 51             200  	LBSR	malloc		; Get memory
+2183  1F 03                201  	TFR	D,U		; U = handle
+2185  17 05 17             202  	LBSR	expectc		; ',' required
+2188  17 04 F6             203  	LBSR	get_next	; Get next data
+218B  34 22                204  	PSHS	A,Y		; Save Y
+218D  10 8E 30 8F          205  	LDY	#sa1		; Point to filename
+2191  8D B2                206  	BSR	ucsa1		; Convert to upper
+2193  3F 0A                207  	FCB	$3F,10		; Get DOS filename
+2195  26 0E                208  	BNE	openf		; Open failed
+2197  35 22                209  	PULS	A,Y		; Restore
+2199  81 57                210  	CMPA	#'W'		; Open for write
+219B  27 12                211  	BEQ	openw		; Open for write
+219D  81 52                212  	CMPA	#'R'		; Open for read
+219F  26 04                213  	BNE	openf		; Report error
+21A1  3F 37                214  	FCB	$3F,55		; Open for read
+21A3  27 0E                215  	BEQ	openok		; Opened OK
+21A5  1F 31                216  openf:	TFR	U,X		; X = buffer address
+21A7  17 06 8E             217  	LBSR	free		; Release it
+21AA  86 0A                218  fnoerr:	LDA	#ERRfno		; File not open
+21AC  16 04 6F             219  	LBRA	error		; Report error
+21AF  3F 38                220  openw	FCB	$3F,56		; Open for write
+21B1  26 F2                221  	BNE	openf		; Failed
+21B3  9E 0E                222  openok:	LDX	temp1		; Get handle address
+21B5  EF 84                223  	STU	,X		; Write it
+21B7  39                   224  	RTS
+21B8  C0 30                225  opend:	SUBB	#'0'		; Convert to binary
+21BA  C1 07                226  	CMPB	#7		; In range?
+21BC  22 EC                227  	BHI	fnoerr		; Fail
+21BE  5C                   228  	INCB			; +1
+21BF  1F 03                229  	TFR	D,U		; U = value
+21C1  20 F0                230  	BRA	openok		; Save new pointer
+21C3                       231  ;
+21C3  86 0B                232  fooerr:	LDA	#ERRfoo		; File already open
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 5
+
+21C5  16 04 56             233  	LBRA	error		; Report error
+21C8                       234  ;
+21C8                       235  ; Close an open file
+21C8                       236  ;
+21C8  8D 88                237  _CLOSE	BSR	getfil		; Get filename
+21CA  27 DE                238  	BEQ	fnoerr		; Get name
+21CC  11 83 00 08          239  	CMPU	#8		; 1-8 = Device
+21D0  23 09                240  	BLS	close1		; Device - no need to clear
+21D2  3F 39                241  	FCB	$3F,57		; Close file
+21D4  1E 13                242  	EXG	X,U		; X = pointer
+21D6  17 06 5F             243  	LBSR	free		; Release buffer
+21D9  1E 13                244  	EXG	X,U		; X = handle address
+21DB  6F 84                245  close1:	CLR	,X		; Zero handle
+21DD  6F 01                246  	CLR	1,X		; Zero handle
+21DF  39                   247  	RTS
+21E0                       248  ;
+21E0                       249  ; POKE command
+21E0                       250  ;
+21E0  17 05 24             251  _POKE	LBSR	getnum		; Get value
+21E3  1F 03                252  	TFR	D,U		; U = value
+21E5  17 04 B7             253  	LBSR	expectc		; Expect it
+21E8  17 05 1C             254  	LBSR	getnum		; Get next value
+21EB  E7 C4                255  	STB	,U		; Write it
+21ED  39                   256  	RTS
+21EE                       257  ;
+21EE                       258  ; IF statements
+21EE                       259  ;
+21EE  17 07 97             260  _IF:	LBSR	pgm		; Program only
+21F1  17 07 C9             261  	LBSR	evalnum		; Get expression
+21F4  1F 01                262  	TFR	D,X		; X = result
+21F6  86 9E                263  	LDA	#THEN|128	; 'THEN'
+21F8  17 04 A6             264  	LBSR	expect		; Expect it
+21FB  8C 00 00             265  	CMPX	#0		; Execute
+21FE  10 27 04 00          266  	LBEQ	skpstmt		; No
+2202  17 04 70             267  _if1:	LBSR	skip		; Skip to next
+2205  17 04 A9             268  	LBSR	isdigit		; Is it a number?
+2208  10 27 03 CA          269  	LBEQ	_goto1		; Yes, handle it
+220C  32 62                270  	LEAS	2,S		; Clean stack
+220E  16 01 8F             271  	LBRA	_run4
+2211  17 07 74             272  _LIF:	LBSR	pgm		; Program only
+2214  17 07 A6             273  	LBSR	evalnum		; Get expression
+2217  1F 01                274  	TFR	D,X		; X = resuly
+2219  86 9E                275  	LDA	#THEN|128	; 'THEN'
+221B  17 04 83             276  	LBSR	expect		; Expect it
+221E  8C 00 00             277  	CMPX	#0		; Execute
+2221  26 DF                278  	BNE	_if1		; Yes
+2223  16 01 A5             279  	LBRA	_rem1		; No
+2226                       280  ;
+2226                       281  ; Input request
+2226                       282  ;
+2226  86 23                283  _INPUT:	LDA	#'#'		; File spec?
+2228  17 04 63             284  	LBSR	test_next	; Is there one?
+222B  26 0B                285  	BNE	inp1		; No, handle normally
+222D  17 FF 27             286  	LBSR	getf1		; Get the handle
+2230  10 27 FF 76          287  	LBEQ	fnoerr		; Not open
+2234  DF 15                288  	STU	file		; Set input file
+2236  20 11                289  	BRA	inp2		; And continue
+2238  CC 3F 20             290  inp1:	LDD	#'? '		; Default prompt
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 6
+
+223B  DD 8F                291  	STD	sa1		; Save
+223D  0F 91                292  	CLR	sa1+2		; Zero terminate
+223F  17 04 33             293  	LBSR	skip		; Advance
+2242  81 22                294  	CMPA	#'"'		; Character?
+2244  26 06                295  	BNE	_input1		; No prompt
+2246  17 07 86             296  	LBSR	eval		; Get prompt
+2249  17 04 53             297  inp2:	LBSR	expectc		; Expect it
+224C  17 06 C5             298  _input1	LBSR	getvar		; Get input variable
+224F  4F                   299  	CLRA			; Zero flag
+2250  34 32                300  	PSHS	A,X,Y		; Save address & cmdptr
+2252  DC 15                301  _input0	LDD	file		; File output
+2254  26 06                302  	BNE	inp3		; Don't prompt
+2256  8E 30 8F             303  	LDX	#sa1
+2259  17 0B 3C             304  	LBSR	puts		; Display it
+225C  10 8E 30 F3          305  inp3:	LDY	#sa2		; Point to accumulator2
+2260  17 0B 41             306  	LBSR	gets		; Get input
+2263  0D 11                307  	TST	expr_type	; Get expression type
+2265  27 25                308  	BEQ	_input4		; Not character
+2267                       309  ; Character input
+2267  AE 61                310  	LDX	1,S		; Get address
+2269  AE 89 31 BB          311  	LDX	char_vars,X	; Get pointer
+226D  27 03                312  	BEQ	_input2		; Not already defined
+226F  17 05 C6             313  	LBSR	free		; Release it
+2272  8E 30 F3             314  _input2	LDX	#sa2		; Point to buffer
+2275  17 02 66             315  	LBSR	strlen		; Get length
+2278  17 05 59             316  	LBSR	malloc		; Allocate memory
+227B  EE 61                317  	LDU	1,S		; Get address
+227D  ED C9 31 BB          318  	STD	char_vars,U	; Save new address
+2281  CE 30 F3             319  	LDU	#sa2		; Point to buffer
+2284  A6 C0                320  _input3	LDA	,U+		; Get from source
+2286  A7 80                321  	STA	,X+		; Save in dest
+2288  26 FA                322  	BNE	_input3		; Do them all
+228A  35 B2                323  	PULS	A,X,Y,PC	; Restore * return
+228C                       324  ; Numeric input
+228C  86 2D                325  _input4	LDA	#'-'		; Negative?
+228E  17 03 FD             326  	LBSR	test_next	; Is this it?
+2291  26 02                327  	BNE	_input5		; Not negative
+2293  6A E4                328  	DEC	,S		; Set flag
+2295  34 20                329  _input5	PSHS	Y		; Save pointer
+2297  17 04 6D             330  	LBSR	getnum		; Get number
+229A  10 AC E1             331  	CMPY	,S++		; Did it move?
+229D  26 1A                332  	BNE	_input6		; Accepted
+229F  17 0A EC             333  	LBSR	putm		; Output message
+22A2  49 6E 70 75 74 20 +  334  	FCCZ	'Input error'
+22AE  DC 15                335  	LDD	file		; From file
+22B0  10 26 03 88          336  	LBNE	err3		; Abort
+22B4  17 0B 23             337  	LBSR	lfcr		; New line
+22B7  20 99                338  	BRA	_input0		; Reprompt
+22B9  6D E0                339  _input6	TST	,S+		; Negate?
+22BB  27 05                340  	BEQ	_input7		; It's OK
+22BD  43                   341  	COMA
+22BE  53                   342  	COMB
+22BF  C3 00 01             343  	ADDD	#1
+22C2  35 30                344  _input7	PULS	X,Y		; Restore X & Y
+22C4  34 06                345  	PSHS	A,B		; Save D
+22C6  17 06 88             346  	LBSR	addr1		; Compute address
+22C9  35 06                347  	PULS	A,B
+22CB  ED 84                348  	STD	,X		; Save
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 7
+
+22CD  39                   349  	RTS
+22CE                       350  ;
+22CE                       351  ; ORDER statement
+22CE                       352  ;
+22CE  17 06 EC             353  _ORDER:	LBSR	evalnum		; Get value
+22D1  17 06 2E             354  	LBSR	findl		; Locate line
+22D4  9F 04                355  	STX	readptr		; Save read pointer
+22D6  34 20                356  	PSHS	Y		; Save Y
+22D8  31 04                357  	LEAY	4,X		; Y = text portion
+22DA  17 03 A4             358  	LBSR	get_next	; Get token
+22DD  81 96                359  	CMPA	#DATA|128	; Is it a DATA statement?
+22DF  26 05                360  	BNE	daterr		; No, report error
+22E1  10 9F 06             361  	STY	dataptr		; Save data pointer
+22E4  35 A0                362  	PULS	Y,PC		; Restore and return
+22E6  86 08                363  daterr:	LDA	#ERRdat		; 'Data'
+22E8  16 03 33             364  	LBRA	error		; Report error
+22EB                       365  ;
+22EB                       366  ; READ statement
+22EB                       367  ;
+22EB  17 06 5A             368  _READ:	LBSR	address		; Get variable address
+22EE  96 11                369  	LDA	expr_type	; Get expression type
+22F0  DE 08                370  	LDU	line		; Get line number
+22F2  34 32                371  	PSHS	A,X,Y		; Save type, address, cmdptr, line
+22F4  10 9E 06             372  	LDY	dataptr		; Get data pointer
+22F7  9E 04                373  	LDX	readptr		; Get read pointer
+22F9  27 EB                374  	BEQ	daterr		; No data
+22FB  17 03 77             375  	LBSR	skip		; Advance
+22FE  26 0F                376  	BNE	_read1		; Not end of line
+2300  AE 02                377  	LDX	2,X		; Get new read pointer
+2302  27 E2                378  	BEQ	daterr		; No data
+2304  9F 04                379  	STX	readptr		; Save new read pointer
+2306  31 04                380  	LEAY	4,X		; New cmdptr
+2308  17 03 76             381  	LBSR	get_next	; Get token
+230B  81 96                382  	CMPA	#DATA|128	; 'DATA'?
+230D  26 D7                383  	BNE	daterr		; Report error
+230F  EC 84                384  _read1	LDD	,X		; Get line number
+2311  DD 08                385  	STD	line		; Set new line number
+2313  17 06 B9             386  	LBSR	eval		; Evaluate
+2316  1F 03                387  	TFR	D,U		; U = result
+2318  17 03 71             388  	LBSR	tnc		; Remove ','
+231B  10 9F 06             389  	STY	dataptr		; Save new data pointer
+231E  35 32                390  	PULS	A,X,Y		; Restore
+2320  91 11                391  	CMPA	expr_type	; Does it match?
+2322  4D                   392  	TSTA			; Character?
+2323  26 04                393  	BNE	_read2		; Yes, handle it
+2325  EF 84                394  	STU	,X		; Save new value
+2327  20 25                395  	BRA	_read5		; And try for next
+2329  1F 13                396  _read2	TFR	X,U		; U = variable address
+232B  AE C4                397  	LDX	,U		; Get address
+232D  26 07                398  	BNE	_read3		; Not existing
+232F  17 05 06             399  	LBSR	free		; Release memory
+2332  6F C4                400  	CLR	,U		; Zero it
+2334  6F 41                401  	CLR	1,U		; Zero it
+2336  8E 30 8F             402  _read3	LDX	#sa1		; Point to sa
+2339  6D E4                403  	TST	,S		; Value present?
+233B  27 11                404  	BEQ	_read5		; No, leave it
+233D  17 01 9E             405  	LBSR	strlen		; Get length
+2340  17 04 91             406  	LBSR	malloc		; Allocate memory
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 8
+
+2343  ED C4                407  	STD	,U		; Set new addresss
+2345  CE 30 8F             408  	LDU	#sa1		; Point to acc
+2348  A6 C0                409  _read4	LDA	,U+		; Get from source
+234A  A7 80                410  	STA	,X+		; Write to dest
+234C  26 FA                411  	BNE	_read4		; Do them all
+234E  17 03 3B             412  _read5	LBSR	tnc		; More
+2351  27 98                413  	BEQ	_READ		; Keep going
+2353  39                   414  	RTS
+2354                       415  ;
+2354                       416  ; Stop execution
+2354                       417  ;
+2354  17 06 31             418  _STOP:	LBSR	pgm		; Program only
+2357  17 0A 34             419  	LBSR	putm		; Output message
+235A  53 54 4F 50 00       420  	FCCZ	'STOP'
+235F  16 02 DA             421  	LBRA	err3		; And exit
+2362  17 06 23             422  _END:	LBSR	pgm		; Program only
+2365  16 FC CC             423  	LBRA	top		; Exit
+2368  17 0A 23             424  BREAK:	LBSR	putm		; Output message
+236B  5E 43 00             425  	FCCZ	'^C'
+236E  16 02 CB             426  	LBRA	err3		; And proceed
+2371                       427  ;
+2371                       428  ; Execute program
+2371                       429  ;
+2371  17 06 0B             430  _RUN	LBSR	direct		; Direct only
+2374  17 06 1A             431  	LBSR	_CLEAR		; Clear variables
+2377  9E 00                432  	LDX	pgm_start	; Assume start of program
+2379  17 02 F9             433  	LBSR	skip		; Advance
+237C  17 02 D9             434  	LBSR	is_e_end	; End of expression?
+237F  27 06                435  	BEQ	_run1		; Yes
+2381  17 06 39             436  	LBSR	evalnum		; Get number
+2384  17 05 7B             437  	LBSR	findl		; Locate number
+2387  0A 13                438  _run1	DEC	mode		; Indicate running
+2389  9F 02                439  _run2	STX	runptr		; Set run line
+238B  9E 02                440  	LDX	runptr		; Get run pointer
+238D  27 32                441  	BEQ	_run7		; Program has ended
+238F  17 0A 96             442  	LBSR	testc		; Test for character
+2392  27 06                443  	BEQ	_run3		; No data
+2394  81 03                444  	CMPA	#'C'-$40	; Control-C
+2396  27 D0                445  	BEQ	BREAK		; Terminate
+2398  97 14                446  	STA	keypress	; Save for later
+239A  EC 84                447  _run3	LDD	,X		; Get line number
+239C  DD 08                448  	STD	line		; Save new line number
+239E  31 04                449  	LEAY	4,X		; Y = line text
+23A0  17 02 D2             450  _run4	LBSR	skip		; Advance
+23A3  4D                   451  	TSTA			; Special case?
+23A4  2B 04                452  	BMI	_run5		; Yes, assume LET
+23A6  86 01                453  	LDA	#LET		; Assume LET
+23A8  20 02                454  	BRA	_run6		; And proceed
+23AA  31 21                455  _run5	LEAY	1,Y		; Skip command
+23AC  17 FC BB             456  _run6	LBSR	execute		; Execute command
+23AF  17 02 CF             457  	LBSR	get_next	; Get next char
+23B2  81 3A                458  	CMPA	#':'		; Another statement
+23B4  27 EA                459  	BEQ	_run4		; Do it
+23B6  4D                   460  	TSTA			; End of line
+23B7  10 26 02 EE          461  	LBNE	synerr		; Report error
+23BB  9E 02                462  	LDX	runptr		; Get line pointer
+23BD  AE 02                463  	LDX	2,X		; Get link
+23BF  26 C8                464  	BNE	_run2		; And proceed
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 9
+
+23C1  0F 13                465  _run7	CLR	mode
+23C3  39                   466  _run8	RTS
+23C4                       467  ;
+23C4                       468  ; Remark
+23C4                       469  :
+23C4  17 05 C1             470  _DATA:	LBSR	pgm		; Program only
+23C7  0D 13                471  _REM:	TST	mode		; Running?
+23C9  27 F8                472  	BEQ	_run8		; No action
+23CB  9E 02                473  _rem1:	LDX	runptr		; Get run pointer
+23CD  AE 02                474  	LDX	2,X		; Get link
+23CF  32 62                475  	LEAS	2,S		; Clean stack
+23D1  20 B6                476  	BRA	_run2		; And continue
+23D3                       477  ;
+23D3                       478  ; For statement
+23D3                       479  ;
+23D3  17 05 B2             480  _FOR:	LBSR	pgm		; Program only
+23D6  17 05 6F             481  	LBSR	address		; Get variable address
+23D9  17 05 E3             482  	LBSR	chknum		; Insure numeric
+23DC  D6 10                483  	LDB	ctl_ptr		; Get control pointer
+23DE  CE 31 57             484  	LDU	#ctl_stk	; Point at stack
+23E1  33 C5                485  	LEAU	B,U		; U = ctrl-stack
+23E3  33 C5                486  	LEAU	B,U		; x2
+23E5  CB 06                487  	ADDB	#6		; ++6
+23E7  D7 10                488  	STB	ctl_ptr		; Resave pointer
+23E9  AF 48                489  	STX	8,U		; Save variable address
+23EB  86 A7                490  	LDA	#EQ|128		; '='
+23ED  17 02 B1             491  	LBSR	expect		; Expect it
+23F0  17 05 CA             492  	LBSR	evalnum		; Evaluate expression
+23F3  ED D8 08             493  	STD	[8,U]		; Set variable
+23F6  86 9C                494  	LDA	#TO|128		; 'TO'
+23F8  17 02 A6             495  	LBSR	expect		; Expect it
+23FB  17 05 BF             496  	LBSR	evalnum		; Get final
+23FE  ED 46                497  	STD	6,U		; Set limit
+2400  CC 00 01             498  	LDD	#1		; Assume step=1
+2403  ED 44                499  	STD	4,U		; Set step
+2405  86 9D                500  	LDA	#STEP|128	; 'STEP'
+2407  17 02 84             501  	LBSR	test_next	; Does it occur?
+240A  26 05                502  	BNE	_for1		; No
+240C  17 05 AE             503  	LBSR	evalnum		; Get number
+240F  ED 44                504  	STD	4,U		; Set new step value
+2411  DC 02                505  _for1	LDD	runptr		; Get run pointer
+2413  ED C4                506  	STD	,U		; Save runptr
+2415  10 AF 42             507  	STY	2,U		; save cmdptr
+2418  CC 10 00             508  	LDD	#__FOR		; FOR indicator
+241B  ED 4A                509  	STD	10,U		; Save
+241D  39                   510  	RTS
+241E                       511  ;
+241E                       512  ; NEXT statement
+241E                       513  ;
+241E  17 05 67             514  _NEXT:	LBSR	pgm		; Program only
+2421  D6 10                515  	LDB	ctl_ptr		; Get control pointer
+2423  C0 06                516  	SUBB	#6		; Backup
+2425  58                   517  	LSLB			; x2
+2426  CE 31 57             518  	LDU	#ctl_stk	; Point to stack
+2429  33 C5                519  	LEAU	B,U		; Offset to entry
+242B  EC 4A                520  	LDD	10,U		; Get indicator
+242D  10 83 10 00          521  	CMPD	#__FOR		; FOR loop?
+2431  10 26 01 E7          522  	LBNE	nsterr		; Report error
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 10
+
+2435  17 02 3D             523  	LBSR	skip		; Advance
+2438  17 02 2D             524  	LBSR	is_l_end	; End of statement
+243B  27 09                525  	BEQ	_next1		; No variable specified
+243D  17 05 08             526  	LBSR	address		; Get variable address
+2440  AC 48                527  	CMPX	8,U		; Does it match?
+2442  10 26 01 D6          528  	LBNE	nsterr		; No - error
+2446  AE 48                529  _next1	LDX	8,U		; Get address
+2448  EC 84                530  	LDD	,X		; Get variable
+244A  E3 44                531  	ADDD	4,U		; Advance by step
+244C  ED 84                532  	STD	,X		; Resave
+244E  6D 44                533  	TST	4,U		; Negative step?
+2450  2B 11                534  	BMI	_next3		; Yes, handle it
+2452  10 A3 46             535  	CMPD	6,U		; Are we over limit
+2455  2E 11                536  	BGT	_next4		; Yes, stop
+2457  AE C4                537  _next2	LDX	,U		; Get run ptr
+2459  9F 02                538  	STX	runptr		; Set new run pointer
+245B  EC 84                539  	LDD	,X		; Get line number
+245D  DD 08                540  	STD	Line		; Set new line number	
+245F  10 AE 42             541  	LDY	2,U		; Get cmdptr
+2462  39                   542  	RTS
+2463  10 A3 46             543  _next3	CMPD	6,U		; Are we under limit
+2466  2C EF                544  	BGE	_next2		; No, keep going
+2468  D6 10                545  _next4	LDB	ctl_ptr		; Get pointer
+246A  C0 06                546  	SUBB	#6		; Backup
+246C  D7 10                547  	STB	ctl_ptr		; Resave
+246E  39                   548  	RTS
+246F                       549  ;
+246F                       550  ; Dimension a variable
+246F                       551  ;
+246F  17 04 A2             552  _DIM	LBSR	getvar		; Get variable
+2472  1F 13                553  	TFR	X,U		; U = address
+2474  AE C9 35 CB          554  	LDX	dim_vars,U	; Get existing
+2478  27 03                555  	BEQ	_dim1		; Not existing
+247A  17 03 BB             556  	LBSR	free		; Release it
+247D  17 05 3D             557  _dim1	LBSR	evalnum		; Get number
+2480  C3 00 01             558  	ADDD	#1		; Adjust
+2483  ED C9 37 D3          559  	STD	dim_check,U	; Save size
+2487  58                   560  	LSLB			; x2
+2488  49                   561  	ROLA			; x2
+2489  17 03 48             562  	LBSR	malloc		; Allocate the memory
+248C  ED C9 35 CB          563  	STD	dim_vars,U	; Save address
+2490  17 01 F9             564  	LBSR	tnc		; More?
+2493  27 DA                565  	BEQ	_dim		; Yes, process
+2495  39                   566  	RTS
+2496                       567  ;
+2496                       568  ; Assign value to variable
+2496                       569  ;
+2496  17 04 AF             570  _LET	LBSR	address		; Get variable address
+2499  96 11                571  	LDA	expr_type	; Get expression type
+249B  34 02                572  	PSHS	A		; Save for later
+249D  86 A7                573  	LDA	#EQ|128		; Assignment
+249F  17 01 FF             574  	LBSR	expect		; Expect it
+24A2  17 05 2A             575  	LBSR	eval		; Evaluate
+24A5  0D 11                576  	TST	expr_type	; Numeric?
+24A7  26 09                577  	BNE	_let1		; No, do char
+24A9  6D E0                578  	TST	,S+		; Num var?
+24AB  10 26 01 FA          579  	LBNE	synerr		; No, error
+24AF  ED 84                580  	STD	,X		; Write value
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 11
+
+24B1  39                   581  	RTS
+24B2  6D E0                582  _let1	TST	,S+		; Char var?
+24B4  10 27 01 F1          583  	LBEQ	synerr		; No, error
+24B8  1F 13                584  	TFR	X,U		; U = pointer
+24BA  AE 84                585  	LDX	,X		; Assigned
+24BC  26 03                586  	BNE	_let2		; No
+24BE  17 03 77             587  	LBSR	free		; Release the memory
+24C1  8E 30 8F             588  _let2:	LDX	#sa1		; Point to SA1
+24C4  6D 84                589  	TST	,X		; Non-0?
+24C6  26 05                590  	BNE	_let3		; Yes, handle it
+24C8  4F                   591  	CLRA			; Zero high
+24C9  5F                   592  	CLRB			; Zero low
+24CA  ED C4                593  	STD	,U		; Clear pointer
+24CC  39                   594  	RTS
+24CD  8D 0F                595  _let3:	BSR	strlen		; Get length of string
+24CF  17 03 02             596  	LBSR	malloc		; Allocate storage
+24D2  ED C4                597  	STD	,U		; U = variable pointer
+24D4  CE 30 8F             598  	LDU	#sa1		; Point to string acc
+24D7  A6 C0                599  _let4:	LDA	,U+		; Get from source
+24D9  A7 80                600  	STA	,X+		; Save in dest
+24DB  26 FA                601  	BNE	_let4		; Do them all
+24DD  39                   602  	RTS
+24DE                       603  ; Get length of string(X)
+24DE  34 10                604  strlen	PSHS	X		; Save start address
+24E0  A6 80                605  strl1	LDA	,X+		; Get char
+24E2  26 FC                606  	BNE	strl1		; Find end
+24E4  1F 10                607  	TFR	X,D		; D = end
+24E6  AE E4                608  	LDX	,S		; Restore X
+24E8  A3 E1                609  	SUBD	,S++		; Compute length
+24EA  39                   610  	RTS
+24EB                       611  ;
+24EB                       612  ; Print data
+24EB                       613  ;
+24EB  6F E2                614  _PRINT	CLR	,-S		; Zero flag
+24ED  8D 2E                615  	BSR	chkfil		; Check for file output
+24EF  17 01 83             616  _pri1:	LBSR	skip		; Next char
+24F2  17 01 73             617  	LBSR	is_l_end	; End of statement
+24F5  26 04                618  	BNE	_pri2		; No
+24F7  6A E4                619  	DEC	,S		; Set flag
+24F9  20 16                620  	BRA	_pri4		; And continue
+24FB  17 04 D1             621  _pri2	LBSR	eval		; Evaluate expression
+24FE  0D 11                622  	TST	expr_type	; Numeric?
+2500  26 09                623  	BNE	_pri3		; No, character
+2502  CE 30 8F             624  	LDU	#sa1		; Accumulator1
+2505  17 07 02             625  	LBSR	num2str		; Convert to string
+2508  17 08 95             626  	LBSR	space		; Output space
+250B  8E 30 8F             627  _pri3	LDX	#sa1		; Point to sa1
+250E  17 08 87             628  	LBSR	puts		; Output
+2511  17 01 78             629  _pri4	LBSR	tnc		; More?
+2514  27 D9                630  	BEQ	_pri1		; Yes, do another
+2516  A6 E0                631  	LDA	,S+		; Get marker
+2518  10 27 08 BE          632  	LBEQ	lfcr		; New line
+251C  39                   633  	RTS
+251D                       634  ;
+251D                       635  ; Check for file output
+251D                       636  ;
+251D  86 23                637  chkfil	LDA	#'#'		; Device id
+251F  17 01 6C             638  	LBSR	test_next	; Device ID?
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 12
+
+2522  26 0E                639  	BNE	chkfi1		; No, nothing special
+2524  17 FC 30             640  	LBSR	getf1		; Get filename
+2527  10 27 FC 7F          641  	LBEQ	fnoerr		; Not open
+252B  86 2C                642  	LDA	#','		; Comma
+252D  17 01 71             643  	LBSR	expect		; Expect it
+2530  DF 15                644  	STU	file		; Set output handle
+2532  39                   645  chkfi1:	RTS
+2533                       646  ;
+2533                       647  ; List program
+2533                       648  ;
+2533  8D E8                649  _LIST	BSR	chkfil		; Check for file
+2535  17 01 3D             650  	LBSR	skip		; Get next
+2538  8E 00 00             651  	LDX	#0		; Low = 0
+253B  CE FF FF             652  	LDU	#$FFFF		; High = top
+253E  17 01 70             653  	LBSR	isdigit		; Line number?
+2541  26 1E                654  	BNE	_list1		; No, assume these
+2543  17 01 C1             655  	LBSR	getnum		; Get number
+2546  1F 01                656  	TFR	D,X		; Low = line
+2548  17 01 36             657  	LBSR	get_next	; Get next char
+254B  1F 03                658  	TFR	D,U		; U = same line
+254D  81 2C                659  	CMPA	#','		; Separator?
+254F  26 10                660  	BNE	_list1		; No, just this line
+2551  17 01 21             661  	LBSR	skip		; Advance
+2554  CE FF FF             662  	LDU	#$FFFF		; Assume top again
+2557  17 01 57             663  	LBSR	isdigit		; Ending line?
+255A  26 05                664  	BNE	_list1		; No, do it
+255C  17 01 A8             665  	LBSR	getnum		; Get ending line
+255F  1F 03                666  	TFR	D,U		; U = ending line
+2561                       667  ; Display program from X to U
+2561  34 70                668  _list1	PSHS	X,Y,U		; Save values
+2563  10 9E 00             669  	LDY	pgm_start	; Get address
+2566  27 52                670  	BEQ	_list10		; No program
+2568  EC A4                671  _list2	LDD	,Y		; Get line number
+256A  10 A3 E4             672  	CMPD	,S		; < lowest
+256D  25 46                673  	BLO	_list9		; Don't display
+256F  10 A3 64             674  	CMPD	4,S		; > Highest
+2572  22 41                675  	BHI	_list9		; Don't display
+2574  17 08 09             676  	LBSR	putn		; Display number
+2577  17 08 26             677  	LBSR	space		; Display
+257A  33 24                678  	LEAU	4,Y		; Skip to text
+257C  A6 C0                679  _list3	LDA	,U+		; Get next char
+257E  2A 2B                680  	BPL	_list7		; Not special
+2580  84 7F                681  	ANDA	#$7F		; Get name
+2582  1F 89                682  	TFR	A,B		; Copy
+2584  8E 2E 30             683  	LDX	#rwordz		; Point to reserved words
+2587  6D 80                684  _list4	TST	,X+		; Get next
+2589  26 FC                685  	BNE	_list4		; Find end
+258B  4A                   686  	DECA			; Reduce
+258C  26 F9                687  	BNE	_list4		; Till we have it
+258E  A6 80                688  _list5:	LDA	,X+		; Get char
+2590  27 05                689  	BEQ	_list6		; End
+2592  17 08 4B             690  	LBSR	putc		; output
+2595  20 F7                691  	BRA	_list5		; Do them all
+2597  C1 1F                692  _list6:	CMPB	#ADD		; Special case
+2599  24 E1                693  	BHS	_list3		; No
+259B  17 08 02             694  	LBSR	space		; Extra output
+259E  C1 0F                695  	CMPB	#REM		; Remark
+25A0  26 DA                696  	BNE	_list3		; No, continue
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 13
+
+25A2  A6 C0                697  _list6b	LDA	,U+		; Get char
+25A4  27 0C                698  	BEQ	_list8		; End of line
+25A6  17 08 37             699  	LBSR	putc		; Display
+25A9  20 F7                700  	BRA	_list6b		; Continue
+25AB  27 05                701  _list7	BEQ	_list8		; End of line
+25AD  17 08 30             702  	LBSR	putc		; Output
+25B0  20 CA                703  	BRA	_list3		; And continue
+25B2  17 08 25             704  _list8	LBSR	lfcr		; New line
+25B5  10 AE 22             705  _list9	LDY	2,Y		; Point to next
+25B8  26 AE                706  	BNE	_list2		; And proceed
+25BA  35 F0                707  _list10	PULS	X,Y,U,PC	; Restore and return
+25BC                       708  ;
+25BC                       709  ; GOSUB
+25BC                       710  ;
+25BC  D6 10                711  _GOSUB	LDB	ctl_ptr		; Get stack pointer
+25BE  8E 31 57             712  	LDX	#ctl_stk	; Point to control stack
+25C1  3A                   713  	ABX			; Adjust
+25C2  3A                   714  	ABX			; x2
+25C3  DE 02                715  	LDU	runptr		; Get run pointer
+25C5  EF 84                716  	STU	,X		; ctl_stk[ctl_ptr++] = runptr
+25C7  10 AF 02             717  	STY	2,X		; ctl_stk[ctl_ptr++] = cmdptr
+25CA  CE 10 01             718  	LDU	#__GOSUB	; Indicate GOSUB
+25CD  EF 04                719  	STU	4,X		; ctl_stk[ctl_ptr++] = _GOSUB
+25CF  CB 03                720  	ADDB	#3		; ++ ++ ++
+25D1  D7 10                721  	STB	ctl_ptr		; Resave pointer
+25D3  17 03 B2             722  _GOTO	LBSR	pgm		; Insure in program
+25D6  17 03 E4             723  _goto1	LBSR	evalnum		; Get number
+25D9  17 03 26             724  	LBSR	findl		; Locate line
+25DC  32 62                725  	LEAS	2,S		; Clean stack
+25DE  16 FD A8             726  	LBRA	_run2		; And proceed
+25E1                       727  ;
+25E1                       728  ; Return from subroutine
+25E1                       729  ;
+25E1  17 03 A4             730  _RETURN	LBSR	pgm		; Program only
+25E4  D6 10                731  	LDB	ctl_ptr		; Get control stack pointer
+25E6  C0 03                732  	SUBB	#3		; Backup
+25E8  D7 10                733  	STB	ctl_ptr		; Resave
+25EA  8E 31 57             734  	LDX	#ctl_stk	; Point to stack
+25ED  3A                   735  	ABX			; Offset
+25EE  3A                   736  	ABX			; Offset
+25EF  EC 04                737  	LDD	4,X		; Get flag
+25F1  10 83 10 01          738  	CMPD	#__GOSUB	; Is it GOSUB
+25F5  26 25                739  	BNE	nsterr		; No - error
+25F7  EE 84                740  	LDU	,X		; Get new runptr
+25F9  DF 02                741  	STU	runptr		; Set runptr
+25FB  10 AE 02             742  	LDY	2,X		; Set new cmdptr
+25FE  EC C4                743  	LDD	,U		; Get line number
+2600  DD 08                744  	STD	line		; Set current line
+2602                       745  ;
+2602                       746  ; Skip rest of statement
+2602                       747  ;
+2602  A6 A4                748  skpstmt:LDA	,Y		; Get data
+2604  27 67                749  	BEQ	isle1		; End of line
+2606  81 3A                750  	CMPA	#':'		; New statement?
+2608  27 63                751  	BEQ	isle1		; End of statement
+260A  31 21                752  	LEAY	1,Y		; Next
+260C  81 22                753  	CMPA	#'"'		; Quote?
+260E  26 F2                754  	BNE	skpstmt		; No special action
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 14
+
+2610  A6 A4                755  skps1:	LDA	,Y		; Get next
+2612  27 59                756  	BEQ	isle1		; End of statement
+2614  31 21                757  	LEAY	1,Y		; Skip character
+2616  81 22                758  	CMPA	#'"'		; End of quote?
+2618  26 F6                759  	BNE	skps1		; continue quote
+261A  20 E6                760  	BRA	skpstmt		; continue skip
+261C                       761  ; Incorrect ctl_stk usage
+261C  86 06                762  nsterr:	LDA	#ERRnst		; 'Nesting'
+261E                       763  ;
+261E                       764  ; Report an error
+261E                       765  ;
+261E  8E 2F 0E             766  error	LDX	#emsg		; Point to error messages
+2621  0F 15                767  	CLR	file		; Reset to console
+2623  0F 16                768  	CLR	file+1		; Reset to console
+2625  4D                   769  	TSTA			; At message?
+2626  27 07                770  	BEQ	err2		; We have it
+2628  6D 80                771  err1	TST	,X+		; Get next
+262A  26 FC                772  	BNE	err1		; Find end
+262C  4A                   773  	DECA			; Reduce count
+262D  26 F9                774  	BNE	err1		; Find it
+262F  17 07 66             775  err2	LBSR	puts		; Display message
+2632  17 07 59             776  	LBSR	putm		; Output message
+2635  20 65 72 72 6F 72 +  777  	FCCZ	' error'	; Text
+263C  0D 13                778  err3	TST	mode		; Running?
+263E  27 12                779  	BEQ	err4		; No, do nothing
+2640  17 07 4B             780  	LBSR	putm		; Display message
+2643  20 69 6E 20 6C 69 +  781  	FCCZ	' in line '	; Text
+264D  DC 08                782  	LDD	line		; Get current line
+264F  17 07 2E             783  	LBSR	putn		; Display
+2652  17 07 85             784  err4	LBSR	lfcr		; New line
+2655  16 F9 DC             785  	LBRA	top		; And restart
+2658                       786  ;
+2658                       787  ; Test for end of expression
+2658                       788  ;
+2658  81 9C                789  is_e_end: CMPA	#TO+128
+265A  25 04                790  	BLO	isee1
+265C  81 9F                791  	CMPA	#ADD+128
+265E  25 38                792  	BLO	tsne1
+2660  81 29                793  isee1:	CMPA	#')'
+2662  27 09                794  	BEQ	isle1
+2664  81 2C                795  	CMPA	#','
+2666  27 05                796  	BEQ	isle1
+2668                       797  ;
+2668                       798  ; Test for end of statement
+2668                       799  ;
+2668  4D                   800  is_l_end: TSTA
+2669  27 02                801  	BEQ	isle1
+266B  81 3A                802  	CMPA	#':'
+266D  39                   803  isle1:	RTS
+266E                       804  ;
+266E                       805  ; Test for terminator character
+266E                       806  ;
+266E  81 20                807  isterm	CMPA	#' '
+2670  27 FB                808  	BEQ	isle1
+2672  81 09                809  	CMPA	#$09
+2674  39                   810  	RTS
+2675                       811  ;
+2675                       812  ; Advance to next non-blank & retrieve data
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 15
+
+2675                       813  ;
+2675  A6 A4                814  skip:	LDA	,Y		; Get data
+2677  27 12                815  	BEQ	skipx		; End of data
+2679  81 20                816  	CMPA	#' '		; Space?
+267B  26 0E                817  	BNE	skipx		; End of data
+267D  31 21                818  	LEAY	1,Y		; Advance
+267F  20 F4                819  	BRA	skip		; And proced
+2681                       820  ;
+2681                       821  ; Advance to, retrieve and skip next non-blank
+2681                       822  ;
+2681  A6 A4                823  get_next: LDA	,Y		; Get data
+2683  27 06                824  	BEQ	skipx		; Zero - backup
+2685  31 21                825  	LEAY	1,Y		; Advance
+2687  81 20                826  	CMPA	#' '		; Space
+2689  27 F6                827  	BEQ	get_next	; Keep looking
+268B  39                   828  skipx	RTS
+268C                       829  ;
+268C                       830  ; Test for specific character occuring next and remove if found
+268C                       831  ;
+268C  86 2C                832  tnc:	LDA	#','		; Test for comma
+268E  34 02                833  test_next: PSHS	A		; Save character
+2690  8D E3                834  	BSR	skip		; Get next char
+2692  A1 E0                835  	CMPA	,S+		; Does it match?
+2694  26 D7                836  	BNE	isle1		; No
+2696  31 21                837  	LEAY	1,Y		; Advance
+2698  1A 04                838  tsne1:	ORCC	#4		; Set Z
+269A  39                   839  	RTS
+269B                       840  ;
+269B                       841  ; Expect a specific token
+269B                       842  ;
+269B  86 28                843  expectb	LDA	#'('		; Opening bracket
+269D  20 02                844  	BRA	expect
+269F  86 2C                845  expectc	LDA	#','		; Comma
+26A1  34 02                846  expect:	PSHS	A		; Save character
+26A3  8D DC                847  	BSR	get_next	; Get next character
+26A5  A1 E0                848  	CMPA	,S+		; Does it match?
+26A7  27 C4                849  	BEQ	isle1		; Yes
+26A9  4F                   850  synerr:	CLRA			; Error 0 - SYNTAX
+26AA  16 FF 71             851  	LBRA	error		; Report error
+26AD                       852  ;
+26AD                       853  ; Test for alphabetic or numeric
+26AD                       854  ;
+26AD  8D 0B                855  isalnum:BSR	isalpha		; Test for alpha
+26AF  27 BC                856  	BEQ	isle1		; Yes
+26B1                       857  ;
+26B1                       858  ; Test for digit
+26B1                       859  ;
+26B1  81 30                860  isdigit: CMPA	#'0'
+26B3  25 B8                861  	BLO	isle1
+26B5  81 39                862  	CMPA	#'9'
+26B7  23 DF                863  	BLS	tsne1
+26B9  39                   864  	RTS
+26BA                       865  ;
+26BA                       866  ; Test for ALPHA
+26BA                       867  ;
+26BA  81 41                868  isalpha:CMPA	#'A'
+26BC  25 AF                869  	BLO	isle1
+26BE  81 5A                870  	CMPA	#'Z'
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 16
+
+26C0  23 D6                871  	BLS	tsne1
+26C2  39                   872  	RTS
+26C3                       873  ;
+26C3                       874  ; Get character from command & convert to upper case
+26C3                       875  ;
+26C3  A6 A4                876  getuc:	LDA	,Y		; Get character
+26C5  27 0C                877  	BEQ	getuc2		; End - stop
+26C7  81 61                878  	CMPA	#'a'		; Lower?
+26C9  25 06                879  	BLO	getuc1		; No change
+26CB  81 7A                880  	CMPA	#'z'		; Lower?
+26CD  22 02                881  	BHI	getuc1		; No change
+26CF  84 DF                882  	ANDA	#$DF		; Convert to upper
+26D1  31 21                883  getuc1	LEAY	1,Y		; Next
+26D3  39                   884  getuc2:	RTS
+26D4                       885  ;
+26D4                       886  ; Loopup word(Y) in reserved word list
+26D4                       887  ;
+26D4  34 52                888  lookup	PSHS	A,X,U		; Save
+26D6  CE 2E 31             889  	LDU	#rwords		; Point to table
+26D9  5F                   890  	CLRB			; Zero counter
+26DA  1F 21                891  	TFR	Y,X		; Save backup
+26DC  A6 C4                892  look1	LDA	,U		; End of list?
+26DE  27 15                893  	BEQ	look3		; We found it
+26E0  17 FF E0             894  	LBSR	getuc		; Get character from input
+26E3  A1 C0                895  	CMPA	,U+		; Does it match?
+26E5  27 F5                896  	BEQ	look1		; Keep looking
+26E7  5C                   897  	INCB			; Next
+26E8  A6 C0                898  look2	LDA	,U+		; Next word?
+26EA  26 FC                899  	BNE	look2		; Find it
+26EC  1F 12                900  	TFR	X,Y		; Restore pointer
+26EE  A6 C4                901  	LDA	,U		; Are we at end?
+26F0  26 EA                902  	BNE	look1		; No, keep looking
+26F2  5F                   903  	CLRB			; Zero result
+26F3  35 D2                904  	PULS	A,X,U,PC	; And return
+26F5  A6 5F                905  look3	LDA	-1,U		; Get last character
+26F7  8D B4                906  	BSR	isalnum		; alphanumeric?
+26F9  26 06                907  	BNE	look5		; It's OK
+26FB  A6 A4                908  	LDA	,Y		; Get next from source
+26FD  8D AE                909  	BSR	isalnum		; Alphanumeric?
+26FF  27 E7                910  	BEQ	look2		; Yes, keep looking
+2701  17 FF 71             911  look5	LBSR	skip		; Advance to next
+2704  5C                   912  	INCB			; Adjust
+2705  35 D2                913  	PULS	A,X,U,PC	; Restore & return
+2707                       914  ;
+2707                       915  ; Get a number from 'Y', return in D
+2707                       916  ;
+2707  34 16                917  getnum	PSHS	A,B,X		; Save registers
+2709  C6 0A                918  	LDB	#10		; Assume BASE-10
+270B  A6 A4                919  	LDA	,Y		; Get next
+270D  81 24                920  	CMPA	#'$'		; Hex indicator
+270F  26 04                921  	BNE	getn0		; No
+2711  31 21                922  	LEAY	1,Y		; Skip indicator
+2713  C6 10                923  	LDB	#16		; Switch to base-16
+2715  4F                   924  getn0	CLRA			; Zero high
+2716  1F 01                925  	TFR	D,X		; X = base
+2718  5F                   926  	CLRB			; Zero low
+2719  ED E4                927  getn1	STD	,S		; Save
+271B  17 FF A5             928  	LBSR	getuc		; Get char
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 17
+
+271E  27 26                929  	BEQ	getn4		; End of line
+2720  1F 89                930  	TFR	A,B		; Into B
+2722  C0 30                931  	SUBB	#'0'		; 0-9
+2724  C1 0A                932  	CMPB	#10		; In range?
+2726  25 0A                933  	BLO	getn2		; It's OK
+2728  C0 07                934  	SUBB	#7		; A-F
+272A  C1 0A                935  	CMPB	#10		; <A
+272C  25 16                936  	BLO	getn3		; Exit
+272E  C1 0F                937  	CMPB	#15		; >F
+2730  22 12                938  	BHI	getn3		; Exit
+2732  4F                   939  getn2	CLRA			; Zero high
+2733  34 10                940  	PSHS	X		; Save base
+2735  10 A3 E1             941  	CMPD	,S++		; Are we over?
+2738  24 0A                942  	BHS	getn3		; Yes, exit
+273A  DD 0C                943  	STD	temp		; And save
+273C  EC E4                944  	LDD	,S		; Get value
+273E  8D 08                945  	BSR	xMUL		; D = D * 10
+2740  D3 0C                946  	ADDD	temp		; Add in new
+2742  20 D5                947  	BRA	getn1		; And continue
+2744  31 3F                948  getn3	LEAY	-1,Y		; Backup
+2746  35 96                949  getn4	PULS	A,B,X,PC	; Restore and return
+2748                       950  ;
+2748                       951  ; Performs 16 bit multiplication (D=X*D)
+2748                       952  ;
+2748  34 16                953  xMUL	PSHS	A,B,X		Save parameters
+274A  A6 61                954  	LDA	1,S
+274C  E6 63                955  	LDB	3,S
+274E  3D                   956  	MUL
+274F  34 06                957  	PSHS	A,B
+2751  A6 62                958  	LDA	2,S
+2753  E6 65                959  	LDB	5,S
+2755  3D                   960  	MUL
+2756  EB E4                961  	ADDB	,S
+2758  E7 E4                962  	STB	,S
+275A  A6 63                963  	LDA	3,S
+275C  E6 64                964  	LDB	4,S
+275E  3D                   965  	MUL
+275F  EB E4                966  	ADDB	,S
+2761  E7 E4                967  	STB	,S
+2763  35 06                968  	PULS	A,B		Get result
+2765  32 64                969  	LEAS	4,S		Clean stack
+2767  39                   970  	RTS
+2768                       971  ;
+2768                       972  ; Performs 16 bit division. (X=X/D, D=Remainder)
+2768                       973  ;
+2768  34 16                974  xDIV	PSHS	A,B,X
+276A  4F                   975  	CLRA
+276B  5F                   976  	CLRB
+276C  10 A3 E4             977  	CMPD	,S
+276F  27 1E                978  	BEQ	diverr
+2771  8E 00 11             979  	LDX	#17
+2774  1C FE                980  div1	ANDCC	#$FE
+2776  69 63                981  div2	ROL	3,S
+2778  69 62                982  	ROL	2,S
+277A  30 1F                983  	LEAX	-1,X
+277C  27 0D                984  	BEQ	div3
+277E  59                   985  	ROLB
+277F  49                   986  	ROLA
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 18
+
+2780  10 A3 E4             987  	CMPD	,S
+2783  25 EF                988  	BLO	div1
+2785  A3 E4                989  	SUBD	,S
+2787  1A 01                990  	ORCC	#1
+2789  20 EB                991  	BRA	div2
+278B  32 62                992  div3	LEAS	2,S
+278D  35 90                993  	PULS	X,PC
+278F  86 05                994  diverr	LDA	#ERRdiv		; 'Divide by zero'
+2791  16 FE 8A             995  	LBRA	error		; Report error
+2794                       996  ;
+2794                       997  ; Insert line(D) in program
+2794                       998  ;
+2794  34 76                999  insert:	PSHS	A,B,X,Y,U	; Save 
+2796  C6 04               1000  	LDB	#4		; line#,link
+2798  5C                  1001  ins1	INCB			; Advance
+2799  A6 A0               1002  	LDA	,Y+		; Get next
+279B  26 FB               1003  	BNE	ins1		; Count them all
+279D  8D 35               1004  	BSR	malloc		; Allocate
+279F  1F 03               1005  	TFR	D,U		; U = address
+27A1  EC E4               1006  	LDD	,S		; Get line#
+27A3  ED C4               1007  	STD	,U		; Set line#
+27A5  30 44               1008  	LEAX	4,U		; Point to text
+27A7  10 AE 64            1009  	LDY	4,S		; Get cmd pointer
+27AA  A6 A0               1010  ins2	LDA	,Y+		; Get from source
+27AC  A7 80               1011  	STA	,X+		; Save in dest
+27AE  26 FA               1012  	BNE	ins2		; Copy entire line
+27B0  EC E4               1013  	LDD	,S		; Get line number
+27B2  9E 00               1014  	LDX	pgm_start	; Get start address
+27B4  27 05               1015  	BEQ	ins3		; No program - allocate here
+27B6  10 A3 84            1016  	CMPD	,X		; Are we lower?
+27B9  24 06               1017  	BHS	ins4		; No - keep looking
+27BB  AF 42               1018  ins3	STX	2,U		; Set link
+27BD  DF 00               1019  	STU	pgm_start	; Set new start
+27BF  35 F6               1020  	PULS	A,B,X,Y,U,PC	; And return
+27C1  1F 12               1021  ins4	TFR	X,Y		; Y = old
+27C3  AE 02               1022  	LDX	2,X		; X = new
+27C5  27 05               1023  	BEQ	ins5		; Insert here
+27C7  10 A3 84            1024  	CMPD	,X		; Are we lower?
+27CA  22 F5               1025  	BHI	ins4		; No, keep looking
+27CC  EC 22               1026  ins5	LDD	2,Y		; Get old link
+27CE  ED 42               1027  	STD	2,U		; Set new link
+27D0  EF 22               1028  	STU	2,Y		; Link us to old
+27D2  35 F6               1029  	PULS	A,B,X,Y,U,PC	; And proceed
+27D4                      1030  ;
+27D4                      1031  ; Allocate a block of memory: char *malloc(d)
+27D4                      1032  ;
+27D4  34 66               1033  malloc	PSHS	A,B,Y,U		; Save registers
+27D6  CE 39 DB            1034  	LDU	#?heap		; Point to beginning of heap
+27D9                      1035  ; Search for free block of memory
+27D9  A6 C4               1036  ma?1	LDA	,U		; Get flag
+27DB  27 29               1037  	BEQ	ma?4		; End of list, allocate here
+27DD  AE 41               1038  	LDX	1,U		; Get size
+27DF  4A                  1039  	DECA			; Un-allocated?
+27E0  26 04               1040  	BNE	ma?2		; No, try next
+27E2                      1041  ; Found free block, see if its large enough
+27E2  AC E4               1042  	CMPX	,S		; Large enough?
+27E4  24 08               1043  	BHS	ma?3		; Yes, its ok
+27E6                      1044  ; This block not suitable, advance to next
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 19
+
+27E6  30 03               1045  ma?2	LEAX	3,X		; Include overhead
+27E8  1F 10               1046  	TFR	X,D		; Get into acc
+27EA  33 CB               1047  	LEAU	D,U		; Advance to next
+27EC  20 EB               1048  	BRA	ma?1		; And try again
+27EE                      1049  ; This block is OK to re-allocate
+27EE  1F 10               1050  ma?3	TFR	X,D		; Get into ACC
+27F0  A3 E4               1051  	SUBD	,S		; Calculate remaining
+27F2  83 00 03            1052  	SUBD	#3		; Convert for overhead
+27F5  23 25               1053  	BLS	ma?6		; Leaved it alone
+27F7  1F 02               1054  	TFR	D,Y		; Save for later
+27F9                      1055  ; Split this block into two blocks
+27F9  EC E4               1056  	LDD	,S		; Get size of block
+27FB  30 CB               1057  	LEAX	D,U		; Offset to next
+27FD  6F 03               1058  	CLR	3,X		; Set it free
+27FF  6C 03               1059  	INC	3,X		; Indicate de-allocated
+2801  10 AF 04            1060  	STY	4,X		; Save size of block
+2804  20 14               1061  	BRA	ma?5		; And proceed
+2806                      1062  ; Allocate on end of memory
+2806  1F 40               1063  ma?4	TFR	S,D		; Get stack pointer
+2808  A3 E4               1064  	SUBD	,S		; Adjust for buffer size
+280A  83 03 E8            1065  	SUBD	#1000		; Adjust for margin
+280D  34 40               1066  	PSHS	U		; Save pointer
+280F  10 A3 E1            1067  	CMPD	,S++		; Test it
+2812  23 1F               1068  	BLS	ma?9		; No, fail
+2814                      1069  ; Ok to proceed, allocate memory
+2814  EC E4               1070  	LDD	,S		; Get size
+2816  30 CB               1071  	LEAX	D,U		; Offset to new area
+2818  6F 03               1072  	CLR	3,X		; Indicate end of list
+281A  ED 41               1073  ma?5	STD	1,U		; Save block size
+281C  C6 02               1074  ma?6	LDB	#2		; Get 'Allocated' flag
+281E  E7 C4               1075  	STB	,U		; Set it
+2820  33 43               1076  	LEAU	3,U		; U points to area
+2822  1F 31               1077  	TFR	U,X		; X points to area
+2824  10 AE E4            1078  	LDY	,S		; Get size
+2827  27 06               1079  	BEQ	ma?8		; Zero length
+2829  6F C0               1080  ma?7	CLR	,U+		; Zero one byte
+282B  31 3F               1081  	LEAY	-1,Y		; Reduce count
+282D  26 FA               1082  	BNE	ma?7		; Do them all
+282F  AF E4               1083  ma?8	STX	,S		; Save
+2831  35 E6               1084  	PULS	A,B,Y,U,PC	; Restore & return
+2833  86 09               1085  ma?9	LDA	#ERRmem		; "Out of memory"
+2835  16 FD E6            1086  	LBRA	error		; Report error
+2838                      1087  	
+2838                      1088  ;
+2838                      1089  ; Release a block of memory: free(x)
+2838                      1090  ;
+2838  30 1D               1091  free	LEAX	-3,X		; Backup to "real" beginning
+283A  34 76               1092  	PSHS	A,B,X,Y,U	; Save for compare
+283C                      1093  ; Search the allocation list for this block
+283C  CE 39 DB            1094  	LDU	#?heap		; Point to beginning of heap
+283F  A6 C4               1095  fr?10	LDA	,U		; Get address
+2841  27 11               1096  	BEQ	fr?12		; End of list
+2843  11 A3 62            1097  	CMPU	2,S		; Is this it?
+2846  27 08               1098  	BEQ	fr?11		; Yes, handle it
+2848  EC 41               1099  	LDD	1,U		; Get size
+284A  33 CB               1100  	LEAU	D,U		; Advance for size
+284C  33 43               1101  	LEAU	3,U		; Include overhead
+284E  20 EF               1102  	BRA	fr?10		; And keep looking
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 20
+
+2850                      1103  ; Mark this block as un-allocated
+2850  86 01               1104  fr?11	LDA	#1		; Get 'deallocated' flag
+2852  A7 C4               1105  	STA	,U		; Set block
+2854                      1106  ; Garbage collection, scan allocation list and join any
+2854                      1107  ; contiguous de-allocated blocks into single areas.
+2854                      1108  ; Also, truncate list at last allocated block.
+2854  CE 39 DB            1109  fr?12	LDU	#?heap		; Point to beginning of heap
+2857  A6 C4               1110  fr?20	LDA	,U		; Get allocation flag
+2859  27 24               1111  	BEQ	fr?25		; End, quit
+285B  AE 41               1112  	LDX	1,U		; Get size of block
+285D  4A                  1113  	DECA			; Test for de-allocated
+285E  26 15               1114  	BNE	fr?23		; No, its not
+2860                      1115  ; This block is free, check following blocks
+2860  1F 10               1116  fr?21	TFR	X,D		; 'D' = offset
+2862  31 CB               1117  	LEAY	D,U		; 'Y' = next block
+2864  A6 23               1118  	LDA	3,Y		; Get next flag
+2866  27 15               1119  	BEQ	fr?24		; End of list, its ok
+2868  4A                  1120  	DECA			; Test for allocated?
+2869  26 08               1121  	BNE	fr?22		; Yes, stop looking
+286B                      1122  ; Next block is also free
+286B  EC 24               1123  	LDD	4,Y		; Get size of next block
+286D  30 8B               1124  	LEAX	D,X		; Add in size of next block
+286F  30 03               1125  	LEAX	3,X		; Inlude overhead
+2871  20 ED               1126  	BRA	fr?21		; And keep looking
+2873                      1127  ; Resave this block size
+2873  AF 41               1128  fr?22	STX	1,U		; Save new block size
+2875                      1129  ; Advance to next block in list
+2875  1F 10               1130  fr?23	TFR	X,D		; Get length
+2877  33 CB               1131  	LEAU	D,U		; Offset to next
+2879  33 43               1132  	LEAU	3,U		; Include overhead
+287B  20 DA               1133  	BRA	fr?20		; And keep looking
+287D                      1134  ; Mark this block as end of list
+287D  6F C4               1135  fr?24	CLR	,U		; Indicate end of list
+287F  35 76               1136  fr?25	PULS	A,B,X,Y,U	; Restore & return
+2881  30 03               1137  	LEAX	3,X		; Skip ahead
+2883  39                  1138  	RTS
+2884                      1139  ;
+2884                      1140  ; Delete line (D) from program
+2884                      1141  ;	unsigned lnumber
+2884                      1142  ;	struct	*link
+2884                      1143  ;	char	text[]
+2884                      1144  ;
+2884  9E 00               1145  delete:	LDX	pgm_start	; Get program start address
+2886  27 19               1146  	BEQ	del4		; No program
+2888  10 A3 84            1147  del1	CMPD	,X		; Does it match?
+288B  26 0E               1148  	BNE	del3		; No, try next
+288D  EC 02               1149  	LDD	2,X		; Get link
+288F  9C 00               1150  	CMPX	pgm_start	; First_line?
+2891  26 04               1151  	BNE	del2		; No, release it
+2893  DD 00               1152  	STD	pgm_start	; Set new start address
+2895  20 A1               1153  	BRA	free		; Release this memory
+2897  ED 42               1154  del2	STD	2,U		; Set last link
+2899  20 9D               1155  	BRA	free		; Release this memory
+289B  1F 13               1156  del3	TFR	X,U		; Save pointer to last
+289D  AE 02               1157  	LDX	2,X		; Get link
+289F  26 E7               1158  	BNE	del1		; And proceed
+28A1  39                  1159  del4	RTS
+28A2                      1160  ;
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 21
+
+28A2                      1161  ; Tokenize input line and add/replace source if required
+28A2                      1162  ;
+28A2  10 8E 30 2B         1163  edit:	LDY	#buffer		; Point to buffer
+28A6  1F 23               1164  	TFR	Y,U		; Secondary pointer
+28A8  6D A4               1165  edit1	TST	,Y		; Get data
+28AA  27 33               1166  	BEQ	edit4		; End of data
+28AC  17 FE 25            1167  	LBSR	lookup		; Is it a reserved word
+28AF  27 10               1168  	BEQ	edit2		; No, nothing special
+28B1  CA 80               1169  	ORB	#%10000000	; Convert to token value
+28B3  E7 C0               1170  	STB	,U+		; Save in output
+28B5  C1 8F               1171  	CMPB	#REM+128	; Remark?
+28B7  26 EF               1172  	BNE	edit1		; And continue
+28B9  A6 A0               1173  edit1a	LDA	,Y+		; Get char
+28BB  27 22               1174  	BEQ	edit4		; End of line
+28BD  A7 C0               1175  	STA	,U+		; Save
+28BF  20 F8               1176  	BRA	edit1a		; Do them all
+28C1  A6 A0               1177  edit2	LDA	,Y+		; Get character
+28C3  81 61               1178  	CMPA	#'a'		; Lower?
+28C5  25 06               1179  	BLO	edit2a		; No
+28C7  81 7A               1180  	CMPA	#'z'		; Lower?
+28C9  22 02               1181  	BHI	edit2a		; No
+28CB  84 DF               1182  	ANDA	#$DF		; Convert to upper
+28CD  A7 C0               1183  edit2a	STA	,U+		; Write to source
+28CF  81 22               1184  	CMPA	#'"'		; Quoted string?
+28D1  26 D5               1185  	BNE	edit1		; No - next token
+28D3  A6 A0               1186  edit3	LDA	,Y+		; Get next char
+28D5  27 08               1187  	BEQ	edit4		; End - exit
+28D7  A7 C0               1188  	STA	,U+		; Write to buffer
+28D9  81 22               1189  	CMPA	#'"'		; End of string?
+28DB  26 F6               1190  	BNE	edit3		; No, keep copying
+28DD  20 C9               1191  	BRA	edit1		; Next token
+28DF  6F C4               1192  edit4	CLR	,U		; Zero terminate
+28E1  10 8E 30 2B         1193  	LDY	#buffer		; Back to beginning
+28E5  17 FD 8D            1194  	LBSR	skip		; First non-blank
+28E8  17 FD C6            1195  	LBSR	isdigit		; Is it a number?
+28EB  26 14               1196  	BNE	edit5		; No, do nothing
+28ED  17 FE 17            1197  	LBSR	getnum		; Get number
+28F0  34 06               1198  	PSHS	A,B		; Save
+28F2  17 FF 8F            1199  	LBSR	delete		; Delete existing line
+28F5  17 FD 7D            1200  	LBSR	skip		; More data
+28F8  4D                  1201  	TSTA			; End of line
+28F9  35 06               1202  	PULS	A,B		; Restore
+28FB  27 04               1203  	BEQ	edit5		; No
+28FD  17 FE 94            1204  	LBSR	insert		; Insert the line
+2900  4F                  1205  	CLRA			; Indicate we edited
+2901  39                  1206  edit5	RTS
+2902                      1207  ;
+2902                      1208  ; Locate given line in source
+2902                      1209  ;
+2902  9E 00               1210  findl:	LDX	pgm_start	; Get program start
+2904  27 09               1211  	BEQ	findl2		; Not found
+2906  10 A3 84            1212  findl1	CMPD	,X		; Does this one match?
+2909  27 F6               1213  	BEQ	edit5		; Yes
+290B  AE 02               1214  	LDX	2,X		; Get next one
+290D  26 F7               1215  	BNE	findl1		; And keep looking
+290F  86 03               1216  findl2	LDA	#ERRlin		; 'Line number'
+2911  16 FD 0A            1217  	LBRA	error		; Report error
+2914                      1218  ;
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 22
+
+2914                      1219  ; Get variable index (into X)
+2914                      1220  ;
+2914  17 FD 6A            1221  getvar:	LBSR	get_next	; Get next 
+2917  17 FD A0            1222  	LBSR	isalpha		; Alphabetic
+291A  10 26 FD 8B         1223  	LBNE	synerr		; No, Syntax error
+291E  80 41               1224  	SUBA	#'A'		; Convert to
+2920  84 1F               1225  	ANDA	#%00011111	; Wrap for H/L case
+2922  1F 89               1226  	TFR	A,B		; B = value
+2924  4F                  1227  	CLRA			; Zero high
+2925  8E 00 14            1228  	LDX	#20		; *10 (words)
+2928  17 FE 1D            1229  	LBSR	xMUL		; D = ((c-'A')&0x1F)*10
+292B  1F 01               1230  	TFR	D,X		; X = index
+292D  A6 A4               1231  	LDA	,Y		; Get next
+292F  17 FD 7F            1232  	LBSR	isdigit		; Is it a number?
+2932  26 09               1233  	BNE	getv1		; No, value is OK
+2934  80 30               1234  	SUBA	#'0'		; Convert to zero offset
+2936  48                  1235  	LSLA			; x2
+2937  30 86               1236  	LEAX	A,X		; Add to index
+2939  31 21               1237  	LEAY	1,Y		; Skip digit
+293B  A6 A4               1238  	LDA	,Y		; Get next char
+293D  5F                  1239  getv1:	CLRB			; Assume numeric
+293E  81 24               1240  	CMPA	#'$'		; Character suffix?
+2940  26 03               1241  	BNE	getv2		; No, assumption correct
+2942  31 21               1242  	LEAY	1,Y		; Skip '$'
+2944  5C                  1243  	INCB			; Indicate character
+2945  D7 11               1244  getv2:	STB	expr_type	; save type
+2947  39                  1245  	RTS
+2948                      1246  ;
+2948                      1247  ; Compute variable address for assignment
+2948                      1248  ;
+2948  8D CA               1249  address: BSR	getvar		; Get variable name
+294A  27 05               1250  	BEQ	addr1		; Numeric
+294C  30 89 31 BB         1251  	LEAX	char_vars,X	; Offset to char var address
+2950  39                  1252  	RTS
+2951  86 28               1253  addr1:	LDA	#'('		; Array index?
+2953  17 FD 38            1254  	LBSR	test_next	; Occuring next?
+2956  26 22               1255  	BNE	addr3		; Not an array
+2958  17 00 64            1256  	LBSR	chknum		; Insure numeric
+295B  34 40               1257  	PSHS	U		; Save U
+295D  33 89 37 D3         1258  	LEAU	dim_check,X	; U = check address
+2961  AE 89 35 CB         1259  	LDX	dim_vars,X	; X = variable
+2965  0F 12               1260  	CLR	nest		; Zero nesting count
+2967  17 00 73            1261  	LBSR	evalsub		; Evaluate expression
+296A  10 A3 C4            1262  	CMPD	,U		; Are we over
+296D  25 05               1263  	BLO	addr2		; No, index is OK
+296F  86 07               1264  dimerr:	LDA	#ERRdim		; "Dimension error"
+2971  16 FC AA            1265  	LBRA	error		; Report error
+2974  30 8B               1266  addr2	LEAX	D,X		; Offset
+2976  30 8B               1267  	LEAX	D,X		; Offset (16 bit)
+2978  35 C0               1268  	PULS	U,PC
+297A  30 89 33 C3         1269  addr3	LEAX	num_vars,X	; Offset to num variable address
+297E  39                  1270  addr4	RTS
+297F                      1271  ;
+297F                      1272  ; Test for direct only and report error
+297F                      1273  ;
+297F  0D 13               1274  direct	TST	mode		; Direct mode?
+2981  27 FB               1275  	BEQ	addr4		; Yes
+2983  86 01               1276  	LDA	#ERRpgm		; "Illegal program"
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 23
+
+2985  16 FC 96            1277  	LBRA	error
+2988                      1278  ;
+2988                      1279  ; Test for program only and report error
+2988                      1280  ;
+2988  0D 13               1281  pgm	TST	mode		; Program running
+298A  26 F2               1282  	BNE	addr4		; Yes
+298C  86 02               1283  	LDA	#ERRdir		; "Illegal direct"
+298E  16 FC 8D            1284  	LBRA	error		; Report error
+2991                      1285  ;
+2991                      1286  ; Clear all variables
+2991                      1287  ;
+2991  CE 00 00            1288  _CLEAR:	LDU	#0		; Begin with zero
+2994  AE C9 31 BB         1289  clv1	LDX	char_vars,U	; Get char var pointer
+2998  27 03               1290  	BEQ	clv2		; No char var
+299A  17 FE 9B            1291  	LBSR	free		; Release the storage
+299D  AE C9 35 CB         1292  clv2	LDX	dim_vars,U	; Get dim var pointer
+29A1  27 03               1293  	BEQ	clv3		; No dim var
+29A3  17 FE 92            1294  	LBSR	free		; Release the storage
+29A6  4F                  1295  clv3	CLRA			; Zero high
+29A7  5F                  1296  	CLRB			; Zero low
+29A8  ED C9 33 C3         1297  	STD	num_vars,U	; Clear numeric
+29AC  ED C9 31 BB         1298  	STD	char_vars,U	; Clear char
+29B0  ED C9 35 CB         1299  	STD	dim_vars,U	; Clear dim
+29B4  33 42               1300  	LEAU	2,U		; Skip ahead
+29B6  11 83 02 08         1301  	CMPU	#260*2		; Are we over?
+29BA  25 D8               1302  	BLO	clv1		; Do them all
+29BC  39                  1303  	RTS
+29BD                      1304  ;
+29BD                      1305  ; Evaluate number only (no Chars)
+29BD                      1306  ;
+29BD  8D 10               1307  evalnum:BSR	eval		; Evaluate expression
+29BF  0D 11               1308  chknum:	TST	expr_type	; Is it numeric?
+29C1  27 0B               1309  	BEQ	evcok		; Yes - OK
+29C3  86 04               1310  typerr:	LDA	#ERRtyp		; "Wrong type"
+29C5  16 FC 56            1311  	LBRA	error		; Issue error
+29C8                      1312  ;
+29C8                      1313  ; Evaluate character only
+29C8                      1314  ;
+29C8  8D 05               1315  evalchr:BSR	eval		; Evaluate expression
+29CA  0D 11               1316  chkchr:	TST	expr_type	; Is it character?
+29CC  27 F5               1317  	BEQ	typerr		; Report error
+29CE  39                  1318  evcok:	RTS
+29CF                      1319  ;
+29CF                      1320  ; Evaluate an expression (Result in D)
+29CF                      1321  ;
+29CF  0F 12               1322  eval:	CLR	nest		; Reset nesting level
+29D1  8D 0A               1323  	BSR	evalsub		; Evaluate sub-expression
+29D3  0A 12               1324  	DEC	nest		; Were we at level-1
+29D5  10 26 FC D0         1325  	LBNE	synerr		; No, report error
+29D9  39                  1326  	RTS
+29DA                      1327  ;
+29DA                      1328  ; Evaluate a sub-expression
+29DA                      1329  ;
+29DA                      1330  ; Stack variables:
+29DA                      1331  ;	uc	Ostack[10]	22
+29DA                      1332  ;	uw	Nstack[20]	2
+29DA                      1333  ;	uc	Optr		1
+29DA                      1334  ;	uc	Nptr		0
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 24
+
+29DA  17 FC BE            1335  evalbra:LBSR	expectb		; Check for bracket
+29DD  34 56               1336  evalsub:PSHS	A,B,X,U		; Save registers
+29DF  32 E8 E0            1337  	LEAS	-32,S		; Allocate local space
+29E2  0C 12               1338  	INC	nest		; Advance nesting level
+29E4  5F                  1339  	CLRB			; Zero low
+29E5  E7 E4               1340  	STB	,S		; Nptr = 0
+29E7  E7 61               1341  	STB	1,S		; Optr = 0
+29E9  E7 E8 16            1342  	STB	22,S		; Ostack[0] = 0;
+29EC  17 01 08            1343  	LBSR	getval		; Get initial value
+29EF  1F 03               1344  	TFR	D,U		; U = value
+29F1  6C E4               1345  	INC	,S		; ++Nptr
+29F3  E6 E4               1346  	LDB	,S		; B = Nptr
+29F5  58                  1347  	LSLB			; x2
+29F6  30 62               1348  	LEAX	2,S		; X = Nstack
+29F8  EF 85               1349  	STU	B,X		; Nstack[++Nptr] = v
+29FA  0D 11               1350  	TST	expr_type	; String operation?
+29FC  27 57               1351  	BEQ	evsn1		; No, try numeric
+29FE                      1352  ; String operations
+29FE  17 FC 74            1353  evss0	LBSR	skip		; Get next character
+2A01  17 FC 54            1354  	LBSR	is_e_end	; End of expression
+2A04  10 27 00 D9         1355  	LBEQ	evse1a		; Exit
+2A08  31 21               1356  	LEAY	1,Y		; Advance
+2A0A  84 7F               1357  	ANDA	#$7F		; Remove high bit
+2A0C  34 02               1358  	PSHS	A		; Save operator
+2A0E  8E 30 F3            1359  	LDX	#sa2		; Point to acc2
+2A11  17 01 A0            1360  	LBSR	getcval		; Get character value
+2A14  8E 30 8F            1361  	LDX	#sa1		; Point to SA1
+2A17  CE 30 F3            1362  	LDU	#sa2		; Point to SA2
+2A1A  35 02               1363  	PULS	A		; Restore operator
+2A1C  81 1F               1364  	CMPA	#ADD		; Concatinate
+2A1E  26 0E               1365  	BNE	evss3		; No, try next
+2A20                      1366  ; Concatinate two strings
+2A20  A6 80               1367  evss1:	LDA	,X+		; Get next
+2A22  26 FC               1368  	BNE	evss1		; Go to end
+2A24  30 1F               1369  	LEAX	-1,X		; Backup to last
+2A26  A6 C0               1370  evss2	LDA	,U+		; Get char
+2A28  A7 80               1371  	STA	,X+		; Write to string
+2A2A  26 FA               1372  	BNE	evss2		; Do them all
+2A2C  20 D0               1373  	BRA	evss0		; And proceed
+2A2E                      1374  ; Compare two strings
+2A2E  E6 80               1375  evss3	LDB	,X+		; Get from source
+2A30  E1 C0               1376  	CMPB	,U+		; Match?
+2A32  26 1D               1377  	BNE	evss6		; Mismatch
+2A34  5D                  1378  	TSTB			; End of string?
+2A35  26 F7               1379  	BNE	evss3		; No, keep comparing
+2A37  81 28               1380  evss4:	CMPA	#NE		; == ?
+2A39  27 08               1381  	BEQ	evss5		; Yes
+2A3B  81 27               1382  	CMPA	#EQ		; <> ?
+2A3D  10 26 FC 68         1383  	LBNE	synerr		; Syntax error
+2A41  C8 01               1384  	EORB	#$01
+2A43  4F                  1385  evss5	CLRA			; Zero high
+2A44  1F 03               1386  	TFR	D,U		; U = value
+2A46  E6 E4               1387  	LDB	,S		; Get Nptr
+2A48  58                  1388  	LSLB			; x2
+2A49  30 62               1389  	LEAX	2,S		; Address Nstack
+2A4B  EF 85               1390  	STU	B,X		; Nstack[Nptr] = value
+2A4D  0F 11               1391  	CLR	expr_type	; Set numeric
+2A4F  20 AD               1392  	BRA	evss0		; And proceed
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 25
+
+2A51  C6 01               1393  evss6:	LDB	#1		; Indicate <>
+2A53  20 E2               1394  	BRA	evss4		; And continue
+2A55                      1395  ; Numeric operations
+2A55  17 FC 1D            1396  evsn1	LBSR	skip		; Get next character
+2A58  17 FB FD            1397  	LBSR	is_e_end	; End of expression
+2A5B  10 27 00 5A         1398  	LBEQ	evsn3		; Exit
+2A5F  31 21               1399  	LEAY	1,Y		; Next
+2A61  84 7F               1400  	ANDA	#$7F		; Remove high bit
+2A63  80 1E               1401  	SUBA	#ADD-1		; 0 based priority table
+2A65  A7 E8 20            1402  	STA	32,S		; Save for later
+2A68  CE 2F 9F            1403  	LDU	#priority	; Point to priority table
+2A6B  A6 C6               1404  	LDA	A,U		; A = priority[c]
+2A6D  E6 61               1405  	LDB	1,S		; B = Optr
+2A6F  30 E8 16            1406  	LEAX	22,S		; X = Ostack
+2A72  E6 85               1407  	LDB	B,X		; B = Ostack[Optr]
+2A74  A1 C5               1408  	CMPA	B,U		; priority[c] <= priority[Ostack[Optr]]?
+2A76  22 22               1409  	BHI	evsn2		; No, skip
+2A78  E6 61               1410  	LDB	1,S		; B = Optr
+2A7A  6A 61               1411  	DEC	1,S		; --Optr
+2A7C  30 E8 16            1412  	LEAX	22,S		; X = Ostack
+2A7F  A6 85               1413  	LDA	B,X		; A = Ostack[Optr--]
+2A81  E6 E4               1414  	LDB	,S		; B = Nptr
+2A83  6A E4               1415  	DEC	,S		; --Nptr
+2A85  58                  1416  	LSLB			; x2
+2A86  30 62               1417  	LEAX	2,S		; X = Nstack
+2A88  EE 85               1418  	LDU	B,X		; U = Nstack[Nptr--]
+2A8A  C0 02               1419  	SUBB	#2		; Backup
+2A8C  AE 85               1420  	LDX	B,X		; X = Nstack[Nptr]
+2A8E  17 02 6B            1421  	LBSR	arith		; D = arith(Ostack[Optr--],Nstack[Nptr],v)
+2A91  1F 03               1422  	TFR	D,U		; U = D
+2A93  E6 E4               1423  	LDB	,S		; B = Nptr
+2A95  58                  1424  	LSLB			; x2
+2A96  30 62               1425  	LEAX	2,S		; X = Nstack
+2A98  EF 85               1426  	STU	B,X		; Nstack[Nptr] = arith(...)
+2A9A  17 00 5A            1427  evsn2	LBSR	getval		; Get value
+2A9D  17 FF 1F            1428  	LBSR	chknum		; Insure numeric
+2AA0  1F 03               1429  	TFR	D,U		; U = result
+2AA2  6C E4               1430  	INC	,S		; ++Nptr
+2AA4  E6 E4               1431  	LDB	,S		; B = ++Nptr
+2AA6  58                  1432  	LSLB			; x2
+2AA7  30 62               1433  	LEAX	2,S		; X = Nstack
+2AA9  EF 85               1434  	STU	B,X		; Nstack[++Nptr] = get_value()
+2AAB  A6 E8 20            1435  	LDA	32,S		; A = c
+2AAE  6C 61               1436  	INC	1,S		; ++Optr
+2AB0  E6 61               1437  	LDB	1,S		; B = Optr
+2AB2  30 E8 16            1438  	LEAX	22,S		; X = Ostack
+2AB5  A7 85               1439  	STA	B,X		; Ostack[++Optr] = c
+2AB7  20 9C               1440  	BRA	evsn1		; Do all
+2AB9                      1441  ; Clean up pending operations
+2AB9  E6 61               1442  evsn3	LDB	1,S		; Get Optr
+2ABB  27 22               1443  	BEQ	evse1		; None pending
+2ABD  6A 61               1444  	DEC	1,S		; --Optr
+2ABF  30 E8 16            1445  	LEAX	22,S		; X = Ostack
+2AC2  A6 85               1446  	LDA	B,X		; A = Ostack[Optr--]
+2AC4  E6 E4               1447  	LDB	,S		; B = Nptr
+2AC6  6A E4               1448  	DEC	,S		; --Nptr
+2AC8  58                  1449  	LSLB			; x2
+2AC9  30 62               1450  	LEAX	2,S		; X = Nstack
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 26
+
+2ACB  EE 85               1451  	LDU	B,X		; U = Nstack[Nptr--]
+2ACD  C0 02               1452  	SUBB	#2		; B = Backup
+2ACF  AE 85               1453  	LDX	B,X		; X = Nstack[Nptr]
+2AD1  17 02 28            1454  	LBSR	arith		; arith(Ostack[Optr--],Nstack[Nptr],v)
+2AD4  1F 03               1455  	TFR	D,U		; U = D
+2AD6  E6 E4               1456  	LDB	,S		; B = Nptr
+2AD8  58                  1457  	LSLB			; x2
+2AD9  30 62               1458  	LEAX	2,S		; X = Nstack
+2ADB  EF 85               1459  	STU	B,X		; Nstack[Nptr] = arith(...)
+2ADD  20 DA               1460  	BRA	evsn3		; Do them all
+2ADF  A6 A4               1461  evse1	LDA	,Y		; Get data
+2AE1  81 29               1462  evse1a	CMPA	#')'		; Closing brace?
+2AE3  26 04               1463  	BNE	evse2		; No
+2AE5  0A 12               1464  	DEC	nest		; --nest
+2AE7  31 21               1465  	LEAY	1,Y		; Skip ')'
+2AE9  E6 E4               1466  evse2	LDB	,S		; B = Nptr
+2AEB  58                  1467  	LSLB			; x2
+2AEC  30 62               1468  	LEAX	2,S		; X = Nstack
+2AEE  EC 85               1469  	LDD	B,X		; Get value
+2AF0  32 E8 20            1470  	LEAS	32,S		; Release stack
+2AF3  ED E4               1471  	STD	,S		; Set return value
+2AF5  35 D6               1472  	PULS	A,B,X,U,PC	; Restore and return
+2AF7                      1473  ;
+2AF7                      1474  ; Get value element for expression
+2AF7                      1475  ;
+2AF7  0F 11               1476  getval	CLR	expr_type	; Assume numeric
+2AF9  17 FB 79            1477  	LBSR	skip		; Advance to non-blank
+2AFC  17 FB B2            1478  	LBSR	isdigit		; Is it a number?
+2AFF  10 27 FC 04         1479  	LBEQ	getnum		; Process number
+2B03  81 24               1480  	CMPA	#'$'		; Hex input?
+2B05  10 27 FB FE         1481  	LBEQ	getnum		; Process number
+2B09  31 21               1482  	LEAY	1,Y		; Skip operator
+2B0B  81 28               1483  	CMPA	#'('		; Nesting
+2B0D  10 27 FE CC         1484  	LBEQ	evalsub		; New sub-expression
+2B11  81 21               1485  	CMPA	#'!'		; NOT?
+2B13  26 07               1486  	BNE	gval1		; No, try next
+2B15  8D E0               1487  	BSR	getval		; Get value
+2B17  43                  1488  gval0:	COMA			; Invert high
+2B18  53                  1489  	COMB			; Invert low
+2B19  16 FE A3            1490  	LBRA	chknum		; And exit
+2B1C  81 A0               1491  gval1:	CMPA	#SUB|128	; Negate
+2B1E  26 07               1492  	BNE	gval2		; No, try next
+2B20  8D D5               1493  	BSR	getval		; Get value
+2B22  83 00 01            1494  getvc:	SUBD	#1		; Adjust
+2B25  20 F0               1495  	BRA	gval0
+2B27  81 AF               1496  gval2:	CMPA	#ASC|128	; Valid function?
+2B29  25 1A               1497  	BLO	gvar1		; No, try variable
+2B2B  80 AF               1498  	SUBA	#ASC|128	; Convert to zero basc
+2B2D  1F 89               1499  	TFR	A,B		; B = value
+2B2F  17 FB 69            1500  	LBSR	expectb		; Get bracket
+2B32  17 01 BC            1501  	LBSR	switch		; Execute handler
+2B35  2C 3D 2C 5C 2C 49 + 1502  	FDB	oASC,oABS,oNUM,oRND,oKEY,oPEEK,oLEN,oUSR
+2B45                      1503  ; Not an operator
+2B45  31 3F               1504  gvar1:	LEAY	-1,Y		; Backup
+2B47  8E 30 8F            1505  	LDX	#sa1		; Char in sa1
+2B4A  17 FB 6D            1506  	LBSR	isalpha		; Variable?
+2B4D  26 65               1507  	BNE	getcval		; No, try character value
+2B4F  17 FD C2            1508  	LBSR	getvar		; X = variable index
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 27
+
+2B52  27 38               1509  	BEQ	gvar3		; Yes, handle it
+2B54                      1510  ; Character variable
+2B54  CE 30 8F            1511  	LDU	#sa1		; Point to SA1
+2B57  34 40               1512  gcharv:	PSHS	U		; Save dest
+2B59  AE 89 31 BB         1513  	LDX	char_vars,X	; Point to char variables
+2B5D  26 03               1514  	BNE	gvar2		; Yes
+2B5F  8E 2F 0D            1515  	LDX	#nulls		; Point to null string
+2B62  C6 FF               1516  gvar2:	LDB	#-1		; Begin with -1
+2B64  5C                  1517  gvar21:	INCB			; Advance
+2B65  A6 80               1518  	LDA	,X+		; Get from source
+2B67  A7 C0               1519  	STA	,U+		; Write it
+2B69  26 F9               1520  	BNE	gvar21		; And continue
+2B6B  34 06               1521  	PSHS	A,B		; Save
+2B6D  86 28               1522  	LDA	#'('		; Indexed?
+2B6F  17 FB 1C            1523  	LBSR	test_next	; Is this it?
+2B72  26 16               1524  	BNE	gvar22		; No
+2B74  17 FE 66            1525  	LBSR	evalsub		; Evaluate sub-expression
+2B77  17 FE 45            1526  	LBSR	chknum		; Must be numeric
+2B7A  10 A3 E4            1527  	CMPD	,S		; In range?
+2B7D  10 24 FD EE         1528  	LBHS	dimerr		; No, out of range
+2B81  AE 62               1529  	LDX	2,S		; Get acc
+2B83  A6 85               1530  	LDA	B,X		; Get char
+2B85  5F                  1531  	CLRB			; Zero high
+2B86  ED 84               1532  	STD	,X		; Set value
+2B88  0C 11               1533  	INC	expr_type	; Set character
+2B8A  35 C6               1534  gvar22	PULS	A,B,U,PC	
+2B8C                      1535  ; Numeric variable
+2B8C  86 28               1536  gvar3	LDA	#'('		; Array?
+2B8E  17 FA FD            1537  	LBSR	test_next	; Is it array?
+2B91  26 1C               1538  	BNE	gvar4		; Yes, handle it
+2B93  17 FE 47            1539  	LBSR	evalsub		; Get index
+2B96  17 FE 26            1540  	LBSR	chknum		; Insure numeric
+2B99  10 A3 89 37 D3      1541  	CMPD	dim_check,X	; Check for overflow
+2B9E  10 24 FD CD         1542  	LBHS	dimerr		; Report error
+2BA2  AE 89 35 CB         1543  	LDX	dim_vars,X	; Get index
+2BA6  10 27 FD C5         1544  	LBEQ	dimerr		; Report error
+2BAA  58                  1545  	LSLB			; x2
+2BAB  49                  1546  	ROLA			; x2
+2BAC  EC 8B               1547  	LDD	D,X		; Get value
+2BAE  39                  1548  	RTS
+2BAF  EC 89 33 C3         1549  gvar4	LDD	num_vars,X	; Get value
+2BB3  39                  1550  	RTS
+2BB4                      1551  ;
+2BB4                      1552  ; Get character value (X=sa)
+2BB4                      1553  ;
+2BB4  17 FA CA            1554  getcval:LBSR	get_next	; Get next value
+2BB7  81 22               1555  	CMPA	#'"'		; Quoted string?
+2BB9  26 13               1556  	BNE	getcv2		; No, try next
+2BBB                      1557  ; Character string
+2BBB  A6 A0               1558  getcv1:	LDA	,Y+		; Get value
+2BBD  10 27 FA E8         1559  	LBEQ	synerr		; Error
+2BC1  A7 80               1560  	STA	,X+		; Write to output
+2BC3  81 22               1561  	CMPA	#'"'		; End of string?
+2BC5  26 F4               1562  	BNE	getcv1		; Yes, exit
+2BC7  6F 1F               1563  	CLR	-1,X		; Zero terminate
+2BC9  86 01               1564  	LDA	#1		; Character type
+2BCB  97 11               1565  	STA	expr_type	; Set type
+2BCD  39                  1566  	RTS
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 28
+
+2BCE  1F 13               1567  getcv2:	TFR	X,U		; U = output
+2BD0  17 FA E7            1568  	LBSR	isalpha		; Variable?
+2BD3  26 0C               1569  	BNE	getcv3		; No, try next
+2BD5  31 3F               1570  	LEAY	-1,Y		; Backup
+2BD7  17 FD 3A            1571  	LBSR	getvar		; X = variable index
+2BDA  10 27 FA CB         1572  	LBEQ	synerr		; Report error
+2BDE  16 FF 76            1573  	LBRA	gcharv		; Get value into [U]
+2BE1  81 AD               1574  getcv3:	CMPA	#CHR|128	; Convert number into character
+2BE3  26 0D               1575  	BNE	getcv4		; No, try next
+2BE5  17 FD F2            1576  	LBSR	evalbra		; Get subexpression
+2BE8  17 FD D4            1577  	LBSR	chknum		; Insure numeric
+2BEB  0C 11               1578  	INC	expr_type	; Set character
+2BED  E7 84               1579  	STB	,X		; Save it
+2BEF  6F 01               1580  	CLR	1,X		; Zero terminate
+2BF1  39                  1581  	RTS
+2BF2  81 AE               1582  getcv4:	CMPA	#STR|128	; Convert string to number
+2BF4  10 26 FA B1         1583  	LBNE	synerr		; Report error
+2BF8  17 FD DF            1584  	LBSR	evalbra		; Get sub-expression
+2BFB  17 FD C1            1585  	LBSR	chknum		; Insure numeric
+2BFE  0C 11               1586  	INC	expr_type	; Set character
+2C00                      1587  ;
+2C00                      1588  ; Write number(D) into string(U)
+2C00                      1589  ;
+2C00  34 36               1590  uns2str	PSHS	A,B,X,Y		; Save value
+2C02  10 8E 00 00         1591  	LDY	#0		; Zero counter
+2C06  1F 01               1592  	TFR	D,X		; X = number
+2C08  20 16               1593  	BRA	num2s1		; Write it
+2C0A  34 36               1594  num2str	PSHS	A,B,X,Y		; Save value
+2C0C  10 8E 00 00         1595  	LDY	#0		; Reset count
+2C10  1F 01               1596  	TFR	D,X		; X = value
+2C12  4D                  1597  	TSTA			; Negative?
+2C13  2A 0B               1598  	BPL	num2s1		; Not negative
+2C15  43                  1599  	COMA			; Invert
+2C16  53                  1600  	COMB			; Invert
+2C17  C3 00 01            1601  	ADDD	#1		; Negate
+2C1A  1F 01               1602  	TFR	D,X		; X = value
+2C1C  86 2D               1603  	LDA	#'-'		; Negative indicator
+2C1E  A7 C0               1604  	STA	,U+		; Write it
+2C20  CC 00 0A            1605  num2s1	LDD	#10		; / 10
+2C23  17 FB 42            1606  	LBSR	xDIV		; X = X / D
+2C26  34 04               1607  	PSHS	B		; Save result
+2C28  31 21               1608  	LEAY	1,Y		; Advance
+2C2A  8C 00 00            1609  	CMPX	#0		; More to go?
+2C2D  26 F1               1610  	BNE	num2s1		; Do them all
+2C2F  35 02               1611  num2s2	PULS	A		; Get result
+2C31  8B 30               1612  	ADDA	#'0'		; Convert to ASCII
+2C33  A7 C0               1613  	STA	,U+		; Write to output
+2C35  31 3F               1614  	LEAY	-1,Y		; Reduce count
+2C37  26 F6               1615  	BNE	num2s2		; Do them all
+2C39  6F C4               1616  	CLR	,U		; Zero
+2C3B  35 B6               1617  	PULS	A,B,X,Y,PC	; Restore & return
+2C3D                      1618  ; Numeric function handlers
+2C3D  17 FD 9D            1619  oASC:	LBSR	evalsub		; Get sub-expression
+2C40  17 FD 87            1620  	LBSR	chkchr		; Insure character
+2C43  D6 8F               1621  	LDB	sa1		; Get first character
+2C45  4F                  1622  	CLRA			; Zero high
+2C46  97 11               1623  	STA	expr_type	; Numeric result
+2C48  39                  1624  	RTS 
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 29
+
+2C49  17 FD 91            1625  oNUM:	LBSR	evalsub		; Evaluate sub-expression
+2C4C  17 FD 7B            1626  	LBSR	chkchr		; Insure character
+2C4F  34 20               1627  	PSHS	Y		; Save Y
+2C51  10 8E 30 8F         1628  	LDY	#sa1		; Point to string accumulator
+2C55  17 FA AF            1629  	LBSR	getnum		; Get the number
+2C58  0F 11               1630  	CLR	expr_type	; Numeric result
+2C5A  35 A0               1631  	PULS	Y,PC		; Restore & return
+2C5C  17 FD 7E            1632  oABS:	LBSR	evalsub		; Evaluate sub-expression
+2C5F  4D                  1633  	TSTA			; Check for negative
+2C60  2A 31               1634  	BPL	getvno		; Number only
+2C62  16 FE BD            1635  	LBRA	getvc		; Negate if so
+2C65  17 FD 75            1636  oRND:	LBSR	evalsub		; Eval sub-expression
+2C68  34 06               1637  	PSHS	A,B		; Save result
+2C6A  DC 0A               1638  	LDD	randseed	; Get random seed
+2C6C  8E 35 8D            1639  	LDX	#13709		; First calculation
+2C6F  17 FA D6            1640  	LBSR	xMUL		; Perform it
+2C72  C3 36 19            1641  	ADDD	#13849		; Add second
+2C75  DD 0A               1642  	STD	randseed	; Resave seed
+2C77  1F 01               1643  	TFR	D,X		; Get result
+2C79  35 06               1644  	PULS	A,B		; Get value
+2C7B  17 FA EA            1645  	LBSR	xDIV		; D = X / D
+2C7E  20 13               1646  	BRA	getvno		; Number only
+2C80  86 29               1647  oKEY:	LDA	#')'		; Looking for bracket
+2C82  17 FA 1C            1648  	LBSR	expect		; Test for it
+2C85  D6 14               1649  	LDB	keypress	; Get last keystroke
+2C87  4F                  1650  	CLRA			; Zero high
+2C88  97 14               1651  	STA	keypress	; Reset
+2C8A  39                  1652  	RTS
+2C8B  17 FD 4F            1653  oPEEK:	LBSR	evalsub		; Get value
+2C8E  1F 01               1654  	TFR	D,X		; X = result
+2C90  E6 84               1655  	LDB	,X		; Get value
+2C92  4F                  1656  	CLRA			; Zero high
+2C93  16 FD 29            1657  getvno:	LBRA	chknum		; Insure numeric
+2C96                      1658  ; Length of variable
+2C96  17 FC 7B            1659  oLEN:	LBSR	getvar		; Get variable
+2C99  86 29               1660  	LDA	#')'		; Terminator
+2C9B  17 FA 03            1661  	LBSR	expect		; Expect it
+2C9E  0D 11               1662  	TST	expr_type	; Type of variable
+2CA0  26 0F               1663  	BNE	olen1		; Character
+2CA2  EC 89 35 CB         1664  	LDD	dim_vars,X	; Defined?
+2CA6  10 27 FC C5         1665  	LBEQ	dimerr		; No - error
+2CAA  EC 89 37 D3         1666  	LDD	dim_check,X	; Get length
+2CAE  0F 11               1667  olen0:	CLR	expr_type	; Numeric
+2CB0  39                  1668  	RTS
+2CB1  4F                  1669  olen1:	CLRA			; Zero high
+2CB2  5F                  1670  	CLRB			; Zero low
+2CB3  AE 89 31 BB         1671  	LDX	char_vars,X	; Get pointer
+2CB7  27 F5               1672  	BEQ	olen0		; Not defined
+2CB9  6D 80               1673  olen2	TST	,X+		; End of string?
+2CBB  27 F1               1674  	BEQ	olen0		; Yes, stop
+2CBD  C3 00 01            1675  	ADDD	#1		; Advance
+2CC0  20 F7               1676  	BRA	olen2		; And continue
+2CC2                      1677  ; User supplied subroutine
+2CC2  17 FD 18            1678  oUSR:	LBSR	evalsub		; Get address
+2CC5  17 FC F7            1679  	LBSR	chknum		; Insure numeric
+2CC8  ED E3               1680  	STD	,--S		; Save
+2CCA  10 DF 0E            1681  	STS	temp1		; Save stack pointer
+2CCD  17 F9 BC            1682  ousr1:	LBSR	tnc		; Aother
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 30
+
+2CD0  26 10               1683  	BNE	ousr3		; No
+2CD2  0A 12               1684  	DEC	nest		; Clear ','
+2CD4  17 FD 06            1685  	LBSR	evalsub		; Get value
+2CD7  0D 11               1686  	TST	expr_type	; Numeric?
+2CD9  27 03               1687  	BEQ	ousr2		; Yes, pass result
+2CDB  CC 30 8F            1688  	LDD	#sa1		; Point to string acc
+2CDE  ED E3               1689  ousr2:	STD	,--S		; Save value
+2CE0  20 EB               1690  	BRA	ousr1		; Do them all
+2CE2  9E 0E               1691  ousr3:	LDX	temp1		; Get value
+2CE4  34 20               1692  	PSHS	Y		; Save Y
+2CE6  AD 94               1693  	JSR	[,X]		; Execute handler
+2CE8  35 20               1694  	PULS	Y		; Restore Y
+2CEA  10 DE 0E            1695  	LDS	temp1		; Fix stack
+2CED  0F 11               1696  	CLR	expr_type	; Returns numeric
+2CEF  35 90               1697  	PULS	X,PC		; Clean and return
+2CF1                      1698  ;
+2CF1                      1699  ; Execute handler from following table via (A)
+2CF1                      1700  ;
+2CF1  34 10               1701  switch:	PSHS	X		; Save registers
+2CF3  AE 62               1702  	LDX	2,S		; Get PC
+2CF5  3A                  1703  	ABX			; Offset
+2CF6  AE 85               1704  	LDX	B,X		; Get value
+2CF8  AF 62               1705  	STX	2,S		; Set new PC
+2CFA  35 90               1706  	PULS	X,PC		; Restore & Branch
+2CFC                      1707  ;
+2CFC                      1708  ; Perform an arithmetic operation (X)(A)(U)
+2CFC                      1709  ;
+2CFC  4A                  1710  arith:	DECA			; Convert to zero offset
+2CFD  81 0D               1711  	CMPA	#GT-ADD		; Is it in range
+2CFF  10 22 F9 A6         1712  	LBHI	synerr		; No, report error
+2D03  DF 0C               1713  	STU	temp		; Set secondary operand
+2D05  34 50               1714  	PSHS	X,U		; Save X & reserve room
+2D07  48                  1715  	LSLA			; x2
+2D08  8E 2D 11            1716  	LDX	#atable		; Point to table
+2D0B  AE 86               1717  	LDX	A,X		; Get offset
+2D0D  AF 62               1718  	STX	2,S		; Set return address
+2D0F  35 86               1719  	PULS	A,B,PC		; D = result * Launch
+2D11  2D 2D 2D 30 2D 33 + 1720  atable:	FDB	oADD,oSUB,oMUL,oDIV,oMOD,oAND
+2D1D  2D 49 2D 4E 2D 53 + 1721  	FDB	oOR,oXOR,oEQ,oNE,oLE,oLT,oGE,oGT
+2D2D  D3 0C               1722  oADD	ADDD	temp
+2D2F  39                  1723  	RTS
+2D30  93 0C               1724  oSUB	SUBD	temp
+2D32  39                  1725  	RTS
+2D33  1F 31               1726  oMUL	TFR	U,X		; X = op2
+2D35  16 FA 10            1727  	LBRA	xMUL		; D = X*D
+2D38  8D 03               1728  oDIV	BSR	oMOD		; X=X/D
+2D3A  1F 10               1729  	TFR	X,D		; D=X/D
+2D3C  39                  1730  	RTS
+2D3D  1F 01               1731  oMOD	TFR	D,X		; X = op1
+2D3F  DC 0C               1732  	LDD	temp		; Get value
+2D41  16 FA 24            1733  	LBRA	xDIV		; X = X/D; d=X%D
+2D44  94 0C               1734  oAND	ANDA	temp
+2D46  D4 0D               1735  	ANDB	temp+1
+2D48  39                  1736  	RTS
+2D49  9A 0C               1737  oOR	ORA	temp
+2D4B  DA 0D               1738  	ORB	temp+1
+2D4D  39                  1739  	RTS
+2D4E  98 0C               1740  oXOR	EORA	temp
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 31
+
+2D50  D8 0D               1741  	EORB	temp+1
+2D52  39                  1742  	RTS
+2D53  10 93 0C            1743  oEQ	CMPD	temp
+2D56  27 08               1744  	BEQ	cret1
+2D58  4F                  1745  cret0	CLRA
+2D59  5F                  1746  	CLRB
+2D5A  39                  1747  cretx	RTS
+2D5B  10 93 0C            1748  oNE	CMPD	temp
+2D5E  27 F8               1749  	BEQ	cret0
+2D60  CC 00 01            1750  cret1	LDD	#1
+2D63  39                  1751  	RTS
+2D64  10 93 0C            1752  oLE	CMPD	temp
+2D67  2F F7               1753  	BLE	cret1		; LE
+2D69  20 ED               1754  	BRA	cret0
+2D6B  10 93 0C            1755  oLT	CMPD	temp
+2D6E  2D F0               1756  	BLT	cret1		; LO
+2D70  20 E6               1757  	BRA	cret0
+2D72  10 93 0C            1758  oGE	CMPD	temp
+2D75  2C E9               1759  	BGE	cret1		; HS
+2D77  20 DF               1760  	BRA	cret0
+2D79  10 93 0C            1761  oGT	CMPD	temp
+2D7C  2E E2               1762  	BGT	cret1		; HI
+2D7E  20 D8               1763  	BRA	cret0
+2D80                      1764  ;
+2D80                      1765  ; Write number(D)
+2D80                      1766  ;
+2D80  34 50               1767  putn	PSHS	X,U		; Save U
+2D82  CE 30 2B            1768  	LDU	#buffer		; Point to buffer
+2D85  1F 31               1769  	TFR	U,X		; X = output
+2D87  17 FE 76            1770  	LBSR	uns2str		; Get number
+2D8A  8D 0C               1771  	BSR	puts		; Output
+2D8C  35 D0               1772  	PULS	X,U,PC		; Restore & return
+2D8E                      1773  ;
+2D8E                      1774  ; Write message(PC)
+2D8E                      1775  ;
+2D8E  34 10               1776  putm:	PSHS	X		; Save X
+2D90  AE 62               1777  	LDX	2,S		; Get PC
+2D92  8D 04               1778  	BSR	puts		; Write it
+2D94  AF 62               1779  	STX	2,S		; Resave
+2D96  35 90               1780  	PULS	X,PC		; Restore and return
+2D98                      1781  ;
+2D98                      1782  ; Write string(X)
+2D98                      1783  ;
+2D98  A6 80               1784  puts:	LDA	,X+		; Get char
+2D9A  27 BE               1785  	BEQ	cretx		; End of string
+2D9C  8D 42               1786  	BSR	putc		; Write it
+2D9E  20 F8               1787  	BRA	puts		; And continue
+2DA0                      1788  ;
+2DA0                      1789  ; Output space
+2DA0                      1790  ;
+2DA0  86 20               1791  space:	LDA	#' '		; Get space
+2DA2  20 3C               1792  	BRA	putc		; Output
+2DA4                      1793  ;
+2DA4                      1794  ; Get string
+2DA4                      1795  ;
+2DA4  34 40               1796  gets:	PSHS	U		; Save U
+2DA6  DE 15               1797  	LDU	file		; Input from file?
+2DA8  26 57               1798  	BNE	getsf
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 32
+
+2DAA  5F                  1799  	CLRB			; Zero offset
+2DAB  3F 22               1800  gets1	FCB	$3F,34		; Read console device
+2DAD  81 03               1801  	CMPA	#$03		; Ctrl-C
+2DAF  10 27 F5 B5         1802  	LBEQ	break		; Exit
+2DB3  81 08               1803  	CMPA	#$08		; Backspace?
+2DB5  27 13               1804  	BEQ	gets2		; Handle it
+2DB7  81 7F               1805  	CMPA	#$7F		; Delete?
+2DB9  27 0F               1806  	BEQ	gets2		; Handle it
+2DBB  81 0D               1807  	CMPA	#$0D		; Carriage return?
+2DBD  27 17               1808  	BEQ	gets3		; Handle it
+2DBF  C1 63               1809  	CMPB	#99		; Are we over?
+2DC1  24 E8               1810  	BHS	gets1		; Don't accept
+2DC3  A7 A5               1811  	STA	B,Y		; Write it
+2DC5  8D 19               1812  	BSR	putc		; Echo
+2DC7  5C                  1813  	INCB			; Advance
+2DC8  20 E1               1814  	BRA	gets1
+2DCA  5D                  1815  gets2	TSTB			; At start?
+2DCB  27 DE               1816  	BEQ	gets1		; Ignore
+2DCD  8D BF               1817  	BSR	putm		; Output message
+2DCF  08 20 08 00         1818  	FCB	8,' ',8,0	; Wipe character
+2DD3  5A                  1819  	DECB			; Backup
+2DD4  20 D5               1820  	BRA	gets1		; And proceed
+2DD6  6F A5               1821  gets3:	CLR	B,Y		; Zero data
+2DD8  35 40               1822  	PULS	U		; Restore U
+2DDA                      1823  ;
+2DDA                      1824  ; Write LFCR
+2DDA                      1825  ;
+2DDA  86 0A               1826  lfcr:	LDA	#$0A		; LF
+2DDC  8D 02               1827  	BSR	putc		; Output
+2DDE  86 0D               1828  	LDA	#$0D		; CR
+2DE0                      1829  ;
+2DE0                      1830  ; Write character
+2DE0                      1831  ;
+2DE0  34 46               1832  putc	PSHS	A,B,U		; Save registers
+2DE2  DE 15               1833  	LDU	file		; Get handle
+2DE4  27 0E               1834  	BEQ	putc1		; Console
+2DE6  11 83 00 08         1835  	CMPU	#8		; 1-8 = device
+2DEA  23 0C               1836  	BLS	putc2		; Device
+2DEC  81 0A               1837  	CMPA	#$0A		; LF?
+2DEE  27 0F               1838  	BEQ	putc3		; Don't write
+2DF0  3F 3D               1839  	FCB	$3F,61		; Write file
+2DF2  35 C6               1840  	PULS	A,B,U,PC	; Restore & return
+2DF4  3F 21               1841  putc1	FCB	$3F,33		; Write console
+2DF6  35 C6               1842  	PULS	A,B,U,PC	; Restore & return
+2DF8  1F 30               1843  putc2	TFR	U,D		; D = device
+2DFA  5A                  1844  	DECB			; Backup
+2DFB  A6 E4               1845  	LDA	,S		; Get char back
+2DFD  3F 24               1846  	FCB	$3F,36		; Write device
+2DFF  35 C6               1847  putc3	PULS	A,B,U,PC	; Restore & return
+2E01                      1848  ;
+2E01                      1849  ; Reading from file or device
+2E01  5F                  1850  getsf:	CLRB			; Zero low
+2E02  11 83 00 08         1851  getsf1:	CMPU	#8		; Device?
+2E06  23 11               1852  	BLS	getsf3		; Reading device
+2E08  3F 3B               1853  	FCB	$3F,59		; Read file
+2E0A  26 18               1854  	BNE	getsf4		; EOF
+2E0C  81 0D               1855  getsf2	CMPA	#$0D		; Do we have space?
+2E0E  27 14               1856  	BEQ	getsf4		; EOL
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 33
+
+2E10  C1 63               1857  	CMPB	#99		; Do we have space?
+2E12  24 EE               1858  	BHS	getsf1		; No, don't save
+2E14  A7 A5               1859  	STA	B,Y		; Save in buffer
+2E16  5C                  1860  	INCB			; Advance
+2E17  20 E9               1861  	BRA	getsf1		; And proceed
+2E19  34 04               1862  getsf3	PSHS	B		; Save index
+2E1B  1F 30               1863  	TFR	U,D		; D = device
+2E1D  5A                  1864  	DECB			; 0 origin
+2E1E  3F 25               1865  	FCB	$3F,37		; Read device
+2E20  35 04               1866  	PULS	B		; Restore B
+2E22  20 E8               1867  	BRA	getsf2		; And proceed
+2E24  6F A5               1868  getsf4	CLR	B,Y		; Zero terminate
+2E26  35 C0               1869  	PULS	U,PC		; Restore * return
+2E28                      1870  ;
+2E28                      1871  ; Test for characte from console
+2E28                      1872  ;
+2E28  3F 23               1873  testc	FCB	$3F,35		; Test for char
+2E2A  27 02               1874  	BEQ	testc1		; We have one
+2E2C  4F                  1875  	CLRA			; Return zero
+2E2D  39                  1876  	RTS
+2E2E  4D                  1877  testc1	TSTA			; Clear Z
+2E2F  39                  1878  	RTS
+2E30                      1879  ;
+2E30                      1880  ; Table of BASIC reserved words
+2E30                      1881  ;
+2E30  00                  1882  rwordz:	FCB	0		; Marker for LIST
+2E31  4C 45 54 00         1883  rwords:	FCCZ	'LET'
+2E35  45 58 49 54 00      1884  	FCCZ	'EXIT'
+2E3A  4C 49 53 54 00      1885  	FCCZ	'LIST'
+2E3F  4E 45 57 00         1886  	FCCZ	'NEW'
+2E43  52 55 4E 00         1887  	FCCZ	'RUN'
+2E47  43 4C 45 41 52 00   1888  	FCCZ	'CLEAR'
+2E4D  47 4F 53 55 42 00   1889  	FCCZ	'GOSUB'
+2E53  47 4F 54 4F 00      1890  	FCCZ	'GOTO'
+2E58  52 45 54 55 52 4E + 1891  	FCCZ	'RETURN'
+2E5F  50 52 49 4E 54 00   1892  	FCCZ	'PRINT'
+2E65  46 4F 52 00         1893  	FCCZ	'FOR'
+2E69  4E 45 58 54 00      1894  	FCCZ	'NEXT'
+2E6E  49 46 00            1895  	FCCZ	'IF'
+2E71  4C 49 46 00         1896  	FCCZ	'LIF'
+2E75  52 45 4D 00         1897  	FCCZ	'REM'
+2E79  53 54 4F 50 00      1898  	FCCZ	'STOP'
+2E7E  45 4E 44 00         1899  	FCCZ	'END'
+2E82  49 4E 50 55 54 00   1900  	FCCZ	'INPUT'
+2E88  44 49 4D 00         1901  	FCCZ	'DIM'
+2E8C  4F 52 44 45 52 00   1902  	FCCZ	'ORDER'
+2E92  52 45 41 44 00      1903  	FCCZ	'READ'
+2E97  44 41 54 41 00      1904  	FCCZ	'DATA'
+2E9C  50 4F 4B 45 00      1905  	FCCZ	'POKE'
+2EA1  53 41 56 45 00      1906  	FCCZ	'SAVE'
+2EA6  4C 4F 41 44 00      1907  	FCCZ	'LOAD'
+2EAB  4F 50 45 4E 00      1908  	FCCZ	'OPEN'
+2EB0  43 4C 4F 53 45 00   1909  	FCCZ	'CLOSE'
+2EB6  54 4F 00            1910  	FCCZ	'TO'
+2EB9  53 54 45 50 00      1911  	FCCZ	'STEP'
+2EBE  54 48 45 4E 00      1912  	FCCZ	'THEN'
+2EC3  2B 00               1913  	FCCZ	'+'
+2EC5  2D 00               1914  	FCCZ	'-'
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 34
+
+2EC7  2A 00               1915  	FCCZ	'*'
+2EC9  2F 00               1916  	FCCZ	'/'
+2ECB  25 00               1917  	FCCZ	'%'
+2ECD  26 00               1918  	FCCZ	'&'
+2ECF  7C 00               1919  	FCCZ	'|'
+2ED1  5E 00               1920  	FCCZ	'^'
+2ED3  3D 00               1921  	FCCZ	'='
+2ED5  3C 3E 00            1922  	FCCZ	'<>'
+2ED8  3C 3D 00            1923  	FCCZ	'<='
+2EDB  3C 00               1924  	FCCZ	'<'
+2EDD  3E 3D 00            1925  	FCCZ	'>='
+2EE0  3E 00               1926  	FCCZ	'>'
+2EE2  43 48 52 24 00      1927  	FCCZ	'CHR$'
+2EE7  53 54 52 24 00      1928  	FCCZ	'STR$'
+2EEC  41 53 43 00         1929  	FCCZ	'ASC'
+2EF0  41 42 53 00         1930  	FCCZ	'ABS'
+2EF4  4E 55 4D 00         1931  	FCCZ	'NUM'
+2EF8  52 4E 44 00         1932  	FCCZ	'RND'
+2EFC  4B 45 59 00         1933  	FCCZ	'KEY'
+2F00  50 45 45 4B 00      1934  	FCCZ	'PEEK'
+2F05  4C 45 4E 00         1935  	FCCZ	'LEN'
+2F09  55 53 52 00         1936  	FCCZ	'USR'
+2F0D  00                  1937  nulls:	FCB	0
+0001                      1938  LET	EQU	1
+0002                      1939  EXIT	EQU	LET+1
+0003                      1940  LIST	EQU	EXIT+1
+0004                      1941  NEW	EQU	LIST+1
+0005                      1942  RUN	EQU	NEW+1
+0006                      1943  CLEAR	EQU	RUN+1
+0007                      1944  GOSUB	EQU	CLEAR+1
+0008                      1945  GOTO	EQU	GOSUB+1
+0009                      1946  RETURN	EQU	GOTO+1
+000A                      1947  PRINT	EQU	RETURN+1
+000B                      1948  FOR	EQU	PRINT+1
+000C                      1949  NEXT	EQU	FOR+1
+000D                      1950  IF	EQU	NEXT+1
+000E                      1951  LIF	EQU	IF+1
+000F                      1952  REM	EQU	LIF+1
+0010                      1953  STOP	EQU	REM+1
+0011                      1954  END	EQU	STOP+1
+0012                      1955  INPUT	EQU	END+1
+0013                      1956  DIM	EQU	INPUT+1
+0014                      1957  ORDER	EQU	DIM+1
+0015                      1958  READ	EQU	ORDER+1
+0016                      1959  DATA	EQU	READ+1
+0017                      1960  POKE	EQU	DATA+1
+0018                      1961  SAVE	EQU	POKE+1
+0019                      1962  LOAD	EQU	SAVE+1
+001A                      1963  OPEN	EQU	LOAD+1
+001B                      1964  CLOSE	EQU	OPEN+1
+001C                      1965  TO	EQU	CLOSE+1
+001D                      1966  STEP	EQU	TO+1
+001E                      1967  THEN	EQU	STEP+1
+2F0E                      1968  ; Operators
+001F                      1969  ADD	EQU	THEN+1	; Also used as marker
+0020                      1970  SUB	EQU	ADD+1
+0021                      1971  MUL	EQU	SUB+1
+0022                      1972  DIV	EQU	MUL+1
+DUNFIELD 6809 ASSEMBLER: D:BASIC                                      PAGE: 35
+
+0023                      1973  MOD	EQU	DIV+1
+0024                      1974  AND	EQU	MOD+1
+0025                      1975  OR	EQU	AND+1
+0026                      1976  XOR	EQU	OR+1
+0027                      1977  EQ	EQU	XOR+1
+0028                      1978  NE	EQU	EQ+1
+0029                      1979  LE	EQU	NE+1
+002A                      1980  LT	EQU	LE+1
+002B                      1981  GE	EQU	LT+1
+002C                      1982  GT	EQU	GE+1
+2F0E                      1983  ; Character Functions
+002D                      1984  CHR	EQU	GT+1
+002E                      1985  STR	EQU	CHR+1
+2F0E                      1986  ; Numeric functions
+002F                      1987  ASC	EQU	STR+1	; Also used as a marker
+0030                      1988  ABS	EQU	ASC+1
+0031                      1989  NUM	EQU	ABS+1
+0032                      1990  RND	EQU	NUM+1
+0033                      1991  KEY	EQU	RND+1
+0034                      1992  PEEK	EQU	KEY+1
+0035                      1993  LEN	EQU	PEEK+1
+0036                      1994  USR	EQU	LEN+1
+2F0E                      1995  ;
+2F0E                      1996  ; Error messages
+2F0E                      1997  ;
+2F0E  53 79 6E 74 61 78 + 1998  emsg:	FCCZ	'Syntax'
+2F15  49 6C 6C 65 67 61 + 1999  	FCCZ	'Illegal program'
+2F25  49 6C 6C 65 67 61 + 2000  	FCCZ	'Illegal direct'
+2F34  4C 69 6E 65 20 6E + 2001  	FCCZ	'Line number'
+2F40  57 72 6F 6E 67 20 + 2002  	FCCZ	'Wrong type'
+2F4B  44 69 76 69 64 65 + 2003  	FCCZ	'Divide by zero'
+2F5A  4E 65 73 74 69 6E + 2004  	FCCZ	'Nesting'
+2F62  44 69 6D 65 6E 73 + 2005  	FCCZ	'Dimension'
+2F6C  44 61 74 61 00      2006  	FCCZ	'Data'
+2F71  4F 75 74 20 6F 66 + 2007  	FCCZ	'Out of memory'
+2F7F  46 69 6C 65 20 6E + 2008  	FCCZ	'File not open'
+2F8D  46 69 6C 65 20 61 + 2009  	FCCZ	'File already open'
+0000                      2010  ERRsyn	EQU	0
+0001                      2011  ERRpgm	EQU	1
+0002                      2012  ERRdir	EQU	2
+0003                      2013  ERRlin	EQU	3
+0004                      2014  ERRtyp	EQU	4
+0005                      2015  ERRdiv	EQU	5
+0006                      2016  ERRnst	EQU	6
+0007                      2017  ERRdim	EQU	7
+0008                      2018  ERRdat	EQU	8
+0009                      2019  ERRmem	EQU	9
+000A                      2020  ERRfno	EQU	10
+000B                      2021  ERRfoo	EQU	11
+2F9F                      2022  ; Priority of operations
+2F9F  00 01 01 02 02 02 + 2023  priority FCB	0,1,1,2,2,2,3,3,3,1,1,1,1,1,1

@@ -1,0 +1,233 @@
+DUNFIELD 6809 ASSEMBLER: D:DIRF                                       PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         8  *
+0000                         9  * DIRF: Writes file names from directory to a file
+0000                        10  *
+0000                        11  * Copyright 1983-2005 Dave Dunfield
+0000                        12  * All rights reserved.
+0000                        13  *
+0000                        14  DIRLOC	EQU	0		DIRECTORY LOCATION
+0000                        15  	ORG	0
+0000                        16  DPREFIX	RMB	8
+0008                        17  DNAME	RMB	8
+0010                        18  DTYPE	RMB	3
+0013                        19  DDADR	RMB	2
+0015                        20  DRADR	RMB	2
+0017                        21  DATTR	RMB	1
+0018                        22  *
+D000                        23  	ORG	OSUTIL		PROGRAM LOCATION
+D000                        24  * TEST FOR HELP REQUEST
+D000  81 3F                 25  DIRF	CMPA	#'?'		HELP?
+D002  26 51                 26  	BNE	QUAL		NO
+D004  3F                    27  	SWI			SOFTWARE INTERRUPT TO DOS
+D005  19                    28  	FCB	25		SYSTEM REQUEST NUMBER
+D006  55 73 65 3A 20 44 +   29  	FCC	'Use: DIRF[/NODISK/NODIRECTORY/NOTYPE] <file> '
+D033  3C 70 61 74 74 65 +   30  	FCCZ	'<pattern> [<prefix> [<postfix>]]'
+D054  39                    31  	RTS
+D055                        32  * TEST FOR QUALIFIERS
+D055  A6 A4                 33  QUAL	LDA	,Y		GET CHAR FROM LINE
+D057  81 2F                 34  	CMPA	#'/'		QUALIFIER?
+D059  26 3D                 35  	BNE	MAIN		NO, START UP PGM
+D05B  8E D1 8B              36  	LDX	#QTABLE		PT TO TABLE
+D05E  3F                    37  	SWI			SOFTWARE INTERRUPT TO DOS
+D05F  12                    38  	FCB	18		SYSTEM REQUEST NUMBER
+D060  C1 03                 39  	CMPB	#NUMQ		IN RANGE?
+D062  24 07                 40  	BHS	QERR		NO, INVALID
+D064  8E D1 A9              41  	LDX	#QFLAGS		PT TO FLAGS
+D067  6F 85                 42  	CLR	B,X		SET THE FLAG
+D069  20 EA                 43  	BRA	QUAL		GET NEXT
+D06B                        44  * QUALIFIER WAS INVALID, REPORT
+D06B  3F                    45  QERR	SWI			SOFTWARE INTERRUPT TO DOS
+D06C  18                    46  	FCB	24		SYSTEM REQUEST NUMBER
+D06D  49 6E 76 61 6C 69 +   47  	FCCZ	/Invalid qualifier: '/
+D082  A6 A0                 48  	LDA	,Y+		GET CHAR
+D084  3F                    49  QSHOW	SWI			SOFTWARE INTERRUPT TO DOS
+D085  21                    50  	FCB	33		SYSTEM REQUEST NUMBER
+D086  3F                    51  	SWI			SOFTWARE INTERRUPT TO DOS
+D087  05                    52  	FCB	5		SYSTEM REQUEST NUMBER
+D088  27 04                 53  	BEQ	QEND		EXIT
+D08A  81 2F                 54  	CMPA	#'/'		ALSO TERMINATOR
+D08C  26 F6                 55  	BNE	QSHOW		SHOW EM ALL
+D08E  3F                    56  QEND	SWI			SOFTWARE INTERRUPT TO DOS
+D08F  19                    57  	FCB	25		SYSTEM REQUEST NUMBER
+D090  27 00                 58  	FCCZ	/'/		CLOSING QUITE
+DUNFIELD 6809 ASSEMBLER: D:DIRF                                       PAGE: 2
+
+D092  86 01                 59  	LDA	#1		BAD OPERAND RC
+D094  39                    60  	RTS
+D095                        61  * INVALID OPERAND
+D095  3F                    62  BADOPR	SWI			SOFTWARE INTERRUPT TO DOS
+D096  2B                    63  	FCB	43		SYSTEM REQUEST NUMBER
+D097  39                    64  ABORT	RTS
+D098                        65  * MAIN PGM, EVALUATE OPERANDS
+D098  10 BF D1 AD           66  MAIN	STY	>TEMP		SAVE PT
+D09C  3F                    67  	SWI			SOFTWARE INTERRUPT TO DOS
+D09D  0A                    68  	FCB	10		SYSTEM REQUEST NUMBER
+D09E  26 F7                 69  	BNE	ABORT		ERROR, EXIT
+D0A0  3F                    70  	SWI			SOFTWARE INTERRUPT TO DOS
+D0A1  09                    71  	FCB	9		SYSTEM REQUEST NUMBER
+D0A2  26 F3                 72  	BNE	ABORT		ERROR
+D0A4  7F D5 BA              73  	CLR	>PREFIX		INDICATE NO PREFIX
+D0A7  7F D5 FA              74  	CLR	>POST		INDICATE NO POSTFIX
+D0AA  3F                    75  	SWI			SOFTWARE INTERRUPT TO DOS
+D0AB  04                    76  	FCB	4		SYSTEM REQUEST NUMBER
+D0AC  27 36                 77  	BEQ	NOPRE		NO PREFIX
+D0AE  31 21                 78  	LEAY	1,Y		SKIP FIRST DELIM
+D0B0  B7 D1 AF              79  	STA	>DELIM		SAVE DELIMITER
+D0B3  8E D5 BA              80  	LDX	#PREFIX		POINT TO BUFFER
+D0B6  A6 A0                 81  GETPRE	LDA	,Y+		GET CHAR
+D0B8  27 DB                 82  	BEQ	BADOPR		INVALID
+D0BA  81 0D                 83  	CMPA	#$0D		END OF LINE
+D0BC  27 D7                 84  	BEQ	BADOPR		INVALID
+D0BE  A7 80                 85  	STA	,X+		SAVE
+D0C0  B1 D1 AF              86  	CMPA	>DELIM		DELIMITER?
+D0C3  26 F1                 87  	BNE	GETPRE		NO, KEEP GOING
+D0C5  6F 1F                 88  	CLR	-1,X		INDICATE END
+D0C7  3F                    89  	SWI			SOFTWARE INTERRUPT TO DOS
+D0C8  04                    90  	FCB	4		SYSTEM REQUEST NUMBER
+D0C9  27 19                 91  	BEQ	NOPRE		END OF LINE
+D0CB  31 21                 92  	LEAY	1,Y		SKIP FIRST DELIM
+D0CD  B7 D1 AF              93  	STA	>DELIM		SAVE DELIMITER
+D0D0  8E D5 FA              94  	LDX	#POST		POINT TO POST STRING
+D0D3  A6 A0                 95  GETPOS	LDA	,Y+		GET CHAR
+D0D5  27 BE                 96  	BEQ	BADOPR		INVALID
+D0D7  81 0D                 97  	CMPA	#$0D
+D0D9  27 BA                 98  	BEQ	BADOPR		ERROR
+D0DB  A7 80                 99  	STA	,X+		SAVE
+D0DD  B1 D1 AF             100  	CMPA	>DELIM		END
+D0E0  26 F1                101  	BNE	GETPOS
+D0E2  6F 1F                102  	CLR	-1,X		ZAP IT
+D0E4                       103  * RESTORE FILENAMES
+D0E4  10 BE D1 AD          104  NOPRE	LDY	>TEMP		GET PTR BACK
+D0E8  3F                   105  	SWI			SOFTWARE INTERRUPT TO DOS
+D0E9  0A                   106  	FCB	10		SYSTEM REQUEST NUMBER
+D0EA  CE D3 B0             107  	LDU	#OUTFIL		PT TO IT
+D0ED  3F                   108  	SWI			SOFTWARE INTERRUPT TO DOS
+D0EE  38                   109  	FCB	56		SYSTEM REQUEST NUMBER
+D0EF  3F                   110  	SWI			SOFTWARE INTERRUPT TO DOS
+D0F0  09                   111  	FCB	9		SYSTEM REQUEST NUMBER
+D0F1  A6 1F                112  	LDA	-1,X		GET DRIVE
+D0F3  B7 D1 AC             113  	STA	>DISK		SAVE IT
+D0F6  3F                   114  	SWI			SOFTWARE INTERRUPT TO DOS
+D0F7  4C                   115  	FCB	76		SYSTEM REQUEST NUMBER
+D0F8                       116  * LOOK UP FILES IN DIRECTORY
+DUNFIELD 6809 ASSEMBLER: D:DIRF                                       PAGE: 3
+
+D0F8  CC 00 00             117  	LDD	#DIRLOC		PT TO IT
+D0FB  FD D1 AD             118  LOKDIR	STD	>TEMP		SAVE SECTOR
+D0FE  8E D1 B0             119  	LDX	#WRKSPC		TO TO WORK
+D101  3F                   120  	SWI			SOFTWARE INTERRUPT TO DOS
+D102  5C                   121  	FCB	92		SYSTEM REQUEST NUMBER
+D103  3F                   122  LOK1	SWI			SOFTWARE INTERRUPT TO DOS
+D104  13                   123  	FCB	19		SYSTEM REQUEST NUMBER
+D105  27 12                124  	BEQ	OUTNAM		YES, OUTPUT IT
+D107  30 88 20             125  LOK2	LEAX	32,X		TO NEXT ENTRY
+D10A  8C D3 B0             126  	CMPX	#WRKSPC+512	ARE WE PAST END
+D10D  25 F4                127  	BLO	LOK1		NO, FIND NEXT
+D10F  FC D1 AD             128  	LDD	>TEMP		GET SECTOR
+D112  3F                   129  	SWI			SOFTWARE INTERRUPT TO DOS
+D113  4D                   130  	FCB	77		SYSTEM REQUEST NUMBER
+D114  26 E5                131  	BNE	LOKDIR		CHECK THIS SECTOR
+D116                       132  * END OF DIR, CLOSE FILES & EXIT
+D116  3F                   133  	SWI			SOFTWARE INTERRUPT TO DOS
+D117  39                   134  	FCB	57		SYSTEM REQUEST NUMBER
+D118  39                   135  	RTS
+D119                       136  * WE FOUND A NAME, OUTPUT IT
+D119  34 10                137  OUTNAM	PSHS	X		SAVE X
+D11B  10 8E D5 BA          138  	LDY	#PREFIX		PT TO AREA
+D11F  A6 A0                139  OUT1	LDA	,Y+		GET CHAR
+D121  27 04                140  	BEQ	OUT2		END
+D123  3F                   141  	SWI			SOFTWARE INTERRUPT TO DOS
+D124  3D                   142  	FCB	61		SYSTEM REQUEST NUMBER
+D125  20 F8                143  	BRA	OUT1		EXIT
+D127  B6 D1 A9             144  OUT2	LDA	>NODISK		DISPLAY DISK?
+D12A  27 0B                145  	BEQ	OUT3		NO, DON'T
+D12C  B6 D1 AC             146  	LDA	>DISK		GET DISK DRIVE
+D12F  8B 41                147  	ADDA	#'A'		CONVERT
+D131  3F                   148  	SWI			SOFTWARE INTERRUPT TO DOS
+D132  3D                   149  	FCB	61		SYSTEM REQUEST NUMBER
+D133  86 3A                150  	LDA	#':'		SEPERATOR
+D135  3F                   151  	SWI			SOFTWARE INTERRUPT TO DOS
+D136  3D                   152  	FCB	61		SYSTEM REQUEST NUMBER
+D137  B6 D1 AA             153  OUT3	LDA	>NODIR		OUTPUT DIRECTORY?
+D13A  27 15                154  	BEQ	OUT6		NO, DON'T
+D13C  86 5B                155  	LDA	#'['		PREFIX
+D13E  3F                   156  	SWI			SOFTWARE INTERRUPT TO DOS
+D13F  3D                   157  	FCB	61		SYSTEM REQUEST NUMBER
+D140  C6 08                158  	LDB	#8		MAX 8 CHARS
+D142  A6 80                159  OUT4	LDA	,X+		GET CHAR FROM NAME
+D144  27 05                160  	BEQ	OUT5		END
+D146  3F                   161  	SWI			SOFTWARE INTERRUPT TO DOS
+D147  3D                   162  	FCB	61		SYSTEM REQUEST NUMBER
+D148  5A                   163  	DECB			REDUCE COUNT
+D149  26 F7                164  	BNE	OUT4		END
+D14B  86 5D                165  OUT5	LDA	#']'		POSTFIX
+D14D  3F                   166  	SWI			SOFTWARE INTERRUPT TO DOS
+D14E  3D                   167  	FCB	61		SYSTEM REQUEST NUMBER
+D14F  AE E4                168  	LDX	,S		RESTORE X
+D151                       169  * OUTPUT FILENAME
+D151  C6 08                170  OUT6	LDB	#8		MAX 8 CHARS
+D153  30 08                171  	LEAX	DNAME,X		ADVANCE TO NAME
+D155  A6 80                172  OUT7	LDA	,X+		GET CHAR
+D157  27 05                173  	BEQ	OUT8		END
+D159  3F                   174  	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: D:DIRF                                       PAGE: 4
+
+D15A  3D                   175  	FCB	61		SYSTEM REQUEST NUMBER
+D15B  5A                   176  	DECB			REDUCE COUNT
+D15C  26 F7                177  	BNE	OUT7		CONTINUE
+D15E  AE E4                178  OUT8	LDX	,S		RESTORE X
+D160  B6 D1 AB             179  	LDA	>NOTYPE		DISPLAY TYPE?
+D163  27 12                180  	BEQ	OUT10		NO, SKIP IT
+D165  30 88 10             181  	LEAX	DTYPE,X		POINT TO IT
+D168  86 2E                182  	LDA	#'.'		SEPERATOR
+D16A  3F                   183  	SWI			SOFTWARE INTERRUPT TO DOS
+D16B  3D                   184  	FCB	61		SYSTEM REQUEST NUMBER
+D16C  C6 03                185  	LDB	#3		MAX 3 CHARS
+D16E  A6 80                186  OUT9	LDA	,X+		GET CHAR
+D170  27 05                187  	BEQ	OUT10		END
+D172  3F                   188  	SWI			SOFTWARE INTERRUPT TO DOS
+D173  3D                   189  	FCB	61		SYSTEM REQUEST NUMBER
+D174  5A                   190  	DECB			BACKUP COUNT
+D175  26 F7                191  	BNE	OUT9		CONTINUE
+D177  8E D5 FA             192  OUT10	LDX	#POST		POINT TO POSTFIX
+D17A  A6 80                193  OUT11	LDA	,X+		GET CHAR
+D17C  27 04                194  	BEQ	OUT12		END
+D17E  3F                   195  	SWI			SOFTWARE INTERRUPT TO DOS
+D17F  3D                   196  	FCB	61		SYSTEM REQUEST NUMBER
+D180  20 F8                197  	BRA	OUT11		NEXT
+D182  86 0D                198  OUT12	LDA	#$0D		END OF LINE
+D184  3F                   199  	SWI			SOFTWARE INTERRUPT TO DOS
+D185  3D                   200  	FCB	61		SYSTEM REQUEST NUMBER
+D186  35 10                201  	PULS	X		RESTORE 'X'
+D188  16 FF 7C             202  	LBRA	LOK2		CONTINUE LOOKING
+D18B                       203  *
+D18B                       204  * QUALIFIER TABLE
+D18B                       205  *
+D18B  85                   206  QTABLE	FCB	$85
+D18C  2F 4E 4F 44 49 53 +  207  	FCC	'/NODISK'
+D193  85                   208  	FCB	$85
+D194  2F 4E 4F 44 49 52 +  209  	FCC	'/NODIRECTORY'
+D1A0  84                   210  	FCB	$84
+D1A1  2F 4E 4F 54 59 50 +  211  	FCC	'/NOTYPE'
+D1A8  80                   212  	FCB	$80
+0003                       213  NUMQ	EQU	3
+D1A9                       214  QFLAGS	EQU	*
+D1A9  FF                   215  NODISK	FCB	$FF		DON'T INCLUDE DISK PREFIX
+D1AA  FF                   216  NODIR	FCB	$FF		DON'T INCLUDE DIRECTORY
+D1AB  FF                   217  NOTYPE	FCB	$FF		DON'T INCLUDE TYPE
+D1AC                       218  * MISC LOCAL VARIABLES
+D1AC                       219  DISK	RMB	1		DIRECTORY DISK DRIVE
+D1AD                       220  TEMP	RMB	2		TEMP STORAGE
+D1AF                       221  DELIM	RMB	1		STRING DELIMITER
+D1B0                       222  WRKSPC	RMB	512		DIRECTORY LOOKUP SECTOR
+D3B0                       223  OUTFIL	RMB	522		OUTPUT FILE BUFFER
+D5BA                       224  PREFIX	RMB	64		PREFIX STRING
+D5FA                       225  POST	RMB	64		POSTFIX STRING

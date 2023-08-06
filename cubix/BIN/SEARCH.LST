@@ -1,0 +1,346 @@
+DUNFIELD 6809 ASSEMBLER: D:SEARCH                                     PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         8  *
+0000                         9  * SEARCH: Global file search for text or binary strings
+0000                        10  *
+0000                        11  * Copyright 1983-2005 Dave Dunfield
+0000                        12  * All rights reserved.
+0000                        13  *
+0000                        14  * DIRECTORY STRUCTURE
+0000                        15  	ORG	0
+0000                        16  DPREFIX	RMB	8
+0008                        17  DNAME	RMB	8
+0010                        18  DTYPE	RMB	3
+0013                        19  DDADR	RMB	2
+0015                        20  DRADR	RMB	2
+0017                        21  DATTR	RMB	1
+0018                        22  * FILE ATTRIBUTES
+0080                        23  RPERM	EQU	%10000000
+0040                        24  WPERM	EQU	%01000000
+0020                        25  EPERM	EQU	%00100000
+0010                        26  DPERM	EQU	%00010000
+0018                        27  *
+0000                        28  DIRLOC	EQU	0		DIRECTORY STARTS HERE
+0018                        29  *
+D000                        30  	ORG	OSUTIL		UTILITY SPACE
+D000  81 3F                 31  SEARCH	CMPA	#'?'		QUERY REQUEST?	
+D002  26 42                 32  	BNE	QUAL		NO, LOOK FOR QUALIFIERS
+D004  3F                    33  	SWI			SOFTWARE INTERRUPT TO DOS
+D005  19                    34  	FCB	25		SYSTEM REQUEST NUMBER
+D006  55 73 65 3A 20 53 +   35  	FCC	'Use: SEARCH[/BINARY/CASE/HEX/TOTAL]'
+D029  20 3C 66 69 6C 65 +   36  	FCCZ	' <filespec> <search string>'
+D045  39                    37  	RTS
+D046                        38  * PERFORM SEARCH
+D046                        39  * PARSE FOR COMMAND QUALIFIERS
+D046  A6 A4                 40  QUAL	LDA	,Y		GET CHAR FROM COMMAND LINE
+D048  81 2F                 41  	CMPA	#'/'		IS IT A QUALIFIER?
+D04A  26 46                 42  	BNE	MAIN		NO, DO PGM
+D04C  30 8D 02 65           43  	LEAX	QTABLE,PCR	POINT TO QUALIFIER TABLE
+D050  3F                    44  	SWI			SOFTWARE INTERRUPT TO DOS
+D051  12                    45  	FCB	18		SYSTEM REQUEST NUMBER
+D052  C1 04                 46  	CMPB	#QMAX		IS IT IN RANGE
+D054  24 08                 47  	BHS	QERR		IF SO, IT'S INVALID
+D056  30 8D 02 76           48  	LEAX	QFLAGS,PCR	POINT TO QUALIFIER FLAGS
+D05A  6F 85                 49  	CLR	B,X		SET THE FLAG
+D05C  20 E8                 50  	BRA	QUAL		LOOK FOR ANOTHER QUALIFIER
+D05E  3F                    51  QERR	SWI			SOFTWARE INTERRUPT TO DOS
+D05F  18                    52  	FCB	24		SYSTEM REQUEST NUMBER
+D060  49 6E 76 61 6C 69 +   53  	FCCZ	/Invalid qualifier: '/
+D075  A6 A0                 54  	LDA	,Y+		GET CHARACTER
+D077  3F                    55  DSQU1	SWI			SOFTWARE INTERRUPT TO DOS
+D078  21                    56  	FCB	33		SYSTEM REQUEST NUMBER
+D079  A6 A0                 57  	LDA	,Y+		GET NEXT CHAR
+D07B  27 0C                 58  	BEQ	GOABO		NULL IS DELIMITER
+DUNFIELD 6809 ASSEMBLER: D:SEARCH                                     PAGE: 2
+
+D07D  81 2F                 59  	CMPA	#'/'		START OF ANOTHER QUALIFIER?
+D07F  27 08                 60  	BEQ	GOABO		IF SO, QUIT
+D081  81 20                 61  	CMPA	#' '		SPACE?
+D083  27 04                 62  	BEQ	GOABO		IF SO, QUIT
+D085  81 0D                 63  	CMPA	#$0D		END OF LINE?
+D087  26 EE                 64  	BNE	DSQU1		NO, KEEP DUMPING
+D089  3F                    65  GOABO	SWI			SOFTWARE INTERRUPT TO DOS
+D08A  19                    66  	FCB	25		SYSTEM REQUEST NUMBER
+D08B  27 00                 67  	FCB	$27,0		CHARACTERS TO DISPLAY
+D08D  86 01                 68  	LDA	#1		INVALID OPERAND RETURN CODE
+D08F  16 00 B7              69  	LBRA	ABORT		GIVE UP
+D092                        70  * MAIN PROGRAM
+D092  3F                    71  MAIN	SWI			SOFTWARE INTERRUPT TO DOS
+D093  09                    72  	FCB	9		SYSTEM REQUEST NUMBER
+D094  10 26 00 B1           73  	LBNE	ABORT		BAD, GIVE UP
+D098  A6 1F                 74  	LDA	-1,X		GET DRIVE
+D09A  3F                    75  	SWI			SOFTWARE INTERRUPT TO DOS
+D09B  4C                    76  	FCB	76		SYSTEM REQUEST NUMBER
+D09C  CE D2 E7              77  	LDU	#BUFFER		POINT TO BUFFER
+D09F  7F D2 DE              78  	CLR	BUFSIZ		BUFFER SIZE INDICATOR
+D0A2  7D D2 D0              79  	TST	HEX		IS STRING HEX
+D0A5  26 13                 80  	BNE	STRIN		NO, INPUT A STRING
+D0A7                        81  * INPUT HEX BYTES TO SEARCH FOR
+D0A7  3F                    82  HEXIN	SWI			SOFTWARE INTERRUPT TO DOS
+D0A8  07                    83  	FCB	7		SYSTEM REQUEST NUMBER
+D0A9  10 26 00 9C           84  	LBNE	ABORT		INVALID, QUIT
+D0AD  1F 10                 85  	TFR	X,D		COPY
+D0AF  E7 C0                 86  	STB	,U+		SAVE IT
+D0B1  7C D2 DE              87  	INC	BUFSIZ		ADVANCE SIZE
+D0B4  3F                    88  	SWI			SOFTWARE INTERRUPT TO DOS
+D0B5  04                    89  	FCB	4		SYSTEM REQUEST NUMBER
+D0B6  26 EF                 90  	BNE	HEXIN		GET NEXT OPERAND
+D0B8  20 24                 91  	BRA	GOTOP		WE HAVE OEPRAND
+D0BA                        92  * INPUT A STRING VALUE
+D0BA  3F                    93  STRIN	SWI			SOFTWARE INTERRUPT TO DOS
+D0BB  04                    94  	FCB	4		SYSTEM REQUEST NUMBER
+D0BC  27 1B                 95  	BEQ	BADSTR		ITS BAD
+D0BE  31 21                 96  	LEAY	1,Y		SKIP IT
+D0C0  B7 D2 D8              97  	STA	TEMP		SAVE
+D0C3  A1 A4                 98  	CMPA	,Y		NULL STRING?
+D0C5  27 12                 99  	BEQ	BADSTR		ITS BAD
+D0C7  A6 A0                100  STR1	LDA	,Y+		GET CHAR FROM STRING
+D0C9  27 0E                101  	BEQ	BADSTR		ITS BAD
+D0CB  B1 D2 D8             102  	CMPA	TEMP		ARE WE AT END?
+D0CE  27 0E                103  	BEQ	GOTOP		WE HAVE IT
+D0D0  7C D2 DE             104  	INC	BUFSIZ		ADVANCE
+D0D3  A7 C0                105  	STA	,U+		SAVE
+D0D5  81 0D                106  	CMPA	#$0D		CR?
+D0D7  26 EE                107  	BNE	STR1		NO, ITS OK
+D0D9                       108  * STRING OPERAND IS INVALID
+D0D9  3F                   109  BADSTR	SWI			SOFTWARE INTERRUPT TO DOS
+D0DA  2B                   110  	FCB	43		SYSTEM REQUEST NUMBER
+D0DB  16 00 6B             111  	LBRA	ABORT		GO HOME
+D0DE                       112  * WE HAVE SEARCH OPERAND
+D0DE  CC 00 00             113  GOTOP	LDD	#DIRLOC		DIRECTORY STARTS HERE
+D0E1  FD D2 DA             114  SCAND	STD	SECTOR		SAVE DIRECTORY SECTOR
+D0E4  8E D3 87             115  	LDX	#DIRBUF		POINT TO FREE SPACE
+D0E7  3F                   116  	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: D:SEARCH                                     PAGE: 3
+
+D0E8  5C                   117  	FCB	92		SYSTEM REQUEST NUMBER
+D0E9  10 26 00 5C          118  	LBNE	ABORT		DISK ERROR
+D0ED  3F                   119  SCAND1	SWI			SOFTWARE INTERRUPT TO DOS
+D0EE  13                   120  	FCB	19		SYSTEM REQUEST NUMBER
+D0EF  27 5A                121  	BEQ	SCANF		IF SO, SCAN THE FILE
+D0F1  30 88 20             122  NXTDIR	LEAX	32,X		SKIP TO NEXT
+D0F4  8C D5 87             123  	CMPX	#DIRBUF+512	BEYOND END?
+D0F7  25 F4                124  	BLO	SCAND1		NO, WE ARE OK
+D0F9  FC D2 DA             125  	LDD	SECTOR		GET SECTOR NUMBER
+D0FC  3F                   126  	SWI			SOFTWARE INTERRUPT TO DOS
+D0FD  4D                   127  	FCB	77		SYSTEM REQUEST NUMBER
+D0FE  26 E1                128  	BNE	SCAND		CONTINUE IF MORE
+D100  FC D2 D4             129  	LDD	FMATCH		DID ANY FILES MATCH?
+D103  27 42                130  	BEQ	NOMAT		NO, ERROR
+D105  10 83 00 01          131  	CMPD	#1		SEARCHED ONLY ONE
+D109  27 39                132  	BEQ	SEREND		IF SO, NO GRAND TOTAL
+D10B  3F                   133  	SWI			SOFTWARE INTERRUPT TO DOS
+D10C  18                   134  	FCB	24		SYSTEM REQUEST NUMBER
+D10D  53 65 61 72 63 68 +  135  	FCCZ	'Searched '
+D117  3F                   136  	SWI			SOFTWARE INTERRUPT TO DOS
+D118  1A                   137  	FCB	26		SYSTEM REQUEST NUMBER
+D119  3F                   138  	SWI			SOFTWARE INTERRUPT TO DOS
+D11A  18                   139  	FCB	24		SYSTEM REQUEST NUMBER
+D11B  20 66 69 6C 65 73 +  140  	FCCZ	 ' files, for a total of '
+D133  FC D2 D6             141  	LDD	GMATCH		GET GRAND TOTAL MATCHES
+D136  3F                   142  	SWI			SOFTWARE INTERRUPT TO DOS
+D137  1A                   143  	FCB	26		SYSTEM REQUEST NUMBER
+D138  3F                   144  	SWI			SOFTWARE INTERRUPT TO DOS
+D139  19                   145  	FCB	25		SYSTEM REQUEST NUMBER
+D13A  20 6D 61 74 63 68 +  146  	FCCZ	' matches.'	
+D144  4F                   147  SEREND	CLRA			ZERO RETURN CODE
+D145  20 02                148  	BRA	ABORT		QUIT
+D147  3F                   149  NOMAT	SWI			SOFTWARE INTERRUPT TO DOS
+D148  2C                   150  	FCB	44		SYSTEM REQUEST NUMBER
+D149  3F                   151  ABORT	SWI			SOFTWARE INTERRUPT TO DOS
+D14A  00                   152  	FCB	0		SYSTEM REQUEST NUMBER
+D14B                       153  * MATCHING FILE WAS FOUND, SEARCH IT
+D14B  34 10                154  SCANF	PSHS	X		SAVE POINTER INTO ENTRY
+D14D  FC D2 D4             155  	LDD	FMATCH		FILE MATCH,
+D150  C3 00 01             156  	ADDD	#1		INCREMENT
+D153  FD D2 D4             157  	STD	FMATCH		RESAVE
+D156  3F                   158  	SWI			SOFTWARE INTERRUPT TO DOS
+D157  18                   159  	FCB	24		SYSTEM REQUEST NUMBER
+D158  53 63 61 6E 6E 69 +  160  	FCCZ	'Scanning file: '
+D168  3F                   161  	SWI			SOFTWARE INTERRUPT TO DOS
+D169  1F                   162  	FCB	31		SYSTEM REQUEST NUMBER
+D16A  A6 88 17             163  	LDA	DATTR,X		GET ATTRIBUTES
+D16D  85 80                164  	BITA	#RPERM		CAN WE READ
+D16F  26 1D                165  	BNE	PROTOK
+D171  3F                   166  	SWI			SOFTWARE INTERRUPT TO DOS
+D172  19                   167  	FCB	25		SYSTEM REQUEST NUMBER
+D173  20 2D 20 50 72 6F +  168  	FCCZ	' - Protection violation'
+D18B  16 FF 63             169  	LBRA	NXTDIR		GET NEXT
+D18E  3F                   170  PROTOK	SWI			SOFTWARE INTERRUPT TO DOS
+D18F  16                   171  	FCB	22		SYSTEM REQUEST NUMBER
+D190  4F                   172  	CLRA
+D191  5F                   173  	CLRB
+D192  FD D2 E5             174  	STD	BYTCT		SAVE BYTE COUNT
+DUNFIELD 6809 ASSEMBLER: D:SEARCH                                     PAGE: 4
+
+D195  FD D2 E1             175  	STD	NMATCH		SAVE NUMBER OF MATCHES
+D198  5C                   176  	INCB
+D199  FD D2 E3             177  	STD	LINCT		CURRENT LINE COUNTER
+D19C                       178  * READ SECTORS FROM FILE, AND SCAN THEM
+D19C  EC 88 13             179  	LDD	DDADR,X		GET DISK ADDRESS
+D19F  FD D2 DC             180  SCSEC	STD	FSEC		SAVE
+D1A2  8E D5 87             181  	LDX	#WRKBUF		POINT TO WORK BUFFER
+D1A5  BF D2 DF             182  	STX	WRKPTR		SAVE POINTER
+D1A8  3F                   183  	SWI			SOFTWARE INTERRUPT TO DOS
+D1A9  5C                   184  	FCB	92		SYSTEM REQUEST NUMBER
+D1AA  26 9D                185  	BNE	ABORT		INVALID
+D1AC                       186  * SCAN 1K SECTOR(X) FOR CONTENTS OF BUFFER
+D1AC  10 8E D3 37          187  	LDY	#BUFF1		POINT TO BUFFER
+D1B0  F6 D2 DE             188  	LDB	BUFSIZ		GET BUFFER SIZE
+D1B3                       189  * FILL COMPARE BUFFER FROM FILE
+D1B3  8D 79                190  SCAN1	BSR	RDFIL		READ FILE
+D1B5  A7 A0                191  	STA	,Y+		SAVE IN BUFFER
+D1B7  5A                   192  	DECB			REDUCE COUNT
+D1B8  26 F9                193  	BNE	SCAN1		CONTINUE
+D1BA                       194  * COMPARE COMPARE BUFFER WITH FILE CONTENTS
+D1BA  8E D2 E7             195  SCAN2	LDX	#BUFFER		POINT TO BUFFER
+D1BD  10 8E D3 37          196  	LDY	#BUFF1		POINT TO OTHER BUFFER
+D1C1  F6 D2 DE             197  	LDB	BUFSIZ		GET BUFFER SIZE
+D1C4  A6 80                198  SCAN3	LDA	,X+		GET CHAR FROM BUFFER
+D1C6  A1 A0                199  	CMPA	,Y+		COMPARE WITH OTHER
+D1C8  26 51                200  	BNE	SCAN4		NO MATCH
+D1CA  5A                   201  	DECB			REDUCE COUNT
+D1CB  26 F7                202  	BNE	SCAN3		KEEP LOOKING
+D1CD                       203  * STRING WAS FOUND
+D1CD  FC D2 E1             204  	LDD	NMATCH		GET NUMBER OF MATCHES
+D1D0  C3 00 01             205  	ADDD	#1		ADVANCE
+D1D3  FD D2 E1             206  	STD	NMATCH		RESAVE
+D1D6  B6 D2 D2             207  	LDA	TOTAL		IS IT TOTAL ONLY?
+D1D9  27 40                208  	BEQ	SCAN4		YES, DON'T DISPLAY
+D1DB  B6 D2 D1             209  	LDA	BINARY		BINARY ONLY?
+D1DE  27 13                210  	BEQ	BINDI		IF DSO, DISPLAY OFFSET ONLY
+D1E0  3F                   211  	SWI			SOFTWARE INTERRUPT TO DOS
+D1E1  18                   212  	FCB	24		SYSTEM REQUEST NUMBER
+D1E2  4C 69 6E 65 3A 20 +  213  	FCCZ	'Line: '
+D1E9  FC D2 E3             214  	LDD	LINCT		GET LINE COUNTER
+D1EC  3F                   215  	SWI			SOFTWARE INTERRUPT TO DOS
+D1ED  1A                   216  	FCB	26		SYSTEM REQUEST NUMBER
+D1EE  3F                   217  	SWI			SOFTWARE INTERRUPT TO DOS
+D1EF  18                   218  	FCB	24		SYSTEM REQUEST NUMBER
+D1F0  2C 20 00             219  	FCCZ	', '
+D1F3  3F                   220  BINDI	SWI			SOFTWARE INTERRUPT TO DOS
+D1F4  18                   221  	FCB	24		SYSTEM REQUEST NUMBER
+D1F5  4F 66 66 73 65 74 +  222  	FCCZ	'Offset: '
+D1FE  F6 D2 DE             223  	LDB	BUFSIZ		GET BUFFER SIZE
+D201  4F                   224  	CLRA			ZERO HIGH
+D202  34 06                225  	PSHS	A,B		SAVE
+D204  FC D2 E5             226  	LDD	BYTCT		GET BYTE COUNT
+D207  A3 E4                227  	SUBD	,S		CONVERT
+D209  ED E4                228  	STD	,S		SAVE
+D20B  3F                   229  	SWI			SOFTWARE INTERRUPT TO DOS
+D20C  1A                   230  	FCB	26		SYSTEM REQUEST NUMBER
+D20D  3F                   231  	SWI			SOFTWARE INTERRUPT TO DOS
+D20E  18                   232  	FCB	24		SYSTEM REQUEST NUMBER
+DUNFIELD 6809 ASSEMBLER: D:SEARCH                                     PAGE: 5
+
+D20F  20 28 24 00          233  	FCCZ	' ($'
+D213  35 06                234  	PULS	A,B		RESTORE
+D215  3F                   235  	SWI			SOFTWARE INTERRUPT TO DOS
+D216  1B                   236  	FCB	27		SYSTEM REQUEST NUMBER
+D217  3F                   237  	SWI			SOFTWARE INTERRUPT TO DOS
+D218  19                   238  	FCB	25		SYSTEM REQUEST NUMBER
+D219  29 00                239  	FCCZ	')'
+D21B  8E D3 37             240  SCAN4	LDX	#BUFF1		POINT TO COMPARE BUFFER
+D21E  F6 D2 DE             241  	LDB	BUFSIZ		GET SIZE
+D221  A6 01                242  SCAN5	LDA	1,X		GET CHAR
+D223  A7 80                243  	STA	,X+		RESAVE
+D225  5A                   244  	DECB			REDUCE COUNT
+D226  26 F9                245  	BNE	SCAN5		CONTINUE
+D228  8D 04                246  	BSR	RDFIL		READ A CHAR
+D22A  A7 1F                247  	STA	-1,X		SAVE
+D22C  20 8C                248  	BRA	SCAN2		CONTINUE
+D22E                       249  *
+D22E                       250  * RDFILE
+D22E                       251  *
+D22E  34 14                252  RDFIL	PSHS	B,X		SAVE REG
+D230  FC D2 E5             253  	LDD	BYTCT		GET BYTE COUNT
+D233  C3 00 01             254  	ADDD	#1		ADVANCE
+D236  FD D2 E5             255  	STD	BYTCT		RESAVE
+D239  BE D2 DF             256  	LDX	WRKPTR		GET POINTER
+D23C  8C D7 87             257  	CMPX	#WRKBUF+512	ADVANCE
+D23F  25 13                258  	BLO	RDFOK		OK
+D241  FC D2 DC             259  	LDD	FSEC		GET FILE SECTOR
+D244  3F                   260  	SWI			SOFTWARE INTERRUPT TO DOS
+D245  4D                   261  	FCB	77		SYSTEM REQUEST NUMBER
+D246  27 35                262  	BEQ	FILEOF		END OF FILE
+D248  8E D5 87             263  	LDX	#WRKBUF		SET IT UP
+D24B  FD D2 DC             264  	STD	FSEC		RESAVE
+D24E  3F                   265  	SWI			SOFTWARE INTERRUPT TO DOS
+D24F  5C                   266  	FCB	92		SYSTEM REQUEST NUMBER
+D250  10 26 FE F5          267  	LBNE	ABORT		BAD
+D254  A6 80                268  RDFOK	LDA	,X+		GET CHAR
+D256  2A 05                269  	BPL	RDFO1		NORMAL
+D258  F6 D2 D1             270  	LDB	BINARY		ARE WE TREATING AS BINARY
+D25B  26 20                271  	BNE	FILEOF		NO, END OF FILE
+D25D  BF D2 DF             272  RDFO1	STX	WRKPTR		RESAVE POINTER
+D260  81 0D                273  	CMPA	#$0D		NEW LINE?
+D262  26 08                274  	BNE	RDF1		NO
+D264  BE D2 E3             275  	LDX	LINCT		GET LINE COUNT
+D267  30 01                276  	LEAX	1,X		ADVANCE
+D269  BF D2 E3             277  	STX	LINCT		RESAVE
+D26C  F6 D2 D3             278  RDF1	LDB	CASE		IS LOWER CASE CONVERT ENABLED?
+D26F  26 0A                279  	BNE	RDF2		NO, SKIP IT
+D271  81 61                280  	CMPA	#$61		LOWER CASE?
+D273  25 06                281  	BLO	RDF2		NO, DON'T CONVERT
+D275  81 7A                282  	CMPA	#$7A		LOWER CASE?
+D277  22 02                283  	BHI	RDF2		NO, DON'T CONVERT
+D279  84 5F                284  	ANDA	#$5F		CONVERT TO UPPER CASE
+D27B  35 94                285  RDF2	PULS	B,X,PC
+D27D  32 65                286  FILEOF	LEAS	5,S		SKIP SAVED X AND PC
+D27F  3F                   287  	SWI			SOFTWARE INTERRUPT TO DOS
+D280  18                   288  	FCB	24		SYSTEM REQUEST NUMBER
+D281  54 6F 74 61 6C 20 +  289  	FCCZ	'Total of '
+D28B  FC D2 E1             290  	LDD	NMATCH		GET NUMBER OF MATCHES
+DUNFIELD 6809 ASSEMBLER: D:SEARCH                                     PAGE: 6
+
+D28E  3F                   291  	SWI			SOFTWARE INTERRUPT TO DOS
+D28F  1A                   292  	FCB	26		SYSTEM REQUEST NUMBER
+D290  3F                   293  	SWI			SOFTWARE INTERRUPT TO DOS
+D291  19                   294  	FCB	25		SYSTEM REQUEST NUMBER
+D292  20 6D 61 74 63 68 +  295  	FCCZ	' matches were found.'
+D2A7  FC D2 D6             296  	LDD	GMATCH		GET GRAND MATCH TOTAL
+D2AA  F3 D2 E1             297  	ADDD	NMATCH		ADD IN THIS MATCHES
+D2AD  FD D2 D6             298  	STD	GMATCH		SAVE
+D2B0  35 10                299  	PULS	X		RESTORE POINTER
+D2B2  16 FE 3C             300  	LBRA	NXTDIR
+D2B5                       301  * STRINGS
+D2B5  82                   302  QTABLE	FCB	$82
+D2B6  2F 48 45 58          303  	FCC	'/HEX'		HEX INPUT
+D2BA  82                   304  	FCB	$82
+D2BB  2F 42 49 4E 41 52 +  305  	FCC	'/BINARY'	BINARY INPUT FILE
+D2C2  82                   306  	FCB	$82
+D2C3  2F 54 4F 54 41 4C    307  	FCC	'/TOTAL'	TOTAL MATCHES ONLY
+D2C9  82                   308  	FCB	$82
+D2CA  2F 43 41 53 45       309  	FCC	'/CASE'		CASE CONVERSION
+D2CF  80                   310  	FCB	$80
+0004                       311  QMAX	EQU	4
+D2D0                       312  *
+D2D0                       313  QFLAGS	EQU	*
+D2D0  FF                   314  HEX	FCB	$FF		HEX INPUT STRING
+D2D1  FF                   315  BINARY	FCB	$FF		BINARY INPUT FILE
+D2D2  FF                   316  TOTAL	FCB	$FF		DISPLAY TOTALS ONLY
+D2D3  FF                   317  CASE	FCB	$FF		FORCE CASE CONVERSIONS
+D2D4                       318  *
+D2D4                       319  * LOCAL STORAGE
+D2D4                       320  *
+D2D4  00 00                321  FMATCH	FDB	0
+D2D6  00 00                322  GMATCH	FDB	0
+D2D8                       323  TEMP	RMB	2
+D2DA                       324  SECTOR	RMB	2
+D2DC                       325  FSEC	RMB	2
+D2DE                       326  BUFSIZ	RMB	1
+D2DF                       327  WRKPTR	RMB	2
+D2E1                       328  NMATCH	RMB	2
+D2E3                       329  LINCT	RMB	2
+D2E5                       330  BYTCT	RMB	2
+D2E7                       331  BUFFER	RMB	80
+D337                       332  BUFF1	RMB	80
+D387                       333  DIRBUF	RMB	512
+D587                       334  WRKBUF	RMB	512

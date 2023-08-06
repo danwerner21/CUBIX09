@@ -1,0 +1,224 @@
+DUNFIELD 6809 ASSEMBLER: D:REDIRECT                                   PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         8  *
+0000                         9  * REDIRECT: Switch console output to/from a file
+0000                        10  *
+0000                        11  * Copyright 1983-2005 Dave Dunfield
+0000                        12  * All rights reserved.
+0000                        13  *
+D000                        14  	ORG	OSUTIL
+D000                        15  *
+D000  81 3F                 16  REDIR	CMPA	#'?'		QUERY?
+D002  26 39                 17  	BNE	QUAL		SHOW HOW IT'S DONE
+D004  3F                    18  	SWI			SOFTWARE INTERRUPT TO DOS
+D005  19                    19  	FCB	25		SYSTEM REQUEST NUMBER
+D006  55 73 65 3A 20 52 +   20  	FCCZ	'Use: REDIRECT[/ALL/CLOSE/WRITE] <filename> [<device>]'
+D03C  39                    21  	RTS
+D03D                        22  * PARSE FOR COMMAND QUALIFIERS
+D03D  A6 A4                 23  QUAL	LDA	,Y		GET CHAR FROM COMMAND LINE
+D03F  81 2F                 24  	CMPA	#'/'		IS IT A QUALIFIER?
+D041  26 42                 25  	BNE  	MAIN		NO, GET PARAMETERS
+D043  8E D1 9F              26  	LDX	#QTABLE		POINT TO QUALIFIER TABLE
+D046  3F                    27  	SWI			SOFTWARE INTERRUPT TO DOS
+D047  12                    28  	FCB	18		SYSTEM REQUEST NUMBER
+D048  C1 03                 29  	CMPB	#QMAX		IS IT IN RANGE
+D04A  24 07                 30  	BHS	QERR		IF SO, IT'S INVALID
+D04C  8E D1 B3              31  	LDX  	#QFLAGS		POINT TO QUALIFIER FLAGS
+D04F  6F 85                 32  	CLR	B,X		SET THE FLAG
+D051  20 EA                 33  	BRA	QUAL		LOOK FOR ANOTHER QUALIFIER
+D053  3F                    34  QERR	SWI			SOFTWARE INTERRUPT TO DOS
+D054  18                    35  	FCB	24		SYSTEM REQUEST NUMBER
+D055  49 6E 76 61 6C 69 +   36  	FCCZ	/Invalid qualifier: '/
+D06A  A6 A0                 37  	LDA	,Y+		GET CHARACTER
+D06C  3F                    38  DSQU1	SWI			SOFTWARE INTERRUPT TO DOS
+D06D  21                    39  	FCB	33		SYSTEM REQUEST NUMBER
+D06E  A6 A0                 40  	LDA	,Y+		GET NEXT CHAR
+D070  27 0C                 41  	BEQ	GOABO		NULL IS DELIMITER
+D072  81 2F                 42  	CMPA	#'/'		START OF ANOTHER QUALIFIER?
+D074  27 08                 43  	BEQ	GOABO		IF SO, QUIT
+D076  81 20                 44  	CMPA	#' '		SPACE?
+D078  27 04                 45  	BEQ	GOABO		IF SO, QUIT
+D07A  81 0D                 46  	CMPA	#$0D		END OF LINE?
+D07C  26 EE                 47  	BNE	DSQU1		NO, KEEP DUMPING
+D07E  3F                    48  GOABO	SWI			SOFTWARE INTERRUPT TO DOS
+D07F  19                    49  	FCB	25		SYSTEM REQUEST NUMBER
+D080  27 00                 50  	FCB	$27,0		CHARACTERS TO DISPLAY
+D082  86 01                 51  	LDA	#1		INVALID OPERAND RETURN CODE
+D084  39                    52  	RTS
+D085                        53  * MAINLINE CODE
+D085  B6 D1 B6              54  MAIN	LDA	ACTIVE		GET ACTIVE COUNT
+D088  7C D1 B6              55  	INC	ACTIVE		ADVANCE COUNT
+D08B  81 10                 56  	CMPA	#16		PAST I/O DRIVERS?
+D08D  24 0B                 57  	BHS	MAIN1		IF SO, WE ARE FINISHED
+D08F  3F                    58  	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: D:REDIRECT                                   PAGE: 2
+
+D090  66                    59  	FCB	102		SYSTEM REQUEST NUMBER
+D091  10 83 DB 9B           60  	CMPD	#DRIVER		ALREADY INSTALLED?
+D095  26 EE                 61  	BNE	MAIN		NO, ITS NOT
+D097  7F D1 B6              62  	CLR	ACTIVE		INDICATE INSTALLED
+D09A  B6 D1 B4              63  MAIN1	LDA	CLOSE		CLOSING FILE?
+D09D  27 17                 64  	BEQ	DOCLOSE		YES, CLOSE IT
+D09F  3F                    65  	SWI			SOFTWARE INTERRUPT TO DOS
+D0A0  0A                    66  	FCB	10		SYSTEM REQUEST NUMBER
+D0A1  26 12                 67  	BNE	ABORT		ERROR, EXIT
+D0A3  3F                    68  	SWI			SOFTWARE INTERRUPT TO DOS
+D0A4  04                    69  	FCB	4		SYSTEM REQUEST NUMBER
+D0A5  26 04                 70  	BNE	MAIN2		YES, TAKE THEM
+D0A7                        71  * NO DEVICE SPECIFIED, USE CONSOLE
+D0A7  3F                    72  	SWI			SOFTWARE INTERRUPT TO DOS
+D0A8  28                    73  	FCB	40		SYSTEM REQUEST NUMBER
+D0A9  20 04                 74  	BRA	MAIN3		AND CONTINUE
+D0AB                        75  * DEVICE IS SPECIFIED
+D0AB  3F                    76  MAIN2	SWI			SOFTWARE INTERRUPT TO DOS
+D0AC  06                    77  	FCB	6		SYSTEM REQUEST NUMBER
+D0AD  1F 98                 78  	TFR	B,A		COPY TO 'A'
+D0AF  81 08                 79  MAIN3	CMPA	#8		IN RANGE?
+D0B1  25 34                 80  	BLO	OPEN		YES, ITS OK
+D0B3                        81  * INVALID DEVICE SPECIFIED
+D0B3  3F                    82  	SWI			SOFTWARE INTERRUPT TO DOS
+D0B4  32                    83  	FCB	50		SYSTEM REQUEST NUMBER
+D0B5  39                    84  ABORT	RTS
+D0B6                        85  * CLOSE OPEN FILE
+D0B6  7D D1 B6              86  DOCLOSE	TST	ACTIVE		ALREADY ACTIVE?
+D0B9  26 0F                 87  	BNE	ERROR2		NO, REPORT ERROR
+D0BB  CE D9 91              88  	LDU	#FCB		POINT TO FCB
+D0BE  3F                    89  	SWI			SOFTWARE INTERRUPT TO DOS
+D0BF  39                    90  	FCB	57		SYSTEM REQUEST NUMBER
+D0C0  BE D9 8D              91  	LDX	SDRIVER		GET OLD DRIVER
+D0C3  B6 D9 8B              92  	LDA	DEVICE		GET VECTOR ID
+D0C6  3F                    93  	SWI			SOFTWARE INTERRUPT TO DOS
+D0C7  67                    94  	FCB	103		SYSTEM REQUEST NUMBER
+D0C8  4F                    95  	CLRA			ZERO RC
+D0C9  39                    96  	RTS
+D0CA                        97  * REDIRECT IS NOT ACTIVE, CANNOT CLOSE
+D0CA  3F                    98  ERROR2	SWI			SOFTWARE INTERRUPT TO DOS
+D0CB  19                    99  	FCB	25		SYSTEM REQUEST NUMBER
+D0CC  52 45 44 49 52 45 +  100  	FCCZ	'REDIRECT is not active.'
+D0E4  86 65                101  	LDA	#101		RETURN CODE
+D0E6  39                   102  	RTS
+D0E7                       103  * OPEN FILE & PERFORM ASIGNMENT
+D0E7  7D D1 B6             104  OPEN	TST	ACTIVE		ALREADY ACTIVE?
+D0EA  27 40                105  	BEQ	ERROR1		YES, REPORT ERROR
+D0EC  CE D9 91             106  	LDU	#FCB		POINT TO FCB
+D0EF  7D D1 B3             107  	TST	WRITE		OPEN FOR WRITE?
+D0F2  27 0C                108  	BEQ	OPWRITE		YES, DO IT
+D0F4                       109  * READ OPERATION, INSTALL INPUT DRIVER
+D0F4  B7 D9 8B             110  	STA	DEVICE		SAVE DEVICE ID
+D0F7  3F                   111  	SWI			SOFTWARE INTERRUPT TO DOS
+D0F8  37                   112  	FCB	55		SYSTEM REQUEST NUMBER
+D0F9  26 BA                113  	BNE	ABORT		ERROR, ABORT
+D0FB  8E D1 4D             114  	LDX	#IDRIVER	POINT TO INPUT DRIVER
+D0FE  20 0C                115  	BRA	INSTALL		INSTALL IT
+D100                       116  * WRITE OPERATION, INSTALL OUTPUT DRIVER
+DUNFIELD 6809 ASSEMBLER: D:REDIRECT                                   PAGE: 3
+
+D100  8B 08                117  OPWRITE	ADDA	#8		OFFSET TO WRITE DRIVER
+D102  B7 D9 8B             118  	STA	DEVICE		SAVE IT
+D105  3F                   119  	SWI			SOFTWARE INTERRUPT TO DOS
+D106  38                   120  	FCB	56		SYSTEM REQUEST NUMBER
+D107  26 AC                121  	BNE	ABORT		ERROR, ABORT
+D109  8E D1 6B             122  	LDX	#ODRIVER	POINT TO OUTPUT DRIVER
+D10C                       123  * COPY DRIVER OVER
+D10C  10 8E DB 9B          124  INSTALL	LDY	#DRIVER		POINT TO DRIVER
+D110  C6 64                125  	LDB	#100		100 BYTES MAX
+D112  A6 80                126  INST1	LDA	,X+		GET CHAR
+D114  A7 A0                127  	STA	,Y+		COPY IT OVER
+D116  5A                   128  	DECB			DECREMENT COUNT
+D117  26 F9                129  	BNE	INST1		CONTINUE
+D119  B6 D1 B5             130  	LDA	ALL		GET 'ALL' FLAG
+D11C  B7 D9 8C             131  	STA	ALLFLAG		SAVE DRIVERS ALLFLAG
+D11F                       132  * TAKE OVER DEVICE INPUT VECTOR
+D11F  8E DB 9B             133  	LDX	#DRIVER		POINT TO DRIVER
+D122  B6 D9 8B             134  	LDA	DEVICE		GET DEVICE ID
+D125  3F                   135  	SWI			SOFTWARE INTERRUPT TO DOS
+D126  67                   136  	FCB	103		SYSTEM REQUEST NUMBER
+D127  FD D9 8D             137  	STD	SDRIVER		SAVED DRIVER ADDRESS
+D12A  4F                   138  	CLRA			ZERO RETURN CODE
+D12B  39                   139  	RTS
+D12C                       140  * REDIRECT IS ALREADY ACTIVE, REPORT ERROR
+D12C  3F                   141  ERROR1	SWI			SOFTWARE INTERRUPT TO DOS
+D12D  19                   142  	FCB	25		SYSTEM REQUEST NUMBER
+D12E  52 45 44 49 52 45 +  143  	FCCZ	'REDIRECT is already active.'
+D14A  86 64                144  	LDA	#100		RETURN CODE
+D14C  39                   145  	RTS
+D14D                       146  *
+D14D                       147  * INPUT DRIVER, READS CHARACTER FROM FILE & RETURN
+D14D                       148  *
+D14D  FF D9 8F             149  IDRIVER	STU	SAVEU		SAVE 'U' REGISTER
+D150  CE D9 91             150  	LDU	#FCB		POINT TO INPUT FILE
+D153  3F                   151  	SWI			SOFTWARE INTERRUPT TO DOS
+D154  3B                   152  	FCB	59		SYSTEM REQUEST NUMBER
+D155  26 06                153  	BNE	IDRIV1		ERROR, ABORT
+D157  FE D9 8F             154  	LDU	SAVEU		RESTORE 'U'
+D15A  1A 04                155  	ORCC	#%00000100	SET 'Z' FLAG
+D15C  39                   156  	RTS
+D15D                       157  * END OF FILE, RESTORE DRIVER, AND RETURN NO CHAR READY
+D15D  BE D9 8D             158  IDRIV1	LDX	SDRIVER		GET SAVED DRIVER
+D160  B6 D9 8B             159  	LDA	DEVICE		GET DEVICE ID
+D163  3F                   160  	SWI			SOFTWARE INTERRUPT TO DOS
+D164  67                   161  	FCB	103		SYSTEM REQUEST NUMBER
+D165  FE D9 8F             162  	LDU	SAVEU		RESTORE 'U'
+D168  86 FF                163  	LDA	#$FF		INDICATE NO CHARACTER
+D16A  39                   164  	RTS
+D16B                       165  *
+D16B                       166  * OUTPUT DRIVER, WRITES CHARACTER TO FILE & RETURN
+D16B                       167  *
+D16B  FF D9 8F             168  ODRIVER	STU	SAVEU		SAVE 'U' REGISTER
+D16E  1F 89                169  	TFR	A,B		SAVE CHAR
+D170  7D D9 8C             170  	TST	ALLFLAG		DO WE DO ALL?
+D173  27 0A                171  	BEQ	ODRIV1		YES, SAVE IT
+D175  81 20                172  	CMPA	#' '		CONTROL CODE?
+D177  24 06                173  	BHS	ODRIV1		NO, ITS OK
+D179  81 0A                174  	CMPA	#$0A		LINE-FEED?
+DUNFIELD 6809 ASSEMBLER: D:REDIRECT                                   PAGE: 4
+
+D17B  26 09                175  	BNE	ODRIV2		NO, DON'T SAVE
+D17D  86 0D                176  	LDA	#$0D		CONVERT TO CARRIAGE-RETURN
+D17F  CE D9 91             177  ODRIV1	LDU	#FCB		GET FILE CONTROL BLOCK
+D182  3F                   178  	SWI			SOFTWARE INTERRUPT TO DOS
+D183  3D                   179  	FCB	61		SYSTEM REQUEST NUMBER
+D184  26 08                180  	BNE	ODRIV3		ERROR, RESET VECTORS
+D186  1F 98                181  ODRIV2	TFR	B,A		RESTORE 'B'
+D188  FE D9 8F             182  	LDU	SAVEU		RESTORE 'U'
+D18B  1A 04                183  	ORCC	#%00000100	SET 'Z' FLAG
+D18D  39                   184  	RTS
+D18E                       185  * ERROR DURING WRITE, RETURN TO NORMAL OUTPUT
+D18E  34 04                186  ODRIV3	PSHS	B		SAVE 'B'
+D190  BE D9 8D             187  	LDX	SDRIVER		GET SAVED DRIVER
+D193  B6 D9 8B             188  	LDA	DEVICE		GET DEVICE
+D196  3F                   189  	SWI			SOFTWARE INTERRUPT TO DOS
+D197  67                   190  	FCB	103		SYSTEM REQUEST NUMBER
+D198  FE D9 8F             191  	LDU	SAVEU		RESTORE 'U'
+D19B  35 02                192  	PULS	A		RESTORE CHRA
+D19D  6E 84                193  	JMP	,X		EXECUTE DRIVER
+D19F                       194  * QUALIFIER TABLE
+D19F  82                   195  QTABLE	FCB	$82
+D1A0  2F 57 52 49 54 45    196  	FCC	'/WRITE'
+D1A6  82                   197  	FCB	$82
+D1A7  2F 43 4C 4F 53 45    198  	FCC	'/CLOSE'
+D1AD  82                   199  	FCB	$82
+D1AE  2F 41 4C 4C          200  	FCC	'/ALL'
+D1B2  80                   201  	FCB	$80		END OF TABLE
+0003                       202  QMAX	EQU	3
+D1B3                       203  QFLAGS	EQU	*
+D1B3  FF                   204  WRITE	FCB	$FF		ASSIGN FOR WRITE
+D1B4  FF                   205  CLOSE	FCB	$FF		CLOSE OPEN FILE
+D1B5  FF                   206  ALL	FCB	$FF		SAVE ALL CHARACTERS
+D1B6  00                   207  ACTIVE	FCB	0		REDIRECT IS ACTIVE FLAG
+D1B7                       208  * GLOBAL LOCATIONS
+D98B                       209  	ORG	OSEND-DSIZE 1K FROM TOP OF RAM
+D98B                       210  DEVICE	RMB	1		INPUT DEVICE
+D98C                       211  ALLFLAG	RMB	1		GET ALL FLAG
+D98D                       212  SDRIVER	RMB	2		OLD DRIVER VECTOR
+D98F                       213  SAVEU	RMB	2		SAVED 'U' REGISTER
+D991                       214  FCB	RMB	522		INPUT FILE CONTROL BLOCK
+DB9B                       215  DRIVER	RMB	100		DRIVER GOES HERE
+0274                       216  DSIZE	EQU	*-DEVICE	SIZE OF LOCAL STORAGE

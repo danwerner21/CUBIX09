@@ -1,0 +1,391 @@
+DUNFIELD 6809 ASSEMBLER: D:CHKDISK                                    PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         8  *
+0000                         9  * CHKDISK: File system allocaton and disk media check.
+0000                        10  *
+0000                        11  * Copyright 1983-2005 Dave Dunfield
+0000                        12  * All rights reserved.
+0000                        13  *
+0000                        14  DIRLOC	EQU	0		DIRECTORY LOCATION
+0001                        15  LNKLOC	EQU	1		LINK SECTOR LOCATION
+0000                        16  * DIRECTORY STRUCTURE
+0000                        17  	ORG	0
+0000                        18  DPREFIX	RMB	8		PREFIX
+0008                        19  DNAME	RMB	8		FILENAME
+0010                        20  DTYPE	RMB	3		FILE TYPE
+0013                        21  DDADR	RMB	2		DISK ADDRESS
+0015                        22  DRADR	RMB	2		RUN ADDRESS
+0017                        23  DATTR	RMB	1		FILE ATTRIBUTES
+0018                        24  *
+2000                        25  	ORG	OSRAM		PUT IT HERE
+2000  81 3F                 26  CHKDISK	CMPA	#'?'		HELP REQUEST?
+2002  26 39                 27  	BNE	QUAL		NO, DO FSCK
+2004  3F                    28  	SWI			SOFTWARE INTERRUPT TO DOS
+2005  19                    29  	FCB	25		SYSTEM REQUEST NUMBER
+2006  55 73 65 3A 20 43 +   30  	FCCZ	'Use: CHKDISK[/NOALLOC/NOMEDIA/QUIET/REBUILD] <drive>'
+203B  3F                    31  ABORT	SWI			SOFTWARE INTERRUPT TO DOS
+203C  00                    32  	FCB	0		SYSTEM REQUEST NUMBER
+203D                        33  * EVALUATE QUALIFIERS
+203D  A6 A4                 34  QUAL	LDA	,Y		GET CHAR
+203F  81 2F                 35  	CMPA	#'/'		QUALIFIER?
+2041  26 3B                 36  	BNE	MAIN		NO QUALIFIERS
+2043  8E 23 D1              37  	LDX	#QTABLE		PT TO TABLE
+2046  3F                    38  	SWI			SOFTWARE INTERRUPT TO DOS
+2047  12                    39  	FCB	18		SYSTEM REQUEST NUMBER
+2048  C1 04                 40  	CMPB	#QMAX		OVER?
+204A  24 07                 41  	BHS	QERR		INVALID
+204C  8E 23 F4              42  	LDX	#QFLAGS		PT TO FLAGS
+204F  6F 85                 43  	CLR	B,X		ZAP IT
+2051  20 EA                 44  	BRA	QUAL		CONTINUE
+2053  3F                    45  QERR	SWI			SOFTWARE INTERRUPT TO DOS
+2054  18                    46  	FCB	24		SYSTEM REQUEST NUMBER
+2055  49 6E 76 61 6C 69 +   47  	FCCZ	/Invalid qualifier: '/
+206A  A6 A0                 48  	LDA	,Y+		GET CHAR
+206C  3F                    49  QERR1	SWI			SOFTWARE INTERRUPT TO DOS
+206D  21                    50  	FCB	33		SYSTEM REQUEST NUMBER
+206E  3F                    51  	SWI			SOFTWARE INTERRUPT TO DOS
+206F  05                    52  	FCB	5		SYSTEM REQUEST NUMBER
+2070  27 04                 53  	BEQ	QERR2		END, EXIT
+2072  81 2F                 54  	CMPA	#'/'		NEXT QUALIFIER
+2074  26 F6                 55  	BNE	QERR1		ITS OK
+2076  3F                    56  QERR2	SWI			SOFTWARE INTERRUPT TO DOS
+2077  19                    57  	FCB	25		SYSTEM REQUEST NUMBER
+2078  27 00                 58  	FCCZ	/'/
+DUNFIELD 6809 ASSEMBLER: D:CHKDISK                                    PAGE: 2
+
+207A  86 01                 59  	LDA	#1		INDICATE INVALID OPERAND
+207C  20 BD                 60  	BRA	ABORT		ERROR
+207E                        61  *
+207E                        62  * PERFORM TESTS
+207E                        63  *
+207E  3F                    64  MAIN	SWI			SOFTWARE INTERRUPT TO DOS
+207F  58                    65  	FCB	88		SYSTEM REQUEST NUMBER
+2080  3F                    66  	SWI			SOFTWARE INTERRUPT TO DOS
+2081  10                    67  	FCB	16		SYSTEM REQUEST NUMBER
+2082  26 B7                 68  	BNE	ABORT		INVALID OPERAND
+2084  3F                    69  	SWI			SOFTWARE INTERRUPT TO DOS
+2085  4C                    70  	FCB	76		SYSTEM REQUEST NUMBER
+2086  3F                    71  	SWI			SOFTWARE INTERRUPT TO DOS
+2087  52                    72  	FCB	82		SYSTEM REQUEST NUMBER
+2088  FD 23 FE              73  	STD	>DRVSIZ		SAVE DRIVE SIZE
+208B  83 00 01              74  	SUBD	#1		ACTUAL HIGEST SECTOR
+208E  4C                    75  	INCA			(D/256+1 FOR PARTIAL)
+208F  B7 24 00              76  	STA	>LNKSIZ		SAVE IT
+2092                        77  * FIRST, LOAD IN LINK SECTORS
+2092  8E 24 05              78  	LDX	#WRKSPC		PT TO WORK AREA
+2095  17 02 35              79  	LBSR	LDLINK		LOAD LINK SECTS
+2098  BF 24 01              80  	STX	>DATSPC		SAVE PTR TO IT
+209B  17 02 2F              81  	LBSR	LDLINK		READ AGAIN
+209E                        82  * PERFORM ALLOCATION TABLE CHECK
+209E  B6 23 F4              83  	LDA	>ALLOC		DO ALLOCATION
+20A1  10 27 00 F6           84  	LBEQ	NOALL		NO
+20A5  B6 23 F6              85  	LDA	>QUIET		BEING QUIET?
+20A8  27 19                 86  	BEQ	MAIN1		YES
+20AA  3F                    87  	SWI			SOFTWARE INTERRUPT TO DOS
+20AB  19                    88  	FCB	25		SYSTEM REQUEST NUMBER
+20AC  43 68 65 63 6B 69 +   89  	FCCZ	'Checking Allocation...'
+20C3                        90  * RELEASE DIRECTORY SECTORS
+20C3  CC 00 00              91  MAIN1	LDD	#DIRLOC		GET DIR LOC
+20C6  17 02 3C              92  	LBSR	UNCHAIN		RELEASE IT
+20C9                        93  * RELEASE LINK SECTORS
+20C9  7C 23 FB              94  	INC	>SECTYP		INDICATE DOING LINKS
+20CC  CC 00 01              95  	LDD	#LNKLOC		GET LINK LOCATION
+20CF  17 02 33              96  	LBSR	UNCHAIN		RELEASE LINKS
+20D2                        97  * READ DIRECTORY, RELEASING ALL FILE CHAINS
+20D2  7C 23 FB              98  	INC	>SECTYP		ANDICATE DOING FILES
+20D5  CC 00 00              99  	LDD	#DIRLOC		PT TO DIRECTORY LOCATION
+20D8  FD 23 FC             100  MAIN2	STD	>DIRSEC		SAVE PTR
+20DB  3F                   101  	SWI			SOFTWARE INTERRUPT TO DOS
+20DC  54                   102  	FCB	84		SYSTEM REQUEST NUMBER
+20DD  1F 10                103  	TFR	X,D		GET ADDRESS
+20DF  C3 02 00             104  	ADDD	#512		CALCULATE END
+20E2  FD 24 03             105  	STD	>TEMP		SAVE INDICATOR
+20E5  A6 84                106  MAIN3	LDA	,X		FILE IN USE?
+20E7  27 06                107  	BEQ	MAIN4		YES, RELEASE IT
+20E9                       108  * FILE EXISTS, RELEASE ITS LINKS
+20E9  EC 88 13             109  	LDD	DDADR,X		GET DISK ADDRESS
+20EC  17 02 16             110  	LBSR	UNCHAIN		RELEASE SECTOR CHAIN
+20EF  30 88 20             111  MAIN4	LEAX	32,X		NEXT ENTRY
+20F2  BC 24 03             112  	CMPX	>TEMP		OVER?
+20F5  25 EE                113  	BLO	MAIN3		NO, KEEP LOOKING
+20F7  BD 22 B9             114  	JSR	TQUIT		TEST FOR EXIT
+20FA  FC 23 FC             115  	LDD	>DIRSEC		GET CURRENT SECTOR
+20FD  3F                   116  	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: D:CHKDISK                                    PAGE: 3
+
+20FE  4D                   117  	FCB	77		SYSTEM REQUEST NUMBER
+20FF  27 06                118  	BEQ	MAIN5		END OF FILE, STOP
+2101  10 83 00 00          119  	CMPD	#0		INSURE DIRECTORY IS NOT CORRUPT
+2105  26 D1                120  	BNE	MAIN2		CONTINUE
+2107                       121  * EXAMINE TABLE FOR ALLOCATED/UNUSED BLOCKS
+2107  8E 24 05             122  MAIN5	LDX	#WRKSPC		PT TO WORK AREA
+210A  FE 24 01             123  	LDU	>DATSPC		GET DATA AREA
+210D  10 8E 00 00          124  	LDY	#0		START WITH SECTOR ZERO
+2111  10 BF 24 03          125  	STY	>TEMP		ZERO COUNTERS
+2115  EC 84                126  EXAM	LDD	,X		IS IT FREE
+2117  27 4C                127  	BEQ	EXAM2		YES
+2119  7F 23 F8             128  	CLR	>FLAG		INDICATE CHANGED
+211C  6F C4                129  	CLR	,U		ZERO LOW
+211E  6F 41                130  	CLR	1,U		ZERO HIGH
+2120  FC 23 F9             131  	LDD	>ERRORS		GET TOTAL
+2123  C3 00 01             132  	ADDD	#1		ADVANCE
+2126  FD 23 F9             133  	STD	>ERRORS		RESAVE
+2129  B6 24 03             134  	LDA	>TEMP		GET FLAG
+212C  26 25                135  	BNE	EXAM1		ALREADY SET
+212E  7A 24 03             136  	DEC	>TEMP		SET FLAG
+2131  3F                   137  	SWI			SOFTWARE INTERRUPT TO DOS
+2132  19                   138  	FCB	25		SYSTEM REQUEST NUMBER
+2133  42 6C 6F 63 6B 73 +  139  	FCCZ	'Blocks allocated, but not used:'
+2153  3F                   140  EXAM1	SWI			SOFTWARE INTERRUPT TO DOS
+2154  15                   141  	FCB	21		SYSTEM REQUEST NUMBER
+2155  1F 20                142  	TFR	Y,D		GET SECTOR ID
+2157  3F                   143  	SWI			SOFTWARE INTERRUPT TO DOS
+2158  1B                   144  	FCB	27		SYSTEM REQUEST NUMBER
+2159  7C 24 04             145  	INC	>TEMP+1		ADVANCE COUNTER
+215C  B6 24 04             146  	LDA	>TEMP+1		GET VALUE
+215F  85 07                147  	BITA	#7		PAST END?
+2161  26 02                148  	BNE	EXAM2		NO
+2163  3F                   149  	SWI			SOFTWARE INTERRUPT TO DOS
+2164  16                   150  	FCB	22		SYSTEM REQUEST NUMBER
+2165  31 21                151  EXAM2	LEAY	1,Y		NEXT SECTOR
+2167  30 02                152  	LEAX	2,X		NEXT RAM LOC
+2169  33 42                153  	LEAU	2,U		NEXT IN REAL SECTORS
+216B  10 BC 23 FE          154  	CMPY	>DRVSIZ		OVER?
+216F  25 A4                155  	BLO	EXAM		NO, TRY AGAIN
+2171  B6 24 04             156  	LDA	>TEMP+1		GET COUNT
+2174  85 07                157  	BITA	#7		NEW LINE
+2176  27 02                158  	BEQ	EXAM3		NOT NESSARY
+2178  3F                   159  	SWI			SOFTWARE INTERRUPT TO DOS
+2179  16                   160  	FCB	22		SYSTEM REQUEST NUMBER
+217A                       161  * HAVE REPORTED THEM ALL
+217A  B6 23 F6             162  EXAM3	LDA	>QUIET
+217D  27 1C                163  	BEQ	NOALL		BE QUIET
+217F  FC 23 F9             164  	LDD	>ERRORS		GET TOTAL
+2182  3F                   165  	SWI			SOFTWARE INTERRUPT TO DOS
+2183  1A                   166  	FCB	26		SYSTEM REQUEST NUMBER
+2184  3F                   167  	SWI			SOFTWARE INTERRUPT TO DOS
+2185  19                   168  	FCB	25		SYSTEM REQUEST NUMBER
+2186  20 61 6C 6C 6F 63 +  169  	FCCZ	' allocation error(s)'
+219B  B6 23 F5             170  NOALL	LDA	>MEDIA		DO MEDIA TEST?
+219E  10 27 00 BD          171  	LBEQ	NOMED		NO, NO MEDIA TEST
+21A2  B6 23 F6             172  	LDA	>QUIET
+21A5  27 14                173  	BEQ	QUI2		BE QUIET
+21A7  3F                   174  	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: D:CHKDISK                                    PAGE: 4
+
+21A8  19                   175  	FCB	25		SYSTEM REQUEST NUMBER
+21A9  43 68 65 63 6B 69 +  176  	FCCZ	'Checking Media...'
+21BB  4F                   177  QUI2	CLRA
+21BC  5F                   178  	CLRB
+21BD  FD 23 F9             179  	STD	>ERRORS		CLEAR COUNT
+21C0  FD 23 FC             180  MED1	STD	>DIRSEC		SAVE SECTOR ID
+21C3  8E 24 05             181  	LDX	#WRKSPC		PT TO WORK AREA
+21C6  3F                   182  	SWI			SOFTWARE INTERRUPT TO DOS
+21C7  5C                   183  	FCB	92		SYSTEM REQUEST NUMBER
+21C8  27 68                184  	BEQ	MED3		OK, DO NEXT
+21CA  FC 23 F9             185  	LDD	>ERRORS
+21CD  C3 00 01             186  	ADDD	#1		ADVANCE COUNT
+21D0  FD 23 F9             187  	STD	>ERRORS
+21D3  3F                   188  	SWI			SOFTWARE INTERRUPT TO DOS
+21D4  18                   189  	FCB	24		SYSTEM REQUEST NUMBER
+21D5  4D 65 64 69 61 20 +  190  	FCCZ	'Media error in sector '
+21EC  FC 23 FC             191  	LDD	>DIRSEC		GET SECTOR
+21EF  3F                   192  	SWI			SOFTWARE INTERRUPT TO DOS
+21F0  1A                   193  	FCB	26		SYSTEM REQUEST NUMBER
+21F1  FC 23 FC             194  	LDD	>DIRSEC		GET SECTOR BACK
+21F4  BE 24 01             195  	LDX	>DATSPC		ADVANCE
+21F7  58                   196  	LSLB
+21F8  49                   197  	ROLA			X2 FOT TWO BYTE ENTRIES
+21F9  30 8B                198  	LEAX	D,X		ADVANCE TO IT
+21FB  EC 84                199  	LDD	,X		GET IT
+21FD  26 16                200  	BNE	MED2		ALLOCATED
+21FF  CC FF FF             201  	LDD	#$FFFF
+2202  ED 84                202  	STD	,X		MARK AS BUSY
+2204  7F 23 F8             203  	CLR	>FLAG		INDICATE CHANGE
+2207  3F                   204  	SWI			SOFTWARE INTERRUPT TO DOS
+2208  19                   205  	FCB	25		SYSTEM REQUEST NUMBER
+2209  20 2D 20 4D 41 52 +  206  	FCCZ	' - MARKED'
+2213  20 1D                207  	BRA	MED3		CONTINUE
+2215  3F                   208  MED2	SWI			SOFTWARE INTERRUPT TO DOS
+2216  19                   209  	FCB	25		SYSTEM REQUEST NUMBER
+2217  20 2D 20 2A 2A 2A +  210  	FCCZ	' - ***ALREADY ALLOCATED***'
+2232  BD 22 B9             211  MED3	JSR	TQUIT		TEST FOR EXIT
+2235  FC 23 FC             212  	LDD	>DIRSEC		GET SECTOR
+2238  C3 00 01             213  	ADDD	#1		NEXT SECTOR
+223B  10 B3 23 FE          214  	CMPD	>DRVSIZ		COMPARE WITH DISK
+223F  10 25 FF 7D          215  	LBLO	MED1		KEEP GOING
+2243  B6 23 F6             216  	LDA	>QUIET		KEEPING QUIET?
+2246  27 17                217  	BEQ	NOMED		YES
+2248  FC 23 F9             218  	LDD	>ERRORS
+224B  3F                   219  	SWI			SOFTWARE INTERRUPT TO DOS
+224C  1A                   220  	FCB	26		SYSTEM REQUEST NUMBER
+224D  3F                   221  	SWI			SOFTWARE INTERRUPT TO DOS
+224E  19                   222  	FCB	25		SYSTEM REQUEST NUMBER
+224F  20 6D 65 64 69 61 +  223  	FCCZ	' media error(s)'
+225F                       224  * PERFORM UPDATES IF NESSARY
+225F  B6 23 F8             225  NOMED	LDA	>FLAG		ANY CHANGES
+2262  26 52                226  	BNE	NOREB		NO, SKIP IT
+2264  B6 23 F7             227  	LDA	>REBUILD	REBUILD AUTOMATICALLY?
+2267  27 28                228  	BEQ	GOREB		YES
+2269  3F                   229  	SWI			SOFTWARE INTERRUPT TO DOS
+226A  18                   230  	FCB	24		SYSTEM REQUEST NUMBER
+226B  57 72 69 74 65 20 +  231  	FCCZ	'Write updated link table?'
+2285  3F                   232  	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: D:CHKDISK                                    PAGE: 5
+
+2286  22                   233  	FCB	34		SYSTEM REQUEST NUMBER
+2287  3F                   234  	SWI			SOFTWARE INTERRUPT TO DOS
+2288  21                   235  	FCB	33		SYSTEM REQUEST NUMBER
+2289  3F                   236  	SWI			SOFTWARE INTERRUPT TO DOS
+228A  16                   237  	FCB	22		SYSTEM REQUEST NUMBER
+228B  84 5F                238  	ANDA	#$5F		CONVERT
+228D  81 59                239  	CMPA	#'Y'		YES?
+228F  26 25                240  	BNE	NOREB		DON'T REBUILD
+2291  BE 24 01             241  GOREB	LDX	>DATSPC		PT TO AREA
+2294  17 00 52             242  	LBSR	SALINK		SAVE IT OUT
+2297  B6 23 F6             243  	LDA	>QUIET
+229A  27 1A                244  	BEQ	NOREB
+229C  3F                   245  	SWI			SOFTWARE INTERRUPT TO DOS
+229D  19                   246  	FCB	25		SYSTEM REQUEST NUMBER
+229E  44 69 73 6B 20 61 +  247  	FCCZ	'Disk allocation rebuilt'
+22B6  4F                   248  NOREB	CLRA			ZERO RC
+22B7  3F                   249  	SWI			SOFTWARE INTERRUPT TO DOS
+22B8  00                   250  	FCB	0		SYSTEM REQUEST NUMBER
+22B9  3F                   251  TQUIT	SWI			SOFTWARE INTERRUPT TO DOS
+22BA  23                   252  	FCB	35		SYSTEM REQUEST NUMBER
+22BB  81 1B                253  	CMPA	#$1B
+22BD  26 27                254  	BNE	GORET
+22BF  3F                   255  	SWI			SOFTWARE INTERRUPT TO DOS
+22C0  19                   256  	FCB	25		SYSTEM REQUEST NUMBER
+22C1  3C 41 62 6F 72 74 +  257  	FCCZ	'<Aborted>'
+22CB  20 E9                258  	BRA	NOREB
+22CD                       259  *
+22CD                       260  * LOAD DISK LINK TABLE INTO MEMORY(X)
+22CD                       261  *
+22CD  B6 24 00             262  LDLINK	LDA	>LNKSIZ		GET SIZE
+22D0  B7 24 03             263  	STA	>TEMP		SET UP
+22D3  CC 00 01             264  	LDD	#LNKLOC		START OF LINK SECTORS
+22D6  3F                   265  LDLNK1	SWI			SOFTWARE INTERRUPT TO DOS
+22D7  5C                   266  	FCB	92		SYSTEM REQUEST NUMBER
+22D8  26 0D                267  	BNE	ABORT1		ERROR
+22DA  C3 00 01             268  	ADDD	#1		ADVANCE SECTOR ID
+22DD  30 89 02 00          269  	LEAX	512,X		NEXT LOCATION
+22E1  7A 24 03             270  	DEC	>TEMP		TEST NUMBER
+22E4  26 F0                271  	BNE	LDLNK1		LOAD EM ALL
+22E6  39                   272  GORET	RTS
+22E7  3F                   273  ABORT1	SWI			SOFTWARE INTERRUPT TO DOS
+22E8  00                   274  	FCB	0		SYSTEM REQUEST NUMBER
+22E9                       275  *
+22E9                       276  * SAVE DISK LINK TABLE FROM MEMORY(X)
+22E9                       277  *
+22E9  3F                   278  SALINK	SWI			SOFTWARE INTERRUPT TO DOS
+22EA  58                   279  	FCB	88		SYSTEM REQUEST NUMBER
+22EB  B6 24 00             280  	LDA	>LNKSIZ		GET SIZE
+22EE  B7 24 03             281  	STA	>TEMP		SET UP
+22F1  CC 00 01             282  	LDD	#LNKLOC		START OF LINK SECTORS
+22F4  3F                   283  SALNK1	SWI			SOFTWARE INTERRUPT TO DOS
+22F5  5D                   284  	FCB	93		SYSTEM REQUEST NUMBER
+22F6  26 EF                285  	BNE	ABORT1		ERROR
+22F8  C3 00 01             286  	ADDD	#1		ADVANCE SECTOR ID
+22FB  30 89 02 00          287  	LEAX	512,X		NEXT LOCATION
+22FF  7A 24 03             288  	DEC	>TEMP		TEST NUMBER
+2302  26 F0                289  	BNE	SALNK1		LOAD EM ALL
+2304  39                   290  	RTS
+DUNFIELD 6809 ASSEMBLER: D:CHKDISK                                    PAGE: 6
+
+2305                       291  *
+2305                       292  * UNCHAIN SECTORS FROM RAM TABLE
+2305                       293  *
+2305  34 10                294  UNCHAIN	PSHS	X		SAVE 'X'
+2307  58                   295  UNC1	LSLB			X 2
+2308  49                   296  	ROLA			FOR ENTRIES
+2309  C3 24 05             297  	ADDD	#WRKSPC		OFFSET TO WORKSPACE
+230C  1F 02                298  	TFR	D,Y		COPY IT TO INDEX
+230E  EC A4                299  	LDD	,Y		GET NEXT SECTOR
+2310  27 15                300  	BEQ	UNC2		GO LOOSE SOMEHOW
+2312  6F A4                301  	CLR	,Y		CLEAR LOW
+2314  6F 21                302  	CLR	1,Y		CLEAR HIGH
+2316  10 B3 23 FE          303  	CMPD	>DRVSIZ		IN RANGE?
+231A  25 EB                304  	BLO	UNC1		YES, ITS OK
+231C  10 83 FF FF          305  	CMPD	#$FFFF		END OF FILE?
+2320  27 6B                306  	BEQ	UNC7		ALL IS OK
+2322                       307  * LINK CHAIN POINTS BEYOND FILESYSTEM
+2322  CE 23 B2             308  	LDU	#OVRMSG		PT TO MESSAGE
+2325  20 03                309  	BRA	UNC3		AND CONTINUE
+2327                       310  * LINK CHAIN ENDED WITH ZERO
+2327  CE 23 8F             311  UNC2	LDU	#ZERMSG		PT TO MESSAGE
+232A  FC 23 F9             312  UNC3	LDD	>ERRORS
+232D  C3 00 01             313  	ADDD	#1		ADVANCE ERROR COUNT
+2330  FD 23 F9             314  	STD	>ERRORS
+2333  3F                   315  	SWI			SOFTWARE INTERRUPT TO DOS
+2334  18                   316  	FCB	24		SYSTEM REQUEST NUMBER
+2335  41 6C 6C 6F 63 61 +  317  	FCCZ	'Allocation error in '
+234A  B6 23 FB             318  	LDA	>SECTYP		GET SECTOR TYPE
+234D  26 0E                319  	BNE	UNC4		NO, NOT DIRECTORY
+234F  3F                   320  	SWI			SOFTWARE INTERRUPT TO DOS
+2350  18                   321  	FCB	24		SYSTEM REQUEST NUMBER
+2351  44 49 52 45 43 54 +  322  	FCCZ	'DIRECTORY'
+235B  20 14                323  	BRA	UNC6
+235D  4A                   324  UNC4	DECA			IS IT LINKS?
+235E  26 0F                325  	BNE	UNC5		NO, NOT LINKS.
+2360  3F                   326  	SWI			SOFTWARE INTERRUPT TO DOS
+2361  18                   327  	FCB	24		SYSTEM REQUEST NUMBER
+2362  4C 49 4E 4B 20 54 +  328  	FCCZ	'LINK TABLE'
+236D  20 02                329  	BRA	UNC6
+236F  3F                   330  UNC5	SWI			SOFTWARE INTERRUPT TO DOS
+2370  1F                   331  	FCB	31		SYSTEM REQUEST NUMBER
+2371  3F                   332  UNC6	SWI			SOFTWARE INTERRUPT TO DOS
+2372  18                   333  	FCB	24		SYSTEM REQUEST NUMBER
+2373  2C 20 62 6C 6F 63 +  334  	FCCZ	', block '
+237C  1F 20                335  	TFR	Y,D		GET BLOCK ID
+237E  83 24 05             336  	SUBD	#WRKSPC		CONVERT
+2381  44                   337  	LSRA			/2
+2382  56                   338  	RORB			FOR ACTUAL ID
+2383  3F                   339  	SWI			SOFTWARE INTERRUPT TO DOS
+2384  1A                   340  	FCB	26		SYSTEM REQUEST NUMBER
+2385  3F                   341  	SWI			SOFTWARE INTERRUPT TO DOS
+2386  16                   342  	FCB	22		SYSTEM REQUEST NUMBER
+2387  1F 31                343  	TFR	U,X		GET PTR TO MESSAGE
+2389  3F                   344  	SWI			SOFTWARE INTERRUPT TO DOS
+238A  17                   345  	FCB	23		SYSTEM REQUEST NUMBER
+238B  3F                   346  	SWI			SOFTWARE INTERRUPT TO DOS
+238C  16                   347  	FCB	22		SYSTEM REQUEST NUMBER
+238D  35 90                348  UNC7	PULS	X,PC		RESTORE & RETURN
+DUNFIELD 6809 ASSEMBLER: D:CHKDISK                                    PAGE: 7
+
+238F  43 68 61 69 6E 20 +  349  ZERMSG	FCCZ	'Chain ends in unallocated (0) link'
+23B2  4C 69 6E 6B 20 65 +  350  OVRMSG	FCCZ	'Link exceeds filesystem bounds'
+23D1                       351  * QUALIFIER TABLES
+23D1  84                   352  QTABLE	FCB	$84
+23D2  2F 4E 4F 41 4C 4C +  353  	FCC	'/NOALLOC'
+23DA  84                   354  	FCB	$84
+23DB  2F 4E 4F 4D 45 44 +  355  	FCC	'/NOMEDIA'
+23E3  82                   356  	FCB	$82
+23E4  2F 51 55 49 45 54    357  	FCC	'/QUIET'
+23EA  82                   358  	FCB	$82
+23EB  2F 52 45 42 55 49 +  359  	FCC	'/REBUILD'
+23F3  80                   360  	FCB	$80
+0004                       361  QMAX	EQU	4		# QUALIFIERS
+23F4                       362  QFLAGS	EQU	*
+23F4  FF                   363  ALLOC	FCB	$FF		ALLOCATION TEST
+23F5  FF                   364  MEDIA	FCB	$FF		MEDIA TEST
+23F6  FF                   365  QUIET	FCB	$FF		QUIET MODE
+23F7  FF                   366  REBUILD	FCB	$FF		REBUILD MAP
+23F8                       367  * MISC LOCAL VARIABLES
+23F8  FF                   368  FLAG	FCB	$FF		INDICATES CHANGED SECTOR
+23F9  00 00                369  ERRORS	FDB	0		ERROR COUNT FLAG
+23FB  00                   370  SECTYP	FCB	0		SECTOR TYPE BEING RELEASED
+23FC                       371  DIRSEC	RMB	2		CURRENT DIRECTORY SECTOR
+23FE                       372  DRVSIZ	RMB	2		DISK SIZE (IN SECTORS)
+2400                       373  LNKSIZ	RMB	1		SIZE OF LINK MAP (IN SECTORS)
+2401                       374  DATSPC	RMB	2		PTR TO DATA RAM
+2403                       375  TEMP	RMB	2		TEMPORARY STORAGE
+2405                       376  * WORK AREA
+2405                       377  WRKSPC	EQU	*

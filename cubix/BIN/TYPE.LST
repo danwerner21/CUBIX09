@@ -1,0 +1,279 @@
+DUNFIELD 6809 ASSEMBLER: D:TYPE                                       PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         8  *
+0000                         9  * TYPE: Display file/memory/disk on console or list device
+0000                        10  *
+0000                        11  * Copyright 1983-2005 Dave Dunfield
+0000                        12  * All rights reserved.
+0000                        13  *
+0016                        14  PAGSIZ	EQU	22		PAGE SIZE
+001B                        15  ESCCHR	EQU	$1B		ESCAPE CHARACTER
+0009                        16  TAB	EQU	$09		TAB CHARACTER
+000D                        17  CR	EQU	$0D		CARRIAGE RETURN
+000A                        18  LF	EQU	$0A		LINE-FEED
+0000                        19  * DIRECTORY ENTRY STRUCTURE
+0000                        20  	ORG	0
+0000                        21  DPREFIX	RMB	8		DIRECTRY PREFIX
+0008                        22  DNAME	RMB	8		FILENAME
+0010                        23  DTYPE	RMB	3		FILETYPE
+0013                        24  DDADR	RMB	2		DISK ADDRESS
+0015                        25  DRADR	RMB	2		RUN ADDRESS
+0017                        26  DATTR	RMB	1		FILE ATTRIBUTES
+0018                        27  *
+D000                        28  	ORG	OSUTIL		DOS UTILITY RUN AREA
+D000  81 3F                 29  TYPE	CMPA	#'?'		QUERY?
+D002  26 44                 30  	BNE	QUAL		SHOW HOW IT'S DONE
+D004  3F                    31  	SWI			SOFTWARE INTERRUPT TO DOS
+D005  19                    32  	FCB	25		SYSTEM REQUEST NUMBER
+D006  55 73 65 3A 20 54 +   33  	FCC	'Use: TYPE[/DISK/DUMP/MEMORY/PAGE] <file> or'
+D031  20 3C 61 64 64 72 +   34  	FCCZ	' <address> [<device>]'
+D047  39                    35  	RTS
+D048                        36  * PARSE FOR COMMAND QUALIFIERS
+D048  A6 A4                 37  QUAL	LDA	,Y		GET CHAR FROM COMMAND LINE
+D04A  81 2F                 38  	CMPA	#'/'		IS IT A QUALIFIER?
+D04C  26 3A                 39  	BNE	MAIN		NO, GET PARAMETERS
+D04E  8E D1 D2              40  	LDX	#QTABLE		POINT TO QUALIFIER TABLE
+D051  3F                    41  	SWI			SOFTWARE INTERRUPT TO DOS
+D052  12                    42  	FCB	18		SYSTEM REQUEST NUMBER
+D053  C1 04                 43  	CMPB	#QMAX		IS IT IN RANGE
+D055  24 07                 44  	BHS	QERR		IF SO, IT'S INVALID
+D057  8E D1 ED              45  	LDX	#QFLAGS		POINT TO QUALIFIER FLAGS
+D05A  6F 85                 46  	CLR	B,X		SET THE FLAG
+D05C  20 EA                 47  	BRA	QUAL		LOOK FOR ANOTHER QUALIFIER
+D05E  3F                    48  QERR	SWI			SOFTWARE INTERRUPT TO DOS
+D05F  18                    49  	FCB	24		SYSTEM REQUEST NUMBER
+D060  49 6E 76 61 6C 69 +   50  	FCCZ	/Invalid qualifier: '/
+D075  A6 A0                 51  	LDA	,Y+		GET CHARACTER
+D077  3F                    52  DSQU1	SWI			SOFTWARE INTERRUPT TO DOS
+D078  21                    53  	FCB	33		SYSTEM REQUEST NUMBER
+D079  3F                    54  	SWI			SOFTWARE INTERRUPT TO DOS
+D07A  05                    55  	FCB	5		SYSTEM REQUEST NUMBER
+D07B  27 04                 56  	BEQ	GOABO		END, EXIT
+D07D  81 2F                 57  	CMPA	#'/'		START OF ANOTHER QUALIFIER?
+D07F  26 F6                 58  	BNE	DSQU1		NO, KEEP DUMPING
+DUNFIELD 6809 ASSEMBLER: D:TYPE                                       PAGE: 2
+
+D081  3F                    59  GOABO	SWI			SOFTWARE INTERRUPT TO DOS
+D082  19                    60  	FCB	25		SYSTEM REQUEST NUMBER
+D083  27 00                 61  	FCCZ	/'/		CLOSING QUOTE
+D085  86 01                 62  	LDA	#1		INVALID OPERAND RETURN CODE
+D087  39                    63  	RTS
+D088                        64  * MAIN PGM
+D088  10 FF D1 F8           65  MAIN	STS	SAVSTK		SAVE STACK
+D08C  3F                    66  	SWI			SOFTWARE INTERRUPT TO DOS
+D08D  28                    67  	FCB	40		SYSTEM REQUEST NUMBER
+D08E  B7 D1 F3              68  	STA	>DEVICE		SET DEFAULT
+D091  4F                    69  	CLRA			ZERO HIGH
+D092  5F                    70  	CLRB			ZERO LOW
+D093  FD D1 F4              71  	STD	MEMADR		INIT TO ZERO OFFSET
+D096  B6 D1 F0              72  	LDA	MEMORY		ARE WE REFERENCING MEMORY?
+D099  27 24                 73  	BEQ	MEMREF		IF SO, DISPLAY IT
+D09B  B6 D1 EF              74  	LDA	DISK		ARE WE DISPLAYING DATA FROM DISK
+D09E  26 2E                 75  	BNE	GETFIL		NO, GET FILENAME
+D0A0                        76  * READ ABSOLUTE DISK ADDRESES
+D0A0  3F                    77  	SWI			SOFTWARE INTERRUPT TO DOS
+D0A1  08                    78  	FCB	8		SYSTEM REQUEST NUMBER
+D0A2  10 26 01 26           79  	LBNE	ABORT		ERROR, QUIT
+D0A6  8D 04                 80  	BSR	GETDEV		GET DEVICE
+D0A8  1F 10                 81  	TFR	X,D		COPY TO D
+D0AA  20 33                 82  	BRA	DMPF1		DUMP IT
+D0AC                        83  * GET DEVICE IF ANY
+D0AC  34 10                 84  GETDEV	PSHS	X
+D0AE  3F                    85  	SWI			SOFTWARE INTERRUPT TO DOS
+D0AF  04                    86  	FCB	4		SYSTEM REQUEST NUMBER
+D0B0  27 0B                 87  	BEQ	GETD1		NO, EXIT
+D0B2  3F                    88  	SWI			SOFTWARE INTERRUPT TO DOS
+D0B3  06                    89  	FCB	6		SYSTEM REQUEST NUMBER
+D0B4  10 26 01 14           90  	LBNE	ABORT		ERROR
+D0B8  C5 07                 91  	BITB	#7		INSURE IN RANGE
+D0BA  F7 D1 F3              92  	STB	>DEVICE		SET NEW DEVICE
+D0BD  35 90                 93  GETD1	PULS	X,PC
+D0BF                        94  * DISPLAY MEMORY
+D0BF  3F                    95  MEMREF	SWI			SOFTWARE INTERRUPT TO DOS
+D0C0  07                    96  	FCB	7		SYSTEM REQUEST NUMBER
+D0C1  10 26 01 07           97  	LBNE	ABORT		GET UPSET IF INVALID
+D0C5  BF D1 F4              98  	STX	MEMADR		SAVE MEMORY ADDRESS
+D0C8  8D E2                 99  	BSR	GETDEV		GET DEVICE
+D0CA  8D 2C                100  MEMGO	BSR	DMPRAM		DISPLAY IT
+D0CC  20 FC                101  	BRA	MEMGO		CONTINUE
+D0CE                       102  * DISPLAY A FILE
+D0CE  3F                   103  GETFIL	SWI			SOFTWARE INTERRUPT TO DOS
+D0CF  0A                   104  	FCB	10		SYSTEM REQUEST NUMBER
+D0D0  10 26 00 F8          105  	LBNE	ABORT		ERROR, QUIT
+D0D4  8D D6                106  	BSR	GETDEV		GET DEVICE
+D0D6  3F                   107  	SWI			SOFTWARE INTERRUPT TO DOS
+D0D7  46                   108  	FCB	70		SYSTEM REQUEST NUMBER
+D0D8  10 26 00 F0          109  	LBNE	ABORT		IF NOT THERE, QUIT
+D0DC  EC 88 13             110  	LDD	DDADR,X		GET ADDRESS
+D0DF  FD D1 F6             111  DMPF1	STD	SECTOR		SAVE SECTOR NUMBER
+D0E2  8E D1 FA             112  	LDX	#WRKSPC		POINT TO IT
+D0E5  3F                   113  	SWI			SOFTWARE INTERRUPT TO DOS
+D0E6  5C                   114  	FCB	92		SYSTEM REQUEST NUMBER
+D0E7  8D 0F                115  	BSR	DMPRAM		DISPLAY THIS PORTION
+D0E9  FC D1 F6             116  	LDD	SECTOR		GET SECTOR NUMBER BACK
+DUNFIELD 6809 ASSEMBLER: D:TYPE                                       PAGE: 3
+
+D0EC  3F                   117  	SWI			SOFTWARE INTERRUPT TO DOS
+D0ED  4D                   118  	FCB	77		SYSTEM REQUEST NUMBER
+D0EE  27 06                119  	BEQ	DMPEND		END OF FILE, QUIT
+D0F0  10 83 00 00          120  	CMPD	#0		NO MORE?
+D0F4  26 E9                121  	BNE	DMPF1		GET THIS ONE
+D0F6  4F                   122  DMPEND	CLRA			ZERO RETURN CODE
+D0F7  39                   123  	RTS
+D0F8                       124  *
+D0F8                       125  * DUMPS RAM POINTED TO BY X, FOR ONE 1 SECTOR SIZE
+D0F8                       126  *
+D0F8  7D D1 EE             127  DMPRAM	TST	DUMP		ARE WE DUMPING IN HEX FORMAT
+D0FB  27 35                128  	BEQ	DUMPH		IF SO, DUMP IN HEX
+D0FD                       129  * DUMP AS ASCII TEXT
+D0FD  10 8E 02 00          130  	LDY	#512		1 SECTOR
+D101  F6 D1 F1             131  	LDB	LINPOS		GET LINE POSITION
+D104  A6 80                132  DSPASC1	LDA	,X+		GET DATA
+D106  10 2B 00 C1          133  	LBMI	XQUIT		END OF FILE
+D10A  81 20                134  	CMPA	#' '		PRINTABLE CHARACTER?
+D10C  24 19                135  	BHS	DSPASC4		YES, ITS OK
+D10E                       136  * CHECK FOR CARRIAGE RETURN (END OF LINE)
+D10E  81 0D                137  	CMPA	#$0D		CARRIAGE RETURN?
+D110  26 06                138  	BNE	DSPASC2		NO, TRY NEXT
+D112  17 00 89             139  	LBSR	CHKPAG		CHECK FOR PAGE STOP
+D115  5F                   140  	CLRB			ZERO LINE POSITION
+D116  20 12                141  	BRA	DSPASC5		AND EXIT
+D118                       142  * CHECK FOR TAB AND SKIP TO TAB STOP
+D118  81 09                143  DSPASC2	CMPA	#TAB		IS IT A TAB?
+D11A  26 0E                144  	BNE	DSPASC5		NO, TRY NEXT
+D11C  86 20                145  	LDA	#' '		INDICATE SPACE
+D11E  8D 75                146  DSPASC3	BSR	OUTPUT		WRITE THE SPACE
+D120  5C                   147  	INCB			ADVANCE COUNT
+D121  C5 07                148  	BITB	#%00000111	AT NEXT TAB STOP?
+D123  26 F9                149  	BNE	DSPASC3		NO, KEEP GOING
+D125  20 03                150  	BRA	DSPASC5		TEST AGAIN
+D127                       151  * NORMAL CHARACTER TO OUTPUT
+D127  5C                   152  DSPASC4	INCB			ADVANCE COUNT
+D128  8D 6B                153  	BSR	OUTPUT		DISPLAY
+D12A  31 3F                154  DSPASC5	LEAY	-1,Y		BACKUP
+D12C  26 D6                155  	BNE	DSPASC1		CONTINUE LOOKING
+D12E  F7 D1 F1             156  	STB	LINPOS		RESAVE POSITION
+D131  39                   157  	RTS
+D132                       158  *
+D132                       159  * DUMP IN HEX
+D132                       160  *
+D132  10 8E 00 20          161  DUMPH	LDY	#32		32 LINES/SECTOR
+D136  FC D1 F4             162  DMP0	LDD	MEMADR		GET MEMORY ADDRESS
+D139  8D 46                163  	BSR	HEXOUT		DISPLAY IT
+D13B  1F 98                164  	TFR	B,A		GET LOW ADDRESS
+D13D  8D 42                165  	BSR	HEXOUT		DISPLAY IT
+D13F  FC D1 F4             166  	LDD	MEMADR		GET ADDRESS BACK
+D142  C3 00 10             167  	ADDD	#16		ADD 16 BYTES
+D145  FD D1 F4             168  	STD	MEMADR		RESAVE
+D148  C6 10                169  	LDB	#16		GET NUMBER BYTES/LINE
+D14A  34 14                170  	PSHS	B,X		SAVE
+D14C  86 20                171  DMP1	LDA	#' '		GET SPACE
+D14E  C5 03                172  	BITB	#$03		AT A FOUR BYTE BOUNDARY?
+D150  26 02                173  	BNE	NOT4		NO, SKIP IT
+D152  8D 41                174  	BSR	OUTPUT		EXTRA SPACE
+DUNFIELD 6809 ASSEMBLER: D:TYPE                                       PAGE: 4
+
+D154  8D 3F                175  NOT4	BSR	OUTPUT		SPACE
+D156  A6 80                176  	LDA	,X+		GET CHAR FROM RAM
+D158  8D 27                177  	BSR	HEXOUT		DISPLAY IT
+D15A  5A                   178  	DECB			REDUCE COUNT
+D15B  26 EF                179  	BNE	DMP1		CONTINUE
+D15D  86 20                180  	LDA	#' '		SPACE
+D15F  8D 34                181  	BSR	OUTPUT		DISPLAY
+D161  8D 32                182  	BSR	OUTPUT		DISPLAY
+D163  8D 30                183  	BSR	OUTPUT		DISPLAY
+D165  8D 2E                184  	BSR	OUTPUT		DISPLAY
+D167  35 14                185  	PULS	B,X		RESTORE REGS
+D169  A6 80                186  DMP2	LDA	,X+		GET CHAR
+D16B  81 20                187  	CMPA	#' '		< SPACE
+D16D  25 04                188  	BLO	UPRT		NOT PRINTABLE
+D16F  81 7F                189  	CMPA	#$7F		DELETE?
+D171  25 02                190  	BLO	PRTOK		OK TO DISPLAY
+D173  86 2E                191  UPRT	LDA	#'.'		CONVERT TO DOT
+D175  8D 1E                192  PRTOK	BSR	OUTPUT		DISPLAY
+D177  5A                   193  	DECB			REDUCE COUNT
+D178  26 EF                194  	BNE	DMP2		CONTINUE
+D17A  8D 22                195  	BSR	CHKPAG		NEWLINE & CHECK PAGE
+D17C  31 3F                196  	LEAY	-1,Y		BACKUP A LINE
+D17E  26 B6                197  	BNE	DMP0		CONTINUE
+D180  39                   198  EPAGE	RTS
+D181                       199  * OUTPUT CONTENTS OF ACCA IN HEX
+D181  34 02                200  HEXOUT	PSHS	A		SAVE IT
+D183  46                   201  	RORA
+D184  46                   202  	RORA
+D185  46                   203  	RORA
+D186  46                   204  	RORA			SHIFT UPPER NIBBLE INTO LOWER
+D187  8D 02                205  	BSR	HOUT		DISPLAY NIBBLE
+D189  35 02                206  	PULS	A		RESTORE A
+D18B  84 0F                207  HOUT	ANDA	#$0F		MASK OFF CRAP
+D18D  8B 30                208  	ADDA	#'0'		CONVERT TO ASCII
+D18F  81 39                209  	CMPA	#'9'		OVER NUMERIC?
+D191  23 02                210  	BLS	OUTPUT		OK TO DISPLAY
+D193  8B 07                211  	ADDA	#$7		CONVERT TO ALPHA
+D195                       212  * OUTPUT ROUTINE
+D195  34 04                213  OUTPUT	PSHS	B		SAVE REGS
+D197  F6 D1 F3             214  	LDB	>DEVICE
+D19A  3F                   215  	SWI			SOFTWARE INTERRUPT TO DOS
+D19B  24                   216  	FCB	36		SYSTEM REQUEST NUMBER
+D19C  35 84                217  	PULS	B,PC		RESTORE REGS
+D19E                       218  * CHECK FOR PAGE END OR <ESCAPE> ABORT COMMAND
+D19E  86 0A                219  CHKPAG	LDA	#$0A		LINE-FEED
+D1A0  8D F3                220  	BSR	OUTPUT		WRITE IT OUT
+D1A2  86 0D                221  	LDA	#$0D		CARRIAGE RETURN
+D1A4  8D EF                222  	BSR	OUTPUT		WRITE IT OUT
+D1A6  B6 D1 ED             223  	LDA	PAGE		ARE WE PAGEING
+D1A9  26 0E                224  	BNE	CHKP1		DON'T PAGE IT
+D1AB  7A D1 F2             225  	DEC	PAGPOS		TEST FOR PAGE UNDERFLOW
+D1AE  26 09                226  	BNE	CHKP1		NO PAGE YET
+D1B0  86 16                227  	LDA	#PAGSIZ		RESTORE PAGE SIZE
+D1B2  B7 D1 F2             228  	STA	PAGPOS		SAVE PAGE POSITION
+D1B5  3F                   229  	SWI			SOFTWARE INTERRUPT TO DOS
+D1B6  22                   230  	FCB	34		SYSTEM REQUEST NUMBER
+D1B7  20 02                231  	BRA	CHKP2		AND CONTINUE
+D1B9  3F                   232  CHKP1	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: D:TYPE                                       PAGE: 5
+
+D1BA  23                   233  	FCB	35		SYSTEM REQUEST NUMBER
+D1BB  81 1B                234  CHKP2	CMPA	#ESCCHR		IS IT AN ESCAPE?
+D1BD  26 C1                235  	BNE	EPAGE		NO, SKIP IT
+D1BF  3F                   236  	SWI			SOFTWARE INTERRUPT TO DOS
+D1C0  19                   237  	FCB	25		SYSTEM REQUEST NUMBER
+D1C1  3C 41 62 6F 72 74 +  238  	FCCZ	'<Aborted>'
+D1CB                       239  * EXIT WITH ZERO RETURN CODE
+D1CB  4F                   240  XQUIT	CLRA			ZERO RC
+D1CC  10 FE D1 F8          241  ABORT	LDS	SAVSTK		GET STACK POINTER BACK
+D1D0  4D                   242  	TSTA			SET FLAGS FOR RETURN CODE
+D1D1  39                   243  	RTS
+D1D2                       244  * QUALIFIER TABLE
+D1D2  82                   245  QTABLE	FCB	$82
+D1D3  2F 50 41 47 45       246  	FCC	'/PAGE'
+D1D8  82                   247  	FCB	$82
+D1D9  2F 44 55 4D 50       248  	FCC	'/DUMP'
+D1DE  82                   249  	FCB	$82
+D1DF  2F 44 49 53 4B       250  	FCC	'/DISK'
+D1E4  82                   251  	FCB	$82
+D1E5  2F 4D 45 4D 4F 52 +  252  	FCC	'/MEMORY'
+D1EC  80                   253  	FCB	$80		END OF TABLE
+0004                       254  QMAX	EQU	4		LARGEST QUALIFIER VALUE
+D1ED                       255  * QUALIFIER FLAGS
+D1ED                       256  QFLAGS	EQU	*
+D1ED  FF                   257  PAGE	FCB	$FF		PAGE OUTPUT
+D1EE  FF                   258  DUMP	FCB	$FF		DUMP IN HEX FORMAT
+D1EF  FF                   259  DISK	FCB	$FF		DISPLAY FROM DISK
+D1F0  FF                   260  MEMORY	FCB	$FF		DISPLAY MEMORY
+D1F1                       261  *
+D1F1  00                   262  LINPOS	FCB	0		POSITION IN LINE
+D1F2  16                   263  PAGPOS	FCB	PAGSIZ		POSITION IN PAGE
+D1F3                       264  DEVICE	RMB	1		OUTPUT DEVICE NUMBER
+D1F4                       265  MEMADR	RMB	2		MEMORY ADDRESS
+D1F6                       266  SECTOR	RMB	2		CURRENT SECTOR
+D1F8                       267  SAVSTK	RMB	2		SAVED STACK POINTER
+D1FA                       268  *
+D1FA                       269  WRKSPC	EQU	*		WORK AREA

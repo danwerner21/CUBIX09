@@ -1,0 +1,228 @@
+DUNFIELD 6809 ASSEMBLER: D:LDIR                                       PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         8  *
+0000                         9  * LDIR: List directories
+0000                        10  *
+0000                        11  * Copyright 1983-2005 Dave Dunfield
+0000                        12  * All rights reserved.
+0000                        13  *
+0000                        14  DIRLOC	EQU	0		STARTING DIRCTORY LOCATION
+2000                        15  	ORG	OSRAM		DOS UTILITY SPACE
+2000  81 3F                 16  LDIR	CMPA	#'?'		IS IT '?' QUERY?
+2002  26 22                 17  	BNE	QUAL		NO, LOOK FOR QUALIFIERS
+2004  3F                    18  	SWI			SOFTWARE INTERRUPT TO DOS
+2005  19                    19  	FCB	25		SYSTEM REQUEST NUMBER
+2006  55 73 65 3A 20 4C +   20  	FCCZ	'Use: LDIR[/TOTAL] [<filespec>]'
+2025  39                    21  	RTS
+2026                        22  * PARSE FOR COMMAND QUALIFIERS
+2026  A6 A4                 23  QUAL	LDA	,Y		GET CHAR FROM COMMAND LINE
+2028  81 2F                 24  	CMPA	#'/'		IS IT A QUALIFIER?
+202A  26 46                 25  	BNE	MAIN		NO, CONTINUE WITH MAIN PROGRAM
+202C  30 8D 01 8C           26  	LEAX	QTABLE,PCR	POINT TO QUALIFIER TABLE
+2030  3F                    27  	SWI			SOFTWARE INTERRUPT TO DOS
+2031  12                    28  	FCB	18		SYSTEM REQUEST NUMBER
+2032  C1 01                 29  	CMPB	#QMAX		IS IT IN RANGE
+2034  24 08                 30  	BHS	QERR		IF SO, IT'S INVALID
+2036  30 8D 01 8A           31  	LEAX	QFLAGS,PCR	POINT TO QUALIFIER FLAGS
+203A  6F 85                 32  	CLR	B,X		SET THE FLAG
+203C  20 E8                 33  	BRA	QUAL		LOOK FOR ANOTHER QUALIFIER
+203E  3F                    34  QERR	SWI			SOFTWARE INTERRUPT TO DOS
+203F  18                    35  	FCB	24		SYSTEM REQUEST NUMBER
+2040  49 6E 76 61 6C 69 +   36  	FCCZ	/Invalid qualifier: '/
+2055  A6 A0                 37  	LDA	,Y+		GET CHARACTER
+2057  3F                    38  DSQU1	SWI			SOFTWARE INTERRUPT TO DOS
+2058  21                    39  	FCB	33		SYSTEM REQUEST NUMBER
+2059  A6 A0                 40  	LDA	,Y+		GET NEXT CHAR
+205B  27 0C                 41  	BEQ	GOABO		NULL IS DELIMITER
+205D  81 2F                 42  	CMPA	#'/'		START OF ANOTHER QUALIFIER?
+205F  27 08                 43  	BEQ	GOABO		IF SO, QUIT
+2061  81 20                 44  	CMPA	#' '		SPACE?
+2063  27 04                 45  	BEQ	GOABO		IF SO, QUIT
+2065  81 0D                 46  	CMPA	#$0D		END OF LINE?
+2067  26 EE                 47  	BNE	DSQU1		NO, KEEP DUMPING
+2069  3F                    48  GOABO	SWI			SOFTWARE INTERRUPT TO DOS
+206A  19                    49  	FCB	25		SYSTEM REQUEST NUMBER
+206B  27 00                 50  	FCB	$27,0		CHARACTERS TO DISPLAY
+206D  86 01                 51  	LDA	#1		INVALID OPERAND RETURN CODE
+206F  16 00 EB              52  	LBRA	ABORT		GO HOME
+2072                        53  * MAIN PROGRAM
+2072  34 20                 54  MAIN	PSHS	Y
+2074  10 8E 21 B8           55  	LDY	#ALLFIL		ALL FILES
+2078  3F                    56  	SWI			SOFTWARE INTERRUPT TO DOS
+2079  09                    57  	FCB	9		SYSTEM REQUEST NUMBER
+207A  A6 1F                 58  	LDA	-1,X		GET DEFAULT DRIVE
+DUNFIELD 6809 ASSEMBLER: D:LDIR                                       PAGE: 2
+
+207C  8E 21 AF              59  	LDX	#DEFDIR		PT TO DEFAULT
+207F  A7 84                 60  	STA	,X		SAVE IT
+2081  35 20                 61  	PULS	Y		RESTORE Y
+2083  3F                    62  	SWI			SOFTWARE INTERRUPT TO DOS
+2084  0F                    63  	FCB	15		SYSTEM REQUEST NUMBER
+2085  A6 17                 64  	LDA	-9,X		GET ACTUAL DRIVE
+2087  3F                    65  	SWI			SOFTWARE INTERRUPT TO DOS
+2088  4C                    66  	FCB	76		SYSTEM REQUEST NUMBER
+2089  3F                    67  	SWI			SOFTWARE INTERRUPT TO DOS
+208A  05                    68  	FCB	5		SYSTEM REQUEST NUMBER
+208B  27 3D                 69  	BEQ	ENAM		NO, THATS ALL
+208D  31 3F                 70  	LEAY	-1,Y		BACKUP
+208F  6F 84                 71  	CLR	,X		NOWILD
+2091  C6 08                 72  	LDB	#8		8 CHARS/NAME
+2093  3F                    73  SUP1	SWI			SOFTWARE INTERRUPT TO DOS
+2094  05                    74  	FCB	5		SYSTEM REQUEST NUMBER
+2095  27 33                 75  	BEQ	ENAM		THATS ALL
+2097  81 2E                 76  	CMPA	#'.'		TYPE?
+2099  27 07                 77  	BEQ	SUP2		GET TYPE
+209B  5A                    78  	DECB			BACKUP
+209C  2B 15                 79  	BMI	BADOP		INVALID
+209E  A7 80                 80  	STA	,X+		SAVE
+20A0  20 F1                 81  	BRA	SUP1		CONTINUE
+20A2  30 85                 82  SUP2	LEAX	B,X		ADVANCE TO TYPE
+20A4  6F 84                 83  	CLR	,X		NO WILDCARD
+20A6  C6 03                 84  	LDB	#3		THREE CHARS
+20A8  3F                    85  SUP3	SWI			SOFTWARE INTERRUPT TO DOS
+20A9  05                    86  	FCB	5		SYSTEM REQUEST NUMBER
+20AA  27 1E                 87  	BEQ	ENAM		END
+20AC  5A                    88  	DECB			REDUCE
+20AD  2B 04                 89  	BMI	BADOP		INVALID
+20AF  A7 80                 90  	STA	,X+		SAVE
+20B1  20 F5                 91  	BRA	SUP3		KEEP GOING
+20B3  3F                    92  BADOP	SWI			SOFTWARE INTERRUPT TO DOS
+20B4  19                    93  	FCB	25		SYSTEM REQUEST NUMBER
+20B5  42 61 64 20 66 69 +   94  	FCCZ	'Bad file pattern'
+20C6  86 01                 95  	LDA	#1
+20C8  3F                    96  	SWI			SOFTWARE INTERRUPT TO DOS
+20C9  00                    97  	FCB	0		SYSTEM REQUEST NUMBER
+20CA  8E 23 CA              98  ENAM	LDX	#RAM+512	POINT TO RAM
+20CD  6F 80                 99  CLR	CLR	,X+		CLEAR ONE BYTE
+20CF  8C 31 CC             100  	CMPX	#RAM+4098	END OF RAM
+20D2  25 F9                101  	BLO	CLR		KEEP GOING
+20D4  CC 00 00             102  	LDD	#DIRLOC		GET DIECTORY SECTOR
+20D7  FD 21 C8             103  RDNXT	STD	DIRSEC		SAVE DIRECTORY SECTOR WE ARE IN
+20DA  8E 21 CA             104  	LDX	#RAM		POINT TO WORK AREA
+20DD  3F                   105  	SWI			SOFTWARE INTERRUPT TO DOS
+20DE  5C                   106  	FCB	92		SYSTEM REQUEST NUMBER
+20DF  10 26 00 7A          107  	LBNE	ABORT
+20E3  3F                   108  TSTNAM	SWI			SOFTWARE INTERRUPT TO DOS
+20E4  13                   109  	FCB	19		SYSTEM REQUEST NUMBER
+20E5  27 78                110  	BEQ	MATCH		IF SO, HANDLE IT
+20E7  30 88 20             111  NXTFIL	LEAX	32,X		ADVANCE TO NEXT FILE ENTRY
+20EA  8C 23 CA             112  	CMPX	#RAM+512	ARE WE OVER LIMIT
+20ED  25 F4                113  	BLO	TSTNAM		IF NOT, TRY THIS ONE
+20EF  FC 21 C8             114  	LDD	DIRSEC		GET SECTOR WE ARE IN
+20F2  3F                   115  	SWI			SOFTWARE INTERRUPT TO DOS
+20F3  4D                   116  	FCB	77		SYSTEM REQUEST NUMBER
+DUNFIELD 6809 ASSEMBLER: D:LDIR                                       PAGE: 3
+
+20F4  26 E1                117  	BNE	RDNXT		MORE SECTORS, TRY THEM TOO
+20F6  B6 21 C4             118  DISDIR	LDA	TOTAL		TOTALS ONLY?
+20F9  27 40                119  	BEQ	END2		IF SO, DON'T DISPLAY
+20FB  3F                   120  	SWI			SOFTWARE INTERRUPT TO DOS
+20FC  19                   121  	FCB	25		SYSTEM REQUEST NUMBER
+20FD  44 69 72 65 63 74 +  122  	FCCZ	'Directories:'
+210A  8E 23 CA             123  	LDX	#RAM+512	POINT TO FREE SPACE
+210D  3F                   124  DSPLIN	SWI			SOFTWARE INTERRUPT TO DOS
+210E  16                   125  	FCB	22		SYSTEM REQUEST NUMBER
+210F  C6 06                126  	LDB	#6		SIX NAMES/LINE
+2111  F7 21 C7             127  	STB	TEMP		SAVE IN TEMP SPACE
+2114  6D 84                128  DSPNAM	TST	,X		GET CHARACTER FROM NAME
+2116  27 18                129  	BEQ	ENDIT		THATS IS LAST ONE
+2118  C6 08                130  	LDB	#8		EIGHT CHARACTERS/NAME
+211A  A6 80                131  DS8	LDA	,X+		GET CHARACTER FROM NAME
+211C  26 02                132  	BNE	NOSPA		NO SPACE NEEDED
+211E  86 20                133  	LDA	#' '		GET A SPACE
+2120  3F                   134  NOSPA	SWI			SOFTWARE INTERRUPT TO DOS
+2121  21                   135  	FCB	33		SYSTEM REQUEST NUMBER
+2122  5A                   136  	DECB			REDUCE	COUNT
+2123  26 F5                137  	BNE	DS8		KEEP DISPLAYING
+2125  3F                   138  	SWI			SOFTWARE INTERRUPT TO DOS
+2126  15                   139  	FCB	21		SYSTEM REQUEST NUMBER
+2127  3F                   140  	SWI			SOFTWARE INTERRUPT TO DOS
+2128  15                   141  	FCB	21		SYSTEM REQUEST NUMBER
+2129  7A 21 C7             142  	DEC	TEMP		THIS IS THE END
+212C  26 E6                143  	BNE	DSPNAM		KEEP GOING TILL WE DO ALL
+212E  20 DD                144  	BRA	DSPLIN		KEEP GOING
+2130  B6 21 C7             145  ENDIT	LDA	TEMP		GET POSITION INDICATOR
+2133  81 06                146  	CMPA	#6		ARE WE AT BEGINNING
+2135  27 02                147  	BEQ	END1		YES, SKIP EXTRA CRLF
+2137  3F                   148  	SWI			SOFTWARE INTERRUPT TO DOS
+2138  16                   149  	FCB	22		SYSTEM REQUEST NUMBER
+2139  3F                   150  END1	SWI			SOFTWARE INTERRUPT TO DOS
+213A  16                   151  	FCB	22		SYSTEM REQUEST NUMBER
+213B  3F                   152  END2	SWI			SOFTWARE INTERRUPT TO DOS
+213C  18                   153  	FCB	24		SYSTEM REQUEST NUMBER
+213D  54 6F 74 61 6C 20 +  154  	FCCZ	'Total of '
+2147  FC 21 C5             155  	LDD	DTOTAL		GET TOTAL NUMBER OF DIRECTORIES
+214A  3F                   156  	SWI			SOFTWARE INTERRUPT TO DOS
+214B  1A                   157  	FCB	26		SYSTEM REQUEST NUMBER
+214C  3F                   158  	SWI			SOFTWARE INTERRUPT TO DOS
+214D  19                   159  	FCB	25		SYSTEM REQUEST NUMBER
+214E  20 64 69 72 65 63 +  160  	FCCZ	' directories.'
+215C  4F                   161  	CLRA			ZERO RETURN CODE
+215D  3F                   162  ABORT	SWI			SOFTWARE INTERRUPT TO DOS
+215E  00                   163  	FCB	0		SYSTEM REQUEST NUMBER
+215F                       164  *
+215F                       165  * NAMES MATCHED, INSERT INTO TABLE
+215F                       166  *
+215F  10 8E 23 CA          167  MATCH	LDY	#RAM+512	POINT TO START OF TABLE
+2163  34 30                168  CMPN	PSHS	X,Y		SAVE REGISTERS
+2165  6D A4                169  	TST	,Y		ARE WE AT END
+2167  27 2F                170  	BEQ	INLST		IF SO, INSERT IT HERE
+2169  C6 08                171  	LDB	#8		EIGHT CHARACTERS
+216B  A6 80                172  CMP8	LDA	,X+		GET CHARACTER FROM OUR NAME
+216D  A1 A0                173  	CMPA	,Y+		TEST FOR SAME AS DEST
+216F  25 0D                174  	BLO	INSMOV		IF DIFFERENT, THEN TRY HERE
+DUNFIELD 6809 ASSEMBLER: D:LDIR                                       PAGE: 4
+
+2171  26 05                175  	BNE	NOTSAM		THEY ARE DIFFERENT
+2173  5A                   176  	DECB			REDUCE COUNT
+2174  26 F5                177  	BNE	CMP8		TRY AGAIN
+2176  20 32                178  	BRA	NXTONE		IGNORE IT, WE ALREADY HAVE IT
+2178  35 30                179  NOTSAM	PULS	X,Y		RESTORE REGISTERS
+217A  31 28                180  	LEAY	8,Y		ADVANCE TO NEXT
+217C  20 E5                181  	BRA	CMPN		TRY AGAIN
+217E  10 AE 62             182  INSMOV	LDY	2,S		GET OLD Y POINTER BACK
+2181  31 28                183  FNDEOF	LEAY	8,Y		ADVANCE TO NEXT NAME
+2183  A6 A4                184  	LDA	,Y		IS THIS THE END
+2185  26 FA                185  	BNE	FNDEOF		KEEP LOOKING TILL WE FIND
+2187  31 28                186  	LEAY	8,Y		ADVANCE TO END OF FIELD
+2189  30 38                187  	LEAX	-8,Y		BACKUP TO LAST
+218B  A6 82                188  MOVE	LDA	,-X		GET CHARACTER
+218D  A7 A2                189  	STA	,-Y		SAVE IN HIGHER MEMORY
+218F  AC 62                190  	CMPX	2,S		ARE WE AT START YET
+2191  26 F8                191  	BNE	MOVE		IF NOT, FORGET IT
+2193  AE E4                192  	LDX	,S		RESTORE X REGISTER
+2195  10 AE 62             193  	LDY	2,S		GET Y POINTER BACK
+2198  C6 08                194  INLST	LDB	#8		MOVE EIGHT CHARACERS
+219A  A6 80                195  MOV8	LDA	,X+		GET CHARACTER
+219C  A7 A0                196  	STA	,Y+		SAVE IN TABLE
+219E  5A                   197  	DECB			REDUCE COUNT
+219F  26 F9                198  	BNE	MOV8		KEEP MOVEING
+21A1  FC 21 C5             199  	LDD	DTOTAL		GET TOTAL COUNT
+21A4  C3 00 01             200  	ADDD	#1		INCREMENT COUNT
+21A7  FD 21 C5             201  	STD	DTOTAL		RESAVE
+21AA  35 30                202  NXTONE	PULS	X,Y		RESTORE REGISTERS
+21AC  16 FF 38             203  	LBRA	NXTFIL		TRY NEXT FILE IN DIRECTORY
+21AF                       204  * STRINGS
+21AF  00 2A 00 00 00 00 +  205  DEFDIR	FCB	0,'*',0,0,0,0,0,0,0
+21B8  2A 2E 2A             206  ALLFIL	FCC	'*.*'
+21BB  0D                   207  	FCB	$0D
+21BC                       208  * QUALIFIER TABLE
+21BC  82                   209  QTABLE	FCB	$82
+21BD  2F 54 4F 54 41 4C    210  	FCC	'/TOTAL'	TOTAL NUMBER OF DIRECTORIES ONLY
+21C3  80                   211  	FCB	$80
+0001                       212  QMAX	EQU	1		NUMBER OF QUALIFIERS
+21C4                       213  *
+21C4                       214  QFLAGS	EQU	*
+21C4  FF                   215  TOTAL	FCB	$FF
+21C5                       216  * TEMP AND DEFINED STORAGE
+21C5  00 00                217  DTOTAL	FDB	0		TOTAL COUNT OF DIRECTORIES
+21C7                       218  TEMP	RMB	1		A BYTE OF FREE STORAGE
+21C8                       219  DIRSEC	RMB	2		AND SOME MORE
+21CA                       220  RAM	EQU	*		FREE RAM

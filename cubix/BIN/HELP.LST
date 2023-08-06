@@ -1,0 +1,415 @@
+DUNFIELD 6809 ASSEMBLER: D:HELP                                       PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         8  ***************************************************************************
+0000                         9  *                           CUBIX HELP UTILITY.                           *
+0000                        10  *-------------------------------------------------------------------------*
+0000                        11  * ACCESSES HELP INFORMATION FROM A HELP LIBRARY, IN THE DIRECTORY [HELP]. *
+0000                        12  * DEFAULT HELP LIBRARY IS THE FILE [HELP]SYSTEM.HLP. OTHER HELP LIBRARYS  *
+0000                        13  * CAN BE SPECIFIED USING THE OPERATOR '/'. EG: 'HELP /LIBRARY <OPERANDS>' *
+0000                        14  * WOULD USE THE FILE [HELP]LIBRARY.HLP AS THE HELP LIBRARY.               *
+0000                        15  *-------------------------------------------------------------------------*
+0000                        16  * LIBRARY FILE FORMAT IS AS FOLLOWS:                                      *
+0000                        17  *                                                                         *
+0000                        18  * ANY TEXT IN THE FILE UP TO THE START OF SUBCLASS CHARACTER '{' IS DISP- *
+0000                        19  * DISPLAYED FOR HELP WITHOUT OPERANDS (THE BASE NEST LEVEL). THE NAMES OF *
+0000                        20  * ANY SUBCLASS'S ARE DISPLAYED UNDER 'Additional information available:'  *
+0000                        21  * A SUBCLASS OF HELP IS A SECTION OF TEXT, ENCLOSED BEWEEN THE CHARACTERS *
+0000                        22  * '{' AND '}'. THE SUBCLASS NAME IS A SINGLE (UNBROKEN)  WORD  IMMEDIATLY *
+0000                        23  * FOLLOWING THE '{', AND IS THE NAME  DISPLAYED  UNDER  ADDITIONAL  INFO. *
+0000                        24  * THE SUBCLASS NAME, AND THE REMAINDER OF THE LINE IT IS ON IS THE  TITLE *
+0000                        25  * OF THE SUBCLASS, AND IS DISPLAYED WHENEVER IT OR ONE OF IT'S SUBCLASSES *
+0000                        26  * IS ACCESSED. SUBCLASSES MAY BE CONTAINED WITHIN SUBCLASSES, PROVIDING A *
+0000                        27  * COMPLETE TREE STRUCTURE FOR HELP INFORMATION.  HELP  FOR  A  PARTICULAR *
+0000                        28  * SUBCLASS IS OBTAINED BY ADDING THE SUBCLASS NAME TO THE  PARAMETERS  TO *
+0000                        29  * HELP COMMAND. EG: 'HELP /LIBRARY SUBCLASS1 SUBCLASS1.1 ETC...'          *
+0000                        30  *-------------------------------------------------------------------------*
+0000                        31  *                       SAMPLE HELP FILE:                                 *
+0000                        32  * This text is displayed whenever a help command is issued with no  other *
+0000                        33  * operands (except the library if specified). It  should  contain  simple *
+0000                        34  * instructions on using HELP etc.                                         *
+0000                        35  * {SUB1 (First subclass of main help)                                     *
+0000                        36  *  This information is displayed for 'HELP SUB1'}                         *
+0000                        37  * {SUB2 (Second subclass of help)                                         *
+0000                        38  *  This information is displayed for 'HELP SUB2'                          *
+0000                        39  * {SUB2.1 (First subclass of SUB2)                                        *
+0000                        40  *  This information is displayed for 'HELP SUB2 SUB2.1'}}                 *
+0000                        41  * {SUB3 (Third subclass of help)                                          *
+0000                        42  *  This information is displayed for 'HELP SUB3'.                         *
+0000                        43  * {SUB3.1 (First subclass of SUB3)                                        *
+0000                        44  *  This information is displayed for 'HELP SUB3 SUB3.1'                   *
+0000                        45  * {SUB3.1.1 (First subclass of SUB3.1)                                    *
+0000                        46  *  This information is displayed for 'HELP SUB3 SUB3.1 SUB3.1.1'.}        *
+0000                        47  * {SUB3.1.2 (Second subclass of SUB3.1)                                   *
+0000                        48  *  This information is displayed for 'HELP SUB3 SUB3.1 SUB3.1.2'.}}       *
+0000                        49  * {SUB3.2 (Second subclass of SUB3)                                       *
+0000                        50  *  This information is displayed for 'HELP SUB3 SUB3.2'}}                 *
+0000                        51  ***************************************************************************
+0000                        52  *                         SAMPLE USAGE:                                   *
+0000                        53  *  *HELP SUB3 SUB3.1          <-- *NOTE: DEFAULT LIBRARY [HELP]SYSTEM.HLP *
+0000                        54  *  SUB3 (Third subclass of help)                                          *
+0000                        55  *  SUB3.1 (First subclass of SUB3)                                        *
+0000                        56  *                                                                         *
+0000                        57  *   This information is displayed for 'HELP SUB3 SUB3.1'                  *
+0000                        58  *                                                                         *
+DUNFIELD 6809 ASSEMBLER: D:HELP                                       PAGE: 2
+
+0000                        59  *   Additional information available:                                     *
+0000                        60  *                                                                         *
+0000                        61  *   SUB3.1.1           SUB3.1.2                                           *
+0000                        62  *   *                                                                     *
+0000                        63  *-------------------------------------------------------------------------*
+0000                        64  *                                             D. F. DUNFIELD, JAN 14/1984 *
+0000                        65  ***************************************************************************
+0000                        66  *
+007B                        67  BTXT	EQU	'{'		BEGINNING OF TEXT CHARACTER
+007D                        68  ETXT	EQU	'}'		END OF TEXT CHARACTER
+0000                        69  *
+0000                        70  	ORG	0
+0000                        71  DPREFIX	RMB	8
+0008                        72  DNAME	RMB	8
+0010                        73  DTYPE	RMB	3
+0013                        74  DDADR	RMB	2
+0015                        75  DRADR	RMB	2
+0017                        76  DATTR	RMB	1
+0018                        77  *
+D000                        78  	ORG	OSUTIL		DOS UTILITY SPACE
+D000  81 3F                 79  HELP	CMPA	#'?'		EXPLAIN REQUEST?
+D002  26 34                 80  	BNE	MAIN		NO, TRY MAIN PGM
+D004  3F                    81  	SWI			SOFTWARE INTERRUPT TO DOS
+D005  19                    82  	FCB	25		SYSTEM REQUEST NUMBER
+D006  55 73 65 3A 20 48 +   83  	FCCZ	'Use: HELP[/<library>] [<topic>] [<subtopic>] ...'
+D037  39                    84  	RTS
+D038  10 FF D2 E5           85  MAIN	STS	SAVSP		SAVE OUR STACK POINTER
+D03C  10 CE D5 CF           86  	LDS	#INPBUF+$7F	SET UP STACK
+D040  34 20                 87  	PSHS	Y		SAVE COMMAND POINTER
+D042  10 8E D2 D9           88  	LDY	#DEFNAM		PT TO DEFAULT
+D046  3F                    89  	SWI			SOFTWARE INTERRUPT TO DOS
+D047  0C                    90  	FCB	12		SYSTEM REQUEST NUMBER
+D048  A6 1F                 91  	LDA	-1,X		GET SYSTEM DRIVE
+D04A  8E D2 D0              92  	LDX	#DEFDIR		PT TO IT
+D04D  A7 84                 93  	STA	,X		SET DEFAULT TO SYSTEM DRIVE
+D04F  10 8E D2 D9           94  	LDY	#DEFNAM		PT TO NAME AGAIN
+D053  3F                    95  	SWI			SOFTWARE INTERRUPT TO DOS
+D054  0D                    96  	FCB	13		SYSTEM REQUEST NUMBER
+D055  35 20                 97  	PULS	Y		RESTORE Y
+D057  3F                    98  	SWI			SOFTWARE INTERRUPT TO DOS
+D058  04                    99  	FCB	4		SYSTEM REQUEST NUMBER
+D059  81 2F                100  	CMPA	#'/'		HELP LIBRARY?
+D05B  26 0B                101  	BNE	NOUFIL		NOT A USER SUPPLIED FILE
+D05D  31 21                102  	LEAY	1,Y		SKIP '/'
+D05F  8E D2 D0             103  	LDX	#DEFDIR		POINT TO DEFAULT FILENAME
+D062  3F                   104  	SWI			SOFTWARE INTERRUPT TO DOS
+D063  0D                   105  	FCB	13		SYSTEM REQUEST NUMBER
+D064  10 26 00 3D          106  	LBNE	ABORT		INVALID, QUIT
+D068  CC 48 4C             107  NOUFIL	LDD	#'HL'
+D06B  ED 84                108  	STD	,X
+D06D  86 50                109  	LDA	#'P'
+D06F  A7 02                110  	STA	2,X
+D071  CC D3 00             111  HELP1	LDD	#OPLIN		POINT TO OPERAND LINE
+D074  FD D2 E8             112  	STD	OPPOS		SAVE OPERAND POSITION
+D077  7F D2 E4             113  	CLR	IDENT		DO NOT INDENT
+D07A  7F D2 E7             114  	CLR	ERRFLG		CLEAR ERROR FLAG
+D07D  3F                   115  	SWI			SOFTWARE INTERRUPT TO DOS
+D07E  46                   116  	FCB	70		SYSTEM REQUEST NUMBER
+DUNFIELD 6809 ASSEMBLER: D:HELP                                       PAGE: 3
+
+D07F  26 24                117  	BNE	ABORT		IF NOT THERE, GET UPSET
+D081  EC 88 13             118  	LDD	DDADR,X		GET SECTOR
+D084  FD D2 E0             119  	STD	>WRKSEC
+D087  8E D3 50             120  	LDX	#WRKSPC		PT TO IT
+D08A  BF D2 E2             121  	STX	>WRKOFF
+D08D  3F                   122  	SWI			SOFTWARE INTERRUPT TO DOS
+D08E  5C                   123  	FCB	92		SYSTEM REQUEST NUMBER
+D08F  3F                   124  	SWI			SOFTWARE INTERRUPT TO DOS
+D090  04                   125  	FCB	4		SYSTEM REQUEST NUMBER
+D091  10 26 01 04          126  	LBNE	OPRND		OPERAND WAS PRESENT
+D095                       127  * GENERAL HELP
+D095  17 01 BB             128  GENHLP	LBSR	RDCHR		GET CHARACTER FROM SOURCE
+D098  10 26 01 FB          129  	LBNE	CLOSE		IF ERROR, CLOSE
+D09C  81 7B                130  	CMPA	#BTXT		END OF TEXT?
+D09E  27 0B                131  	BEQ	SUBSUM		SUMMARIZE SUB CLASSES
+D0A0  17 01 96             132  	LBSR	OUTCHR		OUTPUT CHARACTER
+D0A3  20 F0                133  	BRA	GENHLP		KEEP GOING
+D0A5                       134  * ABORT TO DOS
+D0A5  10 FE D2 E5          135  ABORT	LDS	SAVSP		RETURN TO DOS
+D0A9  4D                   136  	TSTA			SET RETURN CODE
+D0AA  39                   137  	RTS
+D0AB  3F                   138  SUBSUM	SWI			SOFTWARE INTERRUPT TO DOS
+D0AC  16                   139  	FCB	22		SYSTEM REQUEST NUMBER
+D0AD  3F                   140  	SWI			SOFTWARE INTERRUPT TO DOS
+D0AE  19                   141  	FCB	25		SYSTEM REQUEST NUMBER
+D0AF  41 64 64 69 74 69 +  142  	FCCZ	'Additional information available:'
+D0D1  86 04                143  SUBNEW	LDA	#4		FOUR NAMES/LINE
+D0D3  B7 D2 EA             144  	STA	NUMOUT		NUMBER OF NAMES OUTPUT
+D0D6  3F                   145  	SWI			SOFTWARE INTERRUPT TO DOS
+D0D7  16                   146  	FCB	22		SYSTEM REQUEST NUMBER
+D0D8  C6 13                147  DSPNXT	LDB	#19		MAX NINTEEN CHARACTERS
+D0DA  17 01 76             148  OUTSUB	LBSR	RDCHR		GET CHARACTER FROM SOURCE
+D0DD  26 0E                149  	BNE	ENSUB		END OF SUB
+D0DF  81 20                150  	CMPA	#' '		TEST FOR TERMINATOR
+D0E1  27 0A                151  	BEQ	ENSUB		END OF SUB
+D0E3  81 0D                152  	CMPA	#$0D		TEST FOR TERMINATOR
+D0E5  27 06                153  	BEQ	ENSUB		END OF SUB
+D0E7  5A                   154  	DECB			REDUCE COUNT
+D0E8  17 01 4E             155  	LBSR	OUTCHR		OUTPUT
+D0EB  20 ED                156  	BRA	OUTSUB		KEEP GOING
+D0ED  3F                   157  ENSUB	SWI			SOFTWARE INTERRUPT TO DOS
+D0EE  15                   158  	FCB	21		SYSTEM REQUEST NUMBER
+D0EF  5A                   159  	DECB			REDUCE COUNT
+D0F0  26 FB                160  	BNE	ENSUB		KEEP GOING
+D0F2  17 01 88             161  	LBSR	SKPEND		SKIP TO END OF THIS ONE
+D0F5  17 01 4B             162  	LBSR	FNDSEC		FIND ANOTHER SECTOR
+D0F8  26 07                163  	BNE	ASKHLP		GO HOME AND QUIT
+D0FA  7A D2 EA             164  	DEC	NUMOUT		REDUCE NUMBER OUTPUT
+D0FD  26 D9                165  	BNE	DSPNXT		DISPLAY NEXT NAME
+D0FF  20 D0                166  	BRA	SUBNEW		START A NEW LINE
+D101                       167  * PROMPT FOR EXTRA INFO
+D101  3F                   168  ASKHLP	SWI			SOFTWARE INTERRUPT TO DOS
+D102  16                   169  	FCB	22		SYSTEM REQUEST NUMBER
+D103  8E D3 00             170  NXTCMD	LDX	#OPLIN		POINT TO START OF LINE
+D106  3F                   171  	SWI			SOFTWARE INTERRUPT TO DOS
+D107  16                   172  	FCB	22		SYSTEM REQUEST NUMBER
+D108  10 8E D5 50          173  	LDY	#INPBUF		POINT TO INPUT BUFFER
+D10C  BC D2 E8             174  WRTPI	CMPX	OPPOS		ARE WE AT END
+DUNFIELD 6809 ASSEMBLER: D:HELP                                       PAGE: 4
+
+D10F  24 08                175  	BHS	PRMPT		PROMPT FOR INPUT
+D111  A6 80                176  	LDA	,X+		GET CHARACTER
+D113  A7 A0                177  	STA	,Y+		SAVE Y POINTER
+D115  3F                   178  	SWI			SOFTWARE INTERRUPT TO DOS
+D116  21                   179  	FCB	33		SYSTEM REQUEST NUMBER
+D117  20 F3                180  	BRA	WRTPI		KEEP GOING
+D119  8C D3 00             181  PRMPT	CMPX	#OPLIN		ARE WE AT BEGINNING
+D11C  27 06                182  	BEQ	PRMP1		IF SO, SKIP PREFIX
+D11E  3F                   183  	SWI			SOFTWARE INTERRUPT TO DOS
+D11F  18                   184  	FCB	24		SYSTEM REQUEST NUMBER
+D120  53 75 62 00          185  	FCCZ	'Sub'		PREFIX
+D124  3F                   186  PRMP1	SWI			SOFTWARE INTERRUPT TO DOS
+D125  18                   187  	FCB	24		SYSTEM REQUEST NUMBER
+D126  54 6F 70 69 63 3F +  188  	FCCZ	'Topic? '	MESSAGE
+D12E  10 BF D2 EA          189  	STY	NUMOUT		SAVE POINTER TO INPUT BUFFER
+D132  1F 21                190  	TFR	Y,X		MOVE TO INPUT BUFFER
+D134  BC D2 EA             191  INPT	CMPX	NUMOUT		ARE WE BELOW OPERAND?
+D137  25 CA                192  	BLO	NXTCMD		IF SO, ISSUE AGAIN
+D139  3F                   193  	SWI			SOFTWARE INTERRUPT TO DOS
+D13A  22                   194  	FCB	34		SYSTEM REQUEST NUMBER
+D13B  81 7F                195  	CMPA	#$7F		DELETE
+D13D  26 02                196  	BNE	NOTDEL		NOT A DELETE
+D13F  86 08                197  	LDA	#8		CONVERT TO BS
+D141  3F                   198  NOTDEL	SWI			SOFTWARE INTERRUPT TO DOS
+D142  21                   199  	FCB	33		SYSTEM REQUEST NUMBER
+D143  81 03                200  	CMPA	#3		CTRL-C?
+D145  10 27 01 7F          201  	LBEQ	NOERR1		IF SO, EXIT
+D149  81 61                202  	CMPA	#$61		ARE WE UPPER CASE?
+D14B  25 02                203  	BLO	UCASE		IF SO, IT'S OK
+D14D  84 5F                204  	ANDA	#$5F		CONVERT TO UPPER
+D14F  30 1F                205  UCASE	LEAX	-1,X		BACKUP
+D151  81 08                206  	CMPA	#8		IS IT DELETE?
+D153  27 DF                207  	BEQ	INPT		IF SO, TRY AGAIN
+D155  30 01                208  	LEAX	1,X		FIX MISTAKE
+D157  A7 80                209  	STA	,X+		AND SAVE CHARACTER
+D159  81 0D                210  	CMPA	#$0D		END OF LINE?
+D15B  26 D7                211  	BNE	INPT		GET ANOTHER CHARACTER
+D15D  3F                   212  	SWI			SOFTWARE INTERRUPT TO DOS
+D15E  04                   213  	FCB	4		SYSTEM REQUEST NUMBER
+D15F  27 19                214  	BEQ	BACKUP		IF SO, BACKUP
+D161  EC A4                215  	LDD	,Y		GET CONTENTS OF LINE
+D163  10 83 3F 0D          216  	CMPD	#$3F0D		IS IT QUERY?
+D167  26 02                217  	BNE	NOQUE		NO, SKIP
+D169  E7 A4                218  	STB	,Y		CHANGE TO NULL LINE
+D16B  10 8E D5 50          219  NOQUE	LDY	#INPBUF		POINT TO LINE
+D16F  3F                   220  	SWI			SOFTWARE INTERRUPT TO DOS
+D170  16                   221  	FCB	22		SYSTEM REQUEST NUMBER
+D171  10 FE D2 E5          222  	LDS	SAVSP		RESTORE STACK
+D175  16 FE F9             223  	LBRA	HELP1		TRY AGAIN
+D178  3F                   224  BCKSKP	SWI			SOFTWARE INTERRUPT TO DOS
+D179  16                   225  	FCB	22		SYSTEM REQUEST NUMBER
+D17A  BE D2 E8             226  BACKUP	LDX	OPPOS		GET OPERAND POSITION
+D17D  8C D3 00             227  	CMPX	#OPLIN		ARE WE AT BEGINNING?
+D180  10 23 01 44          228  	LBLS	NOERR1		IF SO, STOP NOW
+D184  30 1F                229  	LEAX	-1,X		BACKUP PAST SPACE
+D186  8C D3 00             230  BACK1	CMPX	#OPLIN		ARE WE AT START OF LINE
+D189  27 08                231  	BEQ	GONXT		IF SO, QUIT
+D18B  A6 82                232  	LDA	,-X		BACKUP
+DUNFIELD 6809 ASSEMBLER: D:HELP                                       PAGE: 5
+
+D18D  81 20                233  	CMPA	#' '		IS IT SPACE?
+D18F  26 F5                234  	BNE	BACK1		NO, TRY AGAIN
+D191  30 01                235  	LEAX	1,X		SKIP AHEAD SPACE
+D193  BF D2 E8             236  GONXT	STX	OPPOS		RESAVE POSITION
+D196  16 FF 6A             237  	LBRA	NXTCMD		TRY AGAIN
+D199                       238  *
+D199                       239  * OPERAND WAS SUPPLIED
+D199                       240  *
+D199  7A D2 E7             241  OPRND	DEC	ERRFLG		SET ERROR FINDING FLAG
+D19C  17 00 A4             242  	LBSR	FNDSEC		FIND A SECTION
+D19F  10 26 00 F4          243  	LBNE	CLOSE		IF NO MORE, STOP
+D1A3  FC D2 E0             244  	LDD	>WRKSEC
+D1A6  BE D2 E2             245  	LDX	>WRKOFF
+D1A9  34 16                246  	PSHS	A,B,X		SAVE REGISTERS
+D1AB  1F 21                247  	TFR	Y,X		COPY TO X
+D1AD  CE D2 EC             248  	LDU	#SNGLOP		POINT TO SINGLE OPERAND
+D1B0  A6 84                249  CHKPRM	LDA	,X		GET CHARACTER
+D1B2  81 20                250  	CMPA	#' '		SPACE?
+D1B4  27 14                251  	BEQ	ENDCMP		END OF COMPARE, SUCESS
+D1B6  81 0D                252  	CMPA	#$0D		CARRIAGE RETURN
+D1B8  27 10                253  	BEQ	ENDCMP		END OF COMPARE, SUCESS
+D1BA  17 00 96             254  	LBSR	RDCHR		READ A CHARACTER
+D1BD  A7 C0                255  	STA	,U+		SAVE IN SINGLE OPERAND
+D1BF  A1 80                256  	CMPA	,X+		IS IT SAME?
+D1C1  27 ED                257  	BEQ	CHKPRM		IF SO, ALL SET
+D1C3  17 00 B7             258  	LBSR	SKPEND		SKIP TO END
+D1C6  35 16                259  	PULS	A,B,X		Clean stack
+D1C8  20 CF                260  	BRA	OPRND		TRY AGAIN
+D1CA  17 00 86             261  ENDCMP	LBSR	RDCHR		GET CHARACTER FROM FILE
+D1CD  A7 C0                262  	STA	,U+		SAVE IN BUFFER
+D1CF  81 20                263  	CMPA	#' '		IS IT SPACE?
+D1D1  27 04                264  	BEQ	ENDC1		IF SO, QUIT
+D1D3  81 0D                265  	CMPA	#$0D		IS IT CARRIAGE RETURN
+D1D5  26 F3                266  	BNE	ENDCMP		IF NOT, KEEP COPYING
+D1D7  86 20                267  ENDC1	LDA	#' '		GET SPACE
+D1D9  A7 5F                268  	STA	-1,U		RESET END INDICATOR
+D1DB  1F 12                269  	TFR	X,Y		COPY TO Y
+D1DD  BE D2 E8             270  	LDX	OPPOS		POINT TO OPERAND LINE
+D1E0  CE D2 EC             271  	LDU	#SNGLOP		POINT TO OPERAND
+D1E3  A6 C0                272  DMPOP	LDA	,U+		GET CHARACTER FROM LINE
+D1E5  A7 80                273  	STA	,X+		SAVE IN LINE
+D1E7  81 20                274  	CMPA	#' '		IS IT END OF OPERAND
+D1E9  26 F8                275  	BNE	DMPOP		IF SO, LET HIM KNOW
+D1EB  BF D2 E8             276  	STX	OPPOS		SAVE OPERAND POSITION
+D1EE  35 16                277  	PULS	A,B,X		RESTORE REGISTERS
+D1F0  FD D2 E0             278  	STD	>WRKSEC
+D1F3  BF D2 E2             279  	STX	>WRKOFF
+D1F6  8E D3 50             280  	LDX	#WRKSPC		PT TO WORK AREA
+D1F9  3F                   281  	SWI			SOFTWARE INTERRUPT TO DOS
+D1FA  5C                   282  	FCB	92		SYSTEM REQUEST NUMBER
+D1FB  3F                   283  	SWI			SOFTWARE INTERRUPT TO DOS
+D1FC  16                   284  	FCB	22		SYSTEM REQUEST NUMBER
+D1FD  7C D2 E4             285  	INC	>IDENT		ADVANCE INDENT POSITION
+D200  B6 D2 E4             286  	LDA	>IDENT		GET INDENT
+D203  4A                   287  IND1	DECA			REDUCE INDENT COUNT
+D204  27 06                288  	BEQ	OUTLIN		IF ZERO, THEN ALL SET
+D206  3F                   289  	SWI			SOFTWARE INTERRUPT TO DOS
+D207  15                   290  	FCB	21		SYSTEM REQUEST NUMBER
+DUNFIELD 6809 ASSEMBLER: D:HELP                                       PAGE: 6
+
+D208  3F                   291  	SWI			SOFTWARE INTERRUPT TO DOS
+D209  15                   292  	FCB	21		SYSTEM REQUEST NUMBER
+D20A  20 F7                293  	BRA	IND1		CHECK FOR NEXT INDENT
+D20C  17 00 44             294  OUTLIN	LBSR	RDCHR		GET LINE
+D20F  10 26 00 84          295  	LBNE	CLOSE		IF ERROR, CLOSE
+D213  17 00 23             296  	LBSR	OUTCHR		DISPLAY
+D216  81 0D                297  	CMPA	#$0D		TEST FOR CARRIAGE RETURN
+D218  26 F2                298  	BNE	OUTLIN		KEEP DISPLAYING
+D21A  7F D2 E7             299  	CLR	ERRFLG		CLEAR ERROR FLAG AS WE FOUND
+D21D  3F                   300  	SWI			SOFTWARE INTERRUPT TO DOS
+D21E  04                   301  	FCB	4		SYSTEM REQUEST NUMBER
+D21F  10 26 FF 76          302  	LBNE	OPRND		IF MORE, TEST THEM
+D223  3F                   303  EOCLIN	SWI			SOFTWARE INTERRUPT TO DOS
+D224  16                   304  	FCB	22		SYSTEM REQUEST NUMBER
+D225  17 00 2B             305  OUTXT	LBSR	RDCHR		GET TEXT CHARACTERS
+D228  81 7D                306  	CMPA	#ETXT		END OF TEXT
+D22A  10 27 FF 4A          307  	LBEQ	BCKSKP		IF END, CLOSE
+D22E  81 7B                308  	CMPA	#BTXT		START OF TEXT
+D230  10 27 FE 77          309  	LBEQ	SUBSUM		SUMMARY OF SUB CLASSES
+D234  17 00 02             310  	LBSR	OUTCHR		OUTPUT
+D237  20 EC                311  	BRA	OUTXT		KEEP GOING
+D239                       312  *
+D239                       313  * SUBROUTINE TO DISPLAY CHARACTER IN ACCA
+D239                       314  *
+D239  81 0D                315  OUTCHR	CMPA	#$0D		CARRIAGE RETURN?
+D23B  27 03                316  	BEQ	LFCR		IF SO, USE LFCR PAIR
+D23D  3F                   317  	SWI			SOFTWARE INTERRUPT TO DOS
+D23E  21                   318  	FCB	33		SYSTEM REQUEST NUMBER
+D23F  39                   319  	RTS
+D240  3F                   320  LFCR	SWI			SOFTWARE INTERRUPT TO DOS
+D241  16                   321  	FCB	22		SYSTEM REQUEST NUMBER
+D242  39                   322  	RTS
+D243                       323  *
+D243                       324  * SUBROUTINE ADVANCES TO START OF NEXT SECTION
+D243                       325  *
+D243  8D 0E                326  FNDSEC	BSR	RDCHR		ADVANCE IN SOURCE
+D245  26 09                327  	BNE	FNC1		IF END, CLOSE FILE AND QUIT
+D247  81 7D                328  	CMPA	#ETXT		END OF TEXT?
+D249  27 05                329  	BEQ	FNC1		NO MORE DATA
+D24B  81 7B                330  	CMPA	#BTXT		START OF TEXT
+D24D  26 F4                331  	BNE	FNDSEC		IF NOT, KEEP LOOKING
+D24F  39                   332  FNCL	RTS
+D250  86 FF                333  FNC1	LDA	#$FF		CLEAR Z FLAG
+D252  39                   334  	RTS
+D253                       335  *
+D253                       336  * READ A CHAR FROM INPUT FILE
+D253                       337  *
+D253  34 14                338  RDCHR	PSHS	B,X		SAVE REG
+D255  BE D2 E2             339  	LDX	>WRKOFF		GET OFFSET
+D258  8C D5 50             340  	CMPX	#WRKSPC+512	PAST END?
+D25B  25 0F                341  	BLO	RDCH1		ITS OK
+D25D  FC D2 E0             342  	LDD	>WRKSEC		GET SECTOR
+D260  3F                   343  	SWI			SOFTWARE INTERRUPT TO DOS
+D261  4D                   344  	FCB	77		SYSTEM REQUEST NUMBER
+D262  27 15                345  	BEQ	RDCEOF		END
+D264  FD D2 E0             346  	STD	>WRKSEC		SAVE
+D267  8E D3 50             347  	LDX	#WRKSPC
+D26A  3F                   348  	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: D:HELP                                       PAGE: 7
+
+D26B  5C                   349  	FCB	92		SYSTEM REQUEST NUMBER
+D26C  A6 80                350  RDCH1	LDA	,X+		GET CHAR
+D26E  BF D2 E2             351  	STX	>WRKOFF		RESAVE
+D271  81 FF                352  	CMPA	#$FF
+D273  27 04                353  	BEQ	RDCEOF
+D275  1A 04                354  	ORCC	#4		SET 'Z'
+D277  35 94                355  	PULS	B,X,PC
+D279  86 FF                356  RDCEOF	LDA	#$FF		END OF FILE
+D27B  35 94                357  	PULS	B,X,PC
+D27D                       358  *
+D27D                       359  * SUBROUTINE TO SKIP TO THE END OF CURRENT SECTION
+D27D                       360  *
+D27D  86 01                361  SKPEND	LDA	#1		GET A ONE
+D27F  B7 D2 EB             362  	STA	TLVL		SET TEMPORARY LEVEL COUNTER
+D282  8D CF                363  CHKLVL	BSR	RDCHR		GET CHARACTER FROM FILE
+D284  26 11                364  	BNE	CLOSE		CLOSE FILE END EXIT
+D286  81 7B                365  	CMPA	#BTXT		BEGINNING OF TEXT CHARCTER?
+D288  26 03                366  	BNE	NOBTXT		NOT BEGINNING
+D28A  7C D2 EB             367  	INC	TLVL		ADVANCE TEMPORARY LEVEL
+D28D  81 7D                368  NOBTXT	CMPA	#ETXT		END OF TXT?
+D28F  26 F1                369  	BNE	CHKLVL		NO, GET NEXT
+D291  7A D2 EB             370  	DEC	TLVL		REDUCE COUNT
+D294  26 EC                371  	BNE	CHKLVL		NO, TRY AGAIN
+D296  39                   372  	RTS			RETURN TO CALLER
+D297                       373  *
+D297                       374  * CLOSE FILE AND EXIT
+D297                       375  *
+D297  7D D2 E7             376  CLOSE	TST	ERRFLG		CHECK FOR ERROR FLAG
+D29A  27 2C                377  	BEQ	NOERR1		NO ERROR
+D29C  3F                   378  	SWI			SOFTWARE INTERRUPT TO DOS
+D29D  18                   379  	FCB	24		SYSTEM REQUEST NUMBER
+D29E  4E 6F 20 68 65 6C +  380  	FCCZ	'No help available for requested topic.'
+D2C5  16 FE 3B             381  	LBRA	NXTCMD		GET NEXT COMMAND
+D2C8  3F                   382  NOERR1	SWI			SOFTWARE INTERRUPT TO DOS
+D2C9  16                   383  	FCB	22		SYSTEM REQUEST NUMBER
+D2CA  10 FE D2 E5          384  	LDS	SAVSP		RESTORE STACK
+D2CE  4F                   385  	CLRA			SET ZERO RC
+D2CF  39                   386  	RTS
+D2D0  00 48 45 4C 50 00 +  387  DEFDIR	FCB	0,'H','E','L','P',0,0,0,0
+D2D9  53 59 53 54 45 4D +  388  DEFNAM	FCCZ	'SYSTEM'
+D2E0                       389  *
+D2E0                       390  WRKSEC	RMB	2		SECTOR
+D2E2                       391  WRKOFF	RMB	2
+D2E4                       392  IDENT	RMB	1		START WITH IN INDENT OF ZERO
+D2E5                       393  SAVSP	RMB	2		TWO BYTES
+D2E7                       394  ERRFLG	RMB	1
+D2E8                       395  OPPOS	RMB	2		POINT TO OPERAND POSITION
+D2EA                       396  NUMOUT	RMB	1		NUMBER OF SUB.S OUTPUT
+D2EB                       397  TLVL	RMB	1		LEVEL POINTER
+D2EC                       398  SNGLOP	RMB	20		BUFFER FOR OPERAND STORAGE
+D300                       399  OPLIN	RMB	80		OPERAND BUFFER
+D350                       400  WRKSPC	RMB	512		FILE SECTOR READ BUFFER
+D550                       401  INPBUF	EQU	*

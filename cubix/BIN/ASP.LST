@@ -1,0 +1,1358 @@
+DUNFIELD 6809 ASSEMBLER: D:ASP                                        PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         9  *
+0000                        10  * ASP: Assembly Source Preprocessor
+0000                        11  *
+0000                        12  * Copyright 1983-2005 Dave Dunfield
+0000                        13  * All rights reserved.
+0000                        14  *
+DBFF                        15  STACK	EQU	OSEND		SYSTEM STACK SPACE
+D9FF                        16  USP	EQU	STACK-512	USER STACK SPACE
+D7FF                        17  CTSP	EQU	USP-512		CONTROL STACK SPACE
+0000                        18  *
+2000                        19  	ORG	OSRAM		PROGRAM EXECUTION SPACE
+2000                        20  * PROGRAM ENTRY
+2000  81 3F                 21  ASP	CMPA	#'?'		QUERY OPERAND?
+2002  26 36                 22  	BNE	QUAL		NO, LOOK FOR QUALIFIER
+2004  3F                    23  	SWI			SOFTWARE INTERRUPT TO DOS
+2005  19                    24  	FCB	25		SYSTEM REQUEST NUMBER
+2006  55 73 65 3A 20 41 +   25  	FCCZ	'Use: ASP[/COMMENT/SOURCE/QUIET] <ASP source file>'
+2038  3F                    26  	SWI			SOFTWARE INTERRUPT TO DOS
+2039  00                    27  	FCB	0		SYSTEM REQUEST NUMBER
+203A                        28  *
+203A                        29  * PARSE	FOR QUALIFIERS
+203A                        30  *
+203A  A6 A4                 31  QUAL	LDA	,Y		GET CHAR FROM COMMAND LINE
+203C  81 2F                 32  	CMPA	#'/'		IS IT A QUALIFIER?
+203E  26 45                 33  	BNE	MAIN		NO, GET PARAMETERS
+2040  30 8D 0A 4D           34  	LEAX	QTABLE,PCR	POINT TO QUALIFIER TABLE
+2044  3F                    35  	SWI			SOFTWARE INTERRUPT TO DOS
+2045  12                    36  	FCB	18		SYSTEM REQUEST NUMBER
+2046  C1 03                 37  	CMPB	#QMAX		IS IT IN RANGE
+2048  24 08                 38  	BHS	QERR		IF SO, IT'S INVALID
+204A  30 8D 0A 5C           39  	LEAX	QFLAGS,PCR	POINT TO QUALIFIER FLAGS
+204E  6F 85                 40  	CLR	B,X		SET THE FLAG
+2050  20 E8                 41  	BRA	QUAL		LOOK FOR ANOTHER QUALIFIER
+2052  3F                    42  QERR	SWI			SOFTWARE INTERRUPT TO DOS
+2053  18                    43  	FCB	24		SYSTEM REQUEST NUMBER
+2054  49 6E 76 61 6C 69 +   44  	FCCZ	/Invalid qualifier: '/
+2069  A6 A0                 45  	LDA	,Y+		GET CHARACTER
+206B  3F                    46  DSQU1	SWI			SOFTWARE INTERRUPT TO DOS
+206C  21                    47  	FCB	33		SYSTEM REQUEST NUMBER
+206D  A6 A0                 48  	LDA	,Y+		GET NEXT CHAR
+206F  27 0C                 49  	BEQ	GOABO		NULL IS DELIMITER
+2071  81 2F                 50  	CMPA	#'/'		START OF ANOTHER QUALIFIER?
+2073  27 08                 51  	BEQ	GOABO		IF SO, QUIT
+2075  81 20                 52  	CMPA	#' '		SPACE?
+2077  27 04                 53  	BEQ	GOABO		IF SO, QUIT
+2079  81 0D                 54  	CMPA	#$0D		END OF LINE?
+207B  26 EE                 55  	BNE	DSQU1		NO, KEEP DUMPING
+207D  3F                    56  GOABO	SWI			SOFTWARE INTERRUPT TO DOS
+207E  19                    57  	FCB	25		SYSTEM REQUEST NUMBER
+207F  27 00                 58  	FCB	$27,0		CHARACTERS TO DISPLAY
+2081  86 01                 59  	LDA	#1		INVALID OPERAND RETURN CODE
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 2
+
+2083  3F                    60  ABORT	SWI			SOFTWARE INTERRUPT TO DOS
+2084  00                    61  	FCB	0		SYSTEM REQUEST NUMBER
+2085                        62  *
+2085                        63  * OPEN INPUT FILE
+2085                        64  *
+2085  10 CE DB FF           65  MAIN	LDS	#STACK
+2089  3F                    66  	SWI			SOFTWARE INTERRUPT TO DOS
+208A  0B                    67  	FCB	11		SYSTEM REQUEST NUMBER
+208B  10 26 FF F4           68  	LBNE	ABORT		ERROR
+208F  CC 41 53              69  	LDD	#'AS'		'AS'
+2092  ED 84                 70  	STD	,X		SAVE
+2094  86 50                 71  	LDA	#'P'		'P', CR
+2096  A7 02                 72  	STA	2,X		SAVE
+2098  CE 2B 44              73  	LDU	#INPFIL		PT TO INPUT
+209B  3F                    74  	SWI			SOFTWARE INTERRUPT TO DOS
+209C  37                    75  	FCB	55		SYSTEM REQUEST NUMBER
+209D  26 E4                 76  	BNE	ABORT		BAD, GIVE UP
+209F  86 4D                 77  	LDA	#'M'		'ASM'
+20A1  A7 02                 78  	STA	2,X		SET LAST CHAR
+20A3  CE 2D 4E              79  	LDU	#OUTFIL		PT TO OUTPUT
+20A6  3F                    80  	SWI			SOFTWARE INTERRUPT TO DOS
+20A7  38                    81  	FCB	56		SYSTEM REQUEST NUMBER
+20A8  10 26 FF D7           82  	LBNE	ABORT		INVALID
+20AC  CE D9 FF              83  	LDU	#USP		POINT TO USER STACK SPACE
+20AF  8E 2F 58              84  	LDX	#SYMTAB		POINT TO SYMBOL TABLE
+20B2  6F 84                 85  	CLR	,X		START OFF WITH NO SYMBOLS
+20B4  BF 2A C2              86  	STX	SYMEND		SAVE POINTER
+20B7  7D 2A AA              87  	TST	QUIET		ARE WE BEING QUIET?
+20BA  27 2D                 88  	BEQ	RDINP		IF SO, DON'T MAKE ANY NOISE
+20BC  3F                    89  	SWI			SOFTWARE INTERRUPT TO DOS
+20BD  19                    90  	FCB	25		SYSTEM REQUEST NUMBER
+20BE  41 53 50 20 76 65 +   91  	FCC	'ASP version 1.0'
+20CD  0A 0D                 92  	FCB	$0A,$0D
+20CF  50 72 6F 63 65 73 +   93  	FCCZ	'Processing source file...'
+20E9                        94  *
+20E9                        95  * READ LINE OF INPUT
+20E9                        96  *
+20E9  FC 2A AD              97  RDINP	LDD	LINE		GET CURRENT LINE NUMBER
+20EC  C3 00 01              98  	ADDD	#1		INCREMENT
+20EF  FD 2A AD              99  	STD	LINE		RESAVE
+20F2  8E 2A C4             100  	LDX	#INPLIN		POINT TO INPUT LINE
+20F5  1F 12                101  	TFR	X,Y		COPY TO Y FOR LATER
+20F7  17 05 E5             102  RDIN1	LBSR	RDINPF		READ A CHAR
+20FA  26 79                103  	BNE	CRVARS		END OF FILE
+20FC  A7 80                104  	STA	,X+		SAVE IT
+20FE  81 0D                105  	CMPA	#$0D		END OF LINE?
+2100  26 F5                106  	BNE	RDIN1		NO, KEEP READING
+2102  3F                   107  	SWI			SOFTWARE INTERRUPT TO DOS
+2103  04                   108  	FCB	4		SYSTEM REQUEST NUMBER
+2104  27 E3                109  	BEQ	RDINP		NULL LINE, IGNORE
+2106  81 2A                110  	CMPA	#'*'		COMMANT?
+2108  27 5A                111  	BEQ	PROCOM		IF SO, SKIP IT
+210A                       112  * WE HAVE INPUT LINE
+210A  34 20                113  	PSHS	Y		SAVE IT
+210C  B6 2A AC             114  	LDA	SOURCE		IS SOURCE COPY ENABLED?
+210F  26 11                115  	BNE	NOSORC		NO, SKIP IT
+2111  17 03 BC             116  	LBSR	STROUT		WRITE STRING
+2114  2A 3E 3E 20 00       117  	FCCZ	'*>> '		MESSAGE
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 3
+
+2119  A6 A0                118  WRSRLI	LDA	,Y+		GET CHAR
+211B  17 03 D7             119  	LBSR	WROUT		OUTPUT
+211E  81 0D                120  	CMPA	#$0D		END OF LINE?
+2120  26 F7                121  	BNE	WRSRLI		CONTINUE
+2122                       122  * TEST FOR LABLE ON LINE
+2122  10 AE E4             123  NOSORC	LDY	,S		GET POINTER BACK
+2125  A6 A4                124  	LDA	,Y		GET CHAR
+2127  81 41                125  	CMPA	#'A'		<'A'
+2129  25 23                126  	BLO	NOSR1		NO LABLE
+212B  81 5A                127  	CMPA	#'Z'		>'Z'?
+212D  22 1F                128  	BHI	NOSR1		NO LABLE
+212F  A6 A0                129  SRCLAB	LDA	,Y+		GET CHAR
+2131  17 04 A7             130  	LBSR	VALSYM		IS THIS IT?
+2134  27 F9                131  	BEQ	SRCLAB		KEEP GOING
+2136  81 3A                132  	CMPA	#':'		LABLE?
+2138  26 14                133  	BNE	NOSR1		NOT A LABLE
+213A  35 20                134  	PULS	Y		RESTORE Y
+213C  17 04 81             135  	LBSR	CPVAR
+213F  17 03 8E             136  	LBSR	STROUT
+2142  09                   137  	FCB	$09
+2143  45 51 55             138  	FCC	'EQU'
+2146  09 2A 0D 00          139  	FCB	$09,'*',$0D,0
+214A  31 21                140  	LEAY	1,Y		ADVANCE
+214C  34 20                141  	PSHS	Y		RESAVE
+214E  35 20                142  NOSR1	PULS	Y		RESTORE Y
+2150  10 FF 2A B8          143  	STS	SAVS		SAVE SP
+2154  FF 2A BA             144  	STU	SAVU		SAVE U
+2157  8E 29 F2             145  	LDX	#RESWRD
+215A  3F                   146  	SWI			SOFTWARE INTERRUPT TO DOS
+215B  12                   147  	FCB	18		SYSTEM REQUEST NUMBER
+215C  8E 2A 3F             148  	LDX	#HNDLRS		POINTS TO HANDLERS
+215F  58                   149  	ASLB			SHIFT FOR DOUBLE BYTE WORDS
+2160  AD 95                150  	JSR	[B,X]		EXECUTE PROGRAM CODE
+2162  20 85                151  	BRA	RDINP		READ NEXT LINE
+2164                       152  * PROCESS COMMENT LINE
+2164  7D 2A AB             153  PROCOM	TST	COMNT		INCLUDE IN OUTPUT?
+2167  26 80                154  	BNE	RDINP		NO, SKIP IT
+2169  A6 A0                155  WRCOMN	LDA	,Y+		GET CHAR
+216B  17 03 87             156  	LBSR	WROUT		WRITE IT
+216E  81 0D                157  	CMPA	#$0D		END OF LINE?
+2170  26 F7                158  	BNE	WRCOMN		NO, CONTINUE
+2172  16 FF 74             159  	LBRA	RDINP		NEXT LINE
+2175                       160  *
+2175                       161  * END OF COMPILE, CREATE VARIABLE STATEMENTS
+2175                       162  *
+2175  FC 2A AF             163  CRVARS	LDD	DATADR		GET DATA ADDRESS
+2178  27 13                164  	BEQ	NODORG		DON'T ORG DATA
+217A  17 03 53             165  	LBSR	STROUT		WRITE STRING
+217D  09                   166  	FCB	9		TAB
+217E  4F 52 47             167  	FCC	'ORG'
+2181  09                   168  	FCB	9		TAB,CR
+2182  24 00                169  	FCCZ	'$'
+2184  FC 2A AF             170  	LDD	DATADR		GET DATA ADDRESS
+2187  17 03 50             171  	LBSR	WRHEXW		OUTPUT HEX WORD
+218A  17 00 70             172  	LBSR	ENDCR		WRITE A NEW LINE CHARACTER
+218D  8E 2F 58             173  NODORG	LDX	#SYMTAB		POINT TO SYMBOL TABLE
+2190  6D 84                174  NODOR1	TST	,X		AT END?
+2192  27 38                175  	BEQ	ENDVAR		IF SO, WE ARE AT THE END
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 4
+
+2194  1F 12                176  	TFR	X,Y		SAVE IT
+2196  A6 A0                177  IDENTI	LDA	,Y+		GET CHAR
+2198  2A FC                178  	BPL	IDENTI		LOOK FOR NEXT
+219A  E6 A4                179  	LDB	,Y		GET TYPE
+219C  2B 2A                180  	BMI	VARNXT		CONSTANT, SKIP IT
+219E  A6 84                181  WRNAM	LDA	,X		GET VAR
+21A0  84 7F                182  	ANDA	#$7F		CONVERT TO NORM
+21A2  17 03 50             183  	LBSR	WROUT		OUTPUT IT
+21A5  A6 80                184  	LDA	,X+		GET NEXT
+21A7  2A F5                185  	BPL	WRNAM		OUTPUT
+21A9  17 03 24             186  	LBSR	STROUT		WRITE STRING
+21AC  09                   187  	FCB	9		TAB
+21AD  52 4D 42             188  	FCC	'RMB'
+21B0  09                   189  	FCB	9
+21B1  24 00                190  	FCCZ	'$'
+21B3  C5 02                191  	BITB	#2		TEST FOR WORD
+21B5  34 01                192  	PSHS	CC		SAVE FLAGS
+21B7  EC 01                193  	LDD	1,X		GET LENGTH
+21B9  26 01                194  	BNE	DEFA		DEFAULT TO ONE
+21BB  5C                   195  	INCB			CONVERT TO ONE
+21BC  35 01                196  DEFA	PULS	CC		RESTORE FLAGS
+21BE  27 02                197  	BEQ	WRLEN		OK
+21C0  58                   198  	LSLB			SHIFT B
+21C1  49                   199  	ROLA			TIMES TWO
+21C2  17 03 15             200  WRLEN	LBSR	WRHEXW		WRITE IT
+21C5  17 00 35             201  	LBSR	ENDCR		NEW LINE
+21C8  30 23                202  VARNXT	LEAX	3,Y		POINT TO NEXT
+21CA  20 C4                203  	BRA	NODOR1
+21CC                       204  * VARIALES ARE CREATED
+21CC  CE 2D 4E             205  ENDVAR	LDU	#OUTFIL		PT TO OUTPUT
+21CF  3F                   206  	SWI			SOFTWARE INTERRUPT TO DOS
+21D0  39                   207  	FCB	57		SYSTEM REQUEST NUMBER
+21D1  FC 2A B3             208  	LDD	ERRCNT		ANY ERRORS?
+21D4  27 18                209  	BEQ	ENDOK		END WAS OK
+21D6  3F                   210  	SWI			SOFTWARE INTERRUPT TO DOS
+21D7  1A                   211  	FCB	26		SYSTEM REQUEST NUMBER
+21D8  3F                   212  	SWI			SOFTWARE INTERRUPT TO DOS
+21D9  19                   213  	FCB	25		SYSTEM REQUEST NUMBER
+21DA  20 65 72 72 6F 72 +  214  	FCCZ	' errors reported.'
+21EC  86 64                215  	LDA	#100
+21EE  16 FE 92             216  ENDOK	LBRA	ABORT
+21F1                       217  *
+21F1                       218  * STATEMENT HANDLERS
+21F1                       219  *
+21F1                       220  * SET CODE ADDRESS
+21F1  17 02 DC             221  CODE	LBSR	STROUT		SET STRING TO OUTPUT FILE
+21F4  09                   222  	FCB	$09		TAB
+21F5  4F 52 47             223  	FCC	'ORG'		ORIGIN
+21F8  09 00                224  	FCB	$09,0		TAB, END
+21FA  17 03 17             225  	LBSR	CPELEM		COPY NEXT ELEMENT
+21FD                       226  * END LINE WITH	CARRIAGE RETURN
+21FD  86 0D                227  ENDCR	LDA	#$0D		GET CARRIAGE RETURN
+21FF  16 02 F3             228  	LBRA	WROUT		END LINE
+2202                       229  * SET DATA ADDRESS
+2202  17 03 8B             230  DATA	LBSR	GETNUM		GET DATA VALUE
+2205  B7 2A AF             231  	STA	DATADR		SAVE DATA ADDRESS
+2208  39                   232  	RTS
+2209                       233  * VARIABLE DECLARATION
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 5
+
+2209  54                   234  VARIAB	LSRB			CONVERT BACK TO NORMAL VALUE
+220A  F7 2A C0             235  	STB	TEMP		SAVE TYPE
+220D  8E 2A 5D             236  	LDX	#DTAB		POINT TO DATA TABLE
+2210  3F                   237  	SWI			SOFTWARE INTERRUPT TO DOS
+2211  12                   238  	FCB	18		SYSTEM REQUEST NUMBER
+2212  5D                   239  	TSTB			IS IT CONSTANT?
+2213  26 49                240  	BNE	NORVAR		NO, NORMAL VARIABLE
+2215                       241  * SET A	CONSTANT VALUE
+2215  3F                   242  CONSTA	SWI			SOFTWARE INTERRUPT TO DOS
+2216  04                   243  	FCB	4		SYSTEM REQUEST NUMBER
+2217  34 20                244  	PSHS	Y		SAVE IT
+2219  17 03 D5             245  	LBSR	CRSYM		CREATE SYMBOL
+221C  B6 2A C0             246  	LDA	TEMP		GET DATA TYPE
+221F  8A 80                247  	ORA	#$80		SET CONSTANT BIT
+2221  A7 84                248  	STA	,X		SET SYMBOL TYPE
+2223  35 20                249  	PULS	Y		RESTORE Y
+2225  17 03 98             250  	LBSR	CPVAR		COPY VARIABLE NAME
+2228  17 04 44             251  	LBSR	SKIP		GET NEXT
+222B  81 3D                252  	CMPA	#'='		EQUALS?
+222D  26 1A                253  	BNE	SYNTAX		INVALID CONSTANT
+222F  17 02 9E             254  	LBSR	STROUT		WRITE A STRING
+2232  09                   255  	FCB	$09		TAB
+2233  45 51 55             256  	FCC	'EQU'
+2236  09 00                257  	FCB	$09,0
+2238  17 02 D9             258  	LBSR	CPELEM		SAVE IT
+223B  8D C0                259  	BSR	ENDCR		WRITE CARRIAGE RETURN
+223D  17 04 2F             260  	LBSR	SKIP		GET NEXT
+2240  81 2C                261  	CMPA	#','		MORE DATA?
+2242  27 D1                262  	BEQ	CONSTA		IF SO, GO FOR MORE
+2244  81 0D                263  	CMPA	#$0D		END OF LINE?
+2246  26 01                264  	BNE	SYNTAX		INVALID
+2248  39                   265  	RTS
+2249                       266  *
+2249                       267  * SYNTAX ERROR
+2249                       268  *
+2249  17 03 00             269  SYNTAX	LBSR	ERROR		DISPLAY ERROR MESSAGE
+224C  49 6E 63 6F 72 72 +  270  	FCCZ	'Incorrect Syntax'
+225D  39                   271  	RTS
+225E                       272  * NORMAL VARIABLE DECLARATION
+225E  3F                   273  NORVAR	SWI			SOFTWARE INTERRUPT TO DOS
+225F  04                   274  	FCB	4		SYSTEM REQUEST NUMBER
+2260  17 03 8E             275  	LBSR	CRSYM		CREATE SYMBOL
+2263  B6 2A C0             276  	LDA	TEMP		GET DATA TYPE
+2266  A7 80                277  	STA	,X+		SAVE IT
+2268  17 04 04             278  	LBSR	SKIP		GET NEXT
+226B  81 28                279  	CMPA	#'('		ARRAY?
+226D  26 0F                280  	BNE	NOALL		DON'T ALLOCATE SPACE
+226F  17 03 1E             281  	LBSR	GETNUM		GET INPUT NUMBER
+2272  ED 84                282  	STD	,X		SET ARRAYYSIZE
+2274  17 03 F8             283  	LBSR	SKIP		GET NEXT
+2277  81 29                284  	CMPA	#')'		CLOSING VALUE?
+2279  26 CE                285  	BNE	SYNTAX		NO, ERROR
+227B  17 03 F1             286  	LBSR	SKIP		GET NEXT
+227E  81 2C                287  NOALL	CMPA	#','		DO ANOTHER?
+2280  27 DC                288  	BEQ	NORVAR		IF SO, GO IT AGAIN
+2282  81 0D                289  	CMPA	#$0D		END OF LINE?
+2284  26 C3                290  	BNE	SYNTAX		NO, INVALIE
+2286  39                   291  WRSRTS	RTS
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 6
+
+2287                       292  *
+2287                       293  * 'ASM' COMMAND
+2287                       294  *
+2287  8E 2A C4             295  ASM	LDX	#INPLIN		GET INPUT LINE
+228A  1F 12                296  	TFR	X,Y		COPY
+228C  17 04 50             297  ASM1	LBSR	RDINPF		GET DATA
+228F  26 F5                298  	BNE	WRSRTS		END
+2291  A7 80                299  	STA	,X+		SAVE IT
+2293  81 0D                300  	CMPA	#$0D		END OF LINE
+2295  26 F5                301  	BNE	ASM1		CONTINUE
+2297  8E 2A 12             302  	LDX	#ENDWRD		POINT TO 'END'
+229A  3F                   303  	SWI			SOFTWARE INTERRUPT TO DOS
+229B  12                   304  	FCB	18		SYSTEM REQUEST NUMBER
+229C  5D                   305  	TSTB			FOUND IT
+229D  27 E7                306  	BEQ	WRSRTS		IF SO, EXIT
+229F  8E 2A C4             307  	LDX	#INPLIN		POINT TO INPUT LINE
+22A2  A6 80                308  ASM2	LDA	,X+		GET IT
+22A4  17 02 4E             309  	LBSR	WROUT		OUTPUT
+22A7  81 0D                310  	CMPA	#$0D		END OF LINE?
+22A9  26 F7                311  	BNE	ASM2		NO, WAIT
+22AB  20 DA                312  	BRA	ASM		GET NEXT
+22AD                       313  * 'SUBROUTINE' STATEMENT
+22AD  86 82                314  SUBR	LDA	#$82		INDICATE SUBROUTINE
+22AF  16 01 A3             315  	LBRA	PUSHS		SAVE IT
+22B2                       316  * DO CONDITIONALS
+22B2  86 FF                317  DOCOND	LDA	#$FF
+22B4  B7 2A B7             318  	STA	BYTE
+22B7  17 04 DB             319  	LBSR	EXPR		CALCULATE EXPRESION
+22BA  B6 2A B7             320  	LDA	BYTE		GET VALUE
+22BD  34 02                321  	PSHS	A		SAVE IT
+22BF  17 02 0E             322  	LBSR	STROUT
+22C2  09                   323  	FCB	$09
+22C3  50 53 48 53          324  	FCC	'PSHS'
+22C7  09 00                325  	FCB	$09,0
+22C9  6D E4                326  	TST	,S		WAS IT BYTE
+22CB  27 06                327  	BEQ	PSYBY		PUSH BYTE
+22CD  17 02 00             328  	LBSR	STROUT
+22D0  41 2C 00             329  	FCCZ	'A,'		ADD A
+22D3  17 01 FA             330  PSYBY	LBSR	STROUT
+22D6  42 0D 00             331  	FCB	'B',$0D,0
+22D9                       332  * LOOK UP CONDITIONAL
+22D9  17 03 93             333  	LBSR	SKIP		ADVANCE
+22DC  81 2C                334  	CMPA	#','
+22DE  26 6E                335  	BNE	DOCSYN		BAD
+22E0  17 03 8C             336  	LBSR	SKIP
+22E3  E6 A0                337  	LDB	,Y+		GET SECOND PART
+22E5  8E 2A 65             338  	LDX	#CONTAB-2   POINT TO TABLE
+22E8  30 02                339  DOCON1	LEAX	2,X		ADVANCE
+22EA  6D 84                340  	TST	,X		END?
+22EC  27 60                341  	BEQ	DOCSYN		BAD SYNTAX
+22EE  10 A3 81             342  	CMPD	,X++		SAME?
+22F1  26 F5                343  	BNE	DOCON1		NO, KEEP LOOKING
+22F3  17 03 79             344  	LBSR	SKIP		ADVANCE
+22F6  81 2C                345  	CMPA	#','		IS IT COMMA?
+22F8  26 54                346  	BNE	DOCSYN		SYNTAX
+22FA  34 10                347  	PSHS	X		SAVE
+22FC  17 04 96             348  	LBSR	EXPR		EVALUATE NEXT EXPRESSION
+22FF  7D 2A B7             349  	TST	BYTE		IS IT BYTE
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 7
+
+2302  26 0E                350  	BNE	CWRDOK		WORD IS OK
+2304  6D 62                351  	TST	2,S		WAS LAST BYTE
+2306  27 0A                352  	BEQ	CWRDOK		NO PROB
+2308  17 01 C5             353  	LBSR	STROUT		OUTPUT
+230B  09                   354  	FCB	$09
+230C  43 4C 52 41          355  	FCC	'CLRA'
+2310  0D 00                356  	FCB	$0D,0		CLEAR ACCA
+2312  A6 62                357  CWRDOK	LDA	2,S
+2314  B7 2A B7             358  	STA	BYTE		SAVE BYTE INDICATOR
+2317  17 01 95             359  	LBSR	WRINS
+231A  43 4D 50 00          360  	FCCZ	'CMP'
+231E  17 01 AF             361  	LBSR	STROUT
+2321  09                   362  	FCB	$09
+2322  2C 53 2B 00          363  	FCCZ	',S+'
+2326  A6 62                364  	LDA	2,S		GET BYTE INDICATOR
+2328  27 05                365  	BEQ	CBYTOK		BYTE IS OK
+232A  86 2B                366  	LDA	#'+'
+232C  17 01 C6             367  	LBSR	WROUT		OUTPUT
+232F  86 0D                368  CBYTOK	LDA	#$0D
+2331  17 01 C1             369  	LBSR	WROUT
+2334  17 01 99             370  	LBSR	STROUT
+2337  09 4C 42 00          371  	FCB	$9,'L','B',0
+233B  35 10                372  	PULS	X
+233D  A6 80                373  	LDA	,X+
+233F  17 01 B3             374  	LBSR	WROUT
+2342  A6 84                375  	LDA	,X
+2344  17 01 AE             376  	LBSR	WROUT
+2347  35 02                377  	PULS	A		RESTORE STACK
+2349  86 09                378  	LDA	#9
+234B  16 01 A7             379  	LBRA	WROUT		OUTPUT
+234E  35 02                380  DOCSYN	PULS	A
+2350  17 01 F9             381  	LBSR	ERROR
+2353  49 6E 63 6F 72 72 +  382  	FCCZ	'Incorrect Syntax.'
+2365  39                   383  	RTS
+2366                       384  * WHILE STATEMENT
+2366  17 00 D9             385  WHILE	LBSR	GETLAB		GET A LABLE
+2369  17 00 E0             386  	LBSR	PUSHD		SAVE ON STACK
+236C  34 06                387  	PSHS	A,B		SAVE IT
+236E  17 00 D1             388  	LBSR	GETLAB		GET LABLE
+2371  17 00 D8             389  	LBSR	PUSHD		SAVE IT
+2374  17 01 91             390  	LBSR	WRLAB		OUTPUT LABLE
+2377  86 81                391  	LDA	#$81		INDICATE WHILE
+2379  17 00 D9             392  	LBSR	PUSHS		SAVE IT
+237C  17 FF 33             393  	LBSR	DOCOND		EVALUATE CONDITIONALS
+237F  35 06                394  	PULS	A,B		RESTORE LABLE
+2381  16 01 7E             395  	LBRA	WRLCR		OUTPUT
+2384                       396  * IF STATEMENT
+2384  17 00 BB             397  CIF	LBSR	GETLAB		GET NEXT LABLE
+2387  17 00 C2             398  	LBSR	PUSHD		SAVE
+238A  34 06                399  	PSHS	A,B		SAVE
+238C  86 80                400  	LDA	#$80		INDICATE 'IF'
+238E  17 00 C4             401  	LBSR	PUSHS		SAVE
+2391  17 FF 1E             402  	LBSR	DOCOND		DO CONDITIONALS
+2394  35 06                403  	PULS	A,B		RESTORE
+2396  16 01 69             404  	LBRA	WRLCR		OUTPUT
+2399                       405  * END STATEMENT
+2399  17 00 C2             406  CEND	LBSR	POPS		GET DATA
+239C  80 80                407  	SUBA	#$80		IS IT 'IF'?
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 8
+
+239E  27 13                408  	BEQ	WREQP		NO
+23A0                       409  * END CORRESPONDS TO A 'WHILE' OR 'UNTIL' STATEMENT
+23A0  4A                   410  CEND1	DECA			IS IT WHILE/UNTIL ?
+23A1  26 22                411  	BNE	CEND2		NO, TRY NEXT
+23A3  17 01 2A             412  	LBSR	STROUT		OUTPUT
+23A6  09                   413  	FCB	$09
+23A7  4C 42 52 41          414  	FCC	'LBRA'
+23AB  09 00                415  	FCB	$09,0
+23AD  17 00 B7             416  	LBSR	POPD		GET LABLE
+23B0  17 01 4F             417  	LBSR	WRLCR		OUTPUT
+23B3                       418  * END CORRESPONDS TO AN 'IF' STATEMENT
+23B3  17 00 B1             419  WREQP	LBSR	POPD		GET LABLE
+23B6  17 01 4F             420  WREQU	LBSR	WRLAB		OUTPUT
+23B9  17 01 14             421  	LBSR	STROUT
+23BC  09                   422  	FCB	$09
+23BD  45 51 55             423  	FCC	'EQU'
+23C0  09 2A 0D 00          424  	FCB	$09,'*',$0D,0
+23C4  39                   425  	RTS
+23C5                       426  * END CORRESPONDS TO A 'SUBROUTINE' STATEMENT
+23C5  4A                   427  CEND2	DECA			IS THIS IT?
+23C6  26 0A                428  	BNE	CENDB		NO
+23C8  17 01 05             429  	LBSR	STROUT		OUTPUT STRING
+23CB  09                   430  	FCB	9
+23CC  52 54 53             431  	FCC	'RTS'
+23CF  0D 00                432  	FCB	$0D,0		END
+23D1  39                   433  	RTS
+23D2  17 01 77             434  CENDB	LBSR	ERROR
+23D5  49 6D 70 72 6F 70 +  435  	FCCZ	'Improper nesting.'
+23E7  39                   436  	RTS
+23E8                       437  * ELSE STATEMENT
+23E8  BE 2A B5             438  ELSE	LDX	CTLSTK
+23EB  A6 84                439  	LDA	,X
+23ED  81 80                440  	CMPA	#$80
+23EF  26 E1                441  	BNE	CENDB
+23F1  17 00 DC             442  	LBSR	STROUT
+23F4  09                   443  	FCB	$9
+23F5  4C 42 52 41          444  	FCC	'LBRA'
+23F9  09 00                445  	FCB	$9,0
+23FB  EC 01                446  	LDD	1,X
+23FD  34 06                447  	PSHS	A,B
+23FF  17 00 40             448  	LBSR	GETLAB		GET A NEW LABLE
+2402  ED 01                449  	STD	1,X
+2404  17 00 FB             450  	LBSR	WRLCR		OUTPUT EQUATE INSTRUCTION
+2407  35 06                451  	PULS	A,B
+2409  20 AB                452  	BRA	WREQU		GENERATE EQUATE
+240B                       453  * GOTO STATEMENT
+240B  17 00 C2             454  GOTO	LBSR	STROUT
+240E  09                   455  	FCB	9
+240F  4C 42 52 41          456  	FCC	'LBRA'
+2413  09 00                457  	FCB	9,0
+2415  17 01 A8             458  GOTO1	LBSR	CPVAR
+2418  16 FD E2             459  	LBRA	ENDCR		OUTPUT
+241B                       460  * CALL COMMAND
+241B  17 00 B2             461  CALL	LBSR	STROUT		OUTPUT STRING
+241E  09                   462  	FCB	9
+241F  4C 42 53 52          463  	FCC	'LBSR'
+2423  09 00                464  	FCB	9,0
+2425  20 EE                465  	BRA	GOTO1
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 9
+
+2427                       466  * EXIT COMMAND
+2427  7F 2A B7             467  EXIT	CLR	BYTE		INDICATE BYTE OPERATIONS
+242A  17 03 68             468  	LBSR	EXPR		GET RETURN CODE
+242D  17 00 A0             469  	LBSR	STROUT		OUTPUT
+2430  09                   470  	FCB	$09
+2431  54 46 52             471  	FCC	'TFR'
+2434  09                   472  	FCB	$09
+2435  42 2C 41             473  	FCC	'B,A'
+2438  0D 09                474  	FCB	$0D,9
+243A  53 53 52             475  	FCC	'SSR'
+243D  09 30 0D 00          476  	FCB	9,'0',$0D,0
+2441  39                   477  	RTS
+2442                       478  * SUBROUTINES
+2442                       479  *
+2442                       480  * GET LABLE VALUE
+2442  FC 2A B1             481  GETLAB	LDD	NXTLAB
+2445  C3 00 01             482  	ADDD	#1
+2448  FD 2A B1             483  	STD	NXTLAB
+244B  39                   484  	RTS
+244C                       485  * PUSH A DOUBLE BYTE ON CTRL STACK
+244C  34 10                486  PUSHD	PSHS	X
+244E  BE 2A B5             487  	LDX	CTLSTK
+2451  ED 83                488  	STD	,--X
+2453  20 19                489  	BRA	SAVUSP
+2455  34 10                490  PUSHS	PSHS	X
+2457  BE 2A B5             491  	LDX	CTLSTK
+245A  A7 82                492  	STA	,-X
+245C  20 10                493  	BRA	SAVUSP
+245E  34 10                494  POPS	PSHS	X
+2460  BE 2A B5             495  	LDX	CTLSTK
+2463  A6 80                496  	LDA	,X+
+2465  20 07                497  	BRA	SAVUSP
+2467  34 10                498  POPD	PSHS	X
+2469  BE 2A B5             499  	LDX	CTLSTK
+246C  EC 81                500  	LDD	,X++
+246E  BF 2A B5             501  SAVUSP	STX	CTLSTK
+2471  35 90                502  	PULS	X,PC
+2473                       503  *
+2473                       504  * WRITE OPERAND TO INSTRUCTION
+2473  17 00 88             505  WROPR	LBSR	WRTAB		OUTPUT TAB
+2476  A6 C0                506  WRONT	LDA	,U+		GET OPERAND TYPE
+2478  81 01                507  	CMPA	#1		CONSTANT?
+247A  26 16                508  	BNE	NCNST		NOT A CONSTANT
+247C  86 23                509  	LDA	#'#'		INDICATE IMMEDIATE MODE
+247E  17 00 74             510  	LBSR	WROUT		OUTPUT
+2481  10 AE C1             511  	LDY	,U++		GET POINTER BACK
+2484  A6 A4                512  	LDA	,Y		GET FIRST CHAR
+2486  81 23                513  	CMPA	#'#'		ONE OF THESE?
+2488  26 02                514  	BNE	NCNT1
+248A  31 21                515  	LEAY	1,Y
+248C  17 01 23             516  NCNT1	LBSR	CPALL		COPY INTO OUTPUT SOURCE
+248F  16 FD 6B             517  WROK	LBRA	ENDCR		WRITE IT OUT
+2492  10 AE C1             518  NCNST	LDY	,U++		GET POINTER
+2495  17 01 1A             519  	LBSR	CPALL		COPY IT ALL
+2498  7D 2A B7             520  	TST	BYTE		BYTE OPERATION?
+249B  26 F2                521  	BNE	WROK		NO, IT'S OK
+249D  10 AE 5E             522  	LDY	-2,U		GET POINTER BACK
+24A0  17 01 7E             523  	LBSR	LOOKUP		LOOK FOR IT
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 10
+
+24A3  85 02                524  	BITA	#2		WORD?
+24A5  27 E8                525  	BEQ	WROK		IT'S A BYTE VARIABLE
+24A7  17 00 26             526  	LBSR	STROUT		OUTPUT
+24AA  2B 31 00             527  	FCCZ	'+1'		OK
+24AD  20 E0                528  	BRA	WROK		CONTINUE
+24AF                       529  * WRITE OUT INSTRUCTION
+24AF  34 13                530  WRINS	PSHS	A,CC,X		SAVE REGS
+24B1  8D 4B                531  	BSR	WRTAB		WRITE TAB
+24B3  AE 64                532  	LDX	4,S		GET PC
+24B5  8D 0F                533  	BSR	WRSTX		WRITE STRING(X)
+24B7  AF 64                534  	STX	4,S		RESAVE PC
+24B9  86 42                535  	LDA	#'B'		GET LOW BYTE
+24BB  7D 2A B7             536  	TST	BYTE		IS IT A BYTE OPERATION
+24BE  27 02                537  	BEQ	WRLST		NO, GO FOR IT
+24C0  86 44                538  	LDA	#'D'		CHANGE TO D
+24C2  8D 31                539  WRLST	BSR	WROUT		OUTPUT
+24C4  35 93                540  	PULS	A,CC,X,PC
+24C6                       541  * WRITE STRING(X). TO OUTPUT FILE
+24C6  A6 80                542  WRSTX	LDA	,X+		GET CHAR
+24C8  10 27 FD BA          543  	LBEQ	WRSRTS		DONE
+24CC  8D 27                544  	BSR	WROUT		OUTPUT
+24CE  20 F6                545  	BRA	WRSTX		CONTINUE
+24D0                       546  * WRITE	STRING TO OUTPUT FILE
+24D0  34 12                547  STROUT	PSHS	A,X		SAVE X
+24D2  AE 63                548  	LDX	3,S		GET PC
+24D4  8D F0                549  	BSR	WRSTX		OUTPUT STRING(X)
+24D6  AF 63                550  STR2	STX	3,S		RESAVE
+24D8  35 92                551  	PULS	A,X,PC		GO HOME
+24DA                       552  * WRITE	A HEX WORD
+24DA  4D                   553  WRHEXW	TSTA			ZERO HIGH BYTE?
+24DB  27 02                554  	BEQ	WRHEXZ		NO LEADING ZERO
+24DD  8D 02                555  	BSR	WRHEXB		WRITE A BYTE
+24DF  1F 98                556  WRHEXZ	TFR	B,A		COPY
+24E1                       557  * WRITE	A HEX BYTE
+24E1  34 02                558  WRHEXB	PSHS	A		SAVE IT
+24E3  44                   559  	LSRA			SHIFT
+24E4  44                   560  	LSRA			HIGH
+24E5  44                   561  	LSRA			NIBBLE
+24E6  44                   562  	LSRA			INTO LOW
+24E7  8D 02                563  	BSR	WRNIB		OUTPUT NIBBLE
+24E9  35 02                564  	PULS	A		RESTORE A
+24EB  84 0F                565  WRNIB	ANDA	#$0F		GET RID OF HIGH CRAP
+24ED  8B 30                566  	ADDA	#$30		CONVERT TO ASCII
+24EF  81 39                567  	CMPA	#$39		< '30-39
+24F1  23 02                568  	BLS	WROUT
+24F3  8B 07                569  	ADDA	#$07		CONVERT TO 'A'-'F'
+24F5                       570  * WRITE	CHARACTER TO OUTPUT FILE
+24F5  34 40                571  WROUT	PSHS	U		SAVE
+24F7  CE 2D 4E             572  	LDU	#OUTFIL		SET UP PTR
+24FA  3F                   573  	SWI			SOFTWARE INTERRUPT TO DOS
+24FB  3D                   574  	FCB	61		SYSTEM REQUEST NUMBER
+24FC  35 C0                575  	PULS	U,PC
+24FE  86 09                576  WRTAB	LDA	#9
+2500  20 F3                577  	BRA	WROUT		OUTPUT TAB
+2502  8D 04                578  WRLCR	BSR	WRLAB		OUTPUT LABLE
+2504  86 0D                579  	LDA	#$0D
+2506  20 ED                580  	BRA	WROUT		OUTPUT
+2508                       581  * WRITE LABLE VALUE
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 11
+
+2508  34 06                582  WRLAB	PSHS	A,B
+250A  86 5F                583  	LDA	#'_'		LEAD IN
+250C  8D E7                584  	BSR	WROUT		OUTPUT
+250E  A6 E4                585  	LDA	,S
+2510  8D C8                586  	BSR	WRHEXW		LABLE VALUE
+2512  35 86                587  	PULS	A,B,PC
+2514                       588  *
+2514                       589  * COPY THIS ELEMENT TO SOURCE
+2514                       590  *
+2514  3F                   591  CPELEM	SWI			SOFTWARE INTERRUPT TO DOS
+2515  04                   592  	FCB	4		SYSTEM REQUEST NUMBER
+2516  A6 A0                593  CPEL1	LDA	,Y+		GET CHAR FROM SOURCE
+2518  81 0D                594  	CMPA	#$0D		CR?
+251A  27 1A                595  	BEQ	CPE1		IF SO, QUIT
+251C  81 2C                596  	CMPA	#','		COMMA?
+251E  27 16                597  	BEQ	CPE1		IF SO, QUIT
+2520  8D D3                598  	BSR	WROUT		OUTPUT TO TO OUTPUT FILE
+2522  81 27                599  	CMPA	#$27		QUOTE?
+2524  26 F0                600  	BNE	CPEL1		NO, CONTINUE
+2526  A6 A0                601  CPE2	LDA	,Y+		GET NEXT
+2528  81 0D                602  	CMPA	#$0D		CR?
+252A  27 08                603  	BEQ	CPE3		INVALID STRING
+252C  8D C7                604  	BSR	WROUT		WRITE IT
+252E  81 27                605  	CMPA	#$27		CLOSING QUOTE?
+2530  26 F4                606  	BNE	CPE2		NO, KEEP COPYING
+2532  20 E2                607  	BRA	CPEL1		CONTINUE,
+2534  8D 03                608  CPE3	BSR	BADSTR		WRITE BAD STRING MESSAGE
+2536  31 3F                609  CPE1	LEAY	-1,Y		BACKUP TO DELIMITER
+2538  39                   610  	RTS
+2539                       611  *
+2539                       612  * STRING ON THIS LINE IS INVALID
+2539                       613  *
+2539  8D 11                614  BADSTR	BSR	ERROR		WRITE  ERROR MESSAGE
+253B  49 6D 70 72 6F 70 +  615  	FCCZ	'Improper string'
+254B  39                   616  	RTS
+254C                       617  *
+254C                       618  * WRITE	ERROR MESSAGE
+254C                       619  *
+254C  FC 2A B3             620  ERROR	LDD	ERRCNT
+254F  C3 00 01             621  	ADDD	#1
+2552  FD 2A B3             622  	STD	ERRCNT
+2555  3F                   623  	SWI			SOFTWARE INTERRUPT TO DOS
+2556  18                   624  	FCB	24		SYSTEM REQUEST NUMBER
+2557  4C 69 6E 65 3A 20 +  625  	FCCZ	'Line: '
+255E  FC 2A AD             626  	LDD	LINE
+2561  3F                   627  	SWI			SOFTWARE INTERRUPT TO DOS
+2562  1A                   628  	FCB	26		SYSTEM REQUEST NUMBER
+2563  3F                   629  	SWI			SOFTWARE INTERRUPT TO DOS
+2564  18                   630  	FCB	24		SYSTEM REQUEST NUMBER
+2565  20 3A 20 00          631  	FCCZ	' : '		WRITE POST MESSAGE
+2569  8E 2A C4             632  	LDX	#INPLIN		POINT TO TEXT
+256C  A6 80                633  ERR3	LDA	,X+		GET CHAR
+256E  81 0D                634  	CMPA	#$0D		END OF LINE?
+2570  27 04                635  	BEQ	ERR4		IF SO, QUIT/
+2572  3F                   636  	SWI			SOFTWARE INTERRUPT TO DOS
+2573  21                   637  	FCB	33		SYSTEM REQUEST NUMBER
+2574  20 F6                638  	BRA	ERR3		CONTINUE
+2576  3F                   639  ERR4	SWI			SOFTWARE INTERRUPT TO DOS
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 12
+
+2577  18                   640  	FCB	24		SYSTEM REQUEST NUMBER
+2578  20 3A 20 00          641  	FCCZ	' : '
+257C  34 10                642  	PSHS	X		SAVE X
+257E  AE 62                643  	LDX	2,S		GET OLD PC
+2580  3F                   644  	SWI			SOFTWARE INTERRUPT TO DOS
+2581  17                   645  	FCB	23		SYSTEM REQUEST NUMBER
+2582  AF 62                646  	STX	2,S		RESAVE
+2584  3F                   647  	SWI			SOFTWARE INTERRUPT TO DOS
+2585  16                   648  	FCB	22		SYSTEM REQUEST NUMBER
+2586  10 FE 2A B8          649  	LDS	SAVS
+258A  FE 2A BA             650  	LDU	SAVU
+258D  16 FB 59             651  	LBRA	RDINP
+2590                       652  *
+2590                       653  * GET A	NUMBER FROM THE	INPUT STREAM
+2590                       654  *
+2590  34 10                655  GETNUM	PSHS	X		SAVE X
+2592  3F                   656  	SWI			SOFTWARE INTERRUPT TO DOS
+2593  08                   657  	FCB	8		SYSTEM REQUEST NUMBER
+2594  27 18                658  	BEQ	NUMOK		NO BAD RETURN CODE
+2596  8D B4                659  	BSR	ERROR		DISPLAY MESSAGE,
+2598  49 6E 76 61 6C 69 +  660  	FCCZ	'Invalid numeric value'
+25AE  1F 10                661  NUMOK	TFR	X,D		COPY IT OVER
+25B0  35 90                662  	PULS	X,PC
+25B2                       663  *
+25B2                       664  * COPY VARIABLE/CONSTANT
+25B2                       665  *
+25B2  17 00 BA             666  CPALL	LBSR	SKIP		LOOK FOR DATA
+25B5  81 24                667  	CMPA	#'$'		OK?
+25B7  27 16                668  	BEQ	CPV1		IF SO, OK
+25B9  8D 20                669  	BSR	VALSYM		VALID
+25BB  27 12                670  	BEQ	CPV1		OK TO COPY
+25BD  16 FC 89             671  	LBRA	SYNTAX		INVALID
+25C0                       672  *
+25C0                       673  * COPY A VARIABLE NAME TO THE OUTPUT FILE
+25C0                       674  *
+25C0  17 00 AC             675  CPVAR	LBSR	SKIP		GET NEXT
+25C3  81 41                676  	CMPA	#'A'		VALID VARIABLE?
+25C5  10 25 FC 80          677  	LBLO	SYNTAX		NO, IT'S BAD
+25C9  81 5A                678  	CMPA	#'Z'		VALID?
+25CB  10 22 FC 7A          679  	LBHI	SYNTAX		NO, IT'S BAD
+25CF  17 FF 23             680  CPV1	LBSR	WROUT		WRITE IT
+25D2  A6 A0                681  	LDA	,Y+		GET NEXT
+25D4  8D 05                682  	BSR	VALSYM		VALID SYMBOL?
+25D6  27 F7                683  	BEQ	CPV1		YES, CONTINUE
+25D8  31 3F                684  CPV2	LEAY	-1,Y		BACKUP
+25DA  39                   685  	RTS
+25DB                       686  *
+25DB                       687  * DETERMINE IF CHAR IN A IS A VALID SYMBOL CHARACTER. (0-9, A-Z)
+25DB                       688  *
+25DB  81 30                689  VALSYM	CMPA	#'0'		< '0'?
+25DD  25 0F                690  	BLO	BADS		IF SO, IT'S BAD
+25DF  81 5A                691  	CMPA	#'Z'		> 'Z'?
+25E1  22 0B                692  	BHI	BADS		IF SO, IT'S BAD
+25E3  81 41                693  	CMPA	#'A'		> 'A'?
+25E5  24 04                694  	BHS	SYMOK		IT'S OK
+25E7  81 39                695  	CMPA	#'9'		> '9'
+25E9  22 03                696  	BHI	BADS		IT'S BAD
+25EB  1A 04                697  SYMOK	ORCC	#$04		SET Z
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 13
+
+25ED  39                   698  	RTS
+25EE  1C FB                699  BADS	ANDCC	#$FB		CLEAR Z
+25F0  39                   700  	RTS
+25F1                       701  *
+25F1                       702  * CREATE A SYMBOL
+25F1                       703  *
+25F1  BE 2A C2             704  CRSYM	LDX	SYMEND		POINT TO END OF SYMBOL TABLE
+25F4  17 00 78             705  	LBSR	SKIP		GET NEXT
+25F7  81 41                706  	CMPA	#'A'		<'A'
+25F9  10 25 FC 4C          707  	LBLO	SYNTAX		IT'S INVALID
+25FD  81 5A                708  	CMPA	#'Z'		>'Z'
+25FF  10 22 FC 46          709  	LBHI	SYNTAX		INVALID
+2603  A7 80                710  CRS1	STA	,X+		SAVE IN RAM
+2605  A6 A0                711  	LDA	,Y+		GET NEXT CHAR
+2607  8D D2                712  	BSR	VALSYM		VALID?
+2609  27 F8                713  	BEQ	CRS1		IT'S OK
+260B  A6 1F                714  	LDA	-1,X		GET LAST CHAR
+260D  8A 80                715  	ORA	#$80		SET HIGH BIT
+260F  A7 1F                716  	STA	-1,X		RESAVE
+2611  31 3F                717  	LEAY	-1,Y		BACKUP TO THIS CHAR
+2613  6F 80                718  	CLR	,X+		INDICATE NO BITS SET
+2615  6F 80                719  	CLR	,X+		INDICATE NO BITS SET
+2617  6F 80                720  	CLR	,X+		INDICATE NO BITS SET
+2619  BF 2A C2             721  	STX	SYMEND		RESAVE
+261C  6F 84                722  	CLR	,X		INDICATE END OF TABLE
+261E  30 1D                723  	LEAX	-3,X		BACKUP
+2620  39                   724  	RTS
+2621                       725  *
+2621                       726  * LOOKUP SYMBOL	POINTED	TO BY Y
+2621                       727  *
+2621  3F                   728  LOOKUP	SWI			SOFTWARE INTERRUPT TO DOS
+2622  04                   729  	FCB	4		SYSTEM REQUEST NUMBER
+2623  8E 2F 58             730  	LDX	#SYMTAB		LOOK AT SYMBOL TABLE
+2626  A6 84                731  LOK1	LDA	,X		GET CHAR FROM TABLE
+2628  27 1C                732  	BEQ	NOTFND		SYMBOL WAS NOT FOUND
+262A  34 20                733  	PSHS	Y		SAVE IT
+262C  A6 A0                734  LOK2	LDA	,Y+		GET CHAR FROM Y
+262E  8D AB                735  	BSR	VALSYM		IS IT VALID?
+2630  26 0A                736  	BNE	LOK3		END OF SYMBOL, DID NOT FIND
+2632  A1 80                737  	CMPA	,X+		DOES IT MATCH TABLE ENTRY?
+2634  27 F6                738  	BEQ	LOK2		YES, WE HAVE IT
+2636  8A 80                739  	ORA	#$80		SET HIGH BIT
+2638  A1 82                740  	CMPA	,-X		IS THIS IT?
+263A  27 0D                741  	BEQ	LOK4		THIS MIGHT BE IT
+263C                       742  * SYMBOL IN TABLE DID NOT MATCH
+263C  A6 80                743  LOK3	LDA	,X+		GET CHAR FROM TABLE
+263E  2A FC                744  	BPL	LOK3		FIND DELIMITER
+2640  30 03                745  	LEAX	3,X		SKIP TO NEXT
+2642  35 20                746  	PULS	Y		RESTORE Y POINTER
+2644  20 E0                747  	BRA	LOK1		AND KEEP LOOKING
+2646  1C FB                748  NOTFND	ANDCC	#$FB		CLEAR ZERO
+2648  39                   749  	RTS
+2649                       750  * THIS MIGHT BE	IT
+2649  A6 A4                751  LOK4	LDA	,Y		GET CHAR FROM SYMBOL
+264B  8D 8E                752  	BSR	VALSYM		IS IT A VALID SYMBOL?
+264D  27 ED                753  	BEQ	LOK3		WASN'T IT, TRY AGAIN
+264F  30 01                754  	LEAX	1,X		ADVANCE TO TABLE ENTRY
+2651  32 62                755  	LEAS	2,S		RESTORE STACK
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 14
+
+2653  A6 84                756  	LDA	,X		GET TYPE
+2655  1A 04                757  	ORCC	#$04		SET Z FLAG
+2657  39                   758  	RTS
+2658                       759  *
+2658                       760  * LOOK FOR SYMBOL, AND DISPLAY MESSAGE IF NOT FOUND
+2658                       761  *
+2658  8D C7                762  LOOKNF	BSR	LOOKUP		LOOK FOR IT
+265A  27 12                763  	BEQ	SYMF		IF WAS FOUND
+265C  17 FE ED             764  	LBSR	ERROR		DISPLAY ERROR
+265F  55 6E 6B 6E 6F 77 +  765  	FCCZ	'Unknown symbol'
+266E  39                   766  SYMF	RTS
+266F                       767  *
+266F                       768  * SKIP TO NEXT NON BLANK
+266F                       769  *
+266F  A6 A0                770  SKIP	LDA	,Y+		GET CHAR
+2671  81 20                771  	CMPA	#' '		BLANK?
+2673  27 FA                772  	BEQ	SKIP		CONTINUE
+2675  81 0D                773  	CMPA	#$0D		CR?
+2677  39                   774  	RTS
+2678                       775  *
+2678                       776  * DETERMINE TYPE OF TOKEN POINTED TO BY	Y
+2678                       777  *
+2678  A6 A4                778  TOKEN	LDA	,Y		GET CHAR
+267A  81 24                779  	CMPA	#'$'		NUMBER?
+267C  27 0C                780  	BEQ	TCON		IF SO, IT'S A CONSTANT
+267E  81 23                781  	CMPA	#'#'		ADDRESS?
+2680  27 08                782  	BEQ	TCON		IF SO, IT'S ALSO A CONSTANT
+2682  81 30                783  	CMPA	#'0'		> 0?
+2684  25 15                784  	BLO	TADDR		NOT A CONSTANT
+2686  81 39                785  	CMPA	#'9'		< '9'?
+2688  22 11                786  	BHI	TADDR		TRY ADDRESS
+268A                       787  * TEST FOR CONSTANT VALUE
+268A  31 21                788  TCON	LEAY	1,Y		ADVANCE
+268C  86 01                789  TCON1	LDA	#$01		CONSTANT VALUE
+268E  34 02                790  TNXT	PSHS	A		SAVE VALUE
+2690  A6 A0                791  TNXT1	LDA	,Y+		GET CHAR
+2692  17 FF 46             792  	LBSR	VALSYM		VALID SYMBOL?
+2695  27 F9                793  	BEQ	TNXT1		CONTINUE
+2697  31 3F                794  	LEAY	-1,Y		BACKUP TO IT
+2699  35 82                795  	PULS	A,PC		GO HOME
+269B                       796  * TEST FOR VARIABLE VALUE
+269B  17 FF 3D             797  TADDR	LBSR	VALSYM		VALID SYMBOL 'A-Z'?
+269E  26 14                798  	BNE	TOPR		NO, IT'S AN OPERATOR
+26A0  17 FF B5             799  	LBSR	LOOKNF		WHAT IS IT'S VALUE
+26A3  34 01                800  	PSHS	CC		IT'S A CONSTANT
+26A5  85 02                801  	BITA	#2		IS IT A WORD?
+26A7  26 03                802  	BNE	TOKVAR		IT'S A BYTE VARIABLE
+26A9  7F 2A B7             803  	CLR	BYTE		INDICATE WORD
+26AC  86 02                804  TOKVAR	LDA	#2		INDICATE VARIABLE
+26AE  35 01                805  	PULS	CC		RESTORE COND CODES
+26B0  2B DA                806  	BMI	TCON1		CONSTANT
+26B2  20 DA                807  	BRA	TNXT		GO AGAIN
+26B4                       808  * IT'S AN OPERATOR VALUE
+26B4  8E 29 BF             809  TOPR	LDX	#OPRTAB		POINT TO OPERATOR TABLE
+26B7  A6 84                810  TOP1	LDA	,X		GET BYTE FROM TABLE
+26B9  27 1D                811  	BEQ	NTOP		NOT AN OPERATOR
+26BB  34 20                812  	PSHS	Y		SAVE Y
+26BD  A6 A0                813  TOP2	LDA	,Y+		GET CHAR FROM TABLE
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 15
+
+26BF  A1 80                814  	CMPA	,X+		DOES IT MATCH?
+26C1  27 FA                815  	BEQ	TOP2		CONTINUE
+26C3  8A 80                816  	ORA	#$80		SET HIGH BIT
+26C5  A1 82                817  	CMPA	,-X		MATCH?
+26C7  27 0A                818  	BEQ	TOP3		WE FOUND IT
+26C9  A6 80                819  TOP4	LDA	,X+		GET VAL
+26CB  2A FC                820  	BPL	TOP4		CONTINUE
+26CD  30 01                821  	LEAX	1,X		ADVANCE TO NEXT
+26CF  35 20                822  	PULS	Y		RESTORE
+26D1  20 E4                823  	BRA	TOP1		CONTINUE
+26D3  32 62                824  TOP3	LEAS	2,S		SKIP SAVED Y
+26D5  A6 01                825  	LDA	1,X		GET TOKEN VALUE
+26D7  39                   826  	RTS
+26D8  17 FB 6E             827  NTOP	LBSR	SYNTAX		INDICATE ERROR
+26DB  32 62                828  	LEAS	2,S
+26DD  4F                   829  	CLRA
+26DE  39                   830  	RTS
+26DF                       831  *
+26DF                       832  * READ CHARACTER FROM INPUT FILE
+26DF                       833  *
+26DF  34 40                834  RDINPF	PSHS	U		SAVE REGS
+26E1  CE 2B 44             835  	LDU	#INPFIL		PT TO INPUT FILE
+26E4  3F                   836  	SWI			SOFTWARE INTERRUPT TO DOS
+26E5  3B                   837  	FCB	59		SYSTEM REQUEST NUMBER
+26E6  35 C0                838  	PULS	U,PC
+26E8                       839  *
+26E8                       840  * ASSIGNMENT STATEMENT
+26E8                       841  *
+26E8  34 20                842  ASSIGN	PSHS	Y		SAVE IT
+26EA  86 FF                843  	LDA	#$FF
+26EC  B7 2A B7             844  	STA	BYTE		SET WORD FLAG
+26EF  17 FF 2F             845  	LBSR	LOOKUP		DOES IT EXIST?
+26F2  26 09                846  	BNE	ASI1		NO, GO IT THE HARD WAY
+26F4  85 02                847  	BITA	#2		IS IT A BYTE?
+26F6  26 0E                848  	BNE	ASI2		NO, IT'S A WORD
+26F8  7F 2A B7             849  	CLR	BYTE		INDICATE BYTE OPERATION
+26FB  20 09                850  	BRA	ASI2
+26FD  A6 A0                851  ASI1	LDA	,Y+		GET CHAR
+26FF  17 FE D9             852  	LBSR	VALSYM		VALID AS A SYMBOL?
+2702  27 F9                853  	BEQ	ASI1		CONTINUE
+2704  31 3F                854  	LEAY	-1,Y		BACKUP TO IT
+2706  17 FF 66             855  ASI2	LBSR	SKIP		ADVANCE PAST ANY BLANKS
+2709  81 3D                856  	CMPA	#'='		DOES IT MATCH?
+270B  10 26 FB 3A          857  	LBNE	SYNTAX		NO, IT'S A SYNTAX ERROR
+270F  17 00 83             858  	LBSR	EXPR		GENERATE CODE
+2712  10 AE E4             859  	LDY	,S		POINT AT LABLE
+2715  17 FF 09             860  	LBSR	LOOKUP		DOES IT EXIST?
+2718  27 21                861  	BEQ	SYEXI		SYMBOL EXISTS
+271A  17 FE D4             862  	LBSR	CRSYM		CREATE IT
+271D  86 01                863  	LDA	#1		SET TYPE TO BYTE
+271F  7D 2A B7             864  	TST	BYTE		BYTE OPERATION?
+2722  27 02                865  	BEQ	TYOK		TYPE IS OK
+2724  86 02                866  	LDA	#2		CHANGE TO VARIABLE
+2726  A7 84                867  TYOK	STA	,X		SET TYPE
+2728  17 FD 84             868  SAVSYM	LBSR	WRINS		OUTPUT INSTRUCTION
+272B  53 54 00             869  	FCCZ	'ST'		OUTPUT
+272E  86 09                870  	LDA	#9		GET TAB
+2730  17 FD C2             871  	LBSR	WROUT		OUTPUT
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 16
+
+2733  35 20                872  	PULS	Y		RESTORE VARIABLE POINTER
+2735  17 FE 88             873  	LBSR	CPVAR		COPY IN VARIABLE NAME
+2738  16 FA C2             874  	LBRA	ENDCR		END
+273B  A6 84                875  SYEXI	LDA	,X		GET TYPE
+273D  85 02                876  	BITA	#2		WORD?
+273F  27 14                877  	BEQ	ASSBYT		IT'S A BYTE
+2741  7D 2A B7             878  	TST	BYTE		BYTE RESULT?
+2744  26 E2                879  	BNE	SAVSYM		TYPE IS OK
+2746  17 FD 87             880  	LBSR	STROUT		OUTPUT STRING
+2749  09                   881  	FCB	9
+274A  43 4C 52 41          882  	FCC	'CLRA'
+274E  0D 00                883  	FCB	$0D,0
+2750  7A 2A B7             884  	DEC	BYTE		CONVERT TO WORD STORE
+2753  20 D3                885  	BRA	SAVSYM		OUTPUT
+2755  7F 2A B7             886  ASSBYT	CLR	BYTE		INSURE BYTE STORE
+2758  20 CE                887  	BRA	SAVSYM		GO FOR IT
+275A                       888  *
+275A                       889  * PARSE	INFIX OPERANDS INTO REVERSE RPN	STACK
+275A                       890  *
+275A  31 21                891  NEST	LEAY	1,Y		SKIP
+275C  17 FF 10             892  DOPARS	LBSR	SKIP		ADVANCE TO NEXT TOKEN
+275F  27 2A                893  	BEQ	TOK		END OF LINE, QUIT
+2761  81 29                894  	CMPA	#')'		END OF SECTION?
+2763  27 26                895  	BEQ	TOK		IF SO, QUIT
+2765  81 2C                896  	CMPA	#','		CLOSING COMMA?
+2767  27 22                897  	BEQ	TOK		IF SO, QUIT
+2769  31 3F                898  	LEAY	-1,Y		BACKUP TO IT
+276B  8D 02                899  	BSR	GETOK		EVALUATE THIS TOKEN
+276D  20 ED                900  	BRA	DOPARS		DO IT AGAIN FOR NEXT
+276F                       901  * GET NEXT TOKEN SET
+276F  3F                   902  GETOK	SWI			SOFTWARE INTERRUPT TO DOS
+2770  04                   903  	FCB	4		SYSTEM REQUEST NUMBER
+2771  27 18                904  	BEQ	TOK		END OF LINE, QUIT
+2773  81 28                905  	CMPA	#'('		STARTING BRACE?
+2775  27 E3                906  	BEQ	NEST		IF SO, NEST IT
+2777  10 BF 2A C0          907  	STY	TEMP		SAVE POINTER TO TOKEN
+277B  17 FE FA             908  	LBSR	TOKEN		DETERMINE IT'S CLASS
+277E  81 02                909  	CMPA	#2		IS IT A CONSTANT OR VARIABLE?
+2780  23 0A                910  	BLS	TOK1		IF SO, IT'S OK
+2782  34 02                911  	PSHS	A		SAVE CLASS
+2784  17 FF E8             912  	LBSR	GETOK		GET NEXT TOKEN
+2787  35 02                913  TOK2	PULS	A		RESTORE CLASS
+2789  36 02                914  	PSHU	A		SAVE ON RPN STACK
+278B  39                   915  TOK	RTS
+278C                       916  * VARIABLE OR CONSTANT
+278C  34 02                917  TOK1	PSHS	A		SAVE CLASS
+278E  FC 2A C0             918  	LDD	TEMP		GET POINTER TO TOKEN
+2791  36 06                919  	PSHU	A,B		SAVE
+2793  20 F2                920  	BRA	TOK2		SAVE CLASS
+2795                       921  *
+2795                       922  * PARSE	LINE, AND GENERATE CODE FOR AN EXPRESSION
+2795                       923  *
+2795  FF 2A BC             924  EXPR	STU	SAVUS		SAVE USP FOR DETERMINATION OF TOP
+2798  8D C2                925  	BSR	DOPARS		PARSE LINE INTO RPN STACK
+279A                       926  * GENERATE CODE	FROM REVERSE RPN STACK
+279A  1F 31                927  	TFR	U,X		POINT TO STACK SPACE
+279C  BF 2A BE             928  	STX	USRSTK		POINT TO IT
+279F  8D 04                929  	BSR	GENCOD		PERFORM CODE GENERATION
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 17
+
+27A1  FE 2A BC             930  	LDU	SAVUS		RESTORE U
+27A4  39                   931  	RTS
+27A5                       932  * GENERATE CODE	FOR EXPRESSION
+27A5  34 16                933  GENCOD	PSHS	A,B,X		SAVE REGISTERS
+27A7  11 B3 2A BC          934  	CMPU	SAVUS		ARE WE AT END?
+27AB  24 33                935  	BHS	PAR4		IF SO, QUIT
+27AD  A6 C0                936  	LDA	,U+		GET OPERATOR
+27AF  1F 89                937  	TFR	A,B		COPY TO B
+27B1  81 07                938  	CMPA	#SNGL		SINGLE OPERATOR?
+27B3  22 46                939  	BHI	DUBOP		IF SO, WE HAVE IT
+27B5  81 02                940  	CMPA	#2		IS IT A CONSTANT OF VARIABLE?
+27B7  22 0D                941  	BHI	SNGOP		SINGLE OPERATOR
+27B9  A7 C2                942  	STA	,-U		RESTACK
+27BB  17 FC F1             943  	LBSR	WRINS		WRITE INSTRUCTION
+27BE  4C 44 00             944  	FCCZ	'LD'
+27C1  17 FC AF             945  	LBSR	WROPR		OUTPUT OPERAND
+27C4  35 96                946  	PULS	A,B,X,PC
+27C6                       947  * SINGLE OPERAND INSTRUCTION
+27C6  A6 C4                948  SNGOP	LDA	,U		GET OPERAND
+27C8  81 02                949  	CMPA	#2		CONSTANT?
+27CA  23 05                950  	BLS	SNG2		IF SO, IT'S OK
+27CC  17 FF D6             951  	LBSR	GENCOD		GENERATE CODE FOR IT
+27CF  20 09                952  	BRA	SNG1		AND FINISH
+27D1  17 FC DB             953  SNG2	LBSR	WRINS		OUTPUT STRING
+27D4  4C 44 00             954  	FCCZ	'LD'		OUTPUT A LOAD INSTRUCTION
+27D7  17 FC 99             955  	LBSR	WROPR		AND INCLUDE OPERAND
+27DA  8E 29 D8             956  SNG1	LDX	#GENTAB		POINT TO TABLE
+27DD  58                   957  	ASLB			SHIFT IT
+27DE  AD 95                958  	JSR	[B,X]		PERFORM IT
+27E0                       959  * TERMINATE
+27E0  35 96                960  PAR4	PULS	A,B,X,PC	RESTORE REGISTERS
+27E2                       961  * STACKS ENTIRE OPERAND STRING ON VIRTUAL (X) STACK
+27E2  A6 C0                962  STKOP	LDA	,U+		GET OPERAND FROM USER STACK
+27E4  A7 82                963  	STA	,-X		SAVE ON X STACK
+27E6  81 02                964  	CMPA	#2		CONSTANT OR VARIABLE?
+27E8  23 08                965  	BLS	STKO1		IF SO, IT'T OK
+27EA  81 07                966  	CMPA	#SNGL		IS IT A SINGLE OPERTOR?
+27EC  23 02                967  	BLS	STKO2		YES, ONLY ONE OPERATOR TO STAC
+27EE  8D F2                968  	BSR	STKOP		STACK ANOTHER OPERATOR
+27F0  20 F0                969  STKO2	BRA	STKOP		STACK ANOTHER
+27F2  A6 C0                970  STKO1	LDA	,U+		GET ADDRESS
+27F4  A7 82                971  	STA	,-X		STACK
+27F6  A6 C0                972  	LDA	,U+		GET LOW ADDRESS
+27F8  A7 82                973  	STA	,-X		STACK
+27FA  39                   974  	RTS
+27FB                       975  * DOUBLE OPERATOR INSTRUCTIONS
+27FB  BE 2A BE             976  DUBOP	LDX	USRSTK		POINT TO VIRTUAL STACK
+27FE  34 10                977  	PSHS	X		SAVE IT
+2800  8D E0                978  	BSR	STKOP		STACK OPERAND
+2802  BF 2A BE             979  	STX	USRSTK		SAVE IT
+2805  A6 C4                980  	LDA	,U		GET OPERAND
+2807  81 02                981  	CMPA	#2		CONSTANT OF VARIABLE?
+2809  23 05                982  	BLS	DUB1		YES, IT'S OK
+280B  17 FF 97             983  	LBSR	GENCOD		GENERATE CODE
+280E  20 09                984  	BRA	DUB2		AND CONTINUE
+2810  17 FC 9C             985  DUB1	LBSR	WRINS		OUTPUT INSTRUCTION
+2813  4C 44 00             986  	FCCZ	'LD'		DO AN 'LD' INSTRUCTION
+2816  17 FC 5A             987  	LBSR	WROPR		OUTPUT OPERAND
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 18
+
+2819  BE 2A BE             988  DUB2	LDX	USRSTK		POINT TO FAKE STACK
+281C  AC E4                989  DUB3	CMPX	,S		ARE WE IN RANGE?
+281E  24 06                990  	BHS	DUB4		OK
+2820  A6 80                991  	LDA	,X+		GET BYTE FROM FAKE STACK
+2822  A7 C2                992  	STA	,-U		SAVE ON USER STACK
+2824  20 F6                993  	BRA	DUB3		CONTINUE
+2826  35 10                994  DUB4	PULS	X		SAVE IT
+2828  BF 2A BE             995  	STX	USRSTK		RESAVE
+282B                       996  * LOOK FOR SIMPLE SECOND OPERATOR
+282B  A6 C4                997  	LDA	,U		GET BYTE FROM OPERAND
+282D  81 02                998  	CMPA	#2		SIMPLE CONSTANT OF VARIABLE?
+282F  23 19                999  	BLS	DUB5		YES, IT'S QUITE SIMPLE
+2831  17 FC 7B            1000  	LBSR	WRINS		OUTPUT INSTRUCTION
+2834  50 53 48 53         1001  	FCC	'PSHS'		PUSH INST
+2838  09 00               1002  	FCB	9,0		TAB AND END
+283A  17 F9 C0            1003  	LBSR	ENDCR		CLOSE IT
+283D  17 FF 65            1004  	LBSR	GENCOD		GENERATE CODE FOR SECOND ARG
+2840  8E 29 D8            1005  	LDX	#GENTAB		POINT TO TABLE
+2843  58                  1006  	ASLB			SHIFT
+2844  1A 01               1007  	ORCC	#$01		SET CARRY, INDICATE STACK OPERATION
+2846  AD 95               1008  	JSR	[B,X]		DO IT
+2848  35 96               1009  	PULS	A,B,X,PC	GO HOME
+284A  8E 29 D8            1010  DUB5	LDX	#GENTAB		POINT TO IT
+284D  58                  1011  	ASLB			TIMES TWO
+284E  AD 95               1012  	JSR	[B,X]		DO IT
+2850  35 96               1013  	PULS	A,B,X,PC	GO HOME
+2852                      1014  * SHIFT RIGHT
+2852  7D 2A B7            1015  CSHR	TST	BYTE
+2855  27 12               1016  	BEQ	BSHR
+2857  17 FC 76            1017  	LBSR	STROUT
+285A  09                  1018  	FCB	9
+285B  4C 53 52 41         1019  	FCC	'LSRA'
+285F  0D 09               1020  	FCB	$0D,9
+2861  52 4F 52 42         1021  	FCC	'RORB'
+2865  0D 00               1022  	FCB	$0D,0
+2867  20 0A               1023  	BRA	ESHR
+2869  17 FC 64            1024  BSHR	LBSR	STROUT
+286C  09                  1025  	FCB	9
+286D  4C 53 52 42         1026  	FCC	'LSRB'
+2871  0D 00               1027  	FCB	$0D,0
+2873  39                  1028  ESHR	RTS
+2874                      1029  * SHIFT LEFT
+2874  7D 2A B7            1030  CSHL	TST	BYTE
+2877  27 12               1031  	BEQ	BSHL
+2879  17 FC 54            1032  	LBSR	STROUT
+287C  09                  1033  	FCB	$09
+287D  4C 53 4C 42         1034  	FCC	'LSLB'
+2881  0D 09               1035  	FCB	$0D,$09
+2883  52 4F 4C 41         1036  	FCC	'ROLA'
+2887  0D 00               1037  	FCB	$0D,0
+2889  20 0A               1038  	BRA	ESHL
+288B  17 FC 42            1039  BSHL	LBSR	STROUT
+288E  09                  1040  	FCB	$09
+288F  4C 53 4C 42         1041  	FCC	'LSLB'
+2893  0D 00               1042  	FCB	$0D,0
+2895  39                  1043  ESHL	RTS
+2896                      1044  * COMPLEMENT
+2896  7D 2A B7            1045  CCOM	TST	BYTE
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 19
+
+2899  27 12               1046  	BEQ	BCOM
+289B  17 FC 32            1047  	LBSR	STROUT
+289E  09                  1048  	FCB	$09
+289F  43 4F 4D 41         1049  	FCC	'COMA'
+28A3  0D 09               1050  	FCB	$0D,$09
+28A5  43 4F 4D 42         1051  	FCC	'COMB'
+28A9  0D 00               1052  	FCB	$0D,0
+28AB  20 0A               1053  	BRA	ECOM
+28AD  17 FC 20            1054  BCOM	LBSR	STROUT
+28B0  09                  1055  	FCB	$09
+28B1  43 4F 4D 42         1056  	FCC	'COMB'
+28B5  0D 00               1057  	FCB	$0D,0
+28B7  39                  1058  ECOM	RTS
+28B8                      1059  * INCREMENT
+28B8  7D 2A B7            1060  CINC	TST	BYTE
+28BB  27 0F               1061  	BEQ	BINC
+28BD  17 FC 10            1062  	LBSR	STROUT
+28C0  09                  1063  	FCB	$09
+28C1  41 44 44 44         1064  	FCC	'ADDD'
+28C5  09                  1065  	FCB	$09
+28C6  23 31               1066  	FCC	'#1'
+28C8  0D 00               1067  	FCB	$0D,0
+28CA  20 0A               1068  	BRA	EINC
+28CC  17 FC 01            1069  BINC	LBSR	STROUT
+28CF  09                  1070  	FCB	$09
+28D0  49 4E 43 42         1071  	FCC	'INCB'
+28D4  0D 00               1072  	FCB	$0D,0
+28D6  39                  1073  EINC	RTS
+28D7                      1074  * DECREMENT
+28D7  7D 2A B7            1075  CDEC	TST	BYTE
+28DA  27 0F               1076  	BEQ	BDEC
+28DC  17 FB F1            1077  	LBSR	STROUT
+28DF  09                  1078  	FCB	$09
+28E0  53 55 42 44         1079  	FCC	'SUBD'
+28E4  09                  1080  	FCB	$09
+28E5  23 31               1081  	FCC	'#1'
+28E7  0D 00               1082  	FCB	$0D,0
+28E9  20 0A               1083  	BRA	EDEC
+28EB  17 FB E2            1084  BDEC	LBSR	STROUT
+28EE  09                  1085  	FCB	$09
+28EF  44 45 43 42         1086  	FCC	'DECB'
+28F3  0D 00               1087  	FCB	$0D,0
+28F5  39                  1088  EDEC	RTS
+28F6                      1089  *
+28F6                      1090  * DOUBLE OPERAND INSTRUCTIONS
+28F6                      1091  *
+28F6                      1092  * SUBTRACTION
+28F6  17 FB B6            1093  CSUB	LBSR	WRINS		OUTPUT INST
+28F9  53 55 42 00         1094  	FCCZ	'SUB'		SUBTRACT
+28FD  10 24 FB 72         1095  	LBCC	WROPR		IF NOTHING, IT'S OK
+2901  8D 11               1096  	BSR	DSSTK1		PERFORM SUBTRACTION
+2903  17 FF 90            1097  	LBSR	CCOM		COMPLEMENT IT
+2906  16 FF AF            1098  	LBRA	CINC		INCREMENT IT
+2909                      1099  * ADDITION
+2909  17 FB A3            1100  CADD	LBSR	WRINS		OUTPUT INSTRUCTION
+290C  41 44 44 00         1101  	FCCZ	'ADD'		ADD
+2910  10 24 FB 5F         1102  DCIF1	LBCC	WROPR		IF NO STACK, DO IT RIGHT
+2914  17 FB B9            1103  DSSTK1	LBSR	STROUT		OUTPUT STRING
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 20
+
+2917  09                  1104  	FCB	$09		TAB
+2918  2C 53 2B 00         1105  	FCCZ	',S+'		ONE OPERATION
+291C  7D 2A B7            1106  	TST	BYTE		BYTE OPERATIONS
+291F  27 05               1107  	BEQ	ENDX		OK
+2921  86 2B               1108  	LDA	#'+'		EXTRA PLUS
+2923  17 FB CF            1109  	LBSR	WROUT		OUTPUT
+2926  16 F8 D4            1110  ENDX	LBRA	ENDCR
+2929                      1111  * LOGICAL OR
+2929  8D 12               1112  COR	BSR	WRACO		WRITE ACCUMULATOR OPERATION
+292B  4F 52 00            1113  	FCCZ	'OR'		DO AN OR
+292E  39                  1114  	RTS
+292F                      1115  * LOGICAL AND
+292F  8D 0C               1116  CAND	BSR	WRACO
+2931  41 4E 44 00         1117  	FCCZ	'AND'
+2935  39                  1118  	RTS
+2936                      1119  * EXCLUSIVE OR
+2936  8D 05               1120  CXOR	BSR	WRACO
+2938  45 4F 52 00         1121  	FCCZ	'EOR'
+293C  39                  1122  	RTS
+293D                      1123  *
+293D                      1124  * WRITE AN ACCUMUALTOR OPERATION
+293D                      1125  *
+293D  25 54               1126  WRACO	BCS	WRASTK		ON STACK
+293F  7D 2A B7            1127  	TST	BYTE		BYTE OPERATION?
+2942  27 21               1128  	BEQ	WRABYT		YES
+2944  17 FB B7            1129  	LBSR	WRTAB		OUTPUT TAB
+2947  AE E4               1130  	LDX	,S		GET PC
+2949  17 FB 7A            1131  	LBSR	WRSTX		OUTPUT INSTRUCTION
+294C  17 FB 81            1132  	LBSR	STROUT		OUTPUT STRING
+294F  41 09 00            1133  	FCB	'A',9,0		OUTPUT STRING
+2952  34 40               1134  	PSHS	U		SAVE U
+2954  A6 C0               1135  	LDA	,U+		GET OPERAND TYPE
+2956  81 01               1136  	CMPA	#1		CONSTANT?
+2958  26 06               1137  	BNE	WRANV		NOT A CONSTANT
+295A  17 FB 73            1138  	LBSR	STROUT
+295D  23 3D 00            1139  	FCB	'#','=',0
+2960  17 FB 2F            1140  WRANV	LBSR	NCNST		TOP BYTE IS OK
+2963  35 40               1141  	PULS	U		RESTORE
+2965  17 FB 96            1142  WRABYT	LBSR	WRTAB		OUTPUT TAB
+2968  AE E4               1143  	LDX	,S		GET POINTER
+296A  17 FB 59            1144  	LBSR	WRSTX		CONTINUE
+296D  AF E4               1145  	STX	,S		RESAVE
+296F  17 FB 5E            1146  	LBSR	STROUT		OUTPUT
+2972  42 09 00            1147  	FCB	'B',9,0		CONTINUE
+2975  7D 2A B7            1148  	TST	BYTE		BYTE OPERATION?
+2978  27 16               1149  	BEQ	WRANV1		IF SO, NO SPECIAL CRAP
+297A  A6 C4               1150  	LDA	,U		GET TYPE
+297C  81 02               1151  	CMPA	#2		VARIABLE?
+297E  26 10               1152  	BNE	WRANV1		NO, SKIP IT
+2980  10 AE 41            1153  	LDY	1,U		GET ADDRESS
+2983  17 FC 9B            1154  	LBSR	LOOKUP		LOOK FOR IT
+2986  85 02               1155  	BITA	#2		WORD?
+2988  27 06               1156  	BEQ	WRANV1		NO
+298A  17 FB 43            1157  	LBSR	STROUT
+298D  31 2B 00            1158  	FCCZ	'1+'
+2990  16 FA E3            1159  WRANV1	LBRA	WRONT		OUTPUT OPERAND
+2993                      1160  * OPERAND IS ON STACK
+2993  7D 2A B7            1161  WRASTK	TST	BYTE		OK?
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 21
+
+2996  27 12               1162  	BEQ	WRASTB		BYTE OPERATION
+2998  17 FB 63            1163  	LBSR	WRTAB		OUTPUT
+299B  AE E4               1164  	LDX	,S		GET POINTER
+299D  17 FB 26            1165  	LBSR	WRSTX		OUTPUT
+29A0  17 FB 2D            1166  	LBSR	STROUT		OUTPUT STRING
+29A3  41 09               1167  	FCB	'A',9		OUTPUT STRING
+29A5  2C 53 2B            1168  	FCC	',S+'
+29A8  0D 00               1169  	FCB	$0D,0		END OF LINE
+29AA  17 FB 51            1170  WRASTB	LBSR	WRTAB		OUTPUT TAB
+29AD  AE E4               1171  	LDX	,S		GET POINTER TO INST
+29AF  17 FB 14            1172  	LBSR	WRSTX		OUTPUT
+29B2  AF E4               1173  	STX	,S		SAVE
+29B4  17 FB 19            1174  	LBSR	STROUT		OUTPUT STRING
+29B7  42 09               1175  	FCB	'B',9		OUTPUT STRING
+29B9  2C 53 2B            1176  	FCC	',S+'
+29BC  0D 00               1177  	FCB	$0D,0		END OF LINE
+29BE  39                  1178  	RTS
+29BF                      1179  *
+29BF                      1180  * OPERATOR TABLE
+29BF                      1181  *
+29BF  2B AB 05            1182  OPRTAB	FCB	'+','+'+$80,5
+29C2  2D AD 06            1183  	FCB	'-','-'+$80,6
+29C5  2D BA 07            1184  	FCB	'-',':'+$80,7
+29C8  21 A1 0C            1185  	FCB	'!','!'+$80,12
+29CB  BC 03               1186  	FCB	'<'+$80,3
+29CD  BE 04               1187  	FCB	'>'+$80,4
+29CF  AB 08               1188  	FCB	'+'+$80,8
+29D1  AD 09               1189  	FCB	'-'+$80,9
+29D3  A6 0A               1190  	FCB	'&'+$80,10
+29D5  A1 0B               1191  	FCB	'!'+$80,11
+29D7  00                  1192  	FCB	0
+0007                      1193  SNGL	EQU	7		HIGEST SINGLE OPERAND OPERATOR
+29D8                      1194  * TABLE OF GENERATION CODE
+29D8  22 49               1195  GENTAB	FDB	SYNTAX		0
+29DA  22 49               1196  	FDB	SYNTAX		1
+29DC  22 49               1197  	FDB	SYNTAX		2
+29DE  28 74               1198  	FDB	CSHL		3
+29E0  28 52               1199  	FDB	CSHR		4
+29E2  28 B8               1200  	FDB	CINC		5
+29E4  28 D7               1201  	FDB	CDEC		6
+29E6  28 96               1202  	FDB	CCOM		7
+29E8  29 09               1203  	FDB	CADD		8
+29EA  28 F6               1204  	FDB	CSUB		9
+29EC  29 2F               1205  	FDB	CAND		10
+29EE  29 29               1206  	FDB	COR		11
+29F0  29 36               1207  	FDB	CXOR		12
+29F2                      1208  * RESERVED WORD	TABLE
+29F2  84                  1209  RESWRD	FCB	$84
+29F3  43 48 41 52         1210  	FCC	'CHAR'
+29F7  84                  1211  	FCB	$84
+29F8  42 59 54 45         1212  	FCC	'BYTE'
+29FC  87                  1213  	FCB	$87
+29FD  49 4E 54 45 47 45 + 1214  	FCC	'INTEGER'
+2A04  84                  1215  	FCB	$84
+2A05  43 4F 44 45         1216  	FCC	'CODE'
+2A09  84                  1217  	FCB	$84
+2A0A  44 41 54 41         1218  	FCC	'DATA'
+2A0E  83                  1219  	FCB	$83
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 22
+
+2A0F  41 53 4D            1220  	FCC	'ASM'
+2A12  83                  1221  ENDWRD	FCB	$83
+2A13  45 4E 44            1222  	FCC	'END'
+2A16  82                  1223  	FCB	$82
+2A17  49 46               1224  	FCC	'IF'
+2A19  84                  1225  	FCB	$84
+2A1A  45 4C 53 45         1226  	FCC	'ELSE'
+2A1E  85                  1227  	FCB	$85
+2A1F  57 48 49 4C 45      1228  	FCC	'WHILE'
+2A24  84                  1229  	FCB	$84
+2A25  47 4F 54 4F         1230  	FCC	'GOTO'
+2A29  84                  1231  	FCB	$84
+2A2A  43 41 4C 4C         1232  	FCC	'CALL'
+2A2E  84                  1233  	FCB	$84
+2A2F  45 58 49 54         1234  	FCC	'EXIT'
+2A33  84                  1235  	FCB	$84
+2A34  53 55 42 52 4F 55 + 1236  	FCC	'SUBROUTINE'
+2A3E  80                  1237  	FCB	$80
+2A3F                      1238  *
+2A3F                      1239  * HANDLER DATA TABLE
+2A3F                      1240  *
+2A3F  22 09               1241  HNDLRS	FDB	VARIAB		'CHAR'
+2A41  22 09               1242  	FDB	VARIAB		'BYTE'
+2A43  22 09               1243  	FDB	VARIAB		'INTEGER'
+2A45  21 F1               1244  	FDB	CODE		'CODE'
+2A47  22 02               1245  	FDB	DATA		'DATA'
+2A49  22 87               1246  	FDB	ASM		'ASM' COMMAND
+2A4B  23 99               1247  	FDB	CEND		'END' STATEMENT
+2A4D  23 84               1248  	FDB	CIF		'IF' STATEMENT
+2A4F  23 E8               1249  	FDB	ELSE		'ELSE' STATEMENT
+2A51  23 66               1250  	FDB	WHILE		'WHILE' STATEMENT
+2A53  24 0B               1251  	FDB	GOTO		'GOTO' STATEMENT
+2A55  24 1B               1252  	FDB	CALL		'CALL' STATEMENT
+2A57  24 27               1253  	FDB	EXIT		'EXIT' STATEMENT
+2A59  22 AD               1254  	FDB	SUBR		'SUBROUTINE' STATEMENT
+2A5B  26 E8               1255  	FDB	ASSIGN		DEFAULT / UNRECOGNIZED
+2A5D                      1256  *
+2A5D                      1257  * DATA TYPE TABLE
+2A5D                      1258  *
+2A5D  88                  1259  DTAB	FCB	$88
+2A5E  43 4F 4E 53 54 41 + 1260  	FCC	'CONSTANT'
+2A66  80                  1261  	FCB	$80
+2A67                      1262  *
+2A67                      1263  * CONDITIONAL DATA TABLE
+2A67                      1264  *
+2A67  45 51 4E 45         1265  CONTAB	FCC	'EQNE'
+2A6B  4E 45 45 51         1266  	FCC	'NEEQ'
+2A6F  4C 54 4C 45         1267  	FCC	'LTLE'
+2A73  47 54 47 45         1268  	FCC	'GTGE'
+2A77  4C 45 4C 54         1269  	FCC	'LELT'
+2A7B  47 45 47 54         1270  	FCC	'GEGT'
+2A7F  4C 53 4C 4F         1271  	FCC	'LSLO'
+2A83  4C 4F 4C 53         1272  	FCC	'LOLS'
+2A87  48 49 48 53         1273  	FCC	'HIHS'
+2A8B  48 53 48 49         1274  	FCC	'HSHI'
+2A8F  00 00               1275  	FCB	0,0
+2A91                      1276  *
+2A91                      1277  * QUALIFIER TABLE
+DUNFIELD 6809 ASSEMBLER: ASSEMBLY SOURCE PREPROCESSOR                 PAGE: 23
+
+2A91                      1278  *
+2A91  82                  1279  QTABLE	FCB	$82
+2A92  2F 51 55 49 45 54   1280  	FCC	'/QUIET'
+2A98  82                  1281  	FCB	$82
+2A99  2F 43 4F 4D 4D 45 + 1282  	FCC	'/COMMENT'
+2AA1  82                  1283  	FCB	$82
+2AA2  2F 53 4F 55 52 43 + 1284  	FCC	'/SOURCE'
+2AA9  80                  1285  	FCB	$80
+0003                      1286  QMAX	EQU	3
+2AAA                      1287  *
+2AAA                      1288  QFLAGS	EQU	*
+2AAA  FF                  1289  QUIET	FCB	$FF
+2AAB  FF                  1290  COMNT	FCB	$FF
+2AAC  FF                  1291  SOURCE	FCB	$FF
+2AAD                      1292  *
+2AAD                      1293  * LOCAL	VARIABLE DATA SPACE
+2AAD                      1294  *
+2AAD  00 00               1295  LINE	FDB	0		CURRENT LINE NUMBER
+2AAF  00 00               1296  DATADR	FDB	0		DEFAULT DATA ADDRESS
+2AB1  00 00               1297  NXTLAB	FDB	0		LABLE VALUES
+2AB3  00 00               1298  ERRCNT	FDB	0		ERROR COUNTER
+2AB5  D7 FF               1299  CTLSTK	FDB	CTSP		CONTROL STACK POINTER
+2AB7                      1300  *
+2AB7                      1301  * RESERVED MEMORY
+2AB7                      1302  *
+2AB7                      1303  BYTE	RMB	1		INDICATES BYTE/WORD OPERATIONS
+2AB8                      1304  SAVS	RMB	2		SAVED SP
+2ABA                      1305  SAVU	RMB	2		SAVED UP
+2ABC                      1306  SAVUS	RMB	2		SAVED U STACK POINTER
+2ABE                      1307  USRSTK	RMB	2		SAVED X STACK POINTER
+2AC0                      1308  TEMP	RMB	2		TEMPORARY STORAGE
+2AC2                      1309  SYMEND	RMB	2		SYMBOL TABLE ENDING ADDRESS
+2AC4                      1310  INPLIN	RMB	128		INPUT LINE BUFFER
+2B44                      1311  INPFIL	RMB	522		INPUT FILE BUFFER
+2D4E                      1312  OUTFIL	RMB	522		OUTPUT FILE BUFFER
+2F58                      1313  SYMTAB	EQU	*		SYMBOL TABLE

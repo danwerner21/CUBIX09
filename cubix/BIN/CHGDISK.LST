@@ -1,0 +1,90 @@
+DUNFIELD 6809 ASSEMBLER: D:CHGDISK                                    PAGE: 1
+
+0000                         1  *
+0000                         2  * SYSTEM MEMORY LOCATIONS FOR USE BY APPLICATION PROGRAMS
+0000                         3  *
+2000                         4  OSRAM	EQU	$2000		USER APPLICATION RAM STARTS HEDE
+DBFF                         5  OSEND	EQU	$DBFF		LAST LOCATION OF USER (NON-SYSTEM) RAM
+D000                         6  OSUTIL	EQU	$D000		RAM FOR UTILITY PROGRAM USAGE
+0000                         7  *
+0000                         8  *
+0000                         9  * CHGDISK: Change the disk between load and execution
+0000                        10  *
+0000                        11  * Copyright 1983-2005 Dave Dunfield
+0000                        12  * All rights reserved.
+0000                        13  *
+0000                        14  * DIRECTORY STRUCTURE
+0000                        15  	ORG	0
+0000                        16  DPREFIX	RMB	8
+0008                        17  DNAME	RMB	8
+0010                        18  DTYPE	RMB	3
+0013                        19  DDADR	RMB	2		DISK ADDRESS
+0015                        20  DRADR	RMB	2		RUN ADDRESS
+0017                        21  DATTR	RMB	1		FILE ATTRIBUTES
+0018                        22  * ATTRIBUTE DEFINITIONS
+0080                        23  RPERM	EQU	%10000000	READ PERMISSION
+0040                        24  WPERM	EQU	%01000000	WRITE PERMISSSION
+0020                        25  EPERM	EQU	%00100000	EXECUTE PERMISSION
+0010                        26  DPERM	EQU	%00010000	DELETE PERMISSION
+0018                        27  * RETURN CODES
+0003                        28  RCPRO	EQU	3		PROTECTION VIOLATION
+0018                        29  *
+CE00                        30  	ORG	OSUTIL-512
+CE00                        31  *
+CE00  81 3F                 32  CHGDISK	CMPA	#'?'		HELP REQUEST?
+CE02  26 23                 33  	BNE	MAIN		NO, START IT UP
+CE04  3F                    34  	SWI			SOFTWARE INTERRUPT TO DOS
+CE05  19                    35  	FCB	25		SYSTEM REQUEST NUMBER
+CE06  55 73 65 3A 20 43 +   36  	FCCZ	'Use: CHGDISK [<command string>]'
+CE26  39                    37  ABORT	RTS
+CE27  3F                    38  MAIN	SWI			SOFTWARE INTERRUPT TO DOS
+CE28  04                    39  	FCB	4		SYSTEM REQUEST NUMBER
+CE29  26 32                 40  	BNE	CMDSUP		YES
+CE2B  3F                    41  	SWI			SOFTWARE INTERRUPT TO DOS
+CE2C  58                    42  	FCB	88		SYSTEM REQUEST NUMBER
+CE2D  3F                    43  	SWI			SOFTWARE INTERRUPT TO DOS
+CE2E  19                    44  	FCB	25		SYSTEM REQUEST NUMBER
+CE2F  49 6E 73 65 72 74 +   45  	FCCZ	'Insert command disk, and enter command:'
+CE57  3F                    46  	SWI			SOFTWARE INTERRUPT TO DOS
+CE58  01                    47  	FCB	1		SYSTEM REQUEST NUMBER
+CE59  3F                    48  	SWI			SOFTWARE INTERRUPT TO DOS
+CE5A  04                    49  	FCB	4		SYSTEM REQUEST NUMBER
+CE5B  27 C9                 50  	BEQ	ABORT		NO, EXIT
+CE5D                        51  * WE HAVE COMMAND TO EXECUTE
+CE5D  3F                    52  CMDSUP	SWI			SOFTWARE INTERRUPT TO DOS
+CE5E  0C                    53  	FCB	12		SYSTEM REQUEST NUMBER
+CE5F  CC 45 58              54  	LDD	#'EX'		FIRST TO OF 'EXE'
+CE62  ED 84                 55  	STD	,X		SET TYPE
+CE64  A7 02                 56  	STA	2,X		SET LAST 'E'
+CE66  3F                    57  	SWI			SOFTWARE INTERRUPT TO DOS
+CE67  45                    58  	FCB	69		SYSTEM REQUEST NUMBER
+DUNFIELD 6809 ASSEMBLER: D:CHGDISK                                    PAGE: 2
+
+CE68  26 BC                 59  	BNE	ABORT		ERROR
+CE6A  A6 88 17              60  	LDA	DATTR,X		GET FILE ATTRIBUTES
+CE6D  85 20                 61  	BITA	#EPERM		ALLOWED TO EXECUTE?
+CE6F  26 03                 62  	BNE	EXEOK		OK TO EXECUTE
+CE71  3F                    63  	SWI			SOFTWARE INTERRUPT TO DOS
+CE72  2D                    64  	FCB	45		SYSTEM REQUEST NUMBER
+CE73  39                    65  	RTS
+CE74                        66  * LOAD IN FILE & EXECUTE
+CE74  EC 88 13              67  EXEOK	LDD	DDADR,X		GET DISK ADDRESS
+CE77  AE 88 15              68  	LDX	DRADR,X		GET RUN ADDRESS
+CE7A  BF CE C3              69  	STX	>EXEADR		SAVE ADDRESS
+CE7D  3F                    70  	SWI			SOFTWARE INTERRUPT TO DOS
+CE7E  4E                    71  	FCB	78		SYSTEM REQUEST NUMBER
+CE7F                        72  * WE HAVE FILE IN RAM, PROMPT FOR DISK CHANGE, AND EXECUTE
+CE7F  3F                    73  	SWI			SOFTWARE INTERRUPT TO DOS
+CE80  58                    74  	FCB	88		SYSTEM REQUEST NUMBER
+CE81  3F                    75  	SWI			SOFTWARE INTERRUPT TO DOS
+CE82  18                    76  	FCB	24		SYSTEM REQUEST NUMBER
+CE83  49 6E 73 65 72 74 +   77  	FCCZ	'Insert disks for command execution, press <return>:'
+CEB7  3F                    78  CHKRET	SWI			SOFTWARE INTERRUPT TO DOS
+CEB8  22                    79  	FCB	34		SYSTEM REQUEST NUMBER
+CEB9  81 0D                 80  	CMPA	#$0D		CR?
+CEBB  26 FA                 81  	BNE	CHKRET		NO, WAIT FOR IT
+CEBD  3F                    82  	SWI			SOFTWARE INTERRUPT TO DOS
+CEBE  16                    83  	FCB	22		SYSTEM REQUEST NUMBER
+CEBF  6E 9F CE C3           84  	JMP	[EXEADR]	EXECUTE COMMAND
+CEC3                        85  * MISC LOCAL VARIABLES
+CEC3                        86  EXEADR	RMB	2		EXECUTION ADDRESS OF COMMAND
