@@ -9,7 +9,7 @@ system. The complete package consists of the following files and directories:
 
   00README.TXT - This file
   MACROS       - Macro to implement SSR directive under DDS XASM09
-  GOASM.BAT    - Batch file to assemble utilities  
+  GOASM.BAT    - Batch file to assemble utilities
   DOCS\*.*     - Documentation on cubix system
   BIN\*.*      - CUBIX binary images
   EXAMPLE\*.*  - CUBIX programming examples
