@@ -1676,7 +1676,7 @@ LB22F     JSR  LB3A2          ; SET CARRY IF NOT ALPHA
           BEQ  LB27C          ; YES - GO PROCESS THE MINUS OPERATOR
           CMPA #TOK_PLUS      ; PLUS TOKEN
           BEQ  LB223          ; YES - GET ANOTHER CHARACTER
-          CMPA #'"            ; STRING DELIMITER?
+          CMPA #'"'           ; STRING DELIMITER?
           BNE  LB24E          ; NO
 LB244     LDX  CHARAD         ; CURRENT BASIC POINTER TO X
           JSR  LB518          ; SAVE STRING ON STRING STACK
