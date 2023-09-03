@@ -427,6 +427,43 @@ HELLO
         FCB     $0A,$0D
         FCC     'All rights reserved'
         FCB     $0A,$0D,0
+
+
+
+
+; prep the hdd!
+;        LDY     #$0201
+;prp0:
+;        DEY
+;        LDA     #$FF
+;        STA     HSTBUF,y
+;        CMPY    #$0000
+;        BNE     prp0;
+;
+;        LDY     #$00ff
+;prp1:
+;       DEY
+;      PSHS    y
+;     LDA     #$03
+;    STA     DRIVE,U
+;   LDA     #$00
+;STA     HEAD,U
+;LDA     #$00
+;STA     CYL,U
+;TFR     y,a
+;STA     SEC,U
+;LDX     #HSTBUF
+;JSR     IDE_WRITE_SECTOR
+;PULS    y
+;CMPY    #$0000
+;BNE     prp1
+
+
+
+
+
+
+
 ;* IF NO ERRORS, EXECUTE THE STARTUP FILE
         LDA     >ERRCNT                           ;GET ERROR FLAG
         BNE     CMD                               ;ERRORS, DO NOT EXECUTE

@@ -136,7 +136,6 @@ TSTRET
         CMPB    >CMDRC                            ;WUZ THIS IT?
         BNE     CMDRT1                            ;NO, DONT EXECUTE
         BRA     GOCMD                             ;DO IT
-        BRA     GOCMD                             ;DO IT
 ;* '?E' EXIT COMMAND FILE
 CEXIT
         CMPB    #'E'                              ;EXIT

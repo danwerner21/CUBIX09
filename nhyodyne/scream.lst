@@ -105,15 +105,61 @@ F02F B7FE68           (       scream.asm):00104 [5]             STA     UART0   
 F032 B7FE68           (       scream.asm):00105 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
 F035 B7FE68           (       scream.asm):00106 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
 F038 B7FE68           (       scream.asm):00107 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
-F03B 7EF003           (       scream.asm):00108 [4]             JMP     SERIAL_OUTCH
-                      (       scream.asm):00109         
-                      (       scream.asm):00110                 ORG     $FFFE                             ; SET RESET VECTOR TO
-                      (       scream.asm):00111         
-                      (       scream.asm):00112         
-FFFE                  (       scream.asm):00113         RESETV:
-FFFE F000             (       scream.asm):00114                 FDB     $F000
-                      (       scream.asm):00115         
-                      (       scream.asm):00116                 END
+F03B B7FE68           (       scream.asm):00108 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F03E B7FE68           (       scream.asm):00109 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F041 B7FE68           (       scream.asm):00110 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F044 B7FE68           (       scream.asm):00111 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F047 B7FE68           (       scream.asm):00112 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F04A B7FE68           (       scream.asm):00113 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F04D B7FE68           (       scream.asm):00114 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F050 B7FE68           (       scream.asm):00115 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F053 B7FE68           (       scream.asm):00116 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F056 B7FE68           (       scream.asm):00117 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F059 B7FE68           (       scream.asm):00118 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F05C B7FE68           (       scream.asm):00119 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F05F B7FE68           (       scream.asm):00120 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F062 B7FE68           (       scream.asm):00121 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F065 B7FE68           (       scream.asm):00122 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F068 B7FE68           (       scream.asm):00123 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F06B B7FE68           (       scream.asm):00124 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F06E B7FE68           (       scream.asm):00125 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F071 B7FE68           (       scream.asm):00126 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F074 B7FE68           (       scream.asm):00127 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F077 B7FE68           (       scream.asm):00128 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F07A B7FE68           (       scream.asm):00129 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F07D B7FE68           (       scream.asm):00130 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F080 B7FE68           (       scream.asm):00131 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F083 B7FE68           (       scream.asm):00132 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F086 B7FE68           (       scream.asm):00133 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F089 B7FE68           (       scream.asm):00134 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F08C B7FE68           (       scream.asm):00135 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F08F B7FE68           (       scream.asm):00136 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F092 B7FE68           (       scream.asm):00137 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F095 B7FE68           (       scream.asm):00138 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F098 B7FE68           (       scream.asm):00139 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F09B B7FE68           (       scream.asm):00140 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F09E B7FE68           (       scream.asm):00141 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F0A1 B7FE68           (       scream.asm):00142 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F0A4 B7FE68           (       scream.asm):00143 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F0A7 B7FE68           (       scream.asm):00144 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F0AA B7FE68           (       scream.asm):00145 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F0AD B7FE68           (       scream.asm):00146 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F0B0 B7FE68           (       scream.asm):00147 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F0B3 B7FE68           (       scream.asm):00148 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F0B6 B7FE68           (       scream.asm):00149 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F0B9 B7FE68           (       scream.asm):00150 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F0BC B7FE68           (       scream.asm):00151 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F0BF B7FE68           (       scream.asm):00152 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F0C2 B7FE68           (       scream.asm):00153 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F0C5 7EF003           (       scream.asm):00154 [4]             JMP     SERIAL_OUTCH
+                      (       scream.asm):00155         
+                      (       scream.asm):00156                 ORG     $FFFE                             ; SET RESET VECTOR TO
+                      (       scream.asm):00157         
+                      (       scream.asm):00158         
+FFFE                  (       scream.asm):00159         RESETV:
+FFFE F000             (       scream.asm):00160                 FDB     $F000
+                      (       scream.asm):00161         
+                      (       scream.asm):00162                 END
 
 Symbol Table:
 [ G] COLD_START                       F000

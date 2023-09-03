@@ -94,7 +94,7 @@ DHOME
 DRDSEC
 ;*	JSR	SEGDISPLAY
 
-;	LDAA	DRIVE,U			; GET DRIVE
+        LDA     DRIVE,U                           ; GET DRIVE
 ;*	CMPA	#$00			; DRIVE A?
 ;*	BNE 	NOTRDA			;
 ;JMP	Z80RDRIVE		; USE Z80 A:
@@ -119,7 +119,7 @@ NOTRDD
 ;*
 DWRSEC
 ;*	JSR	SEGDISPLAY
-;	LDAA	DRIVE,U			; GET DRIVE
+        LDA     DRIVE,U                           ; GET DRIVE
 ;*	CMPA	#$00			; DRIVE A?
 ;*	BNE 	NOTWDA			;
 ;	JMP	Z80WDRIVE		; USE Z80 A:
@@ -132,11 +132,11 @@ DWRSEC
 ;*	BNE 	NOTWDC			;
 ;*	JMP	Z80WDRIVE		; USE Z80 C:
 ;*NOTWDC
-;*	CMPA	#$03			; DRIVE D?
-;*	BNE 	NOTWDD			;
-;*	JMP	IDE_WRITE_SECTOR	; USE DIRECT ATTACHED IDE
-;*NOTWDD
-;*	RTS
+        CMPA    #$03                              ; DRIVE D?
+        BNE     NOTWDD                            ;
+        JMP     IDE_WRITE_SECTOR                  ; USE DIRECT ATTACHED IDE
+NOTWDD
+        RTS
 
 
         INCLUDE ../nhyodyne/cubix_serial.asm

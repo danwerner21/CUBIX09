@@ -343,6 +343,7 @@ SAVF2
         STD     >TEMP2                            ;SAVE SECTOR ID
         LDX     >TEMP4                            ;GET LOAD ADDRESS
         JSR     WDISK                             ;WRITE THE SECTOR
+
         LEAX    512,X                             ;ADVANCE 1 BLOCK
         STX     >TEMP4                            ;NEW LOAD ADDRESS
         LDD     >TEMP2                            ;GET OPEN SECTOR
@@ -600,7 +601,6 @@ GETA4
         PULS    A,B,X,PC                          ;RESTORE REGS
 ATRTAB
         FCC     'RWED????'                        ;AVAILABLE ATTRIBUTE BITS
-        FCB     $00
 ;*
 ;* SET DRIVE COMMAND
 ;*
@@ -807,12 +807,7 @@ SHODRV
         BSR     SHODRA                            ;DISPLAY IT
         PULS    A,U                               ;RESTORE REGS
         JMP     LFCR                              ;NEW LINE
-        JMP     LFCR                              ;NEW LINE
-        JMP     LFCR                              ;NEW LINE
-        JMP     LFCR                              ;NEW LINE
-        JMP     LFCR                              ;NEW LINE
-        JMP     LFCR                              ;NEW LINE
-        JMP     LFCR                              ;NEW LINE
+
 SHODRA
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     ', '                              ;STRING

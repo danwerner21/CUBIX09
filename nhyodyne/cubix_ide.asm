@@ -50,17 +50,23 @@ PPIDE_CMD_SPINUP = $E1
 PPRD_IDE_8255   = %10010010                       ;IDE_8255_CTL OUT, IDE_8255_LSB/MSB INPUT
 PPWR_IDE_8255   = %10000000                       ;ALL THREE PORTS OUTPUT
 
-
-PPIDEINDEX:
-        .BYTE   $00
+;ALLOCATE THE FOLLOWING DATA AREAS TO UNUSED RAM SPACE
+DEBCYLL:
+        .BYTE   0                                 ; DEBLOCKED CYLINDER LSB
+DEBCYLM:
+        .BYTE   0                                 ; DEBLOCKED CYLINDER MSB
+DEBSEHD:
+        .BYTE   0                                 ; DEBLOCKED SECTOR AND HEAD (HS)
+PPIDETMP:
+        .BYTE   0                                 ; TEMP
+PPIDELOTMP:
+        .BYTE   0
+PPIDECOMMAND:
+        .BYTE   0
 PPIDETIMEOUT:
         .BYTE   $00,$00
 PPIDEWORKVAR:
         .BYTE   $00,$00
-CURDRVADDRESS:
-        .BYTE   $00
-CURDRVSLICE:
-        .BYTE   $00
 HSTBUF          = $0400
 
 ;__PPIDE_INIT_________________________________________________________________________________________
@@ -128,35 +134,31 @@ PPIDE_PROBE:
         BCS     PPIDE_PROBE_FAIL                  ; IF TIMEOUT, REPORT NO IDE PRESENT
         LDA     #PPIDE_STATUS                     ; GET STATUS
         JSR     IDE_READ
-        TFR     X,A
-        ANDA    #%01000000
-        CMPA    #$00
+        ANDB    #%01000000
+        CMPB    #$00
         BEQ     PPIDE_PROBE_FAIL                  ; IF NOT RDY BIT (BIT 6) THEN REPORT NO IDE PRESENT
 
 ; CHECK SIGNATURE
         LDA     #PPIDE_SEC_CNT
         JSR     IDE_READ
-        TFR     X,A
-        CMPA    #$01
+        CMPB    #$01
         BNE     PPIDE_PROBE_FAIL                  ; IF NOT '01' THEN REPORT NO IDE PRESENT
         LDA     #PPIDE_LBALOW
         JSR     IDE_READ
-        TFR     X,A
-        CMPA    #$01
+        CMPB    #$01
         BNE     PPIDE_PROBE_FAIL                  ; IF NOT '01' THEN REPORT NO IDE PRESENT
         LDA     #PPIDE_LBAMID
         JSR     IDE_READ
-        TFR     X,A
-        CMPA    #$00
+        CMPB    #$00
         BNE     PPIDE_PROBE_FAIL                  ; IF NOT '00' THEN REPORT NO IDE PRESENT
         LDA     #PPIDE_LBAHI
         JSR     IDE_READ
-        TFR     X,A
-        CMPA    #$00
+        CMPB    #$00
         BNE     PPIDE_PROBE_FAIL                  ; IF NOT '00' THEN REPORT NO IDE PRESENT
         CLC
         JMP     PPIDE_PROBE_SUCCESS
 PPIDE_PROBE_FAIL:
+
         SEC
 PPIDE_PROBE_SUCCESS:
         RTS                                       ; DONE, NOTE THAT A=0 AND Z IS SET
@@ -169,6 +171,8 @@ PPIDE_PROBE_SUCCESS:
 ;*____________________________________________________________________________________________________
 IDE_READ_INFO:
 ; SET DRIVE BIT
+        LDB     #PPIDE_DEVICE
+        STB     PPIDECOMMAND
         ANDA    #$01                              ; ONLY WANT THE 1 BIT (MST/SLV)
         ASLA                                      ; SHIFT 4
         ASLA                                      ;
@@ -177,16 +181,16 @@ IDE_READ_INFO:
         ORA     #$E0                              ; E0=MST  F0=SLV
         TFR     A,B
         LDA     #$00
-        TFR     D,X
-        LDA     #PPIDE_DEVICE
         JSR     IDE_WRITE
         JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
         BCS     IDE_READ_INFO_ABORT
         LDA     #PPIDE_COMMAND                    ;SELECT IDE REGISTER
-        LDX     #PPIDE_CMD_ID
+        STA     PPIDECOMMAND
+        LDD     #PPIDE_CMD_ID
         JSR     IDE_WRITE                         ;ASK THE DRIVE TO READ IT
         JSR     IDE_WAIT_DRQ                      ;WAIT UNTIL IT'S GOT THE DATA
         BCS     IDE_READ_INFO_ABORT
+        LDX     #HSTBUF
         JSR     IDE_READ_BUFFER                   ; GRAB THE 256 WORDS FROM THE BUFFER
         LDX     #MESSAGE6
         JSR     WRSTR
@@ -245,12 +249,13 @@ IDE_READ_SECTOR:
 IDE_READ_SECTOR_1:
         JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
         LDA     #PPIDE_COMMAND                    ;SELECT IDE REGISTER
-        LDX     #PPIDE_CMD_READ
+        STA     PPIDECOMMAND
+        LDD     #PPIDE_CMD_READ
         JSR     IDE_WRITE                         ; ASK THE DRIVE TO READ IT
         JSR     IDE_WAIT_DRQ                      ; WAIT UNTIL IT'S GOT THE DATA
         BCS     IDE_READ_SECTOR_ERROR             ; IF TIMEOUT, REPORT NO IDE PRESENT
         JSR     IDE_READ_BUFFER                   ; GRAB THE 256 WORDS FROM THE BUFFER
-        CLRA			                  ; ZERO = 1 ON RETURN = OPERATION OK
+        CLRA                                      ; ZERO = 1 ON RETURN = OPERATION OK
         RTS
 IDE_READ_SECTOR_ERROR:
         LDA     #$02                              ; SET ERROR CONDITION
@@ -264,19 +269,21 @@ IDE_READ_SECTOR_ERROR:
 IDE_WRITE_SECTOR:
         JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
         BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
+        JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
         LDA     #PPIDE_COMMAND
-        LDX     #PPIDE_CMD_WRITE
+        STA     PPIDECOMMAND
+        LDD     #PPIDE_CMD_WRITE
         JSR     IDE_WRITE                         ;TELL DRIVE TO WRITE A SECTOR
         JSR     IDE_WAIT_DRQ                      ;WAIT UNIT IT WANTS THE DATA
         BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
         JSR     IDE_WRITE_BUFFER                  ;GIVE THE DATA TO THE DRIVE
         JSR     IDE_WAIT_NOT_BUSY                 ;WAIT UNTIL THE WRITE IS COMPLETE
         BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
-        CLRA				          ; ZERO = 1 ON RETURN = OPERATION OK
-        rts
+        CLRA                                      ; ZERO = 1 ON RETURN = OPERATION OK
+        RTS
 IDE_WRITE_SECTOR_ERROR:
-        LDA	#$02
-	RTS
+        LDA     #$02
+        RTS
 
 ;*__PPIDE_RESET____________________________________________________________________________________
 ;*
@@ -288,16 +295,16 @@ PPIDE_RESET:
         LDA     #PPIDE_RST_LINE
         STA     PPIDECNTRL                        ; ASSERT RST LINE ON IDE INTERFACE
 
-        LDX     #$0100
+        LDY     #$0100
 ;	PRTDBG "IDE RESET DELAY$"
 RST_DLY:
-        DEX
-        CPX     #$0000
+        DEY
+        CMPY    #$0000
         BNE     RST_DLY
         LDA     #$00
         STA     PPIDECNTRL                        ; DEASSERT RST LINE ON IDE INTERFACE
 
-; IF A DSKYNG IS ACTIVE AND IS ON THE SAME PPI PORT AS THE PPISD BEING
+; IF A DSKYNG IS ACTIVE AND IS ON THE SAME PPI PORT AS THE PPISDa:a BEING
 ; RESET, THEN THE DSKYNG WILL ALSO BE RESET.  SO, THE DSKY IS ALSO INITIALIZED.
 ;    IF      USEDSKYNG = 1
 ;        JSR     DSKY_REINIT
@@ -312,15 +319,14 @@ RST_DLY:
 ;*
 ;*____________________________________________________________________________________________________
 IDE_WAIT_NOT_BUSY:
-        PSHS    X,A
+        PSHS    A,B
         LDA     #$00
         STA     PPIDETIMEOUT
         STA     PPIDETIMEOUT+1
 IDE_WAIT_NOT_BUSY1:
         LDA     #PPIDE_STATUS                     ;WAIT FOR RDY BIT TO BE SET
         JSR     IDE_READ
-        TFR     X,A
-        ANDA    #$80
+        ANDB    #$80
         BEQ     IDE_WAIT_NOT_BUSY2
         INC     PPIDETIMEOUT
         BNE     IDE_WAIT_NOT_BUSY1
@@ -331,7 +337,7 @@ IDE_WAIT_NOT_BUSY1:
 IDE_WAIT_NOT_BUSY2:
         CLC
 IDE_WAIT_NOT_BUSY3:
-        PULS    PC,X,A
+        PULS    PC,A,B
         RTS
 
 ;*__IDE_WAIT_DRQ______________________________________________________________________________________
@@ -340,19 +346,18 @@ IDE_WAIT_NOT_BUSY3:
 ;*
 ;*____________________________________________________________________________________________________
 IDE_WAIT_DRQ:
-        PSHS    A,X,Y
+        PSHS    A,B,Y
         LDA     #$00
         STA     PPIDETIMEOUT
         STA     PPIDETIMEOUT+1
 IDE_WAIT_DRQ1:
         LDA     #PPIDE_STATUS                     ;WAIT FOR DRQ BIT TO BE SET
         JSR     IDE_READ
-        TFR     X,A
-        ANDA    #%10001000                        ; MASK OFF BUSY(7) AND DRQ(3)
-        CMPA    #%00001000                        ; WE WANT BUSY(7) TO BE 0 AND DRQ (3) TO BE 1
+        ANDB    #%10001000                        ; MASK OFF BUSY(7) AND DRQ(3)
+        CMPB    #%00001000                        ; WE WANT BUSY(7) TO BE 0 AND DRQ (3) TO BE 1
         BEQ     IDE_WAIT_DRQ2
-        ANDA    #%00000001                        ; IS ERROR?
-        CMPA    #%00000001                        ;
+        ANDB    #%00000001                        ; IS ERROR?
+        CMPB    #%00000001                        ;
         BEQ     IDE_WAIT_DRQE
         INC     PPIDETIMEOUT
         BNE     IDE_WAIT_DRQ1
@@ -364,7 +369,7 @@ IDE_WAIT_DRQE:
 IDE_WAIT_DRQ2:
         CLC
 IDE_WAIT_DRQ3:
-        PULS    PC,A,X,Y
+        PULS    PC,A,B,Y
 
 
 
@@ -374,16 +379,14 @@ IDE_WAIT_DRQ3:
 ;*
 ;*____________________________________________________________________________________________________
 IDE_READ_BUFFER:
-        LDY     #$0000                            ; INDEX
+        LDY     #$0100                            ; INDEX
 IDEBUFRD:
         LDA     #PPIDE_DATA
         JSR     IDE_READ_NO_SETUP
-        TFR     X,D
-        STB     HSTBUF,Y                          ;
-        INY
-        STA     HSTBUF,Y                          ;
-        INY
-        CMPY    #$0200                            ;
+        STB     ,X+                               ; 'ID DRIVE' IDE RESPONSE IS LITTLE ENDIAN FORMAT
+        STA     ,X+                               ; 'ID DRIVE' IDE RESPONSE IS LITTLE ENDIAN FORMAT
+        DEY
+        CMPY    #$0000                            ;
         BNE     IDEBUFRD                          ;
         RTS                                       ;
 
@@ -393,16 +396,15 @@ IDEBUFRD:
 ;*
 ;*____________________________________________________________________________________________________
 IDE_WRITE_BUFFER:
-        LDY     #$0000                            ; INDEX
+        LDY     #$0100                            ; INDEX
 IDEBUFWT:
-        LDB     HSTBUF,Y                          ; SECTORS ARE LITTLE ENDIAN
-        INY                                       ;
-        LDA     HSTBUF,Y                          ; SECTORS ARE LITTLE ENDIAN
-        INY
-        TFR     D,X
         LDA     #PPIDE_DATA
+        STA     PPIDECOMMAND
+        LDB     ,X+                               ; SECTORS ARE BIG ENDIAN
+        LDA     ,X+                               ; SECTORS ARE BIG ENDIAN
+        DEY                                       ;
         JSR     IDE_WRITE
-        CMPY    #$0200                            ;
+        CMPY    #$0000                            ;
         BNE     IDEBUFWT                          ;
         RTS                                       ;
 
@@ -415,7 +417,7 @@ IDEBUFWT:
 
 ;DO A READ BUS CYCLE TO THE DRIVE, USING THE 8255.
 ;INPUT A = IDE REGSITER ADDRESS
-;OUTPUT X = WORD READ FROM IDE DRIVE
+;OUTPUT D = WORD READ FROM IDE DRIVE
 IDE_READ:
         JSR     SET_PPI_RD                        ; SETUP FOR A READ CYCLE
 IDE_READ_NO_SETUP:
@@ -425,27 +427,28 @@ IDE_READ_NO_SETUP:
         PSHS    A
         LDB     PPIDELO                           ; READ LOWER BYTE
         LDA     PPIDEHI                           ; READ UPPER BYTE
-        TFR     D,X
+        STA     PPIDELOTMP
         PULS    A                                 ; RESTORE REGISTER VALUE
         STA     PPIDECNTRL                        ;DRIVE ADDRESS ONTO CONTROL LINES
         EORA    #PPIDE_RD_LINE                    ; ASSERT RD PIN
         STA     PPIDECNTRL
         LDA     #$00
         STA     PPIDECNTRL                        ;DEASSERT ALL CONTROL PINS
+        LDA     PPIDELOTMP
         RTS
 
+
+
 ;DO A WRITE BUS CYCLE TO THE DRIVE, VIA THE 8255
-;INPUT A = IDE REGISTER ADDRESS
-;INPUT REGISTER X = WORD TO WRITE
+;INPUT PPIDECOMMAND = IDE REGISTER ADDRESS
+;INPUT REGISTER D = WORD TO WRITE
 ;
 
 IDE_WRITE:
         JSR     SET_PPI_WR                        ; SETUP FOR A WRITE CYCLE
-        PSHS    A
-        TFR     X,D
         STB     PPIDELO                           ; WRITE LOWER BYTE
         STA     PPIDEHI                           ; WRITE UPPER BYTE
-        PULS    A                                 ; RESTORE REGISTER VALUE
+        LDA     PPIDECOMMAND
         STA     PPIDECNTRL                        ;DRIVE ADDRESS ONTO CONTROL LINES
         ORA     #PPIDE_WR_LINE                    ; ASSERT WRITE PIN
         STA     PPIDECNTRL
@@ -498,17 +501,6 @@ MESSAGE6
         FCB     00
 
 
-;ALLOCATE THE FOLLOWING DATA AREAS TO UNUSED RAM SPACE
-DEBCYLL:
-        .BYTE   0                                 ; DEBLOCKED CYLINDER LSB
-DEBCYLM:
-        .BYTE   0                                 ; DEBLOCKED CYLINDER MSB
-DEBSEHD:
-        .BYTE   0                                 ; DEBLOCKED SECTOR AND HEAD (HS)
-PPIDETMP:
-        .BYTE   0                                 ; TEMP
-
-
 ;*__IDE_SETUP_LBA_____________________________________________________________________________________
 ;*
 ;*
@@ -516,23 +508,53 @@ PPIDETMP:
 ;*
 ;*____________________________________________________________________________________________________
 IDE_SETUP_LBA:
-        LDA    SEC,U                             ;
-        STA    DEBCYLL                           ; SET LBA 0:7
-        LDA    CYL,U                             ;
-        STA    DEBCYLM                           ; SET LBA 8:15
-        LDA    HEAD,U                            ;
-        STA    DEBSEHD                           ; SET LBA 16:23
+        PSHS    D
 ;            IF      USEDSKYNG = 1
 ;  	PRTDBG "DSKY OUTPUT 1$"
 ;                LDA     CURDRV
 ;                STA     DSKY_HEXBUF
-;                LDA     DEBCYLM
+;                LDA     HEAD,U
 ;                STA     DSKY_HEXBUF+1
-;                LDA     DEBCYLL
+;                LDA     CYL,U
 ;                STA     DSKY_HEXBUF+2
-;                LDA     DEBSEHD
+;                LDA     SEC,U
 ;                STA     DSKY_HEXBUF+3
 ;                JSR     DSKY_BIN2SEG
 ;                JSR     DSKY_SHOW
 ;                ENDC
-                RTS
+        LDA     #PPIDE_DEVICE
+        STA     PPIDECOMMAND
+        LDA     #$00
+        LDB     DRIVE,U
+        ANDB    #$01                              ; only want drive cfg
+        ASLB                                      ; SHIFT 4
+        ASLB                                      ;
+        ASLB                                      ;
+        ASLB                                      ;
+        ORB     #$E0                              ; E0=MST  F0=SLV
+        JSR     IDE_WRITE
+
+        LDA     #PPIDE_LBAHI
+        STA     PPIDECOMMAND
+        LDA     #$00
+        LDB     HEAD,U
+        JSR     IDE_WRITE
+
+        LDA     #PPIDE_LBAMID
+        STA     PPIDECOMMAND
+        LDA     #$00
+        LDB     CYL,U                             ;
+        JSR     IDE_WRITE
+
+        LDA     #PPIDE_LBALOW
+        STA     PPIDECOMMAND
+        LDA     #$00
+        LDB     SEC,U                             ;
+        JSR     IDE_WRITE
+
+        LDA     #PPIDE_SEC_CNT
+        STA     PPIDECOMMAND
+        LDA     #$00
+        LDB     #$01
+        JSR     IDE_WRITE
+        PULS    D,PC

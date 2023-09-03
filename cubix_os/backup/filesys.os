@@ -81,8 +81,10 @@ WRWRK
 ;* LOCATE  FILE, ISSUE ERROR MESSAGE IF NOT FOUND
 ;*
 LOCERR
+
         BSR     LOCDIR                            ;LOOK IT UP
         BEQ     FILFND                            ;FINE, RETURN
+
 ;* ATTEMPT TO OPEN FILE FAILED, NOT FOUND
 NOTFND
         LDY     #NOTMSG                           ;INDICATE NOT FOUND
@@ -111,6 +113,7 @@ LOCDIR
 LOCSEC
         JSR     RDWRK                             ;READ IT
 LOCFIL
+
         JSR     COMNAM                            ;DOES IT MATCH
         BEQ     FILFND                            ;YES
         LEAX    32,X                              ;ADVANCE TO NEXT
