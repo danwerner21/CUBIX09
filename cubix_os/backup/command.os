@@ -38,6 +38,7 @@ INI02
 INI1
         JSR     WRLIN
         FCC     'Formatting '
+        FCB     $00
         LDA     >SDRIVE
         JSR     SHODRV                            ;SHOW THE DISK
         LDX     #INITAB                           ;POINT TO TABLE
@@ -50,6 +51,7 @@ INI1
         JSR     WRLIN                             ;MESSAGE
         FCB     $0A,$0D                           ;NEW LINE
         FCC     'Ok? '
+        FCB     $00
         JSR     GETCHR
         JSR     PUTCHR                            ;ECHO
         ANDA    #$DF                              ;GET IT
@@ -250,10 +252,12 @@ MULD2
         BNE     MULD5                             ;YES WE CAN
         JSR     WRMSG                             ;OUTPUT MESSAGE
         FCC     ' Protected'
+        FCB     $00
         BRA     MULD3
 MULD5
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     ' (Y/N/Q)?'
+        FCB     $00
         JSR     GETCHR                            ;GET CHAR
         JSR     PUTCHR                            ;ECHO
         JSR     LFCR                              ;NEW LINE
@@ -375,6 +379,7 @@ RETURN
 NOSUSP
         JSR     WRMSG                             ;OUTPUT MESSAGE
         FCC     'No suspended program'
+        FCB     $00
         LDS     >SAVSTK                           ;RESTORE STACK
 DNLRTS
         CLRA                                      ;ZERO RC
@@ -595,6 +600,7 @@ GETA4
         PULS    A,B,X,PC                          ;RESTORE REGS
 ATRTAB
         FCC     'RWED????'                        ;AVAILABLE ATTRIBUTE BITS
+        FCB     $00
 ;*
 ;* SET DRIVE COMMAND
 ;*
@@ -713,6 +719,7 @@ SDCMD
         JSR     PUTCHR
         JSR     WRLIN
         FCC     ':['
+        FCB     $00
         LDB     #8
 SDC1
         LDA     ,X+
@@ -730,18 +737,22 @@ SHOW2
         JSR     LOCERR                            ;LOOK IT UP
         JSR     WRLIN
         FCC     'File: '
+        FCB     $00
         JSR     SHONAM                            ;OUTPUT
         JSR     WRLIN
         FCB     $0A,$0D
         FCC     'Disk address='
+        FCB     $00
         LDD     DDADR,X
         JSR     WRDEC
         JSR     WRLIN
         FCC     ', Load address=$'
+        FCB     $00
         LDD     DRADR,X
         JSR     WRHEXW
         JSR     WRLIN
         FCC     ', Protection='
+        FCB     $00
         LDB     DATTR,X
         LDY     #ATRTAB
 SH21
@@ -761,10 +772,12 @@ SH23
         BNE     SH23                              ;FIND EM ALL
         JSR     WRLIN
         FCC     'File contains '
+        FCB     $00
         TFR     Y,D
         JSR     WRDEC
         JSR     WRMSG
         FCC     ' block(s).'
+        FCB     $00
         RTS
 ;* SHOW DISK FORMAT
 SHOW3
@@ -774,6 +787,7 @@ SHODRV
         JSR     GETCTL1                           ;GET DRIVE CONTROL BLOCK
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     'Drive: '
+        FCB     $00
         LDA     ,S                                ;GET DRIVE ID
         ADDA    #'A'                              ;CONVERT TO DRIVE ID
         JSR     PUTCHR                            ;OUTPUT IT
@@ -802,6 +816,7 @@ SHODRV
 SHODRA
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     ', '                              ;STRING
+        FCB     $00
 SHODRB
         BSR     SHOTAB                            ;DISPLAY TABLE ENTRY
         LDA     #'='                              ;GET FOLLOWING '='
@@ -917,19 +932,23 @@ SHOW6
         BSR     CALFRE                            ;CALCULATE SIZE & FREE
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     'Drive '
+        FCB     $00
         LDA     >SDRIVE                           ;GET DRIVE ID
         ADDA    #'A'                              ;CONVERT TO PRINTABLE
         JSR     PUTCHR                            ;DISPLAY
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     ' has '
+        FCB     $00
         LDD     >TEMP2                            ;GET DISK SIZE
         JSR     WRDEC                             ;DISPLAY IN DECIMAL
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     ' blocks, '
+        FCB     $00
         LDD     >TEMP1                            ;GET FREE BLOCKS
         JSR     WRDEC                             ;OUTPUT IN DECIMAL
         JSR     WRMSG                             ;OUTPUT MESSAGE
         FCC     ' free'
+        FCB     $00
         RTS
 ;*
 ;* CALCULATE # FREE SECTORS ON DISK

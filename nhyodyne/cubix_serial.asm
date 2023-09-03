@@ -50,9 +50,9 @@ SERIALINIT:
 WRSER1
         PSHS    B
 !
-        LDA     UART5                             ; READ LINE STATUS REGISTER
-        ANDA    #$20                              ; TEST IF UART IS READY TO SEND (BIT 5)
-        CMPA    #$00
+        LDB     UART5                             ; READ LINE STATUS REGISTER
+        ANDB    #$20                              ; TEST IF UART IS READY TO SEND (BIT 5)
+        CMPB    #$00
         BEQ     <                                 ; IF NOT REPEAT
         STA     UART0                             ; THEN WRITE THE CHAR TO UART
         PULS    B,PC

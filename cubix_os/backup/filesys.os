@@ -94,6 +94,7 @@ FILERR
         BEQ     NOFMSG                            ;NO, SKIP IT
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     'Error processing file: '
+        FCB     $00
         JSR     SHOSAV                            ;DISPLAY IT
         JSR     LFCR
 NOFMSG
@@ -817,9 +818,11 @@ HDE
 HDE1
         JSR     WRLIN                             ;OUTPUT STRING
         FCC     'Error accessing block '
+        FCB     $00
         JSR     WRDEC                             ;DISPLAY BLOCK
         JSR     WRLIN                             ;OUTPUT STRING
         FCC     ' on drive: '
+        FCB     $00
         LDA     >SDRIVE                           ;GET DRIVE ID
         ADDA    #'A'                              ;OFFSET
         JSR     PUTCHR
@@ -842,8 +845,13 @@ HDE4
 ;* DISK ERROR MESSAGES
 DETAB
         FCC     'Disk format error'
+        FCB     $00
         FCC     'Bad sector'
+        FCB     $00
         FCC     'Sector not found'
+        FCB     $00
         FCC     'Disk write protected'
+        FCB     $00
         FCB     0                                 ;END OF TABLE
         FCC     'Disk system error'
+        FCB     $00

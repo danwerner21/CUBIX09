@@ -14,7 +14,7 @@
                       (       loader.asm):00014                       ORG       $DFE0
 DFE0 F3               (       loader.asm):00015                         FCB             $F3                             ;DI - DISABLE INTERRUPTS
 DFE1 010020           (       loader.asm):00016                         FCB             $01,$00,$20             ;LD     BC,$2000 -BYTES TO MOVE
-DFE4 110044           (       loader.asm):00017                         FCB             $11,$00,$44             ;LD     DE,$6000 -DESTINATION ADDRESS (6809 IS !A15)
+DFE4 110060           (       loader.asm):00017                         FCB             $11,$00,$60             ;LD     DE,$6000 -DESTINATION ADDRESS (6809 IS !A15)
 DFE7 212001           (       loader.asm):00018                         FCB             $21,$20,$01             ;LD     HL,$0120 -SOURCE ADDRESS
 DFEA EDB0             (       loader.asm):00019                         FCB             $ED,$B0                 ;LDIR            -COPY RAM
 DFEC DBF0             (       loader.asm):00020                         FCB             $DB,$F0                 ;IN     A,$F0    -ENABLE 6809

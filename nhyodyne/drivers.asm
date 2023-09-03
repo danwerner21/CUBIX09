@@ -41,13 +41,13 @@ DRIVERS         EQU $E99F		FIRST FREE LOCATION IN ROM
 ;*
 ;* INITIALIZE CUBIX SYSTEM TABLE
 HWINIT
-        LDX     #RITAB		POINT TO OUR TABLE
-        LDB     #RISIZ		SIZE OF TABLE
+        LDX     #RITAB                            ;POINT TO OUR TABLE
+        LDB     #RISIZ                            ;SIZE OF TABLE
 HWIN1
-        LDA     ,X+		GET A BYTE FROM TABLE
-        STA     ,Y+		WRITE IT TO CUBIX RAM
-        DECB    REDUCE COUNT
-        BNE     HWIN1		MOVE ENTIRE TABLE
+        LDA     ,X+                               ;GET A BYTE FROM TABLE
+        STA     ,Y+                               ;WRITE IT TO CUBIX RAM
+        DECB                                      ;REDUCE COUNT
+        BNE     HWIN1                             ;MOVE ENTIRE TABLE
 
         JSR     SERIALINIT
         JSR     PPIDE_INIT
@@ -56,7 +56,7 @@ HWIN1
 
 ;* NULL DEVICE DRIVERS
 RDNULL
-        LDA     #$FF		INDICATE NO CHARACTER
+        LDA     #$FF                              ;INDICATE NO CHARACTER
 WRNULL
         RTS     IGNORE OPERATION
 
@@ -107,11 +107,11 @@ DRDSEC
 ;*	BNE 	NOTRDC			;
 ;*	JMP	Z80RDRIVE		; USE Z80 C:
 ;*NOTRDC
-;*	CMPA	#$03			; DRIVE D?
-;*	BNE 	NOTRDD			;
-;*	JMP	IDE_READ_SECTOR		; USE DIRECT ATTACHED IDE
-;*NOTRDD
-;*	RTS
+        CMPA    #$03                              ; DRIVE D?
+        BNE     NOTRDD                            ;
+        JMP     IDE_READ_SECTOR                   ; USE DIRECT ATTACHED IDE
+NOTRDD
+        RTS
 
 
 ;*

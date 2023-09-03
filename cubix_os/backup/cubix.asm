@@ -250,11 +250,13 @@ SSR
 DBGSSR
         JSR     WRLIN                             ;OUTPUT LINE
         FCC     'SSR '
+        FCB     $00
         LDX     ,Y                                ;RECOVER PC
         LDB     -1,X                              ;GET NUMBER BACK
         JSR     WRDEC8                            ;OUTPUT
         JSR     WRLIN
         FCC     ' - '
+        FCB     $00
         PULS    CC,A,B,DP,X,Y,U
         BSR     DMPREG1                           ;DISPLAY REGS
         JMP     [TEMP]
@@ -262,9 +264,11 @@ INVSSR
         TFR     Y,S                               ;FIX STACK
         JSR     WRLIN                             ;OUTPUT LINE
         FCC     'Invalid SSR '
+        FCB     $00
         JSR     WRDEC8                            ;OUTPUT
         JSR     WRLIN                             ;OUTPUT LINE
         FCC     ' at $'
+        FCB     $00
         LDD     ,S++                              ;GET ADDR
         SUBD    #2                                ;BACK TO ADDRESS
         JSR     WRHEXW                            ;OUTPUT
@@ -278,39 +282,48 @@ DMPREG1
         PSHS    CC,A,B                            ;SAVE REGS
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     'PC='
+        FCB     $00
         LDD     5,S                               ;GET PC
         SUBD    #2                                ;BACK UP TO SSR ADDRESS
         JSR     WRHEXW                            ;OUTPUT HEX WORD
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     ' CC='
+        FCB     $00
         LDA     ,S                                ;GET CONDITION CODE
         JSR     WRHEX                             ;OUTPUT HEX BYTE
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     ' DP='
+        FCB     $00
         TFR     DP,A                              ;GET DIRECT PAGE
         JSR     WRHEX                             ;OUTPUT HEX BYTE
         JSR     WRLIN                             ;OUTPUT MESSAHE
         FCC     ' A='
+        FCB     $00
         LDA     1,S                               ;GET SAVED 'A'
         JSR     WRHEX                             ;OUTPUT HEX BYTE
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     ' B='
+        FCB     $00
         LDA     2,S                               ;GET SAVED 'B'
         JSR     WRHEX                             ;OUTPUT HEX BYTE
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     ' X='
+        FCB     $00
         TFR     X,D                               ;GET 'X'
         JSR     WRHEXW                            ;OUTPUT HEX WORD
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     ' Y='
+        FCB     $00
         TFR     Y,D                               ;GET 'Y'
         JSR     WRHEXW                            ;OUTPUT HEX WORD
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     ' U='
+        FCB     $00
         TFR     U,D                               ;GET 'U'
         JSR     WRHEXW                            ;OUTPUT HEX WORD
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     ' S='
+        FCB     $00
         TFR     S,D                               ;GET 'S'
         ADDD    #7                                ;DISCOUNT WHAT WE STACKED
         JSR     WRHEXW                            ;OUTPUT HEX WORD
@@ -408,7 +421,7 @@ BEGIN
 HELLO
         JSR     WRMSG
         FCB     $0A
-        FCC     'CUBIX version osver'
+        FCC     'CUBIX version 1.5'
         FCB     $0A,$0D,$0A
         FCC     'Copyright 1983-2005 Dave Dunfield'
         FCB     $0A,$0D
@@ -438,6 +451,7 @@ RCRET
         TFR     A,B                               ;WRITE IT
         JSR     WRLIN                             ;OUTPUT MESSAGE
         FCC     'Rc='
+        FCB     $00
         JSR     WRDEC8                            ;OUTPUT IN DECIMAL
         JSR     LFCR                              ;NEW LINE
         BRA     CMD                               ;GET NEXT COMMAND
@@ -1298,26 +1312,37 @@ NMI
 ;* STRINGS & MESSAGES
 IPLFILE
         FCC     'STARTUP.*'
+        FCB     $00
 UNCMD
         FCC     'Unrecognized command'
+        FCB     $00
 BADOPM
         FCC     'Operand missing or invalid'
+        FCB     $00
 NOTMSG
         FCC     'File not found'
+        FCB     $00
 EXIMSG
         FCC     'File already exists'
+        FCB     $00
 NOSMSG
         FCC     'Insufficent disk space'
+        FCB     $00
 OREMSG
         FCC     'File not open for read'
+        FCB     $00
 OWEMSG
         FCC     'File not open for write'
+        FCB     $00
 PROMSG
         FCC     'File protection violation'
+        FCB     $00
 DEVMSG
         FCC     'Invalid device'
+        FCB     $00
 DNLMSG
         FCC     'Download format error'
+        FCB     $00
 ;* COMMAND NAME TABLE
 CMDNAM
         FCB     $84
