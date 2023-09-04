@@ -46,8 +46,11 @@ Included applications:
 
 To Do List for this port:
 ADD REMAPABLE DRIVES
+
 ADD SLICES
+
 ADD MULTIPLE IDE DRIVE SUPPORT
+
 DRIVE MAPPER UTILITY
 
 MICRO C
