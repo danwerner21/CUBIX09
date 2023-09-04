@@ -157,7 +157,7 @@ CMD
         LBSR    GETRAM                            ;GET A LINE OF INPUT
         LBSR    SKIP                              ;SKIP TO COMMAND
         BEQ     CMD                               ;IF NONE, TRY AGAIN
-        CMPA    #'*'                             ;COMMENT?
+        CMPA    #'*'                              ;COMMENT?
         BEQ     CMD                               ;IF SO, GO FOR IT
         CMPA    #')'                              ;SYSTEM COMMAND?
         LBNE    EDIT                              ;NO, PROCESS EXPRESSION
@@ -3016,7 +3016,7 @@ GOT1
         LDA     ,Y                                ;GET NEXT CHARACTER
         CMPA    #$FF                              ;END OF FUNCTION?
         BEQ     EFUNC                             ;NO, GO AGAIN
-        CMPA    #'*'                             ;COMMENT?
+        CMPA    #'*'                              ;COMMENT?
         BEQ     FNXLIN                            ;GO TO NEXT LINE
         SWI
         FCB     35                                ;LOOK FOR KEYBOARD KEY
@@ -3638,7 +3638,7 @@ DEFNAM
         FCB     $0D
         FCC     'e@LX'
         FCB     $0D
-LXNAME          =                                 *-2
+LXNAME          = *-2
 CONTIN
         FCN     'CONTINUE.APL'
 ;*

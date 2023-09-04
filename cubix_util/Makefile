@@ -1,5 +1,5 @@
 all:  	asm.s19 asp.s19 basic.s19 build.s19 calc.s19 chgdisk.s19 chkdisk.s19 concat.s19 copy.s19 dir.s19 dirf.s19 ed.s19 edit.s19 edt.s19 \
- 		flink.s19 forth.s19 help.s19 hexed.s19 ldir.s19 mapl.s19
+ 		flink.s19 forth.s19 help.s19 hexed.s19 ldir.s19 mapl.s19 moveapl.s19 raid.s19 redirect.s19 search.s19 sim80.s19 ttypatch.s19 type.s19
 
 
 asm.s19: asm.asm
@@ -122,6 +122,48 @@ mapl.s19: mapl.asm
 	sed -i -e '$$aS9' mapl.s19
 	@cp mapl.s19 ../bin/utilities
 
+moveapl.s19: moveapl.asm
+	lwasm --6809 moveapl.asm -s --list=moveapl.lst --map=moveapl.map --output=moveapl.s --format=srec
+	srec_cat moveapl.s -o moveapl.s19 -data-only
+	sed -i -e '$$aS9' moveapl.s19
+	@cp moveapl.s19 ../bin/utilities
+
+raid.s19: raid.asm
+	lwasm --6809 raid.asm -s --list=raid.lst --map=raid.map --output=raid.s --format=srec
+	srec_cat raid.s -o raid.s19 -data-only
+	sed -i -e '$$aS9' raid.s19
+	@cp raid.s19 ../bin/utilities
+
+redirect.s19: redirect.asm
+	lwasm --6809 redirect.asm -s --list=redirect.lst --map=redirect.map --output=redirect.s --format=srec
+	srec_cat redirect.s -o redirect.s19 -data-only
+	sed -i -e '$$aS9' redirect.s19
+	@cp redirect.s19 ../bin/utilities
+
+search.s19: search.asm
+	lwasm --6809 search.asm -s --list=search.lst --map=search.map --output=search.s --format=srec
+	srec_cat search.s -o search.s19 -data-only
+	sed -i -e '$$aS9' search.s19
+	@cp search.s19 ../bin/utilities
+
+sim80.s19: sim80.asm
+	lwasm --6809 sim80.asm -s --list=sim80.lst --map=sim80.map --output=sim80.s --format=srec
+	srec_cat sim80.s -o sim80.s19 -data-only
+	sed -i -e '$$aS9' sim80.s19
+	@cp sim80.s19 ../bin/utilities
+
+ttypatch.s19: ttypatch.asm
+	lwasm --6809 ttypatch.asm -s --list=ttypatch.lst --map=ttypatch.map --output=ttypatch.s --format=srec
+	srec_cat ttypatch.s -o ttypatch.s19 -data-only
+	sed -i -e '$$aS9' ttypatch.s19
+	@cp ttypatch.s19 ../bin/utilities
+
+type.s19: search.asm
+	lwasm --6809 type.asm -s --list=type.lst --map=type.map --output=type.s --format=srec
+	srec_cat type.s -o type.s19 -data-only
+	sed -i -e '$$aS9' type.s19
+	@cp type.s19 ../bin/utilities
+
 pretty:
 	cp *.asm ./backup
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/asm.asm asm.asm
@@ -144,6 +186,13 @@ pretty:
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/hexed.asm hexed.asm
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/ldir.asm ldir.asm
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/mapl.asm mapl.asm
+	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/moveapl.asm moveapl.asm
+	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/raid.asm raid.asm
+	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/redirect.asm redirect.asm
+	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/search.asm search.asm
+	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/sim80.asm sim80.asm
+	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/ttypatch.asm ttypatch.asm
+	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/type.asm type.asm
 
 clean:
 	@rm -f *.o
