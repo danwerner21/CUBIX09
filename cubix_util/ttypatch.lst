@@ -1,0 +1,833 @@
+                      (     ttypatch.asm):00001         ;        TITLE   TERMINAL DEFINITION EDITOR
+                      (     ttypatch.asm):00002         ;*
+                      (     ttypatch.asm):00003         ;* TTYPATCH: Terminal definition editor
+                      (     ttypatch.asm):00004         ;*
+                      (     ttypatch.asm):00005         ;* Copyright 1983-2005 Dave Dunfield
+                      (     ttypatch.asm):00006         ;* All rights reserved.
+                      (     ttypatch.asm):00007         ;*
+     2000             (     ttypatch.asm):00008         OSRAM           = $2000                           ;APPLICATION RAM AREA
+     DBFF             (     ttypatch.asm):00009         OSEND           = $DBFF                           ;END OF GENERAL RAM
+     D000             (     ttypatch.asm):00010         OSUTIL          = $D000                           ;UTILITY ADDRESS SPACE
+     0019             (     ttypatch.asm):00011         NSIZE           = 25                              ;MAXIMUM NAME WIDTH
+     0019             (     ttypatch.asm):00012         ISIZE           = 25                              ;MAXIMUM ITEM SIZE
+     000D             (     ttypatch.asm):00013         INUM            = 13                              ;# INPUT ENTRIES
+     000F             (     ttypatch.asm):00014         FNUM            = 15                              ;# FUNCTION ENTRIES
+     0008             (     ttypatch.asm):00015         ONUM            = 8                               ;# OUTPUT ENTRIES
+                      (     ttypatch.asm):00016         ;*
+                      (     ttypatch.asm):00017                 ORG     0
+0000                  (     ttypatch.asm):00018         DPREFIX
+0000                  (     ttypatch.asm):00019                 RMB     8                                 ;DIRECTORY PREFIX
+0008                  (     ttypatch.asm):00020         FNAME
+0008                  (     ttypatch.asm):00021                 RMB     8                                 ;FILE NAME
+0010                  (     ttypatch.asm):00022         FTYPE
+0010                  (     ttypatch.asm):00023                 RMB     3                                 ;FILE TYPE
+0013                  (     ttypatch.asm):00024         DSKADR
+0013                  (     ttypatch.asm):00025                 RMB     2                                 ;DISK SECTOR ADDRESS
+0015                  (     ttypatch.asm):00026         LODADR
+0015                  (     ttypatch.asm):00027                 RMB     2                                 ;LOAD ADDRESS
+0017                  (     ttypatch.asm):00028         FPROT
+0017                  (     ttypatch.asm):00029                 RMB     1                                 ;PROTECTION BITS
+                      (     ttypatch.asm):00030         ;*
+                      (     ttypatch.asm):00031                 ORG     $2000
+2000 813F             (     ttypatch.asm):00032                 CMPA    #'?'                              ;QUESTION?
+2002 2612             (     ttypatch.asm):00033                 BNE     MAIN                              ;NO, ITS OK
+2004 3F               (     ttypatch.asm):00034                 SWI
+2005 19               (     ttypatch.asm):00035                 FCB     25                                ;DISPLAY MESSAGE
+2006 5573653A20747479 (     ttypatch.asm):00036                 FCN     'Use: ttypatch'
+     706174636800
+2014 3F               (     ttypatch.asm):00037                 SWI
+2015 00               (     ttypatch.asm):00038                 FCB     0
+2016                  (     ttypatch.asm):00039         MAIN
+2016 3F               (     ttypatch.asm):00040                 SWI
+2017 19               (     ttypatch.asm):00041                 FCB     25                                ;DISPLAY MESSAGE
+2018 20202020203B2A2A (     ttypatch.asm):00042                 FCC     '     ;*** TTY patch utility ***'
+     2A20545459207061
+     746368207574696C
+     697479202A2A2A
+2037 0A0D             (     ttypatch.asm):00043                 FCB     $0A,$0D
+2039 4361727269616765 (     ttypatch.asm):00044                 FCC     'Carriage-return to exit a Sub-Menu'
+     2D72657475726E20
+     746F206578697420
+     61205375622D4D65
+     6E75
+205B 0A00             (     ttypatch.asm):00045                 FCB     $0A,0
+                      (     ttypatch.asm):00046         ;* ZERO INITIALIZED DATA
+205D                  (     ttypatch.asm):00047         MAIN1
+205D BD21C8           (     ttypatch.asm):00048                 JSR     CLRAM
+                      (     ttypatch.asm):00049         ;* MAIN MENU
+2060                  (     ttypatch.asm):00050         MAIN2
+2060 10CE2749         (     ttypatch.asm):00051                 LDS     #STACK                            ;POINT TO STACK
+2064 8E23F2           (     ttypatch.asm):00052                 LDX     #MMENU                            ;POINT TO MAIN MENU
+2067 C631             (     ttypatch.asm):00053                 LDB     #'1'                              ;ZERO COUNT
+2069                  (     ttypatch.asm):00054         MAIN3
+2069 A684             (     ttypatch.asm):00055                 LDA     ,X                                ;MORE DATA
+206B 2717             (     ttypatch.asm):00056                 BEQ     MAIN4                             ;NO, NONE
+206D 3F               (     ttypatch.asm):00057                 SWI
+206E 18               (     ttypatch.asm):00058                 FCB     24                                ;OUTPUT STRING
+206F 20202000         (     ttypatch.asm):00059                 FCN     '   '                             ;SPACE OVER MENU
+2073 1F98             (     ttypatch.asm):00060                 TFR     B,A                               ;GET VALUE
+2075 3F               (     ttypatch.asm):00061                 SWI
+2076 21               (     ttypatch.asm):00062                 FCB     33                                ;OUTPUT
+2077 3F               (     ttypatch.asm):00063                 SWI
+2078 18               (     ttypatch.asm):00064                 FCB     24                                ;OUTPUT STRING
+2079 202D2000         (     ttypatch.asm):00065                 FCN     ' - '
+207D 3F               (     ttypatch.asm):00066                 SWI
+207E 17               (     ttypatch.asm):00067                 FCB     23                                ;DISPLAY TEXT
+207F 3F               (     ttypatch.asm):00068                 SWI
+2080 16               (     ttypatch.asm):00069                 FCB     22                                ;NEW LINE
+2081 5C               (     ttypatch.asm):00070                 INCB                                      ;     ADVANCE COUNT
+2082 20E5             (     ttypatch.asm):00071                 BRA     MAIN3                             ;AND DO NEXT
+2084                  (     ttypatch.asm):00072         MAIN4
+2084 3F               (     ttypatch.asm):00073                 SWI
+2085 18               (     ttypatch.asm):00074                 FCB     24                                ;OUTPUT STRING
+2086 46756E6374696F6E (     ttypatch.asm):00075                 FCN     'Function? '
+     3F2000
+2091 3F               (     ttypatch.asm):00076                 SWI
+2092 22               (     ttypatch.asm):00077                 FCB     34                                ;GET CHAR
+                      (     ttypatch.asm):00078         ;* FUNCTION SELECTED
+2093                  (     ttypatch.asm):00079         MAIN5
+2093 3F               (     ttypatch.asm):00080                 SWI
+2094 21               (     ttypatch.asm):00081                 FCB     33                                ;ECHO
+2095 3F               (     ttypatch.asm):00082                 SWI
+2096 16               (     ttypatch.asm):00083                 FCB     22                                ;NEW LINE
+                      (     ttypatch.asm):00084         ;* '1' - INPUT KEYS
+2097 8031             (     ttypatch.asm):00085                 SUBA    #'1'                              ;CONVERT
+2099 2608             (     ttypatch.asm):00086                 BNE     MAIN6                             ;NO, TRY NEXT
+209B 8E2528           (     ttypatch.asm):00087                 LDX     #INAMES                           ;POINT TO INPUT NAMES
+209E CE269A           (     ttypatch.asm):00088                 LDU     #IDATA                            ;POINT TO DATA AREA
+20A1 2014             (     ttypatch.asm):00089                 BRA     SUBMEN                            ;DO SUBMENU
+                      (     ttypatch.asm):00090         ;* '2' - FUNCTION KEYS
+20A3                  (     ttypatch.asm):00091         MAIN6
+20A3 4A               (     ttypatch.asm):00092                 DECA                                      ;     DEFINE FUNCTION?
+20A4 2608             (     ttypatch.asm):00093                 BNE     MAIN7                             ;NO, TRY NEXT
+20A6 8E25AF           (     ttypatch.asm):00094                 LDX     #FNAMES                           ;POINT TO NAMES
+20A9 CE26B3           (     ttypatch.asm):00095                 LDU     #FDATA                            ;POINT TO DATA
+20AC 2009             (     ttypatch.asm):00096                 BRA     SUBMEN                            ;DO SUB MENU
+                      (     ttypatch.asm):00097         ;* '3' - OUTPUT STRINGS
+20AE                  (     ttypatch.asm):00098         MAIN7
+20AE 4A               (     ttypatch.asm):00099                 DECA                                      ;     DEFINE OUTPUT?
+20AF 260E             (     ttypatch.asm):00100                 BNE     MAIN9                             ;NO, TRY NEXT
+20B1 8E2488           (     ttypatch.asm):00101                 LDX     #ONAMES                           ;POINT TO PUTPUT NAMES
+20B4 CE26CC           (     ttypatch.asm):00102                 LDU     #ODATA                            ;POINT TO OUTPUT DATA
+20B7                  (     ttypatch.asm):00103         SUBMEN
+20B7 86FF             (     ttypatch.asm):00104                 LDA     #-1                               ;INSURE NO XY
+20B9 BD21D6           (     ttypatch.asm):00105                 JSR     DMENU                             ;DO THE MENU
+20BC 7E2060           (     ttypatch.asm):00106                 JMP     MAIN2                             ;AND RETURN
+                      (     ttypatch.asm):00107         ;* '5' - LOAD SETTINGS
+20BF                  (     ttypatch.asm):00108         MAIN9
+20BF 4A               (     ttypatch.asm):00109                 DECA                                      ;     IS IT LOAD?
+20C0 2645             (     ttypatch.asm):00110                 BNE     MAIN10                            ;NO, TRY NEXT
+20C2 BD2171           (     ttypatch.asm):00111                 JSR     LDPGM                             ;LOAD THE FILE
+                      (     ttypatch.asm):00112         ;* OUTPUT KEYS INTO MEMORY
+20C5 BD21C8           (     ttypatch.asm):00113                 JSR     CLRAM                             ;ZERO THE RAM DATABASE
+20C8 CE26CC           (     ttypatch.asm):00114                 LDU     #ODATA                            ;POINT TO OUTPUT DATA
+20CB C608             (     ttypatch.asm):00115                 LDB     #ONUM                             ;GET # ENTRIES
+20CD                  (     ttypatch.asm):00116         MAIN9A
+20CD 3444             (     ttypatch.asm):00117                 PSHS    B,U                               ;SAVE REG
+20CF EC81             (     ttypatch.asm):00118                 LDD     ,X++                              ;GET ADDRESS
+20D1 B32697           (     ttypatch.asm):00119                 SUBD    FLOAD                             ;CONVERT
+20D4 C32749           (     ttypatch.asm):00120                 ADDD    #LOAD                             ;TO READ ADDRESS
+20D7 1F02             (     ttypatch.asm):00121                 TFR     D,Y                               ;'Y' = PTR TO ENTRY
+20D9                  (     ttypatch.asm):00122         MAIN9B
+20D9 A6A0             (     ttypatch.asm):00123                 LDA     ,Y+                               ;GET CHAR
+20DB A7C0             (     ttypatch.asm):00124                 STA     ,U+                               ;WRITE IT OUT
+20DD 2A06             (     ttypatch.asm):00125                 BPL     MAIN9C                            ;ITS OK
+20DF A6A0             (     ttypatch.asm):00126                 LDA     ,Y+                               ;GET CHAR
+20E1 A7C0             (     ttypatch.asm):00127                 STA     ,U+                               ;WRITE IT OUT
+20E3 20F4             (     ttypatch.asm):00128                 BRA     MAIN9B                            ;AND CONTINUE
+20E5                  (     ttypatch.asm):00129         MAIN9C
+20E5 26F2             (     ttypatch.asm):00130                 BNE     MAIN9B                            ;AND PROCEED
+20E7 3544             (     ttypatch.asm):00131                 PULS    B,U                               ;RESTORE 'U'
+20E9 33C819           (     ttypatch.asm):00132                 LEAU    ISIZE,U                           ;ADVANCE TO NEXT
+20EC 5A               (     ttypatch.asm):00133                 DECB                                      ;     REDUCE COUNT
+20ED 26DE             (     ttypatch.asm):00134                 BNE     MAIN9A                            ;KEEP GOING
+                      (     ttypatch.asm):00135         ;* COPY INPUT & FUNCTION KEYS
+20EF CE269A           (     ttypatch.asm):00136                 LDU     #IDATA                            ;POINT TO INPUT DATA
+20F2 C61C             (     ttypatch.asm):00137                 LDB     #INUM+FNUM      GET # KEYS
+20F4                  (     ttypatch.asm):00138         MAIN9D
+20F4 3440             (     ttypatch.asm):00139                 PSHS    U                                 ;SAVE ENTRY
+20F6                  (     ttypatch.asm):00140         MAIN9E
+20F6 A680             (     ttypatch.asm):00141                 LDA     ,X+                               ;GET CHAR
+20F8 A7C0             (     ttypatch.asm):00142                 STA     ,U+                               ;WRITE IT
+20FA 26FA             (     ttypatch.asm):00143                 BNE     MAIN9E                            ;PROCEED
+20FC 3540             (     ttypatch.asm):00144                 PULS    U                                 ;RESTORE U
+20FE 33C819           (     ttypatch.asm):00145                 LEAU    ISIZE,U                           ;OFFSET BY SIZE
+2101 5A               (     ttypatch.asm):00146                 DECB                                      ;     REDUCE COUNT
+2102 26F0             (     ttypatch.asm):00147                 BNE     MAIN9D                            ;AND PROCEED
+2104 7E2060           (     ttypatch.asm):00148                 JMP     MAIN2                             ;AND PROCEED
+                      (     ttypatch.asm):00149         ;* '6' - SAVE SETTINGS
+2107                  (     ttypatch.asm):00150         MAIN10
+2107 4A               (     ttypatch.asm):00151                 DECA                                      ;     SAVE ?
+2108 2652             (     ttypatch.asm):00152                 BNE     MAIN11                            ;NO, TRY NEXT
+210A BD2171           (     ttypatch.asm):00153                 JSR     LDPGM                             ;LOAD PROGRAM INTO RAM
+210D 338810           (     ttypatch.asm):00154                 LEAU    ONUM*2,X                          ;'U'= OUTPUT PTR
+                      (     ttypatch.asm):00155         ;* COPY INPUT & FUNCTION KEYS
+2110 108E269A         (     ttypatch.asm):00156                 LDY     #IDATA                            ;POINT TO INPUT DATA
+2114 C61C             (     ttypatch.asm):00157                 LDB     #INUM+FNUM      GET # KEYS
+2116                  (     ttypatch.asm):00158         MAIN10A
+2116 3420             (     ttypatch.asm):00159                 PSHS    Y                                 ;SAVE FOR LATER
+2118                  (     ttypatch.asm):00160         MAIN10B
+2118 A6A0             (     ttypatch.asm):00161                 LDA     ,Y+                               ;GET CHAR
+211A A7C0             (     ttypatch.asm):00162                 STA     ,U+                               ;WRITE IT OUT
+211C 26FA             (     ttypatch.asm):00163                 BNE     MAIN10B                           ;AND PROCEED
+211E 3520             (     ttypatch.asm):00164                 PULS    Y                                 ;RESTORE 'Y'
+2120 31A819           (     ttypatch.asm):00165                 LEAY    ISIZE,Y                           ;SKIP IT
+2123 5A               (     ttypatch.asm):00166                 DECB                                      ;     REDUCE COUNT
+2124 26F0             (     ttypatch.asm):00167                 BNE     MAIN10A                           ;COPY THEM ALL
+2126 6FC0             (     ttypatch.asm):00168                 CLR     ,U+                               ;INDICATE END OF INPUTS
+                      (     ttypatch.asm):00169         ;* COPY OUTPUT STRINGS
+2128 108E26CC         (     ttypatch.asm):00170                 LDY     #ODATA                            ;POINT TO OUTPUT DATA
+212C C608             (     ttypatch.asm):00171                 LDB     #ONUM                             ;GET # OUTPUTS
+212E                  (     ttypatch.asm):00172         MAIN10C
+212E 3424             (     ttypatch.asm):00173                 PSHS    B,Y                               ;SAVE REGS
+2130 1F30             (     ttypatch.asm):00174                 TFR     U,D                               ;GET ADDRESS
+2132 832749           (     ttypatch.asm):00175                 SUBD    #LOAD                             ;CONVERT TO ZERO OFFSET
+2135 F32697           (     ttypatch.asm):00176                 ADDD    FLOAD                             ;CONVERT TO PGM OFFSET
+2138 ED81             (     ttypatch.asm):00177                 STD     ,X++                              ;SAVE VECTOR
+213A                  (     ttypatch.asm):00178         MAIN10D
+213A A6A0             (     ttypatch.asm):00179                 LDA     ,Y+                               ;GET CHAR
+213C A7C0             (     ttypatch.asm):00180                 STA     ,U+                               ;WRITE CHAR
+213E 2A06             (     ttypatch.asm):00181                 BPL     MAIN10E                           ;ITS OK
+2140 A6A0             (     ttypatch.asm):00182                 LDA     ,Y+                               ;GET CHAR
+2142 A7C0             (     ttypatch.asm):00183                 STA     ,U+                               ;WRITE IT
+2144 20F4             (     ttypatch.asm):00184                 BRA     MAIN10D                           ;AND PROCEED
+2146                  (     ttypatch.asm):00185         MAIN10E
+2146 26F2             (     ttypatch.asm):00186                 BNE     MAIN10D                           ;DO THEM ALL
+2148 3524             (     ttypatch.asm):00187                 PULS    B,Y                               ;RESTORE REGISTER
+214A 31A819           (     ttypatch.asm):00188                 LEAY    ISIZE,Y                           ;ADVANCE TO NEXT
+214D 5A               (     ttypatch.asm):00189                 DECB                                      ;     REDUCE COUNT
+214E 26DE             (     ttypatch.asm):00190                 BNE     MAIN10C                           ;AND PROCEED
+                      (     ttypatch.asm):00191         ;* RE-SAVE THE FILE
+2150 8E2749           (     ttypatch.asm):00192                 LDX     #LOAD                             ;POINT TO LOAD ADDRESS
+2153 F62699           (     ttypatch.asm):00193                 LDB     FSIZE                             ;GET FILE SIZE
+2156 4F               (     ttypatch.asm):00194                 CLRA                                      ;     ZERO HIGH
+2157 3F               (     ttypatch.asm):00195                 SWI
+2158 36               (     ttypatch.asm):00196                 FCB     54                                ;SAVE THE FILE
+2159 7E2060           (     ttypatch.asm):00197                 JMP     MAIN2                             ;AND PROCEED
+                      (     ttypatch.asm):00198         ;* EXIT THE PROGRAM
+215C                  (     ttypatch.asm):00199         MAIN11
+215C 4A               (     ttypatch.asm):00200                 DECA                                      ;     TEST FOR EXIT
+215D 2603             (     ttypatch.asm):00201                 BNE     MAIN12                            ;NO, REPORT ERROR
+215F 4F               (     ttypatch.asm):00202                 CLRA                                      ;     ZERO RC
+2160 3F               (     ttypatch.asm):00203                 SWI
+2161 00               (     ttypatch.asm):00204                 FCB     0
+                      (     ttypatch.asm):00205         ;*
+2162                  (     ttypatch.asm):00206         MAIN12
+2162 3F               (     ttypatch.asm):00207                 SWI
+2163 19               (     ttypatch.asm):00208                 FCB     25                                ;ISSUE MESSAGE
+2164 2A2A4552524F522A (     ttypatch.asm):00209                 FCN     '**ERROR**'
+     2A00
+216E 7E2060           (     ttypatch.asm):00210                 JMP     MAIN2                             ;AND PROCEED
+                      (     ttypatch.asm):00211         ;* LOAD FILE INTO MEMORY
+2171                  (     ttypatch.asm):00212         LDPGM
+2171 3F               (     ttypatch.asm):00213                 SWI
+2172 18               (     ttypatch.asm):00214                 FCB     24                                ;DISPLAY PROMPT
+2173 46696C656E616D65 (     ttypatch.asm):00215                 FCN     'Filename? '
+     3F2000
+217E 3F               (     ttypatch.asm):00216                 SWI
+217F 03               (     ttypatch.asm):00217                 FCB     3                                 ;GET INPUT LINE
+2180 3F               (     ttypatch.asm):00218                 SWI
+2181 04               (     ttypatch.asm):00219                 FCB     4                                 ;MORE DATA?
+2182 2741             (     ttypatch.asm):00220                 BEQ     LODERR                            ;NO, EXIT
+2184 3F               (     ttypatch.asm):00221                 SWI
+2185 0A               (     ttypatch.asm):00222                 FCB     10                                ;GET FILENAME
+2186 263D             (     ttypatch.asm):00223                 BNE     LODERR                            ;ERROR
+2188 3F               (     ttypatch.asm):00224                 SWI
+2189 46               (     ttypatch.asm):00225                 FCB     70                                ;LOCATE FILE
+218A 2639             (     ttypatch.asm):00226                 BNE     LODERR                            ;ERROR
+218C EC8815           (     ttypatch.asm):00227                 LDD     LODADR,X        GET LOAD ADDRESS
+218F FD2697           (     ttypatch.asm):00228                 STD     FLOAD                             ;WRITE IT OUT
+2192 EC8813           (     ttypatch.asm):00229                 LDD     DSKADR,X        GET DISK ADDRESS
+2195 8E2749           (     ttypatch.asm):00230                 LDX     #LOAD                             ;GET INPUT ADDRESS
+2198 3F               (     ttypatch.asm):00231                 SWI
+2199 4E               (     ttypatch.asm):00232                 FCB     78                                ;LOAD CHAIN
+219A 1F10             (     ttypatch.asm):00233                 TFR     X,D                               ;'A' = # 256 BYTE BLOCKS
+219C 832749           (     ttypatch.asm):00234                 SUBD    #LOAD                             ;CONVERT TO OFFSET
+219F 44               (     ttypatch.asm):00235                 LSRA                                      ;     'A' = # 512 BYTE BLOCKS
+21A0 B72699           (     ttypatch.asm):00236                 STA     FSIZE                             ;SET FILE SIZE
+21A3 B62749           (     ttypatch.asm):00237                 LDA     >LOAD                             ;GET FIRST INST.
+21A6 81BE             (     ttypatch.asm):00238                 CMPA    #$BE                              ;IS IT 'LDX >'
+21A8 2615             (     ttypatch.asm):00239                 BNE     LODBAD                            ;BAD FILE
+21AA FC274C           (     ttypatch.asm):00240                 LDD     >LOAD+3                           ;GET FOLLOWING INST
+21AD 10833F17         (     ttypatch.asm):00241                 CMPD    #$3F17                            ;IS IT 'SSR 23'
+21B1 260C             (     ttypatch.asm):00242                 BNE     LODBAD                            ;BAD FILE
+21B3 FC274A           (     ttypatch.asm):00243                 LDD     LOAD+1                            ;GET ADDRESS
+21B6 B32697           (     ttypatch.asm):00244                 SUBD    FLOAD                             ;CONVERT TO ZERO OFFSET
+21B9 C32749           (     ttypatch.asm):00245                 ADDD    #LOAD                             ;OFFSET TO SCREEN POSITION
+21BC 1F01             (     ttypatch.asm):00246                 TFR     D,X                               ;SET UP 'X'
+21BE 39               (     ttypatch.asm):00247                 RTS
+                      (     ttypatch.asm):00248         ;* FILE FORMAT IS INVALID
+21BF                  (     ttypatch.asm):00249         LODBAD
+21BF 108E23D6         (     ttypatch.asm):00250                 LDY     #BADFIL                           ;POINT TO MESSAGE
+21C3 3F               (     ttypatch.asm):00251                 SWI
+21C4 34               (     ttypatch.asm):00252                 FCB     52                                ;ISSUE MESSAGE
+21C5                  (     ttypatch.asm):00253         LODERR
+21C5 7E2060           (     ttypatch.asm):00254                 JMP     MAIN2                             ;AND PROCEED
+                      (     ttypatch.asm):00255         ;*
+                      (     ttypatch.asm):00256         ;* CLEAR THE RAM DATABASE
+                      (     ttypatch.asm):00257         ;*
+21C8                  (     ttypatch.asm):00258         CLRAM
+21C8 3410             (     ttypatch.asm):00259                 PSHS    X                                 ;SAVE REG
+21CA 8E269A           (     ttypatch.asm):00260                 LDX     #IDATA                            ;POINT TO IT
+21CD                  (     ttypatch.asm):00261         CLR1
+21CD 6F80             (     ttypatch.asm):00262                 CLR     ,X+                               ;ZERO BYTE
+21CF 8C26E5           (     ttypatch.asm):00263                 CMPX    #IEND                             ;ARE WE OVER?
+21D2 25F9             (     ttypatch.asm):00264                 BLO     CLR1                              ;NO, KEEP GOING
+21D4 3590             (     ttypatch.asm):00265                 PULS    X,PC                              ;RESTORE & RETURN
+                      (     ttypatch.asm):00266         ;*
+                      (     ttypatch.asm):00267         ;* DISPLAY MENU OF SELECTIONS(X), DATA AREA(U)
+                      (     ttypatch.asm):00268         ;*
+21D6                  (     ttypatch.asm):00269         DMENU
+21D6 3452             (     ttypatch.asm):00270                 PSHS    A,X,U                             ;SAVE REGISTER
+21D8                  (     ttypatch.asm):00271         DMENU0
+21D8 6FE4             (     ttypatch.asm):00272                 CLR     ,S                                ;ZERO COUNT
+21DA EE61             (     ttypatch.asm):00273                 LDU     1,S                               ;GET TABLE ADDRESS
+21DC                  (     ttypatch.asm):00274         DMENU1
+21DC A6C4             (     ttypatch.asm):00275                 LDA     ,U                                ;MORE ENTRIES?
+21DE 273A             (     ttypatch.asm):00276                 BEQ     DMENU4                            ;NO, NONE
+21E0 3F               (     ttypatch.asm):00277                 SWI
+21E1 18               (     ttypatch.asm):00278                 FCB     24                                ;SPACE OVER
+21E2 20202000         (     ttypatch.asm):00279                 FCN     '   '                             ;OVER
+21E6 A6E4             (     ttypatch.asm):00280                 LDA     ,S                                ;GET INDEX CHAR
+21E8 8B41             (     ttypatch.asm):00281                 ADDA    #'A'                              ;OFFSET
+21EA 3F               (     ttypatch.asm):00282                 SWI
+21EB 21               (     ttypatch.asm):00283                 FCB     33                                ;DISPLAY
+21EC 3F               (     ttypatch.asm):00284                 SWI
+21ED 18               (     ttypatch.asm):00285                 FCB     24                                ;SEPERATOR
+21EE 202D2000         (     ttypatch.asm):00286                 FCN     ' - '
+21F2 5F               (     ttypatch.asm):00287                 CLRB                                      ;     ZERO COUNT
+21F3                  (     ttypatch.asm):00288         DMENU2
+21F3 A6C0             (     ttypatch.asm):00289                 LDA     ,U+                               ;GET CHAR
+21F5 2705             (     ttypatch.asm):00290                 BEQ     DMENU3                            ;MORE, QUIT
+21F7 5C               (     ttypatch.asm):00291                 INCB                                      ;     ADVANCE COUNT
+21F8 3F               (     ttypatch.asm):00292                 SWI
+21F9 21               (     ttypatch.asm):00293                 FCB     33                                ;DISPLAY
+21FA 20F7             (     ttypatch.asm):00294                 BRA     DMENU2                            ;DO THEM ALL
+21FC                  (     ttypatch.asm):00295         DMENU3
+21FC 3F               (     ttypatch.asm):00296                 SWI
+21FD 15               (     ttypatch.asm):00297                 FCB     21                                ;DISPLAY SPACE
+21FE 5C               (     ttypatch.asm):00298                 INCB                                      ;     ADVANCE COUNT
+21FF C119             (     ttypatch.asm):00299                 CMPB    #NSIZE                            ;ARE WE OVER?
+2201 25F9             (     ttypatch.asm):00300                 BLO     DMENU3                            ;DO THEM ALL
+2203 3F               (     ttypatch.asm):00301                 SWI
+2204 18               (     ttypatch.asm):00302                 FCB     24                                ;SEPERATOR
+2205 3A2000           (     ttypatch.asm):00303                 FCN     ': '
+2208 A6E4             (     ttypatch.asm):00304                 LDA     ,S                                ;GET ITEM NUMBER
+220A C619             (     ttypatch.asm):00305                 LDB     #ISIZE                            ;GET ITEM SIZE
+220C 3D               (     ttypatch.asm):00306                 MUL                                       ;     CALCULATE OFFSET
+220D E363             (     ttypatch.asm):00307                 ADDD    3,S                               ;GET ADDRESS
+220F 1F01             (     ttypatch.asm):00308                 TFR     D,X                               ;GET ADDRESS
+2211 BD2258           (     ttypatch.asm):00309                 JSR     DISDAT                            ;DISPLAY IT
+2214 3F               (     ttypatch.asm):00310                 SWI
+2215 16               (     ttypatch.asm):00311                 FCB     22                                ;NEW LINE
+2216 6CE4             (     ttypatch.asm):00312                 INC     ,S                                ;NEXT ITEM
+2218 20C2             (     ttypatch.asm):00313                 BRA     DMENU1                            ;AND PROCEED
+                      (     ttypatch.asm):00314         ;* WE HAVE END OF LIST, GET SELECTION
+221A                  (     ttypatch.asm):00315         DMENU4
+221A 3F               (     ttypatch.asm):00316                 SWI
+221B 18               (     ttypatch.asm):00317                 FCB     24                                ;DISPLAY PROMPT
+221C 53656C6563743F20 (     ttypatch.asm):00318                 FCN     'Select? '
+     00
+2225                  (     ttypatch.asm):00319         DMENU5
+2225 3F               (     ttypatch.asm):00320                 SWI
+2226 22               (     ttypatch.asm):00321                 FCB     34                                ;GET CHAR
+2227 810D             (     ttypatch.asm):00322                 CMPA    #$0D                              ;ESCAPE
+2229 2729             (     ttypatch.asm):00323                 BEQ     DMENU9                            ;ABORT
+222B 1F89             (     ttypatch.asm):00324                 TFR     A,B                               ;GET CHAR
+222D C45F             (     ttypatch.asm):00325                 ANDB    #$5F                              ;CONVERT TO UPPER
+222F C041             (     ttypatch.asm):00326                 SUBB    #'A'                              ;CONVERT TO OFFSET
+2231 E1E4             (     ttypatch.asm):00327                 CMPB    ,S                                ;ARE WE OK
+2233 24F0             (     ttypatch.asm):00328                 BHS     DMENU5                            ;NO, REQUEST NEXT
+                      (     ttypatch.asm):00329         ;* WE HAVE SELECTION
+2235 3404             (     ttypatch.asm):00330                 PSHS    B                                 ;SAVE FOR LATER
+2237 AE62             (     ttypatch.asm):00331                 LDX     2,S                               ;GET TEXT PTR BACK
+2239                  (     ttypatch.asm):00332         DMENU6
+2239 5A               (     ttypatch.asm):00333                 DECB                                      ;     REDUCE COUNT
+223A 2B06             (     ttypatch.asm):00334                 BMI     DMENU8                            ;WE HAVE IT
+223C                  (     ttypatch.asm):00335         DMENU7
+223C A680             (     ttypatch.asm):00336                 LDA     ,X+                               ;GET CHAR
+223E 26FC             (     ttypatch.asm):00337                 BNE     DMENU7                            ;PROCEED
+2240 20F7             (     ttypatch.asm):00338                 BRA     DMENU6                            ;TEST NEXT
+                      (     ttypatch.asm):00339         ;* WE FOUND TITLE
+2242                  (     ttypatch.asm):00340         DMENU8
+2242 3F               (     ttypatch.asm):00341                 SWI
+2243 17               (     ttypatch.asm):00342                 FCB     23                                ;DISPLAY TITLE
+2244 3F               (     ttypatch.asm):00343                 SWI
+2245 16               (     ttypatch.asm):00344                 FCB     22                                ;NEW LINE
+2246 3504             (     ttypatch.asm):00345                 PULS    B                                 ;RESTORE NUMBER
+2248 8619             (     ttypatch.asm):00346                 LDA     #ISIZE                            ;GET ITEM SIZE
+224A 3D               (     ttypatch.asm):00347                 MUL                                       ;     CALCULATE OFFSET
+224B E363             (     ttypatch.asm):00348                 ADDD    3,S                               ;INCLUDE ADDRESS
+224D 1F01             (     ttypatch.asm):00349                 TFR     D,X                               ;GET CHAR
+224F 8D34             (     ttypatch.asm):00350                 BSR     GETSTR                            ;GET STRING
+2251 7E21D8           (     ttypatch.asm):00351                 JMP     DMENU0                            ;NEXT MENU
+2254                  (     ttypatch.asm):00352         DMENU9
+2254 3F               (     ttypatch.asm):00353                 SWI
+2255 16               (     ttypatch.asm):00354                 FCB     22                                ;NEW LINE
+2256 35D2             (     ttypatch.asm):00355                 PULS    A,X,U,PC                          ;RESTORE & RETURN
+                      (     ttypatch.asm):00356         ;*
+                      (     ttypatch.asm):00357         ;* DISPLAY DATA LINE(X)
+                      (     ttypatch.asm):00358         ;*
+2258                  (     ttypatch.asm):00359         DISDAT
+2258 5F               (     ttypatch.asm):00360                 CLRB                                      ;     ZERO COUNT
+2259                  (     ttypatch.asm):00361         DISD1
+2259 A680             (     ttypatch.asm):00362                 LDA     ,X+                               ;GET CHAR
+225B 2727             (     ttypatch.asm):00363                 BEQ     DISD5                             ;END, EXIT
+225D 2A20             (     ttypatch.asm):00364                 BPL     DISD4                             ;NORMAL CHAR
+225F 1F89             (     ttypatch.asm):00365                 TFR     A,B                               ;'B' = CHAR
+2261 3F               (     ttypatch.asm):00366                 SWI
+2262 18               (     ttypatch.asm):00367                 FCB     24                                ;OUTPUT
+2263 3C00             (     ttypatch.asm):00368                 FCN     '<'
+2265 8658             (     ttypatch.asm):00369                 LDA     #'X'                              ;ASSUME 'X'
+2267 C540             (     ttypatch.asm):00370                 BITB    #%01000000                        ;TEST
+2269 2702             (     ttypatch.asm):00371                 BEQ     DISD2                             ;ASSUMPTION CORRECT
+226B 8659             (     ttypatch.asm):00372                 LDA     #'Y'                              ;FIX MISTAKE
+226D                  (     ttypatch.asm):00373         DISD2
+226D 3F               (     ttypatch.asm):00374                 SWI
+226E 21               (     ttypatch.asm):00375                 FCB     33                                ;DISPLAY IT
+226F 8642             (     ttypatch.asm):00376                 LDA     #'B'                              ;ASSUME BINARY
+2271 C520             (     ttypatch.asm):00377                 BITB    #%00100000                        ;TEST
+2273 2702             (     ttypatch.asm):00378                 BEQ     DISD3                             ;ASSUMPTION CORRECT
+2275 8644             (     ttypatch.asm):00379                 LDA     #'D'                              ;FIX MISTAKE
+2277                  (     ttypatch.asm):00380         DISD3
+2277 3F               (     ttypatch.asm):00381                 SWI
+2278 21               (     ttypatch.asm):00382                 FCB     33                                ;DISPLAY IT
+2279 A680             (     ttypatch.asm):00383                 LDA     ,X+                               ;GET VALUE
+227B 3F               (     ttypatch.asm):00384                 SWI
+227C 1C               (     ttypatch.asm):00385                 FCB     28                                ;DISPLAY IT
+227D 863E             (     ttypatch.asm):00386                 LDA     #'>'                              ;INDICATE SPECIAL
+                      (     ttypatch.asm):00387         ;* NORMAL CHAR TO DISPLAY
+227F                  (     ttypatch.asm):00388         DISD4
+227F BD23B4           (     ttypatch.asm):00389                 JSR     PUTCHR                            ;DISPLAY
+2282 20D5             (     ttypatch.asm):00390                 BRA     DISD1                             ;AND BACK
+2284                  (     ttypatch.asm):00391         DISD5
+2284 39               (     ttypatch.asm):00392                 RTS
+                      (     ttypatch.asm):00393         ;*
+                      (     ttypatch.asm):00394         ;* READ STRING(X) FROM KEYBOARD WITH SPECIALS
+                      (     ttypatch.asm):00395         ;*
+2285                  (     ttypatch.asm):00396         GETSTR
+2285 5F               (     ttypatch.asm):00397                 CLRB                                      ;     ZERO LOW
+2286                  (     ttypatch.asm):00398         GETS1
+2286 3F               (     ttypatch.asm):00399                 SWI
+2287 22               (     ttypatch.asm):00400                 FCB     34                                ;READ CHARACTER
+2288 810D             (     ttypatch.asm):00401                 CMPA    #$0D                              ;SPECIAL CHARACTER
+228A 2708             (     ttypatch.asm):00402                 BEQ     GETS2                             ;YES, IT IS
+228C A785             (     ttypatch.asm):00403                 STA     B,X                               ;WRITE IT
+228E 5C               (     ttypatch.asm):00404                 INCB                                      ;     ADVANCE
+228F BD23B4           (     ttypatch.asm):00405                 JSR     PUTCHR                            ;DISPLAY IT
+2292 20F2             (     ttypatch.asm):00406                 BRA     GETS1                             ;AND PROCEED
+                      (     ttypatch.asm):00407         ;*SPECIAL KEY PRESSED
+2294                  (     ttypatch.asm):00408         GETS2
+2294 3F               (     ttypatch.asm):00409                 SWI
+2295 18               (     ttypatch.asm):00410                 FCB     24                                ;OUTPUT MESSAGE
+2296 0A0D             (     ttypatch.asm):00411                 FCB     $0A,$0D
+2298 284429656C657465 (     ttypatch.asm):00412                 FCN     '(D)elete (C)ontinue (E)nter-CR (H)exchar (Q)uit '
+     202843296F6E7469
+     6E7565202845296E
+     7465722D43522028
+     4829657863686172
+     2028512975697420
+     00
+22C9 8C26E5           (     ttypatch.asm):00413                 CMPX    #GDATA                            ;SPECIAL CASE
+22CC 2611             (     ttypatch.asm):00414                 BNE     GETS3                             ;NO, ITS NOT
+22CE 3F               (     ttypatch.asm):00415                 SWI
+22CF 18               (     ttypatch.asm):00416                 FCB     24                                ;MORE TEXT
+22D0 2858296F75742028 (     ttypatch.asm):00417                 FCN     '(X)out (Y)out '
+     59296F75742000
+22DF                  (     ttypatch.asm):00418         GETS3
+22DF 863F             (     ttypatch.asm):00419                 LDA     #'?'                              ;PROMPT
+22E1 3F               (     ttypatch.asm):00420                 SWI
+22E2 21               (     ttypatch.asm):00421                 FCB     33                                ;DISPLAY IT
+22E3 3F               (     ttypatch.asm):00422                 SWI
+22E4 22               (     ttypatch.asm):00423                 FCB     34                                ;GET CHARACTER
+22E5 3F               (     ttypatch.asm):00424                 SWI
+22E6 21               (     ttypatch.asm):00425                 FCB     33                                ;ECHO
+22E7 845F             (     ttypatch.asm):00426                 ANDA    #$5F                              ;CONVERT TO CAPS
+                      (     ttypatch.asm):00427         ;* 'C'ONTINUE ENTRY
+22E9 8143             (     ttypatch.asm):00428                 CMPA    #'C'                              ;CONTINUE
+22EB 2708             (     ttypatch.asm):00429                 BEQ     GETS3A                            ;YES, PROCEED
+                      (     ttypatch.asm):00430         ;* 'D'ELETE PREVIOUS CHARACTER
+22ED 8144             (     ttypatch.asm):00431                 CMPA    #'D'                              ;DELETE?
+22EF 2611             (     ttypatch.asm):00432                 BNE     GETS4                             ;NO, TRY NEXT
+22F1 5D               (     ttypatch.asm):00433                 TSTB                                      ;     AT ZERO?
+22F2 2701             (     ttypatch.asm):00434                 BEQ     GETS3A                            ;YES, EXIT
+22F4 5A               (     ttypatch.asm):00435                 DECB                                      ;     BACKUP
+22F5                  (     ttypatch.asm):00436         GETS3A
+22F5 6F85             (     ttypatch.asm):00437                 CLR     B,X                               ;ZERO CHAR
+22F7 3F               (     ttypatch.asm):00438                 SWI
+22F8 16               (     ttypatch.asm):00439                 FCB     22                                ;NEW LINE
+22F9 3414             (     ttypatch.asm):00440                 PSHS    B,X
+22FB BD2258           (     ttypatch.asm):00441                 JSR     DISDAT                            ;DISPLAY IT
+22FE 3514             (     ttypatch.asm):00442                 PULS    B,X
+2300 2084             (     ttypatch.asm):00443                 BRA     GETS1                             ;AND PROCEED
+                      (     ttypatch.asm):00444         ;* 'E' INSERT ESCAPE ECHARACTER
+2302                  (     ttypatch.asm):00445         GETS4
+2302 8145             (     ttypatch.asm):00446                 CMPA    #'E'                              ;ESCAPE?
+2304 2607             (     ttypatch.asm):00447                 BNE     GETS6                             ;NO, TRY NEXT
+2306 860D             (     ttypatch.asm):00448                 LDA     #$0D                              ;GET ESCAPE
+2308                  (     ttypatch.asm):00449         GETS4A
+2308 A785             (     ttypatch.asm):00450                 STA     B,X                               ;SAVE IT
+230A 5C               (     ttypatch.asm):00451                 INCB                                      ;     ADVANCE COUNT
+230B 20E8             (     ttypatch.asm):00452                 BRA     GETS3A                            ;AND PROCEED
+                      (     ttypatch.asm):00453         ;* 'Q'UIT
+230D                  (     ttypatch.asm):00454         GETS6
+230D 8151             (     ttypatch.asm):00455                 CMPA    #'Q'                              ;QUIT?
+230F 2605             (     ttypatch.asm):00456                 BNE     GETS7                             ;NO, TRY NEXT
+2311 3F               (     ttypatch.asm):00457                 SWI
+2312 16               (     ttypatch.asm):00458                 FCB     22                                ;NEW LINE
+2313 6F85             (     ttypatch.asm):00459                 CLR     B,X                               ;ZERO END
+2315 39               (     ttypatch.asm):00460                 RTS
+                      (     ttypatch.asm):00461         ;* 'H'EXIDECIMAL CHARSCTERS
+2316                  (     ttypatch.asm):00462         GETS7
+2316 8148             (     ttypatch.asm):00463                 CMPA    #'H'                              ;HEX?
+2318 2767             (     ttypatch.asm):00464                 BEQ     GETS10B                           ;YES, ITS OK
+                      (     ttypatch.asm):00465         ;* 'X' AND 'Y' OFFSETS
+231A 8C26E5           (     ttypatch.asm):00466                 CMPX    #GDATA                            ;SPECIAL CASE
+231D 2707             (     ttypatch.asm):00467                 BEQ     GETS8                             ;YES
+231F                  (     ttypatch.asm):00468         GETS7A
+231F 8607             (     ttypatch.asm):00469                 LDA     #7                                ;BEEP
+2321 3F               (     ttypatch.asm):00470                 SWI
+2322 21               (     ttypatch.asm):00471                 FCB     33                                ;DISPLAY
+2323 7E2294           (     ttypatch.asm):00472                 JMP     GETS2                             ;AND PROCEED
+2326                  (     ttypatch.asm):00473         GETS8
+2326 8158             (     ttypatch.asm):00474                 CMPA    #'X'                              ;IS IT 'X'?
+2328 2604             (     ttypatch.asm):00475                 BNE     GETS9                             ;NO, TRY NEXT
+232A 8680             (     ttypatch.asm):00476                 LDA     #%10000000                        ;INDICATE 'X' ENTRY
+232C 2006             (     ttypatch.asm):00477                 BRA     GETS10                            ;AND PROCEED
+232E                  (     ttypatch.asm):00478         GETS9
+232E 8159             (     ttypatch.asm):00479                 CMPA    #'Y'                              ;IS IT 'Y'
+2330 26ED             (     ttypatch.asm):00480                 BNE     GETS7A                            ;REPORT ERROR
+2332 86C0             (     ttypatch.asm):00481                 LDA     #%11000000                        ;INDICATE 'Y' ENTRY
+2334                  (     ttypatch.asm):00482         GETS10
+2334 3404             (     ttypatch.asm):00483                 PSHS    B                                 ;SAVE IT FOR LATER
+2336 1F89             (     ttypatch.asm):00484                 TFR     A,B                               ;'B' = REGISTER
+2338 3F               (     ttypatch.asm):00485                 SWI
+2339 18               (     ttypatch.asm):00486                 FCB     24                                ;DISPLAY
+233A 0A0D             (     ttypatch.asm):00487                 FCB     $0A,$0D                           ;OUTPUT MESSAGE
+233C 284229696E617279 (     ttypatch.asm):00488                 FCN     '(B)inary (D)ecimal? '
+     202844296563696D
+     616C3F2000
+2351 3F               (     ttypatch.asm):00489                 SWI
+2352 22               (     ttypatch.asm):00490                 FCB     34                                ;GET CHAR
+2353 3F               (     ttypatch.asm):00491                 SWI
+2354 21               (     ttypatch.asm):00492                 FCB     33                                ;ECHO
+2355 845F             (     ttypatch.asm):00493                 ANDA    #$5F                              ;CONVERT TO UPPER
+2357 8142             (     ttypatch.asm):00494                 CMPA    #'B'                              ;BINARY
+2359 2706             (     ttypatch.asm):00495                 BEQ     GETS10A                           ;YES, ITS OK
+235B 8144             (     ttypatch.asm):00496                 CMPA    #'D'                              ;DECIMAL?
+235D 26C0             (     ttypatch.asm):00497                 BNE     GETS7A                            ;ERROR
+235F CA20             (     ttypatch.asm):00498                 ORB     #%00100000      SET TO 'DECIMAL'
+2361                  (     ttypatch.asm):00499         GETS10A
+2361 1F98             (     ttypatch.asm):00500                 TFR     B,A                               ;'A' = VALUE
+2363 3504             (     ttypatch.asm):00501                 PULS    B                                 ;RESTORE POSITION
+2365 A785             (     ttypatch.asm):00502                 STA     B,X                               ;WRITE IT
+2367 5C               (     ttypatch.asm):00503                 INCB                                      ;     ADVANCE
+2368 3F               (     ttypatch.asm):00504                 SWI
+2369 18               (     ttypatch.asm):00505                 FCB     24                                ;OUTPUT MESSAGE
+236A 0A0D             (     ttypatch.asm):00506                 FCB     $0A,$0D
+236C 4F66667365742076 (     ttypatch.asm):00507                 FCN     'Offset value (hex)? '
+     616C756520286865
+     78293F2000
+2381                  (     ttypatch.asm):00508         GETS10B
+2381 8D0D             (     ttypatch.asm):00509                 BSR     GETDIG                            ;GET DIGIT
+2383 48               (     ttypatch.asm):00510                 LSLA
+2384 48               (     ttypatch.asm):00511                 LSLA
+2385 48               (     ttypatch.asm):00512                 LSLA
+2386 48               (     ttypatch.asm):00513                 LSLA
+2387 3402             (     ttypatch.asm):00514                 PSHS    A
+2389 8D05             (     ttypatch.asm):00515                 BSR     GETDIG                            ;GET NEXT
+238B AAE0             (     ttypatch.asm):00516                 ORA     ,S+                               ;INCLUDE
+238D 7E2308           (     ttypatch.asm):00517                 JMP     GETS4A                            ;AND PROCEED
+                      (     ttypatch.asm):00518         ;* GET HEX DIGIT
+2390                  (     ttypatch.asm):00519         GETDIG
+2390 3F               (     ttypatch.asm):00520                 SWI
+2391 22               (     ttypatch.asm):00521                 FCB     34                                ;GET CHAR
+2392 8130             (     ttypatch.asm):00522                 CMPA    #'0'                              ;IN RANGE?
+2394 2518             (     ttypatch.asm):00523                 BLO     GETD2                             ;ERROR
+2396 8139             (     ttypatch.asm):00524                 CMPA    #'9'                              ;IN RANGE?
+2398 230F             (     ttypatch.asm):00525                 BLS     GETD1                             ;YES, ITS OK
+239A 845F             (     ttypatch.asm):00526                 ANDA    #$5F                              ;CONVERT TO UPPER
+239C 8141             (     ttypatch.asm):00527                 CMPA    #'A'                              ;IN RANGE?
+239E 250E             (     ttypatch.asm):00528                 BLO     GETD2                             ;ERROR
+23A0 8146             (     ttypatch.asm):00529                 CMPA    #'F'                              ;IN RANGE?
+23A2 220A             (     ttypatch.asm):00530                 BHI     GETD2                             ;NO, ERROR
+23A4 3F               (     ttypatch.asm):00531                 SWI
+23A5 21               (     ttypatch.asm):00532                 FCB     33                                ;ECHO
+23A6 8037             (     ttypatch.asm):00533                 SUBA    #'0'+7                            ;CONVERT
+23A8 39               (     ttypatch.asm):00534                 RTS
+23A9                  (     ttypatch.asm):00535         GETD1
+23A9 3F               (     ttypatch.asm):00536                 SWI
+23AA 21               (     ttypatch.asm):00537                 FCB     33                                ;ECHO
+23AB 8030             (     ttypatch.asm):00538                 SUBA    #'0'                              ;CONVERT TO BINARY
+23AD 39               (     ttypatch.asm):00539                 RTS
+23AE                  (     ttypatch.asm):00540         GETD2
+23AE 8607             (     ttypatch.asm):00541                 LDA     #7                                ;ERROR
+23B0 3F               (     ttypatch.asm):00542                 SWI
+23B1 21               (     ttypatch.asm):00543                 FCB     33                                ;DISPLAY
+23B2 20DC             (     ttypatch.asm):00544                 BRA     GETDIG                            ;AND PROCEED
+                      (     ttypatch.asm):00545         ;*
+                      (     ttypatch.asm):00546         ;* DISPLAY CHARACTER IN SPECIAL FORM
+                      (     ttypatch.asm):00547         ;*
+23B4                  (     ttypatch.asm):00548         PUTCHR
+23B4 3402             (     ttypatch.asm):00549                 PSHS    A                                 ;SAVE REG
+23B6 8120             (     ttypatch.asm):00550                 CMPA    #' '                              ;CONTROL CODE?
+23B8 240A             (     ttypatch.asm):00551                 BHS     PUTC1                             ;NO, TRY NEXT
+23BA 865E             (     ttypatch.asm):00552                 LDA     #'^'                              ;INDICATE CONTROL
+23BC 3F               (     ttypatch.asm):00553                 SWI
+23BD 21               (     ttypatch.asm):00554                 FCB     33                                ;OUTPUT
+23BE A6E4             (     ttypatch.asm):00555                 LDA     ,S                                ;GET CHAR
+23C0 8B40             (     ttypatch.asm):00556                 ADDA    #'@'                              ;CONVERT
+23C2 200E             (     ttypatch.asm):00557                 BRA     PUTC2                             ;AND DISPLAY
+23C4                  (     ttypatch.asm):00558         PUTC1
+23C4 817F             (     ttypatch.asm):00559                 CMPA    #$7F                              ;IN RANGE?
+23C6 250A             (     ttypatch.asm):00560                 BLO     PUTC2                             ;NO, ITS OK
+23C8 863C             (     ttypatch.asm):00561                 LDA     #'<'                              ;OPENING
+23CA 3F               (     ttypatch.asm):00562                 SWI
+23CB 21               (     ttypatch.asm):00563                 FCB     33                                ;DISPLAY
+23CC A6E4             (     ttypatch.asm):00564                 LDA     ,S                                ;GET CHAR
+23CE 3F               (     ttypatch.asm):00565                 SWI
+23CF 1C               (     ttypatch.asm):00566                 FCB     28                                ;DISPLAY
+23D0 863E             (     ttypatch.asm):00567                 LDA     #'>'                              ;CLOSING
+23D2                  (     ttypatch.asm):00568         PUTC2
+23D2 3F               (     ttypatch.asm):00569                 SWI
+23D3 21               (     ttypatch.asm):00570                 FCB     33                                ;DISPLAY
+23D4 3582             (     ttypatch.asm):00571                 PULS    A,PC                              ;RESTORE & RETURN
+                      (     ttypatch.asm):00572         ;*
+                      (     ttypatch.asm):00573         ;* MISC. STRINGS AND CONSTANTS
+                      (     ttypatch.asm):00574         ;*
+23D6                  (     ttypatch.asm):00575         BADFIL
+23D6 43616E6E6F74206C (     ttypatch.asm):00576                 FCN     'Cannot locate TTY interface'
+     6F63617465205454
+     5920696E74657266
+     61636500
+                      (     ttypatch.asm):00577         ;* MAIN MENU ITEMS
+23F2                  (     ttypatch.asm):00578         MMENU
+23F2 5374616E64617264 (     ttypatch.asm):00579                 FCN     'Standard key definitions'
+     206B657920646566
+     696E6974696F6E73
+     00
+240B 46756E6374696F6E (     ttypatch.asm):00580                 FCN     'Function key definitions'
+     206B657920646566
+     696E6974696F6E73
+     00
+2424 436F6E74726F6C20 (     ttypatch.asm):00581                 FCN     'Control code definitions'
+     636F646520646566
+     696E6974696F6E73
+     00
+243D 4C6F616420736574 (     ttypatch.asm):00582                 FCN     'Load settings from program'
+     74696E6773206672
+     6F6D2070726F6772
+     616D00
+2458 5361766520736574 (     ttypatch.asm):00583                 FCN     'Save settings to program'
+     74696E677320746F
+     2070726F6772616D
+     00
+2471 4578697420545459 (     ttypatch.asm):00584                 FCN     'Exit TTYPATCH utility'
+     5041544348207574
+     696C69747900
+2487 00               (     ttypatch.asm):00585                 FCB     0
+                      (     ttypatch.asm):00586         ;* OUTPUT STRING NAMES
+2488                  (     ttypatch.asm):00587         ONAMES
+2488 5465726D696E616C (     ttypatch.asm):00588                 FCN     'Terminal initialization'
+     20696E697469616C
+     697A6174696F6E00
+24A0 437572736F722070 (     ttypatch.asm):00589                 FCN     'Cursor positioning'
+     6F736974696F6E69
+     6E6700
+24B3 436C656172207363 (     ttypatch.asm):00590                 FCN     'Clear screen'
+     7265656E00
+24C0 436C65617220746F (     ttypatch.asm):00591                 FCN     'Clear to end of line'
+     20656E64206F6620
+     6C696E6500
+24D5 436C65617220746F (     ttypatch.asm):00592                 FCN     'Clear to end of screen'
+     20656E64206F6620
+     73637265656E00
+24EC 5370656369616C20 (     ttypatch.asm):00593                 FCN     'Special effect ON'
+     656666656374204F
+     4E00
+24FE 5370656369616C20 (     ttypatch.asm):00594                 FCN     'Special effect OFF'
+     656666656374204F
+     464600
+2511 5363726F6C6C2073 (     ttypatch.asm):00595                 FCN     'Scroll screen forward'
+     637265656E20666F
+     727761726400
+2527 00               (     ttypatch.asm):00596                 FCB     0
+                      (     ttypatch.asm):00597         ;* INPUT STRING NAMES
+2528                  (     ttypatch.asm):00598         INAMES
+2528 437572736F722075 (     ttypatch.asm):00599                 FCN     'Cursor up'
+     7000
+2532 437572736F722064 (     ttypatch.asm):00600                 FCN     'Cursor down'
+     6F776E00
+253E 437572736F722072 (     ttypatch.asm):00601                 FCN     'Cursor right'
+     6967687400
+254B 437572736F72206C (     ttypatch.asm):00602                 FCN     'Cursor left'
+     65667400
+2557 5061676520757000 (     ttypatch.asm):00603                 FCN     'Page up'
+255F 5061676520646F77 (     ttypatch.asm):00604                 FCN     'Page down'
+     6E00
+2569 5061676520726967 (     ttypatch.asm):00605                 FCN     'Page right'
+     687400
+2574 50616765206C6566 (     ttypatch.asm):00606                 FCN     'Page left'
+     7400
+257E 486F6D6500       (     ttypatch.asm):00607                 FCN     'Home'
+2583 456E6400         (     ttypatch.asm):00608                 FCN     'End'
+2587 44656C6574652063 (     ttypatch.asm):00609                 FCN     'Delete character'
+     6861726163746572
+     00
+2598 44656C6574652070 (     ttypatch.asm):00610                 FCN     'Delete previous'
+     726576696F757300
+25A8 436C65617200     (     ttypatch.asm):00611                 FCN     'Clear'
+25AE 00               (     ttypatch.asm):00612                 FCB     0
+                      (     ttypatch.asm):00613         ;* FUNCTION KEY NAMES
+25AF                  (     ttypatch.asm):00614         FNAMES
+25AF 46756E6374696F6E (     ttypatch.asm):00615                 FCN     'Function key 1'
+     206B6579203100
+25BE 46756E6374696F6E (     ttypatch.asm):00616                 FCN     'Function key 2'
+     206B6579203200
+25CD 46756E6374696F6E (     ttypatch.asm):00617                 FCN     'Function key 3'
+     206B6579203300
+25DC 46756E6374696F6E (     ttypatch.asm):00618                 FCN     'Function key 4'
+     206B6579203400
+25EB 46756E6374696F6E (     ttypatch.asm):00619                 FCN     'Function key 5'
+     206B6579203500
+25FA 46756E6374696F6E (     ttypatch.asm):00620                 FCN     'Function key 6'
+     206B6579203600
+2609 46756E6374696F6E (     ttypatch.asm):00621                 FCN     'Function key 7'
+     206B6579203700
+2618 46756E6374696F6E (     ttypatch.asm):00622                 FCN     'Function key 8'
+     206B6579203800
+2627 46756E6374696F6E (     ttypatch.asm):00623                 FCN     'Function key 9'
+     206B6579203900
+2636 46756E6374696F6E (     ttypatch.asm):00624                 FCN     'Function key 10'
+     206B657920313000
+2646 46756E6374696F6E (     ttypatch.asm):00625                 FCN     'Function key 11'
+     206B657920313100
+2656 46756E6374696F6E (     ttypatch.asm):00626                 FCN     'Function key 12'
+     206B657920313200
+2666 46756E6374696F6E (     ttypatch.asm):00627                 FCN     'Function key 13'
+     206B657920313300
+2676 46756E6374696F6E (     ttypatch.asm):00628                 FCN     'Function key 14'
+     206B657920313400
+2686 46756E6374696F6E (     ttypatch.asm):00629                 FCN     'Function key 15'
+     206B657920313500
+2696 00               (     ttypatch.asm):00630                 FCB     0
+                      (     ttypatch.asm):00631         ;*
+                      (     ttypatch.asm):00632         ;* MISC VARIABLES
+                      (     ttypatch.asm):00633         ;*
+2697                  (     ttypatch.asm):00634         FLOAD
+2697 2749             (     ttypatch.asm):00635                 FDB     LOAD                              ;PGM LOAD ADDRESS
+2699                  (     ttypatch.asm):00636         FSIZE
+2699 00               (     ttypatch.asm):00637                 FCB     0
+                      (     ttypatch.asm):00638         ;*
+                      (     ttypatch.asm):00639         ;* FUNCTION KEY EDIT AREA
+                      (     ttypatch.asm):00640         ;*
+269A                  (     ttypatch.asm):00641         IDATA
+269A                  (     ttypatch.asm):00642                 RMB     ISIZE                             ;*INUM
+26B3                  (     ttypatch.asm):00643         FDATA
+26B3                  (     ttypatch.asm):00644                 RMB     ISIZE                             ;*FNUM
+26CC                  (     ttypatch.asm):00645         ODATA
+26CC                  (     ttypatch.asm):00646                 RMB     ISIZE                             ;*ONUM
+     26E5             (     ttypatch.asm):00647         GDATA           = ODATA+ISIZE
+26E5                  (     ttypatch.asm):00648         IEND
+26E5                  (     ttypatch.asm):00649                 RMB     100                               ;END OF INIT, STACK SPACE
+     2749             (     ttypatch.asm):00650         STACK           = *
+                      (     ttypatch.asm):00651         ;*
+                      (     ttypatch.asm):00652         ;* PROGRAM LOAD ADDRESS
+                      (     ttypatch.asm):00653         ;*
+     2749             (     ttypatch.asm):00654         LOAD            = *                               ;LOAD ADDRESS
+
+Symbol Table:
+[ G] BADFIL                           23D6
+[ G] CLR1                             21CD
+[ G] CLRAM                            21C8
+[ G] DISD1                            2259
+[ G] DISD2                            226D
+[ G] DISD3                            2277
+[ G] DISD4                            227F
+[ G] DISD5                            2284
+[ G] DISDAT                           2258
+[ G] DMENU                            21D6
+[ G] DMENU0                           21D8
+[ G] DMENU1                           21DC
+[ G] DMENU2                           21F3
+[ G] DMENU3                           21FC
+[ G] DMENU4                           221A
+[ G] DMENU5                           2225
+[ G] DMENU6                           2239
+[ G] DMENU7                           223C
+[ G] DMENU8                           2242
+[ G] DMENU9                           2254
+[ G] DPREFIX                          0000
+[ G] DSKADR                           0013
+[ G] FDATA                            26B3
+[ G] FLOAD                            2697
+[ G] FNAME                            0008
+[ G] FNAMES                           25AF
+[ G] FNUM                             000F
+[ G] FPROT                            0017
+[ G] FSIZE                            2699
+[ G] FTYPE                            0010
+[ G] GDATA                            26E5
+[ G] GETD1                            23A9
+[ G] GETD2                            23AE
+[ G] GETDIG                           2390
+[ G] GETS1                            2286
+[ G] GETS10                           2334
+[ G] GETS10A                          2361
+[ G] GETS10B                          2381
+[ G] GETS2                            2294
+[ G] GETS3                            22DF
+[ G] GETS3A                           22F5
+[ G] GETS4                            2302
+[ G] GETS4A                           2308
+[ G] GETS6                            230D
+[ G] GETS7                            2316
+[ G] GETS7A                           231F
+[ G] GETS8                            2326
+[ G] GETS9                            232E
+[ G] GETSTR                           2285
+[ G] IDATA                            269A
+[ G] IEND                             26E5
+[ G] INAMES                           2528
+[ G] INUM                             000D
+[ G] ISIZE                            0019
+[ G] LDPGM                            2171
+[ G] LOAD                             2749
+[ G] LODADR                           0015
+[ G] LODBAD                           21BF
+[ G] LODERR                           21C5
+[ G] MAIN                             2016
+[ G] MAIN1                            205D
+[ G] MAIN10                           2107
+[ G] MAIN10A                          2116
+[ G] MAIN10B                          2118
+[ G] MAIN10C                          212E
+[ G] MAIN10D                          213A
+[ G] MAIN10E                          2146
+[ G] MAIN11                           215C
+[ G] MAIN12                           2162
+[ G] MAIN2                            2060
+[ G] MAIN3                            2069
+[ G] MAIN4                            2084
+[ G] MAIN5                            2093
+[ G] MAIN6                            20A3
+[ G] MAIN7                            20AE
+[ G] MAIN9                            20BF
+[ G] MAIN9A                           20CD
+[ G] MAIN9B                           20D9
+[ G] MAIN9C                           20E5
+[ G] MAIN9D                           20F4
+[ G] MAIN9E                           20F6
+[ G] MMENU                            23F2
+[ G] NSIZE                            0019
+[ G] ODATA                            26CC
+[ G] ONAMES                           2488
+[ G] ONUM                             0008
+[ G] OSEND                            DBFF
+[ G] OSRAM                            2000
+[ G] OSUTIL                           D000
+[ G] PUTC1                            23C4
+[ G] PUTC2                            23D2
+[ G] PUTCHR                           23B4
+[ G] STACK                            2749
+[ G] SUBMEN                           20B7

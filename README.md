@@ -4,7 +4,6 @@ Cubix operating system for various 6809 homebrew systems
 DOCUMENTATION
 
 To Do:
-fix forth
 fix hexed terminal
 ADD REMAPABLE DRIVES
 ADD SLICES
