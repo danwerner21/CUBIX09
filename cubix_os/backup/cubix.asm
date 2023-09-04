@@ -465,16 +465,16 @@ HELLO
 
 
 ;* IF NO ERRORS, EXECUTE THE STARTUP FILE
-   LDA     >ERRCNT                           ;GET ERROR FLAG
-   BNE     CMD                               ;ERRORS, DO NOT EXECUTE
-   LDY     #IPLFILE                          ;POINT TO IPL FILE
-   JSR     GETNAM                            ;GET FILE NAME
-   LDU     #CMD                              ;ADDRESS TO RETURN TO
-   PSHS    U                                 ;SAVE ON STACK (FAKE JSR)
-   STS     >SAVSTK                           ;SAVE STACK INCASE ERROR
-   JSR     LOCDIR                            ;LOCATE FILE IN DIRECTORY
-   BNE     CMD                               ;NOT FOUND, REPORT ERROR
-   JMP     EXE3                              ;EXECUTE FILE
+        LDA     >ERRCNT                           ;GET ERROR FLAG
+        BNE     CMD                               ;ERRORS, DO NOT EXECUTE
+        LDY     #IPLFILE                          ;POINT TO IPL FILE
+        JSR     GETNAM                            ;GET FILE NAME
+        LDU     #CMD                              ;ADDRESS TO RETURN TO
+        PSHS    U                                 ;SAVE ON STACK (FAKE JSR)
+        STS     >SAVSTK                           ;SAVE STACK INCASE ERROR
+        JSR     LOCDIR                            ;LOCATE FILE IN DIRECTORY
+        BNE     CMD                               ;NOT FOUND, REPORT ERROR
+        JMP     EXE3                              ;EXECUTE FILE
 ;*
 ;* COMMAND INTERPRETER
 ;*

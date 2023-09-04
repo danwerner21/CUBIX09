@@ -191,5 +191,6 @@ RITAB           EQU *
         FCB     3                                 ;SYSTEM DRIVE (A)
         FCC     'SYSTEM'                          ;SYSTEM DIRECTORY
         FCB     0,0                               ;(FILLER)
+
 RISIZ           EQU *-RITAB                       ;SIZE OF INITILAIZED RAM
 ;

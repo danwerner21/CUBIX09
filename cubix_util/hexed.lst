@@ -1,0 +1,877 @@
+                      (        hexed.asm):00001         ;       title   HEXIDECIMAL SCREEN EDITOR
+                      (        hexed.asm):00002         ;*
+                      (        hexed.asm):00003         ;* HEXED: A terminal independant screen oriented file patch utility
+                      (        hexed.asm):00004         ;*
+                      (        hexed.asm):00005         ;* Copyright 1983-2005 Dave Dunfield
+                      (        hexed.asm):00006         ;* All rights reserved.
+                      (        hexed.asm):00007         ;*
+     2000             (        hexed.asm):00008         OSRAM           = $2000       APPLICATION RAM AREA
+     DBFF             (        hexed.asm):00009         OSEND           = $DBFF       END OF GENERAL RAM
+     D000             (        hexed.asm):00010         OSUTIL          = $D000       UTILITY ADDRESS SPACE
+     0008             (        hexed.asm):00011         HEX_D           = 8                               ;START OF HEX DISPLAY
+     003C             (        hexed.asm):00012         TEXT_D          = 60                              ;START OF TEXT
+                      (        hexed.asm):00013         ;*
+                      (        hexed.asm):00014                 ORG     OSRAM                             ;APPLICATION AREA
+                      (        hexed.asm):00015         ;*
+2000                  (        hexed.asm):00016         ENTRY
+2000 BE24D2           (        hexed.asm):00017                 LDX     ISTPTR                            ;GET INPUT STRING POINTER
+2003 3F               (        hexed.asm):00018                 SWI
+2004 17               (        hexed.asm):00019                 FCB     23                                ;OUTPUT TO TERMINAL
+2005 3F               (        hexed.asm):00020                 SWI
+2006 04               (        hexed.asm):00021                 FCB     4                                 ;GET OPERAND?
+2007 813F             (        hexed.asm):00022                 CMPA    #'?'                              ;QUERY?
+2009 261A             (        hexed.asm):00023                 BNE     MAIN                              ;NO, PROCEED
+200B 3F               (        hexed.asm):00024                 SWI
+200C 19               (        hexed.asm):00025                 FCB     25                                ;DISPLAY MESSAGE
+200D 5573653A20484558 (        hexed.asm):00026                 FCN     'Use: HEXED <filename>'
+     4544203C66696C65
+     6E616D653E00
+2023 3F               (        hexed.asm):00027                 SWI
+2024 00               (        hexed.asm):00028                 FCB     0                                 ;EXIT TO DOS
+                      (        hexed.asm):00029         ;*
+2025                  (        hexed.asm):00030         MAIN
+2025 A69F24D4         (        hexed.asm):00031                 LDA     [GXYPTR]                          ; DEFINED?
+2029 2616             (        hexed.asm):00032                 BNE     MAIN1                             ;NO, ITS OK
+202B 3F               (        hexed.asm):00033                 SWI
+202C 19               (        hexed.asm):00034                 FCB     25                                ;DISPLAY MESSAGE
+202D 545459206E6F7420 (        hexed.asm):00035                 FCN     'TTY not defined'
+     646566696E656400
+203D 8663             (        hexed.asm):00036                 LDA     #99                               ;RC=99
+203F                  (        hexed.asm):00037         ABORT
+203F 3F               (        hexed.asm):00038                 SWI
+2040 00               (        hexed.asm):00039                 FCB     0                                 ;EXIT
+2041                  (        hexed.asm):00040         MAIN1
+2041 3F               (        hexed.asm):00041                 SWI
+2042 0A               (        hexed.asm):00042                 FCB     10                                ;GET FILENAME
+2043 26FA             (        hexed.asm):00043                 BNE     ABORT                             ;REPORT ERROR
+2045 8E2617           (        hexed.asm):00044                 LDX     #D_BUFF                           ;POINT TO DATA BUFFER
+2048 3F               (        hexed.asm):00045                 SWI
+2049 35               (        hexed.asm):00046                 FCB     53                                ;LOAD FILE
+204A 26F3             (        hexed.asm):00047                 BNE     ABORT                             ;REPORT ERROR
+204C BF25AB           (        hexed.asm):00048                 STX     ENDADR                            ;SAVE END ADDRESS
+204F CE2617           (        hexed.asm):00049                 LDU     #D_BUFF                           ;BEGIN AT START OF BUFFER
+                      (        hexed.asm):00050         ;*
+                      (        hexed.asm):00051         ;* VISUAL MODE MAIN LOOP
+                      (        hexed.asm):00052         ;*
+2052                  (        hexed.asm):00053         VMODE1
+2052 BD22E5           (        hexed.asm):00054                 JSR     DSCREEN                           ;DISPLAY SCREEN
+                      (        hexed.asm):00055         ;* DISPLAY ANY ERROR MESSAGES
+2055                  (        hexed.asm):00056         VMODE2
+2055 BE25B0           (        hexed.asm):00057                 LDX     ERRMSG                            ;ANY MSGS?
+2058 2716             (        hexed.asm):00058                 BEQ     VMODE2A                           ;NO, ITS OK
+205A                  (        hexed.asm):00059         VERROR
+205A CC0017           (        hexed.asm):00060                 LDD     #23                               ;LAST LINE
+205D BD23BE           (        hexed.asm):00061                 JSR     GOTOXY                            ;RE-POSITION
+2060 BD23A2           (        hexed.asm):00062                 JSR     WSO                               ;SPECIALS
+2063 3F               (        hexed.asm):00063                 SWI
+2064 17               (        hexed.asm):00064                 FCB     23                                ;DISPLAY MESSAGE
+2065 BD23A6           (        hexed.asm):00065                 JSR     WSE                               ;END OF IT
+2068 BD23AA           (        hexed.asm):00066                 JSR     WCD                               ;CLEAR END OF SCREEN
+206B 4F               (        hexed.asm):00067                 CLRA                                      ;     ZERO HIGH
+206C 5F               (        hexed.asm):00068                 CLRB                                      ;     ZERO LOW
+206D FD25B0           (        hexed.asm):00069                 STD     ERRMSG                            ;RESET FLAG
+                      (        hexed.asm):00070         ;* POSITION CURSOR TO APPRIOPRIATE POSITION
+2070                  (        hexed.asm):00071         VMODE2A
+2070 B625AE           (        hexed.asm):00072                 LDA     POSIT                             ;GET POSITION
+2073 840F             (        hexed.asm):00073                 ANDA    #%00001111      GET 'X' POSITION
+2075 F625AF           (        hexed.asm):00074                 LDB     MODE                              ;GET MODE
+2078 2B09             (        hexed.asm):00075                 BMI     VMODE3                            ;TEXT MODE
+                      (        hexed.asm):00076         ;* HEXIDECIMAL ENTRY MODE
+207A 3402             (        hexed.asm):00077                 PSHS    A                                 ;SAVE DATA
+207C 48               (        hexed.asm):00078                 LSLA                                      ;     X2
+207D ABE0             (        hexed.asm):00079                 ADDA    ,S+                               ;X3
+207F 8B08             (        hexed.asm):00080                 ADDA    #HEX_D                            ;OFFSET TO HEX DISPLAY
+2081 2002             (        hexed.asm):00081                 BRA     VMODE4                            ;AND PROCEED
+                      (        hexed.asm):00082         ;* TEXT ENTRY MODE
+2083                  (        hexed.asm):00083         VMODE3
+2083 8B3C             (        hexed.asm):00084                 ADDA    #TEXT_D                           ;OFFSET TO TEXT
+2085                  (        hexed.asm):00085         VMODE4
+2085 F625AE           (        hexed.asm):00086                 LDB     POSIT                             ;GET POSITION
+2088 54               (        hexed.asm):00087                 LSRB                                      ;     /
+2089 54               (        hexed.asm):00088                 LSRB                                      ;     16
+208A 54               (        hexed.asm):00089                 LSRB                                      ;     TO CALC
+208B 54               (        hexed.asm):00090                 LSRB                                      ;     ROWS
+208C CB04             (        hexed.asm):00091                 ADDB    #4                                ;OFFSET TO DATA
+208E BD23BE           (        hexed.asm):00092                 JSR     GOTOXY                            ;POSITION CURSOR
+2091                  (        hexed.asm):00093         VMODE5
+2091 BD23E6           (        hexed.asm):00094                 JSR     GETKEY                            ;GET A KEY
+2094 F625AE           (        hexed.asm):00095                 LDB     POSIT                             ;GET POSITION
+2097 1F31             (        hexed.asm):00096                 TFR     U,X                               ;GET BASE ADDRESS
+2099 3A               (        hexed.asm):00097                 ABX                                       ;     'X' = ADDRESS IN TEXT
+209A 4D               (        hexed.asm):00098                 TSTA                                      ;     SPECIAL KEY?
+209B 102A01C2         (        hexed.asm):00099                 LBPL    ENTKEY                            ;ENTRY KEY
+                      (        hexed.asm):00100         ;* REFRESH SCREEN
+209F 818C             (        hexed.asm):00101                 CMPA    #$8C                              ;CLEAR?
+20A1 27AF             (        hexed.asm):00102                 BEQ     VMODE1                            ;YES, REFRESH
+                      (        hexed.asm):00103         ;* UP ARROW
+20A3 8180             (        hexed.asm):00104                 CMPA    #$80                              ;UP ARROW?
+20A5 2621             (        hexed.asm):00105                 BNE     VCMD1                             ;NO, TRY NEXT
+20A7 C010             (        hexed.asm):00106                 SUBB    #16                               ;CONVERT
+20A9 244E             (        hexed.asm):00107                 BCC     SAVPOS                            ;ITS OK
+20AB CB10             (        hexed.asm):00108                 ADDB    #16                               ;GO BACK
+20AD 3350             (        hexed.asm):00109                 LEAU    -16,U                             ;BACKUP
+                      (        hexed.asm):00110         ;* TEST FOR VALID UP RANGE
+20AF                  (        hexed.asm):00111         TSTUP
+20AF 11832617         (        hexed.asm):00112                 CMPU    #D_BUFF                           ;IN RANGE?
+20B3 240A             (        hexed.asm):00113                 BHS     REFRESH                           ;ITS OK
+20B5 8E2491           (        hexed.asm):00114                 LDX     #HOMEMSG        HOME MESSAGE
+20B8 BF25B0           (        hexed.asm):00115                 STX     ERRMSG                            ;DISPLAY IT
+20BB                  (        hexed.asm):00116         HOME
+20BB CE2617           (        hexed.asm):00117                 LDU     #D_BUFF                           ;RESET PTR
+20BE 5F               (        hexed.asm):00118                 CLRB                                      ;     ZERO POSITION
+20BF                  (        hexed.asm):00119         REFRESH
+20BF F725AE           (        hexed.asm):00120                 STB     POSIT                             ;SET IT
+20C2 BD2344           (        hexed.asm):00121                 JSR     DSCR1                             ;PARTIAL UPDATE
+20C5 7E2055           (        hexed.asm):00122                 JMP     VMODE2                            ;AND PROCEED
+                      (        hexed.asm):00123         ;* DOWN ARROW
+20C8                  (        hexed.asm):00124         VCMD1
+20C8 8181             (        hexed.asm):00125                 CMPA    #$81                              ;DOWN ARROW?
+20CA 2628             (        hexed.asm):00126                 BNE     VCMD2                             ;NO, TRY NEXT
+20CC CB10             (        hexed.asm):00127                 ADDB    #16                               ;NEXT LINE
+20CE 2429             (        hexed.asm):00128                 BCC     SAVPOS                            ;NO, ITS OK
+20D0 C010             (        hexed.asm):00129                 SUBB    #16                               ;CONVERT BACK
+20D2 33C810           (        hexed.asm):00130                 LEAU    16,U                              ;ADVANCE A ROW
+                      (        hexed.asm):00131         ;*
+20D5                  (        hexed.asm):00132         TSTDOWN
+20D5 BE25AB           (        hexed.asm):00133                 LDX     ENDADR                            ;GET END
+20D8 3089FF00         (        hexed.asm):00134                 LEAX    -256,X                            ;CALCULATE BACK PAGE
+20DC 3410             (        hexed.asm):00135                 PSHS    X                                 ;SAVE IT
+20DE 11A3E1           (        hexed.asm):00136                 CMPU    ,S++                              ;TEST IT
+20E1 23DC             (        hexed.asm):00137                 BLS     REFRESH                           ;ITS OK
+20E3 8E24AD           (        hexed.asm):00138                 LDX     #ENDMSG                           ;GET MESSAGE
+20E6 BF25B0           (        hexed.asm):00139                 STX     ERRMSG                            ;DISPLAY IT
+20E9                  (        hexed.asm):00140         END
+20E9 FE25AB           (        hexed.asm):00141                 LDU     ENDADR                            ;GET END
+20EC 33C9FF00         (        hexed.asm):00142                 LEAU    -256,U                            ;BACKUP SCREEN
+20F0 C6FF             (        hexed.asm):00143                 LDB     #$FF                              ;END OF SCREEN
+20F2 20CB             (        hexed.asm):00144                 BRA     REFRESH                           ;AND PROCEED
+                      (        hexed.asm):00145         ;* RIGHT ARROW
+20F4                  (        hexed.asm):00146         VCMD2
+20F4 8182             (        hexed.asm):00147                 CMPA    #$82                              ;RIGHT ARROW?
+20F6 2607             (        hexed.asm):00148                 BNE     VCMD3                             ;NO, ITS OK
+20F8 5C               (        hexed.asm):00149                 INCB                                      ;     ADVANCE 'B'
+20F9                  (        hexed.asm):00150         SAVPOS
+20F9 F725AE           (        hexed.asm):00151                 STB     POSIT                             ;SAVE POSITION
+20FC 7E2055           (        hexed.asm):00152                 JMP     VMODE2                            ;AND PROCEED
+                      (        hexed.asm):00153         ;* LEFT ARROW
+20FF                  (        hexed.asm):00154         VCMD3
+20FF 8183             (        hexed.asm):00155                 CMPA    #$83                              ;LEFT ARROW?
+2101 2603             (        hexed.asm):00156                 BNE     VCMD4                             ;AND PROCEED
+2103 5A               (        hexed.asm):00157                 DECB                                      ;     BACKUP
+2104 20F3             (        hexed.asm):00158                 BRA     SAVPOS                            ;SAVE POSITION
+                      (        hexed.asm):00159         ;* PAGE UP
+2106                  (        hexed.asm):00160         VCMD4
+2106 8184             (        hexed.asm):00161                 CMPA    #$84                              ;PAGE UP?
+2108 2606             (        hexed.asm):00162                 BNE     VCMD5                             ;NO, TRY NEXT
+210A 33C9FF00         (        hexed.asm):00163                 LEAU    -256,U                            ;BACKUP
+210E 209F             (        hexed.asm):00164                 BRA     TSTUP                             ;AND TRY IT
+                      (        hexed.asm):00165         ;* PAGE DOWN
+2110                  (        hexed.asm):00166         VCMD5
+2110 8185             (        hexed.asm):00167                 CMPA    #$85                              ;PAGE DOWN?
+2112 2606             (        hexed.asm):00168                 BNE     VCMD6                             ;NO, TRY NEXT
+2114 33C90100         (        hexed.asm):00169                 LEAU    256,U                             ;SKIP AHEAD
+2118 20BB             (        hexed.asm):00170                 BRA     TSTDOWN                           ;AND TRY IT
+                      (        hexed.asm):00171         ;* HOME & END
+211A                  (        hexed.asm):00172         VCMD6
+211A 8188             (        hexed.asm):00173                 CMPA    #$88                              ;HOME?
+211C 279D             (        hexed.asm):00174                 BEQ     HOME                              ;DO IT
+211E 8189             (        hexed.asm):00175                 CMPA    #$89                              ;END?
+2120 27C7             (        hexed.asm):00176                 BEQ     END                               ;DO IT
+                      (        hexed.asm):00177         ;* TOGGLE DATA ENTRY MODE
+2122 818F             (        hexed.asm):00178                 CMPA    #$8F                              ;F3?
+2124 2606             (        hexed.asm):00179                 BNE     VCMD7                             ;NO, TRY NEXT
+2126 7325AF           (        hexed.asm):00180                 COM     MODE                              ;RESET MODE
+2129 7E2055           (        hexed.asm):00181                 JMP     VMODE2                            ;AND PROCEED
+                      (        hexed.asm):00182         ;* COMMAND EXEC KEY
+212C                  (        hexed.asm):00183         VCMD7
+212C 818D             (        hexed.asm):00184                 CMPA    #$8D                              ;F1?
+212E 2710             (        hexed.asm):00185                 BEQ     ECMD                              ;EXECUTE COMMAND
+2130 818E             (        hexed.asm):00186                 CMPA    #$8E                              ;F2?
+2132 2706             (        hexed.asm):00187                 BEQ     RECMD                             ;RE-EXECUTE
+                      (        hexed.asm):00188         ;* INVALID KEY ENTERRED
+2134                  (        hexed.asm):00189         INVKEY
+2134 8E2429           (        hexed.asm):00190                 LDX     #BADKEY                           ;POINT TO MESSAGE
+2137 7E205A           (        hexed.asm):00191                 JMP     VERROR
+                      (        hexed.asm):00192         ;*
+                      (        hexed.asm):00193         ;* RE-EXECUTE LINE MODE COMMAND
+                      (        hexed.asm):00194         ;*
+213A                  (        hexed.asm):00195         RECMD
+213A 108E25B3         (        hexed.asm):00196                 LDY     #CMDBUF                           ;SET UP PTR
+213E 2040             (        hexed.asm):00197                 BRA     RECMD1                            ;AND PROCEED
+                      (        hexed.asm):00198         ;*
+                      (        hexed.asm):00199         ;* EXECUTE LINE MODE COMMAND
+                      (        hexed.asm):00200         ;*
+2140                  (        hexed.asm):00201         ECMD
+2140 CC0017           (        hexed.asm):00202                 LDD     #23                               ;COMMAND INPUT LINE
+2143 BD23BE           (        hexed.asm):00203                 JSR     GOTOXY                            ;MOVE THERE
+2146 3F               (        hexed.asm):00204                 SWI
+2147 18               (        hexed.asm):00205                 FCB     24                                ;ISSUE PROMPT
+2148 436F6D6D616E643A (        hexed.asm):00206                 FCN     'Command: '
+     2000
+2152 BD23AA           (        hexed.asm):00207                 JSR     WCD                               ;CLEAR REST
+                      (        hexed.asm):00208         ;* READ INPUT COMMAND
+2155 8E25B3           (        hexed.asm):00209                 LDX     #CMDBUF                           ;POINT TO INPUT BUFFER
+2158 1F12             (        hexed.asm):00210                 TFR     X,Y                               ;SET UP PTR
+215A                  (        hexed.asm):00211         ECMD1
+215A BD23E6           (        hexed.asm):00212                 JSR     GETKEY                            ;GET A KEY
+215D 4D               (        hexed.asm):00213                 TSTA                                      ;     SPECIAL KEY?
+215E 2B07             (        hexed.asm):00214                 BMI     ECMD2                             ;YES, HANDLE IT
+2160 A780             (        hexed.asm):00215                 STA     ,X+                               ;WRITE IT
+2162 BD2391           (        hexed.asm):00216                 JSR     DCHAR                             ;WRITE CHAR
+2165 20F3             (        hexed.asm):00217                 BRA     ECMD1                             ;AND PROCEED
+                      (        hexed.asm):00218         ;* SPECIAL KEY ENTERED
+2167                  (        hexed.asm):00219         ECMD2
+2167 6F84             (        hexed.asm):00220                 CLR     ,X                                ;TERMINATE LINE
+2169 818B             (        hexed.asm):00221                 CMPA    #$8B                              ;DELETE PREVIOUS?
+216B 260F             (        hexed.asm):00222                 BNE     ECMD3                             ;NO, TRY NEXT
+216D 8C25B3           (        hexed.asm):00223                 CMPX    #CMDBUF                           ;AT COMMAND BUFFER
+2170 23CE             (        hexed.asm):00224                 BLS     ECMD                              ;YES, DON'T DELETE
+2172 301F             (        hexed.asm):00225                 LEAX    -1,X                              ;BACKUP
+2174 3F               (        hexed.asm):00226                 SWI
+2175 18               (        hexed.asm):00227                 FCB     24                                ;DISPLAY CHAR
+2176 08200800         (        hexed.asm):00228                 FCB     8,' ',8,0       WIPE IT OUT
+217A 20DE             (        hexed.asm):00229                 BRA     ECMD1                             ;GET NEXT KEY
+                      (        hexed.asm):00230         ;* COMMAND KEY, RE-EXECUTE COMMAND
+217C                  (        hexed.asm):00231         ECMD3
+217C 818D             (        hexed.asm):00232                 CMPA    #$8D                              ;F1?
+217E 26B4             (        hexed.asm):00233                 BNE     INVKEY                            ;INDICATE INVALID
+2180                  (        hexed.asm):00234         RECMD1
+2180 CC0015           (        hexed.asm):00235                 LDD     #21                               ;RESET POINTER
+2183 BD23BE           (        hexed.asm):00236                 JSR     GOTOXY                            ;NEW LINE
+2186 BD23AA           (        hexed.asm):00237                 JSR     WCD                               ;CLEAR DISPLAY
+2189 3F               (        hexed.asm):00238                 SWI
+218A 04               (        hexed.asm):00239                 FCB     4                                 ;GET COMMAND
+218B 2725             (        hexed.asm):00240                 BEQ     ECMD3B                            ;NULL, EXIT
+218D BD22DA           (        hexed.asm):00241                 JSR     TOUPPER                           ;INSURE ITS UPPERCASE
+2190 3121             (        hexed.asm):00242                 LEAY    1,Y                               ;SKIP COMMAND CHAR
+                      (        hexed.asm):00243         ;* 'W'RITE FILE COMMAND
+2192 8157             (        hexed.asm):00244                 CMPA    #'W'                              ;WRITE OUT FILE
+2194 261F             (        hexed.asm):00245                 BNE     ECMD4                             ;NO, TRY NEXT
+2196 FC25AB           (        hexed.asm):00246                 LDD     ENDADR                            ;GET END ADDRESS
+2199 832617           (        hexed.asm):00247                 SUBD    #D_BUFF                           ;'D' = SIZE OF FILE
+219C 1F89             (        hexed.asm):00248                 TFR     A,B                               ;B = # 256 BYTE BLOCKS
+219E 54               (        hexed.asm):00249                 LSRB                                      ;     B = # 512 BYTE BLOCKS
+219F 4F               (        hexed.asm):00250                 CLRA                                      ;     ZERO HIGH
+21A0 8E2617           (        hexed.asm):00251                 LDX     #D_BUFF                           ;POINT TO BUFFER
+21A3 3F               (        hexed.asm):00252                 SWI
+21A4 36               (        hexed.asm):00253                 FCB     54                                ;WRITE FILE
+21A5 2605             (        hexed.asm):00254                 BNE     ECMD3A                            ;REPORT ERROR
+21A7 7F25AD           (        hexed.asm):00255                 CLR     CHANGED                           ;INDICATE SAVED
+21AA 2006             (        hexed.asm):00256                 BRA     ECMD3B                            ;AND PROCEED
+21AC                  (        hexed.asm):00257         ECMD3A
+21AC 8E2461           (        hexed.asm):00258                 LDX     #DOSERR                           ;INDICATE DOS ERROR
+21AF BF25B0           (        hexed.asm):00259                 STX     ERRMSG                            ;SET IT
+21B2                  (        hexed.asm):00260         ECMD3B
+21B2 7E2055           (        hexed.asm):00261                 JMP     VMODE2                            ;RETURN TO MAIN SCREEN
+                      (        hexed.asm):00262         ;* 'Q'UIT COMMAND
+21B5                  (        hexed.asm):00263         ECMD4
+21B5 8151             (        hexed.asm):00264                 CMPA    #'Q'                              ;QUIT?
+21B7 261A             (        hexed.asm):00265                 BNE     ECMD5                             ;NO, TRY NEXT
+21B9 B625AD           (        hexed.asm):00266                 LDA     CHANGED                           ;MODIFIED?
+21BC 270F             (        hexed.asm):00267                 BEQ     ECMD4A                            ;NO, ITS OK
+21BE A6A4             (        hexed.asm):00268                 LDA     ,Y                                ;GET NEXT
+21C0 BD22DA           (        hexed.asm):00269                 JSR     TOUPPER
+21C3 8151             (        hexed.asm):00270                 CMPA    #'Q'                              ;ANYWAY?
+21C5 2706             (        hexed.asm):00271                 BEQ     ECMD4A                            ;ITS OK
+21C7 8E2468           (        hexed.asm):00272                 LDX     #QUIMSG                           ;POINT TO MESSAGE
+21CA 7E205A           (        hexed.asm):00273                 JMP     VERROR                            ;INDICATE ERROR
+21CD                  (        hexed.asm):00274         ECMD4A
+21CD BD239E           (        hexed.asm):00275                 JSR     WCLS                              ;CLEAR SCREEN
+21D0 4F               (        hexed.asm):00276                 CLRA                                      ;     ZERO RC
+21D1 3F               (        hexed.asm):00277                 SWI
+21D2 00               (        hexed.asm):00278                 FCB     0                                 ;EXIT
+                      (        hexed.asm):00279         ;* 'G'OTO COMMAND
+21D3                  (        hexed.asm):00280         ECMD5
+21D3 8147             (        hexed.asm):00281                 CMPA    #'G'                              ;GOTO?
+21D5 2621             (        hexed.asm):00282                 BNE     ECMD6                             ;NO, TRY NEXT
+21D7 8D13             (        hexed.asm):00283                 BSR     CVCAP                             ;CONVERT INPUT TO CAPS
+21D9 3F               (        hexed.asm):00284                 SWI
+21DA 07               (        hexed.asm):00285                 FCB     7                                 ;GET VALUE
+21DB 263A             (        hexed.asm):00286                 BNE     ECMD6B                            ;REPORT ERROR
+21DD 1F10             (        hexed.asm):00287                 TFR     X,D                               ;COPY IT
+21DF                  (        hexed.asm):00288         REPOS
+21DF 3404             (        hexed.asm):00289                 PSHS    B                                 ;SAVE LOW
+21E1 5F               (        hexed.asm):00290                 CLRB                                      ;     ZERO LOW
+21E2 C32617           (        hexed.asm):00291                 ADDD    #D_BUFF                           ;OFFSET TO DATA BUFFER
+21E5 1F03             (        hexed.asm):00292                 TFR     D,U                               ;SET UP 'U'
+21E7 3504             (        hexed.asm):00293                 PULS    B                                 ;RESTORE POSIT
+21E9 7E20D5           (        hexed.asm):00294                 JMP     TSTDOWN                           ;TEST FOR IT
+                      (        hexed.asm):00295         ;* CONVERT INPUT LINE TO UPPERCASE
+21EC                  (        hexed.asm):00296         CVCAP
+21EC 1F21             (        hexed.asm):00297                 TFR     Y,X                               ;'X' = INP PTR
+21EE                  (        hexed.asm):00298         CVCAP1
+21EE A684             (        hexed.asm):00299                 LDA     ,X                                ;GET CHAR
+21F0 BD22DA           (        hexed.asm):00300                 JSR     TOUPPER                           ;CONVERT TO UPPERCASE
+21F3 A780             (        hexed.asm):00301                 STA     ,X+                               ;WRITE IT BACK OUT
+21F5 26F7             (        hexed.asm):00302                 BNE     CVCAP1                            ;AND PROCEED
+21F7 39               (        hexed.asm):00303                 RTS
+                      (        hexed.asm):00304         ;* '/' HEXIDECIMAL SEARCH
+21F8                  (        hexed.asm):00305         ECMD6
+21F8 812F             (        hexed.asm):00306                 CMPA    #'/'                              ;HEX SEARCH?
+21FA 2621             (        hexed.asm):00307                 BNE     ECMD7                             ;NO, TRY NEXT
+21FC 8DEE             (        hexed.asm):00308                 BSR     CVCAP                             ;CONVERT TO CAPS
+21FE 7F25B2           (        hexed.asm):00309                 CLR     TEMP                              ;ZERO TEMP
+2201 8E25E5           (        hexed.asm):00310                 LDX     #FNDBUF                           ;POINT TO FIND BUFFER
+2204                  (        hexed.asm):00311         ECMD6A
+2204 3F               (        hexed.asm):00312                 SWI
+2205 04               (        hexed.asm):00313                 FCB     4                                 ;SKIP TO NEXT
+2206 2728             (        hexed.asm):00314                 BEQ     SEARCH                            ;NO MORE OPS
+2208 3410             (        hexed.asm):00315                 PSHS    X                                 ;SAVE 'X'
+220A 3F               (        hexed.asm):00316                 SWI
+220B 07               (        hexed.asm):00317                 FCB     7                                 ;GET HEX VALUE
+220C 3510             (        hexed.asm):00318                 PULS    X                                 ;RESTORE 'X'
+220E 2607             (        hexed.asm):00319                 BNE     ECMD6B                            ;REPORT ERROR
+2210 E780             (        hexed.asm):00320                 STB     ,X+                               ;WRITE IT
+2212 7C25B2           (        hexed.asm):00321                 INC     TEMP                              ;ADVANCE COUNT
+2215 20ED             (        hexed.asm):00322                 BRA     ECMD6A                            ;AND PROCEED
+2217                  (        hexed.asm):00323         ECMD6B
+2217 8E2435           (        hexed.asm):00324                 LDX     #BADHEX                           ;INDICATE INVALID
+221A 7E205A           (        hexed.asm):00325                 JMP     VERROR                            ;REPORT ERROR
+                      (        hexed.asm):00326         ;* '?' SEARCH FOR TEXT
+221D                  (        hexed.asm):00327         ECMD7
+221D 813F             (        hexed.asm):00328                 CMPA    #'?'                              ;SEARCH?
+221F 263A             (        hexed.asm):00329                 BNE     ECMD8                             ;NO, TRY NEXT
+2221 8E25E5           (        hexed.asm):00330                 LDX     #FNDBUF                           ;POINT TO FIND BUFFER
+2224 C6FF             (        hexed.asm):00331                 LDB     #-1                               ;BEGIN WITH -1
+2226                  (        hexed.asm):00332         ECMD7A
+2226 5C               (        hexed.asm):00333                 INCB                                      ;     ADVANCE IT
+2227 A6A0             (        hexed.asm):00334                 LDA     ,Y+                               ;GET NEXT CHAR
+2229 A780             (        hexed.asm):00335                 STA     ,X+                               ;WRITE INTO FIND BUFFER
+222B 26F9             (        hexed.asm):00336                 BNE     ECMD7A                            ;CONTINUE
+222D F725B2           (        hexed.asm):00337                 STB     TEMP                              ;SAVE FOR LATER
+                      (        hexed.asm):00338         ;* PERFORM SEARCH
+2230                  (        hexed.asm):00339         SEARCH
+2230 1F31             (        hexed.asm):00340                 TFR     U,X                               ;GET PTR
+2232 F625AE           (        hexed.asm):00341                 LDB     POSIT                             ;GET POSITION
+2235 3A               (        hexed.asm):00342                 ABX                                       ;     ADVANCE IT
+2236                  (        hexed.asm):00343         SEARC1
+2236 108E25E5         (        hexed.asm):00344                 LDY     #FNDBUF                           ;POINT TO FIND BUFFER
+223A 5F               (        hexed.asm):00345                 CLRB                                      ;     ZERO COUNT
+223B 3001             (        hexed.asm):00346                 LEAX    1,X                               ;ADVANCE BY 1
+223D                  (        hexed.asm):00347         SEARC2
+223D BC25AB           (        hexed.asm):00348                 CMPX    ENDADR                            ;ARE WE OVER?
+2240 2413             (        hexed.asm):00349                 BHS     SEARC3                            ;YES, REPORT ERROR
+2242 A6A0             (        hexed.asm):00350                 LDA     ,Y+                               ;GET CHAR
+2244 A185             (        hexed.asm):00351                 CMPA    B,X                               ;DOES IT MATCH?
+2246 26EE             (        hexed.asm):00352                 BNE     SEARC1                            ;NO, KEEP LOOKING
+2248 5C               (        hexed.asm):00353                 INCB                                      ;     ADVANCE COUNT
+2249 F125B2           (        hexed.asm):00354                 CMPB    TEMP                              ;ARE WE OVER?
+224C 25EF             (        hexed.asm):00355                 BLO     SEARC2                            ;NO, KEEP LOOKING
+                      (        hexed.asm):00356         ;* WE FOUND STRING
+224E 1F10             (        hexed.asm):00357                 TFR     X,D                               ;'D' = ADDRESS
+2250 832617           (        hexed.asm):00358                 SUBD    #D_BUFF                           ;ADJUST TO TEXT POSITION
+2253 208A             (        hexed.asm):00359                 BRA     REPOS                             ;POSITION US THERE
+                      (        hexed.asm):00360         ;* STRING WAS NOT FOUND
+2255                  (        hexed.asm):00361         SEARC3
+2255 8E2457           (        hexed.asm):00362                 LDX     #NOTFND                           ;POINT TO MESSAGE
+2258 7E205A           (        hexed.asm):00363                 JMP     VERROR                            ;REPORT ERROR
+                      (        hexed.asm):00364         ;*
+225B                  (        hexed.asm):00365         ECMD8
+225B 8E2447           (        hexed.asm):00366                 LDX     #BADCMD                           ;INVALID COMMAND
+225E 7E205A           (        hexed.asm):00367                 JMP     VERROR                            ;REPORT ERROR
+                      (        hexed.asm):00368         ;*
+                      (        hexed.asm):00369         ;* DATA ENTRY KEY PRESSED
+                      (        hexed.asm):00370         ;*
+2261                  (        hexed.asm):00371         ENTKEY
+2261 F625AF           (        hexed.asm):00372                 LDB     MODE                              ;GET DATA MODE
+2264 2B11             (        hexed.asm):00373                 BMI     ENTK1                             ;CHARACTER MODE
+2266 8D46             (        hexed.asm):00374                 BSR     GETHEX                            ;CONVERT HEX
+2268 48               (        hexed.asm):00375                 LSLA                                      ;     SHIFT
+2269 48               (        hexed.asm):00376                 LSLA                                      ;     OVER
+226A 48               (        hexed.asm):00377                 LSLA                                      ;     INTO HIGH
+226B 48               (        hexed.asm):00378                 LSLA                                      ;     BITS
+226C B725B2           (        hexed.asm):00379                 STA     TEMP                              ;SAVE FOR LATER
+226F BD23E6           (        hexed.asm):00380                 JSR     GETKEY                            ;GET NEXT KEY
+2272 8D3A             (        hexed.asm):00381                 BSR     GETHEX                            ;CONVERT TO HEX
+2274 BA25B2           (        hexed.asm):00382                 ORA     TEMP                              ;INCLUDE FIRST
+2277                  (        hexed.asm):00383         ENTK1
+2277 A784             (        hexed.asm):00384                 STA     ,X                                ;WRITE IN TEXT
+2279 86FF             (        hexed.asm):00385                 LDA     #-1                               ;GET CHANGED FLAG
+227B B725AD           (        hexed.asm):00386                 STA     CHANGED                           ;INDICATE CHANGED
+                      (        hexed.asm):00387         ;* FOR CORRECT DATA, ADVANCE CURSOR POSITION
+227E B625AE           (        hexed.asm):00388                 LDA     POSIT                             ;GET POSITION
+2281 7C25AE           (        hexed.asm):00389                 INC     POSIT                             ;ADVANCE IT
+                      (        hexed.asm):00390         ;* UPDATE SCREEN CHARACTERS
+2284                  (        hexed.asm):00391         ENTK2
+2284 1F89             (        hexed.asm):00392                 TFR     A,B                               ;COPY FOR LATER
+2286 840F             (        hexed.asm):00393                 ANDA    #%00001111      GET 'X' POSITION
+2288 B725B2           (        hexed.asm):00394                 STA     TEMP                              ;SAVE FOR LATER
+228B 48               (        hexed.asm):00395                 LSLA                                      ;     X2
+228C BB25B2           (        hexed.asm):00396                 ADDA    TEMP                              ;x3
+228F 8B08             (        hexed.asm):00397                 ADDA    #HEX_D                            ;OFFSET TO CHAR
+2291 54               (        hexed.asm):00398                 LSRB                                      ;     /
+2292 54               (        hexed.asm):00399                 LSRB                                      ;     16
+2293 54               (        hexed.asm):00400                 LSRB                                      ;     TO CALC
+2294 54               (        hexed.asm):00401                 LSRB                                      ;     ROWS
+2295 CB04             (        hexed.asm):00402                 ADDB    #4                                ;OFFSET TO DATA
+2297 BD23BE           (        hexed.asm):00403                 JSR     GOTOXY                            ;POSITION CURSOR
+229A A684             (        hexed.asm):00404                 LDA     ,X                                ;GET CHAR
+229C 3F               (        hexed.asm):00405                 SWI
+229D 1C               (        hexed.asm):00406                 FCB     28                                ;DISPLAY IN HEX
+229E B625B2           (        hexed.asm):00407                 LDA     TEMP                              ;GET POSITION AGAIN
+22A1 8B3C             (        hexed.asm):00408                 ADDA    #TEXT_D                           ;CONVERT TO OFFSET
+22A3 BD23BE           (        hexed.asm):00409                 JSR     GOTOXY                            ;MOVE THERE
+22A6 A684             (        hexed.asm):00410                 LDA     ,X                                ;GET CHAR
+22A8 BD2391           (        hexed.asm):00411                 JSR     DCHAR                             ;DISPLAY IT
+22AB 7E2055           (        hexed.asm):00412                 JMP     VMODE2                            ;AND RESTORE
+                      (        hexed.asm):00413         ;* CONVERT CHAR IN 'A' TO HEX NIBBLE
+22AE                  (        hexed.asm):00414         GETHEX
+22AE 1F89             (        hexed.asm):00415                 TFR     A,B                               ;SAVE CHAR
+22B0 8130             (        hexed.asm):00416                 CMPA    #'0'                              ;IN RANGE?
+22B2 2519             (        hexed.asm):00417                 BLO     GETH2                             ;BAD
+22B4 8139             (        hexed.asm):00418                 CMPA    #'9'                              ;IN RANGE?
+22B6 230C             (        hexed.asm):00419                 BLS     GETH1                             ;GOOD
+22B8 8D20             (        hexed.asm):00420                 BSR     TOUPPER                           ;CONVERT TO UPPERCASE
+22BA 8141             (        hexed.asm):00421                 CMPA    #'A'                              ;IN RANGE?
+22BC 250F             (        hexed.asm):00422                 BLO     GETH2                             ;BAD
+22BE 8146             (        hexed.asm):00423                 CMPA    #'F'                              ;IN RANGE?
+22C0 220B             (        hexed.asm):00424                 BHI     GETH2                             ;BAD
+22C2 8007             (        hexed.asm):00425                 SUBA    #7                                ;PARTIAL CONVERT
+                      (        hexed.asm):00426         ;* VALID HEX DIGIT ENTERED
+22C4                  (        hexed.asm):00427         GETH1
+22C4 8030             (        hexed.asm):00428                 SUBA    #'0'                              ;TOTAL CONVERT
+22C6 1E89             (        hexed.asm):00429                 EXG     A,B                               ;SWAP
+22C8 3F               (        hexed.asm):00430                 SWI
+22C9 21               (        hexed.asm):00431                 FCB     33                                ;ECHO CHAR
+22CA 1F98             (        hexed.asm):00432                 TFR     B,A                               ;GET CHAR BACK
+22CC 39               (        hexed.asm):00433                 RTS
+                      (        hexed.asm):00434         ;* INVALID HEX DIGIT ENTERED
+22CD                  (        hexed.asm):00435         GETH2
+22CD 3262             (        hexed.asm):00436                 LEAS    2,S                               ;SKIP SAVED PC
+22CF CC2435           (        hexed.asm):00437                 LDD     #BADHEX                           ;INDICATE INVALID
+22D2 FD25B0           (        hexed.asm):00438                 STD     ERRMSG                            ;SET MESSAGE
+22D5 B625AE           (        hexed.asm):00439                 LDA     POSIT                             ;GET POSITION
+22D8 20AA             (        hexed.asm):00440                 BRA     ENTK2                             ;AND FIX SCREEN
+                      (        hexed.asm):00441         ;* CONVERT CHAR(A) TO UPPER CASE
+22DA                  (        hexed.asm):00442         TOUPPER
+22DA 8161             (        hexed.asm):00443                 CMPA    #'A'+$20        LOWER CASE 'A'?
+22DC 2506             (        hexed.asm):00444                 BLO     TOUPP1                            ;NO, ITS OK
+22DE 817A             (        hexed.asm):00445                 CMPA    #'Z'+$20        LOWER CASE 'Z'?
+22E0 2202             (        hexed.asm):00446                 BHI     TOUPP1                            ;NO, ITS OK
+22E2 845F             (        hexed.asm):00447                 ANDA    #%01011111      CONVERT TO UPPER
+22E4                  (        hexed.asm):00448         TOUPP1
+22E4 39               (        hexed.asm):00449                 RTS
+                      (        hexed.asm):00450         ;*
+                      (        hexed.asm):00451         ;* DRAW A SCREEN
+                      (        hexed.asm):00452         ;*
+22E5                  (        hexed.asm):00453         DSCREEN
+22E5 BD239E           (        hexed.asm):00454                 JSR     WCLS                              ;CLEAR SCREEN
+22E8 C61E             (        hexed.asm):00455                 LDB     #30                               ;COUNT
+22EA 8D6C             (        hexed.asm):00456                 BSR     DDASH                             ;DISPLAY DASHES
+22EC BD23A2           (        hexed.asm):00457                 JSR     WSO                               ;SPECIAL EFFECTS ON
+22EF 3F               (        hexed.asm):00458                 SWI
+22F0 18               (        hexed.asm):00459                 FCB     24                                ;OUTPUT MESSAGE
+22F1 2048455845442056 (        hexed.asm):00460                 FCN     ' HEXED Version 1.0 '
+     657273696F6E2031
+     2E302000
+2305 BD23A6           (        hexed.asm):00461                 JSR     WSE                               ;SPECIAL EFFECTS OFF
+2308 C61E             (        hexed.asm):00462                 LDB     #30                               ;COUNT
+230A 8D4C             (        hexed.asm):00463                 BSR     DDASH                             ;OUTPUT DASHES
+230C CC0002           (        hexed.asm):00464                 LDD     #$0002                            ;NEW POSITION
+230F BD23BE           (        hexed.asm):00465                 JSR     GOTOXY                            ;POSITION CURSOR
+2312 3F               (        hexed.asm):00466                 SWI
+2313 18               (        hexed.asm):00467                 FCB     24                                ;OUTPUT STRING
+2314 46696C653A2000   (        hexed.asm):00468                 FCN     'File: '
+231B 3F               (        hexed.asm):00469                 SWI
+231C 1E               (        hexed.asm):00470                 FCB     30                                ;DISPLAY NAME
+231D CC003E           (        hexed.asm):00471                 LDD     #TEXT_D+2                         ; POSITION
+2320 BD23BE           (        hexed.asm):00472                 JSR     GOTOXY                            ;POSITION CURSOR
+2323 3F               (        hexed.asm):00473                 SWI
+2324 18               (        hexed.asm):00474                 FCB     24                                ;OUTPUT STRING
+2325 53697A653A2000   (        hexed.asm):00475                 FCN     'Size: '
+232C FC25AB           (        hexed.asm):00476                 LDD     ENDADR                            ;GET END
+232F 832617           (        hexed.asm):00477                 SUBD    #D_BUFF                           ;CALCULATE SIZE
+2332 3406             (        hexed.asm):00478                 PSHS    A,B                               ;SAVE IT
+2334 3F               (        hexed.asm):00479                 SWI
+2335 1A               (        hexed.asm):00480                 FCB     26                                ;DISPLAY
+2336 3F               (        hexed.asm):00481                 SWI
+2337 18               (        hexed.asm):00482                 FCB     24                                ;STRING
+2338 20282400         (        hexed.asm):00483                 FCN     ' ($'
+233C 3506             (        hexed.asm):00484                 PULS    A,B                               ;RESTORE IT
+233E 3F               (        hexed.asm):00485                 SWI
+233F 1B               (        hexed.asm):00486                 FCB     27                                ;DISPLAY IN HEX
+2340 8629             (        hexed.asm):00487                 LDA     #')'                              ;CLOSING
+2342 3F               (        hexed.asm):00488                 SWI
+2343 21               (        hexed.asm):00489                 FCB     33                                ;DISPLAY
+2344                  (        hexed.asm):00490         DSCR1
+2344 CC0004           (        hexed.asm):00491                 LDD     #$0004                            ;NEW POSITION
+2347 BD23BE           (        hexed.asm):00492                 JSR     GOTOXY                            ;POSITION CURSOR
+234A C610             (        hexed.asm):00493                 LDB     #16                               ;16x16 BYTE LINES
+234C 1F31             (        hexed.asm):00494                 TFR     U,X                               ;'X' = ADDR
+234E                  (        hexed.asm):00495         DSCR2
+234E 8D10             (        hexed.asm):00496                 BSR     DLINE                             ;DISPLAY LINE
+2350 308810           (        hexed.asm):00497                 LEAX    16,X                              ;ADVANCE IT
+2353 5A               (        hexed.asm):00498                 DECB                                      ;     REDUCE COUNT
+2354 26F8             (        hexed.asm):00499                 BNE     DSCR2                             ;AND CONTINUE
+2356 2052             (        hexed.asm):00500                 BRA     WCD
+                      (        hexed.asm):00501         ;* DISPLAY LINE OF DASHES (B=LENGTH)
+2358                  (        hexed.asm):00502         DDASH
+2358 862D             (        hexed.asm):00503                 LDA     #'-'                              ;GET DASH
+235A                  (        hexed.asm):00504         DDASH1
+235A 3F               (        hexed.asm):00505                 SWI
+235B 21               (        hexed.asm):00506                 FCB     33                                ;OUTPUT
+235C 5A               (        hexed.asm):00507                 DECB                                      ;     REDUCE COUNT
+235D 26FB             (        hexed.asm):00508                 BNE     DDASH1                            ;AND CONTINUE
+235F 39               (        hexed.asm):00509                 RTS
+                      (        hexed.asm):00510         ;*
+                      (        hexed.asm):00511         ;* DISPLAY 16 BYTE LINE(X)
+                      (        hexed.asm):00512         ;*
+2360                  (        hexed.asm):00513         DLINE
+2360 3416             (        hexed.asm):00514                 PSHS    A,B,X                             ;SAVE REG'S
+2362 1F10             (        hexed.asm):00515                 TFR     X,D                               ;GET ADDRESS
+2364 832617           (        hexed.asm):00516                 SUBD    #D_BUFF                           ;CONVERT ADDRESS
+2367 3F               (        hexed.asm):00517                 SWI
+2368 1B               (        hexed.asm):00518                 FCB     27                                ;DISPLAY ADDRESS
+2369 8604             (        hexed.asm):00519                 LDA     #HEX_D-4        # SPACES
+236B 8D1E             (        hexed.asm):00520                 BSR     SPACES                            ;DISPLAY SPACES
+                      (        hexed.asm):00521         ;* DISPLAY HEX FIELDS
+236D C610             (        hexed.asm):00522                 LDB     #16                               ;16 BYTES/LINE
+236F                  (        hexed.asm):00523         DLINE1
+236F A680             (        hexed.asm):00524                 LDA     ,X+                               ;GET ADDRESS
+2371 3F               (        hexed.asm):00525                 SWI
+2372 1C               (        hexed.asm):00526                 FCB     28                                ;DISPLAY DATA
+2373 3F               (        hexed.asm):00527                 SWI
+2374 15               (        hexed.asm):00528                 FCB     21                                ;SEPERATNG SPACE
+2375 5A               (        hexed.asm):00529                 DECB                                      ;     REDUCE COUNT
+2376 26F7             (        hexed.asm):00530                 BNE     DLINE1                            ;DO ALL
+                      (        hexed.asm):00531         ;* DISPLAY TEXT FIELDS
+2378 8604             (        hexed.asm):00532                 LDA     #TEXT_D-HEX_D-48
+237A 8D0F             (        hexed.asm):00533                 BSR     SPACES                            ;OUTPUT SPACES
+237C AE62             (        hexed.asm):00534                 LDX     2,S                               ;RESTORE 'X'
+237E C610             (        hexed.asm):00535                 LDB     #16                               ;16 BYTES/LINE
+2380                  (        hexed.asm):00536         DLINE2
+2380 A680             (        hexed.asm):00537                 LDA     ,X+                               ;GET CHAR
+2382 8D0D             (        hexed.asm):00538                 BSR     DCHAR                             ;DISPLAY CHAR
+2384 5A               (        hexed.asm):00539                 DECB                                      ;     REDUCE COUNT
+2385 26F9             (        hexed.asm):00540                 BNE     DLINE2                            ;DO THEM ALL
+2387 3F               (        hexed.asm):00541                 SWI
+2388 16               (        hexed.asm):00542                 FCB     22                                ;NEW LINE
+2389 3596             (        hexed.asm):00543                 PULS    A,B,X,PC        RESTORE & RETURN
+                      (        hexed.asm):00544         ;* DISPLAY # SPACES
+238B                  (        hexed.asm):00545         SPACES
+238B 3F               (        hexed.asm):00546                 SWI
+238C 15               (        hexed.asm):00547                 FCB     21                                ;DISPLAY A SPACE
+238D 4A               (        hexed.asm):00548                 DECA                                      ;     REDUCE COUNT
+238E 26FB             (        hexed.asm):00549                 BNE     SPACES                            ;DO THEM ALL
+2390 39               (        hexed.asm):00550                 RTS
+                      (        hexed.asm):00551         ;* DISPLAY CHARACTER
+2391                  (        hexed.asm):00552         DCHAR
+2391 8120             (        hexed.asm):00553                 CMPA    #' '                              ;IN RANGE?
+2393 2504             (        hexed.asm):00554                 BLO     DCHAR1                            ;NO, CONVERT
+2395 817F             (        hexed.asm):00555                 CMPA    #$7F                              ;ALSO IN RANGE?
+2397 2502             (        hexed.asm):00556                 BLO     DCHAR2                            ;YES, ITS OK
+2399                  (        hexed.asm):00557         DCHAR1
+2399 862E             (        hexed.asm):00558                 LDA     #'.'                              ;CONVERT TO DOT
+239B                  (        hexed.asm):00559         DCHAR2
+239B 3F               (        hexed.asm):00560                 SWI
+239C 21               (        hexed.asm):00561                 FCB     33                                ;DISPLAY IT
+239D 39               (        hexed.asm):00562                 RTS
+                      (        hexed.asm):00563         ;* WRITE SPECIAL CONTROL CHARACTERS
+239E                  (        hexed.asm):00564         WCLS
+239E 8680             (        hexed.asm):00565                 LDA     #$80                              ;CLEAR SCREEN
+23A0 200A             (        hexed.asm):00566                 BRA     PUTCHR
+23A2                  (        hexed.asm):00567         WSO
+23A2 8683             (        hexed.asm):00568                 LDA     #$83                              ;SPECIAL ON
+23A4 2006             (        hexed.asm):00569                 BRA     PUTCHR
+23A6                  (        hexed.asm):00570         WSE
+23A6 8684             (        hexed.asm):00571                 LDA     #$84                              ;SPECIAL OFF
+23A8 2002             (        hexed.asm):00572                 BRA     PUTCHR
+23AA                  (        hexed.asm):00573         WCD
+23AA 8682             (        hexed.asm):00574                 LDA     #$82                              ;CLEAR DISPLAY
+                      (        hexed.asm):00575         ;*
+                      (        hexed.asm):00576         ;* WRITE A CHARACTER TO THE DISPLAY
+                      (        hexed.asm):00577         ;*
+23AC                  (        hexed.asm):00578         PUTCHR
+23AC 4D               (        hexed.asm):00579                 TSTA                                      ;     SPECIAL CASE?
+23AD 2B03             (        hexed.asm):00580                 BMI     PUTC1                             ;YES, HANDLE IT
+23AF 3F               (        hexed.asm):00581                 SWI
+23B0 21               (        hexed.asm):00582                 FCB     33                                ;DISPLAY IT
+23B1 39               (        hexed.asm):00583                 RTS
+                      (        hexed.asm):00584         ;* SPECIAL STRING TO OUTPUT
+23B2                  (        hexed.asm):00585         PUTC1
+23B2 3412             (        hexed.asm):00586                 PSHS    A,X                               ;SAVE REGISTERS
+23B4 48               (        hexed.asm):00587                 LSLA                                      ;     X2 FOR TWO BYTE ENTRIES
+23B5 8E24D6           (        hexed.asm):00588                 LDX     #PUTTAB                           ;POINT TO TABLE
+23B8 AE86             (        hexed.asm):00589                 LDX     A,X                               ;GET DATA TO WRITE
+23BA 3F               (        hexed.asm):00590                 SWI
+23BB 17               (        hexed.asm):00591                 FCB     23                                ;DISPLAY IT
+23BC 3592             (        hexed.asm):00592                 PULS    A,X,PC                            ;RESTORE & RETURN
+                      (        hexed.asm):00593         ;*
+                      (        hexed.asm):00594         ;* MOVE CURSOR POSITION
+                      (        hexed.asm):00595         ;*
+23BE                  (        hexed.asm):00596         GOTOXY
+23BE 3416             (        hexed.asm):00597                 PSHS    A,B,X                             ;SAVE CHARS
+23C0 BE24D4           (        hexed.asm):00598                 LDX     GXYPTR                            ;POINT TO BUFFER
+23C3                  (        hexed.asm):00599         GOTOXY1
+23C3 A680             (        hexed.asm):00600                 LDA     ,X+                               ;GET CHAR
+23C5 271D             (        hexed.asm):00601                 BEQ     GOTOXY6                           ;END, EXIT
+23C7 2B04             (        hexed.asm):00602                 BMI     GOTOXY3                           ;SPECIAL CODE
+                      (        hexed.asm):00603         ;* NORMAL CHARACTER, DISPLAY IT
+23C9                  (        hexed.asm):00604         GOTOXY2
+23C9 3F               (        hexed.asm):00605                 SWI
+23CA 21               (        hexed.asm):00606                 FCB     33                                ;DISPLAY IT
+23CB 20F6             (        hexed.asm):00607                 BRA     GOTOXY1                           ;AND PROCEED
+                      (        hexed.asm):00608         ;* SPECIAL TRANSLATED (X/Y) CODE
+23CD                  (        hexed.asm):00609         GOTOXY3
+23CD E6E4             (        hexed.asm):00610                 LDB     ,S                                ;GET 'X' POSITION
+23CF 8540             (        hexed.asm):00611                 BITA    #%01000000      IS IT 'X'?
+23D1 2702             (        hexed.asm):00612                 BEQ     GOTOXY4                           ;YES, ALL IS OK
+23D3 E661             (        hexed.asm):00613                 LDB     1,S                               ;GET 'Y' POSITION
+23D5                  (        hexed.asm):00614         GOTOXY4
+23D5 EB80             (        hexed.asm):00615                 ADDB    ,X+                               ;INCLUDE OFFSET
+23D7 8520             (        hexed.asm):00616                 BITA    #%00100000      DECIMAL?
+23D9 2604             (        hexed.asm):00617                 BNE     GOTOXY5                           ;YES, DO DECIMAL
+23DB 1F98             (        hexed.asm):00618                 TFR     B,A                               ;GET CHAR
+23DD 20EA             (        hexed.asm):00619                 BRA     GOTOXY2                           ;OUTPUT & PROCEED
+23DF                  (        hexed.asm):00620         GOTOXY5
+23DF 4F               (        hexed.asm):00621                 CLRA                                      ;     ZERO HIGH
+23E0 3F               (        hexed.asm):00622                 SWI
+23E1 1A               (        hexed.asm):00623                 FCB     26                                ;DISPLAY IN DECIMAL
+23E2 20DF             (        hexed.asm):00624                 BRA     GOTOXY1                           ;AND PROCEED
+23E4                  (        hexed.asm):00625         GOTOXY6
+23E4 3596             (        hexed.asm):00626                 PULS    A,B,X,PC        RESTORE & RETURN
+                      (        hexed.asm):00627         ;*
+                      (        hexed.asm):00628         ;* GET AN INPUT KEY FROM THE TERMINAL
+                      (        hexed.asm):00629         ;*
+23E6                  (        hexed.asm):00630         GETKEY
+23E6 3454             (        hexed.asm):00631                 PSHS    B,X,U                             ;SAVE REGS
+23E8                  (        hexed.asm):00632         GETK1
+23E8 CE24E2           (        hexed.asm):00633                 LDU     #GETKTAB        POINT TO KEY TABLE
+23EB C680             (        hexed.asm):00634                 LDB     #$80                              ;FIRST FUNCTION CODE
+23ED                  (        hexed.asm):00635         GETK2
+23ED 8E24C8           (        hexed.asm):00636                 LDX     #GETKBUF        POINT TO KEY BUFFER
+23F0                  (        hexed.asm):00637         GETK3
+23F0 A680             (        hexed.asm):00638                 LDA     ,X+                               ;GET CHAR
+23F2 2722             (        hexed.asm):00639                 BEQ     GETK6                             ;PARTIAL MATCH
+23F4 A1C4             (        hexed.asm):00640                 CMPA    ,U                                ;GET CHAR FROM TABLE
+23F6 2604             (        hexed.asm):00641                 BNE     GETK4                             ;DOSN'T MATCH
+23F8 3341             (        hexed.asm):00642                 LEAU    1,U                               ;ADVANCE
+23FA 20F4             (        hexed.asm):00643                 BRA     GETK3                             ;KEEP LOOKING
+                      (        hexed.asm):00644         ;* CHAR DID NOT MATCH, ADVANCE TO NEXT
+23FC                  (        hexed.asm):00645         GETK4
+23FC A6C0             (        hexed.asm):00646                 LDA     ,U+                               ;GET CHAR
+23FE 26FC             (        hexed.asm):00647                 BNE     GETK4                             ;KEEP LOOKING
+2400 5C               (        hexed.asm):00648                 INCB                                      ;     ADVANCE FUNCTION CODE
+2401 A6C4             (        hexed.asm):00649                 LDA     ,U                                ;END OF TABLE?
+2403 26E8             (        hexed.asm):00650                 BNE     GETK2                             ;NO, KEEP LOOKING
+                      (        hexed.asm):00651         ;* HIT END OF TABLE, NO MATCHES
+                      (        hexed.asm):00652         ;* REMOVE AND RETURN ONE CHAR FROM THE INPUT
+2405 8E24C8           (        hexed.asm):00653                 LDX     #GETKBUF        POINT TO BUFFER
+2408 A680             (        hexed.asm):00654                 LDA     ,X+                               ;GET CHAR
+240A 270E             (        hexed.asm):00655                 BEQ     GETK8                             ;NONE, GET A KEY
+240C                  (        hexed.asm):00656         GETK5
+240C E680             (        hexed.asm):00657                 LDB     ,X+                               ;GET NEXT CHAR
+240E E71E             (        hexed.asm):00658                 STB     -2,X                              ;WRITE IT
+2410 26FA             (        hexed.asm):00659                 BNE     GETK5                             ;DO THEM ALL
+2412 847F             (        hexed.asm):00660                 ANDA    #%01111111      INSURE NO HIGH BUT
+2414 35D4             (        hexed.asm):00661                 PULS    B,X,U,PC        RETURN WITH CHAR
+                      (        hexed.asm):00662         ;* HIT END OF STRING WITH ALL MATCHES
+2416                  (        hexed.asm):00663         GETK6
+2416 A6C4             (        hexed.asm):00664                 LDA     ,U                                ;END OF STRING?
+2418 2708             (        hexed.asm):00665                 BEQ     GETK7                             ;YES, WE HAVE IT
+241A                  (        hexed.asm):00666         GETK8
+241A 3F               (        hexed.asm):00667                 SWI
+241B 22               (        hexed.asm):00668                 FCB     34                                ;GET INPUT KEY
+241C A71F             (        hexed.asm):00669                 STA     -1,X                              ;WRITE INTO STRING
+241E 6F84             (        hexed.asm):00670                 CLR     ,X                                ;ZERO END
+2420 20C6             (        hexed.asm):00671                 BRA     GETK1                             ;RETEST FOR MATCHES
+                      (        hexed.asm):00672         ;* WE FOUND AN INPUT STRING
+2422                  (        hexed.asm):00673         GETK7
+2422 1F98             (        hexed.asm):00674                 TFR     B,A                               ;GET CHAR
+2424 7F24C8           (        hexed.asm):00675                 CLR     >GETKBUF        ZERO BUFFER
+2427 35D4             (        hexed.asm):00676                 PULS    B,X,U,PC        RESTORE & RETURN
+                      (        hexed.asm):00677         ;*
+                      (        hexed.asm):00678         ;* STRINGS & MESSAGES
+                      (        hexed.asm):00679         ;*
+2429                  (        hexed.asm):00680         BADKEY
+2429 496E76616C696420 (        hexed.asm):00681                 FCN     'Invalid key'
+     6B657900
+2435                  (        hexed.asm):00682         BADHEX
+2435 496E76616C696420 (        hexed.asm):00683                 FCN     'Invalid hex digit'
+     6865782064696769
+     7400
+2447                  (        hexed.asm):00684         BADCMD
+2447 556E6B6E6F776E20 (        hexed.asm):00685                 FCN     'Unknown command'
+     636F6D6D616E6400
+2457                  (        hexed.asm):00686         NOTFND
+2457 4E6F7420666F756E (        hexed.asm):00687                 FCN     'Not found'
+     6400
+2461                  (        hexed.asm):00688         DOSERR
+2461 4661696C656400   (        hexed.asm):00689                 FCN     'Failed'
+2468                  (        hexed.asm):00690         QUIMSG
+2468 556E736176656420 (        hexed.asm):00691                 FCN     "Unsaved changes, use 'qq' to quit anyway"
+     6368616E6765732C
+     2075736520277171
+     2720746F20717569
+     7420616E79776179
+     00
+2491                  (        hexed.asm):00692         HOMEMSG
+2491 4261636B75702062 (        hexed.asm):00693                 FCN     'Backup beyond start of file'
+     65796F6E64207374
+     617274206F662066
+     696C6500
+24AD                  (        hexed.asm):00694         ENDMSG
+24AD 416476616E636520 (        hexed.asm):00695                 FCN     'Advance beyond end of file'
+     6265796F6E642065
+     6E64206F66206669
+     6C6500
+                      (        hexed.asm):00696         ;* GETKEY INPUT BUFFER
+24C8                  (        hexed.asm):00697         GETKBUF
+24C8 0000000000       (        hexed.asm):00698                 FCB     0,0,0,0,0       INPUT BUFFER
+24CD 0000000000       (        hexed.asm):00699                 FCB     0,0,0,0,0       FOR GET KEY
+                      (        hexed.asm):00700         ;* OUTPUT TRANSLATION TABLES
+24D2                  (        hexed.asm):00701         ISTPTR
+24D2 24E2             (        hexed.asm):00702                 FDB     GETKTAB                           ;INITIALIZATION STRING
+24D4                  (        hexed.asm):00703         GXYPTR
+24D4 24E2             (        hexed.asm):00704                 FDB     GETKTAB                           ;GOTO X-Y HANDLER
+24D6                  (        hexed.asm):00705         PUTTAB
+24D6 24E2             (        hexed.asm):00706                 FDB     GETKTAB                           ;CLEAR SCREEN
+24D8 24E2             (        hexed.asm):00707                 FDB     GETKTAB                           ;CLEAR END OF LINE
+24DA 24E2             (        hexed.asm):00708                 FDB     GETKTAB                           ;CLEAR END OF DISPLAY
+24DC 24E2             (        hexed.asm):00709                 FDB     GETKTAB                           ;SPECIAL EFFECTS ON
+24DE 24E2             (        hexed.asm):00710                 FDB     GETKTAB                           ;SPECIAL EFFECTS OFF
+24E0 24E2             (        hexed.asm):00711                 FDB     GETKTAB                           ;SCROLL FORWARD
+                      (        hexed.asm):00712         ;* STANDARD TERMINAL KEYS INPUT LOOKUP TABLE
+24E2                  (        hexed.asm):00713         GETKTAB
+24E2 00               (        hexed.asm):00714                 FCB     0                                 ;CURSOR UP
+24E3                  (        hexed.asm):00715                 RMB     200                               ;SAVE KEY SPACE
+                      (        hexed.asm):00716         ;*
+                      (        hexed.asm):00717         ;* RESERVED VARIABLES
+                      (        hexed.asm):00718         ;*
+25AB                  (        hexed.asm):00719         ENDADR
+25AB 2617             (        hexed.asm):00720                 FDB     D_BUFF                            ;ENDING ADDRESS
+25AD                  (        hexed.asm):00721         CHANGED
+25AD 00               (        hexed.asm):00722                 FCB     0                                 ;FILE CHANGED FLAG
+25AE                  (        hexed.asm):00723         POSIT
+25AE 00               (        hexed.asm):00724                 FCB     0                                 ;CURSOR POSITION
+25AF                  (        hexed.asm):00725         MODE
+25AF 00               (        hexed.asm):00726                 FCB     0                                 ;TEXT/HEX MODE
+25B0                  (        hexed.asm):00727         ERRMSG
+25B0 0000             (        hexed.asm):00728                 FDB     0                                 ;REPORT ERROR
+25B2                  (        hexed.asm):00729         TEMP
+25B2                  (        hexed.asm):00730                 RMB     1                                 ;TEMPORARY STORAGE
+25B3                  (        hexed.asm):00731         CMDBUF
+25B3                  (        hexed.asm):00732                 RMB     50                                ;COMMAND INPUT BUFFER
+25E5                  (        hexed.asm):00733         FNDBUF
+25E5                  (        hexed.asm):00734                 RMB     50                                ;FIND BUFFER
+     2617             (        hexed.asm):00735         D_BUFF          = *                               ;DATA BUFFER
+
+Symbol Table:
+[ G] ABORT                            203F
+[ G] BADCMD                           2447
+[ G] BADHEX                           2435
+[ G] BADKEY                           2429
+[ G] CHANGED                          25AD
+[ G] CMDBUF                           25B3
+[ G] CVCAP                            21EC
+[ G] CVCAP1                           21EE
+[ G] D_BUFF                           2617
+[ G] DCHAR                            2391
+[ G] DCHAR1                           2399
+[ G] DCHAR2                           239B
+[ G] DDASH                            2358
+[ G] DDASH1                           235A
+[ G] DLINE                            2360
+[ G] DLINE1                           236F
+[ G] DLINE2                           2380
+[ G] DOSERR                           2461
+[ G] DSCR1                            2344
+[ G] DSCR2                            234E
+[ G] DSCREEN                          22E5
+[ G] ECMD                             2140
+[ G] ECMD1                            215A
+[ G] ECMD2                            2167
+[ G] ECMD3                            217C
+[ G] ECMD3A                           21AC
+[ G] ECMD3B                           21B2
+[ G] ECMD4                            21B5
+[ G] ECMD4A                           21CD
+[ G] ECMD5                            21D3
+[ G] ECMD6                            21F8
+[ G] ECMD6A                           2204
+[ G] ECMD6B                           2217
+[ G] ECMD7                            221D
+[ G] ECMD7A                           2226
+[ G] ECMD8                            225B
+[ G] END                              20E9
+[ G] ENDADR                           25AB
+[ G] ENDMSG                           24AD
+[ G] ENTK1                            2277
+[ G] ENTK2                            2284
+[ G] ENTKEY                           2261
+[ G] ENTRY                            2000
+[ G] ERRMSG                           25B0
+[ G] FNDBUF                           25E5
+[ G] GETH1                            22C4
+[ G] GETH2                            22CD
+[ G] GETHEX                           22AE
+[ G] GETK1                            23E8
+[ G] GETK2                            23ED
+[ G] GETK3                            23F0
+[ G] GETK4                            23FC
+[ G] GETK5                            240C
+[ G] GETK6                            2416
+[ G] GETK7                            2422
+[ G] GETK8                            241A
+[ G] GETKBUF                          24C8
+[ G] GETKEY                           23E6
+[ G] GETKTAB                          24E2
+[ G] GOTOXY                           23BE
+[ G] GOTOXY1                          23C3
+[ G] GOTOXY2                          23C9
+[ G] GOTOXY3                          23CD
+[ G] GOTOXY4                          23D5
+[ G] GOTOXY5                          23DF
+[ G] GOTOXY6                          23E4
+[ G] GXYPTR                           24D4
+[ G] HEX_D                            0008
+[ G] HOME                             20BB
+[ G] HOMEMSG                          2491
+[ G] INVKEY                           2134
+[ G] ISTPTR                           24D2
+[ G] MAIN                             2025
+[ G] MAIN1                            2041
+[ G] MODE                             25AF
+[ G] NOTFND                           2457
+[ G] OSEND                            DBFF
+[ G] OSRAM                            2000
+[ G] OSUTIL                           D000
+[ G] POSIT                            25AE
+[ G] PUTC1                            23B2
+[ G] PUTCHR                           23AC
+[ G] PUTTAB                           24D6
+[ G] QUIMSG                           2468
+[ G] RECMD                            213A
+[ G] RECMD1                           2180
+[ G] REFRESH                          20BF
+[ G] REPOS                            21DF
+[ G] SAVPOS                           20F9
+[ G] SEARC1                           2236
+[ G] SEARC2                           223D
+[ G] SEARC3                           2255
+[ G] SEARCH                           2230
+[ G] SPACES                           238B
+[ G] TEMP                             25B2
+[ G] TEXT_D                           003C
+[ G] TOUPP1                           22E4
+[ G] TOUPPER                          22DA
+[ G] TSTDOWN                          20D5
+[ G] TSTUP                            20AF
+[ G] VCMD1                            20C8
+[ G] VCMD2                            20F4
+[ G] VCMD3                            20FF
+[ G] VCMD4                            2106
+[ G] VCMD5                            2110
+[ G] VCMD6                            211A
+[ G] VCMD7                            212C
+[ G] VERROR                           205A
+[ G] VMODE1                           2052
+[ G] VMODE2                           2055
+[ G] VMODE2A                          2070
+[ G] VMODE3                           2083
+[ G] VMODE4                           2085
+[ G] VMODE5                           2091
+[ G] WCD                              23AA
+[ G] WCLS                             239E
+[ G] WSE                              23A6
+[ G] WSO                              23A2

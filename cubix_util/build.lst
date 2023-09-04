@@ -1,0 +1,489 @@
+                      (        build.asm):00001         ;        TITLE   IMAGE BUILDER
+                      (        build.asm):00002         ;*
+                      (        build.asm):00003         ;* BUILD: Build an executable or downloadable file from ASM output
+                      (        build.asm):00004         ;*
+                      (        build.asm):00005         ;* Copyright 1983-2005 Dave Dunfield
+                      (        build.asm):00006         ;* All rights reserved.
+                      (        build.asm):00007         ;*
+                      (        build.asm):00008         ;* DIRECTORY STRUCTURE
+                      (        build.asm):00009         
+     2000             (        build.asm):00010         OSRAM           = $2000                           ; START OF OS OPERATING AREA
+                      (        build.asm):00011         
+                      (        build.asm):00012                 ORG     0
+0000                  (        build.asm):00013         DPREFIX
+0000                  (        build.asm):00014                 RMB     8
+0008                  (        build.asm):00015         DNAME
+0008                  (        build.asm):00016                 RMB     8
+0010                  (        build.asm):00017         DTYPE
+0010                  (        build.asm):00018                 RMB     3
+0013                  (        build.asm):00019         DDADR
+0013                  (        build.asm):00020                 RMB     2
+0015                  (        build.asm):00021         DRADR
+0015                  (        build.asm):00022                 RMB     2
+0017                  (        build.asm):00023         DATTR
+0017                  (        build.asm):00024                 RMB     1
+                      (        build.asm):00025         ;*
+                      (        build.asm):00026                 ORG     OSRAM                             ;DOS APPLICATION PROGRAM SPACE
+                      (        build.asm):00027         ;* PROGRAM ENTRY
+2000                  (        build.asm):00028         BUILD
+2000 813F             (        build.asm):00029                 CMPA    #'?'                              ;QUERY OPERAND?
+2002 262E             (        build.asm):00030                 BNE     QUAL                              ;NO, LOOK FOR QUALIFIER
+2004 3F               (        build.asm):00031                 SWI
+2005 19               (        build.asm):00032                 FCB     25
+2006 5573653A20425549 (        build.asm):00033                 FCN     'Use: BUILD[/KEEP/MHX/QUIET] <object file>'
+     4C445B2F4B454550
+     2F4D48582F515549
+     45545D203C6F626A
+     6563742066696C65
+     3E00
+2030 3F               (        build.asm):00034                 SWI
+2031 00               (        build.asm):00035                 FCB     0
+                      (        build.asm):00036         ;*
+                      (        build.asm):00037         ;* PARSE        FOR QUALIFIERS
+                      (        build.asm):00038         ;*
+2032                  (        build.asm):00039         QUAL
+2032 A6A4             (        build.asm):00040                 LDA     ,Y                                ;GET CHAR FROM COMMAND LINE
+2034 812F             (        build.asm):00041                 CMPA    #'/'                              ;IS IT A QUALIFIER?
+2036 2642             (        build.asm):00042                 BNE     MAIN                              ;NO, GET PARAMETERS
+2038 8E22A2           (        build.asm):00043                 LDX     #QTABLE                           ;POINT TO QUALIFIER TABLE
+203B 3F               (        build.asm):00044                 SWI
+203C 12               (        build.asm):00045                 FCB     18                                ;LOOK IT UP
+203D C103             (        build.asm):00046                 CMPB    #QMAX                             ;IS IT IN RANGE
+203F 2407             (        build.asm):00047                 BHS     QERR                              ;IF SO, IT'S INVALID
+2041 8E22B5           (        build.asm):00048                 LDX     #QFLAGS                           ;POINT TO QUALIFIER FLAGS
+2044 6F85             (        build.asm):00049                 CLR     B,X                               ;SET THE FLAG
+2046 20EA             (        build.asm):00050                 BRA     QUAL                              ;LOOK FOR ANOTHER QUALIFIER
+2048                  (        build.asm):00051         QERR
+2048 3F               (        build.asm):00052                 SWI
+2049 18               (        build.asm):00053                 FCB     24                                ;DISPLAY MESSAGE
+204A 496E76616C696420 (        build.asm):00054                 FCN     'Invalid qualifier: '
+     7175616C69666965
+     723A2000
+205E A6A0             (        build.asm):00055                 LDA     ,Y+                               ;GET CHARACTER
+2060                  (        build.asm):00056         DSQU1
+2060 3F               (        build.asm):00057                 SWI
+2061 21               (        build.asm):00058                 FCB     33                                ;DISPLAY
+2062 A6A0             (        build.asm):00059                 LDA     ,Y+                               ;GET NEXT CHAR
+2064 270C             (        build.asm):00060                 BEQ     GOABO                             ;NULL IS DELIMITER
+2066 812F             (        build.asm):00061                 CMPA    #'/'                              ;START OF ANOTHER QUALIFIER?
+2068 2708             (        build.asm):00062                 BEQ     GOABO                             ;IF SO, QUIT
+206A 8120             (        build.asm):00063                 CMPA    #' '                              ;SPACE?
+206C 2704             (        build.asm):00064                 BEQ     GOABO                             ;IF SO, QUIT
+206E 810D             (        build.asm):00065                 CMPA    #$0D                              ;END OF LINE?
+2070 26EE             (        build.asm):00066                 BNE     DSQU1                             ;NO, KEEP DUMPING
+2072                  (        build.asm):00067         GOABO
+2072 3F               (        build.asm):00068                 SWI
+2073 19               (        build.asm):00069                 FCB     25                                ;DISPLAY MESSAGE
+2074 2700             (        build.asm):00070                 FCB     $27,0                             ;CHARACTERS TO DISPLAY
+2076 8601             (        build.asm):00071                 LDA     #1                                ;INVALID OPERAND RETURN CODE
+2078                  (        build.asm):00072         ABORT
+2078 3F               (        build.asm):00073                 SWI
+2079 00               (        build.asm):00074                 FCB     0                                 ;RETURN TO OS
+                      (        build.asm):00075         ;* MAIN BUILD PROGRAM
+207A                  (        build.asm):00076         MAIN
+207A 3F               (        build.asm):00077                 SWI
+207B 0B               (        build.asm):00078                 FCB     11                                ;GET FILENAME
+207C 26FA             (        build.asm):00079                 BNE     ABORT                             ;ERROR, EXIT
+207E BF22B8           (        build.asm):00080                 STX     FILPTR                            ;SAVE FILE POINTER
+2081 CC4F42           (        build.asm):00081                 LDD     #$4f42                            ;FIRST TWO CHARS OF TYPE 'OB'
+2084 ED84             (        build.asm):00082                 STD     ,X                                ;SAVE
+2086 864A             (        build.asm):00083                 LDA     #'J'                              ;NEXT CHAR OF TYPE
+2088 A702             (        build.asm):00084                 STA     2,X                               ;SAVE IN FILENAME
+208A B622B6           (        build.asm):00085                 LDA     MHX                               ;ARE WE DOING A 'MHX' FILE?
+208D 10270103         (        build.asm):00086                 LBEQ    DOMHX                             ;IF SO, BUILD IT
+2091 3F               (        build.asm):00087                 SWI
+2092 46               (        build.asm):00088                 FCB     70                                ;LOOKUP FILE
+2093 26E3             (        build.asm):00089                 BNE     ABORT                             ;GET UPSET IF ERROR
+2095 EC8813           (        build.asm):00090                 LDD     DDADR,X                           ;GET DISK ADDRESS
+2098 FD22BF           (        build.asm):00091                 STD     >SECTOR                           ;SAVE FOR LATER
+209B 8E22C3           (        build.asm):00092                 LDX     #WRKSPC                           ;POINT TO WORKSPACE
+209E BF22C1           (        build.asm):00093                 STX     >OFFSET                           ;SAVE OFFSET
+20A1 3F               (        build.asm):00094                 SWI
+20A2 5C               (        build.asm):00095                 FCB     92                                ;READ A SECTOR
+20A3 26D3             (        build.asm):00096                 BNE     ABORT                             ;ERROR
+                      (        build.asm):00097         ;* READ OBJECT FILE, AND BUILD EXECUTABLE IMAGE IN RAM
+20A5 8E0000           (        build.asm):00098                 LDX     #0                                ;ASSUME OFFSET ZERO
+20A8                  (        build.asm):00099         NXCHR
+20A8 1701CA           (        build.asm):00100                 LBSR    RDCHR                             ;READ CHARACTER FROM FILE
+20AB 81CF             (        build.asm):00101                 CMPA    #$CF                              ;IS IT A SPECIAL CASE
+20AD 2626             (        build.asm):00102                 BNE     NORCHR                            ;NO, IT'S NORMAL
+20AF 1701C3           (        build.asm):00103                 LBSR    RDCHR                             ;GET NEXT CHARACTER
+20B2 81CF             (        build.asm):00104                 CMPA    #$CF                              ;IS IT XPARENT '$CF'?
+20B4 271F             (        build.asm):00105                 BEQ     NORCHR                            ;IF SO, IT'S OK
+20B6 4D               (        build.asm):00106                 TSTA                                      ;     IS THIS THE END?
+20B7 2754             (        build.asm):00107                 BEQ     SAVMOD                            ;IF SO, SAVE IT
+20B9 4A               (        build.asm):00108                 DECA                                      ;     TEST FOR SET ADDRESS
+20BA 2633             (        build.asm):00109                 BNE     INVCMD                            ;NO, IT'S INVALID
+                      (        build.asm):00110         ;* ADDRESS CHANGE RECORD, SET UP NEW ADDRESS
+20BC 1701B6           (        build.asm):00111                 LBSR    RDCHR                             ;GET HIGH BYTE
+20BF 1F89             (        build.asm):00112                 TFR     A,B                               ;SAVE IN B
+20C1 1701B1           (        build.asm):00113                 LBSR    RDCHR                             ;GET NEXT BYTE
+20C4 1E89             (        build.asm):00114                 EXG     A,B                               ;SWAP HIGH AND LOW
+                      (        build.asm):00115         ;* IF CODE HAS ALREADY BEEN OUTPUT, CALCULATE 'X'=
+                      (        build.asm):00116         ;* THE ADDRESS WITHIN THE OUTPUT MODULE. OTHERWISE
+20C6 7D22BE           (        build.asm):00117                 TST     SETADR                            ;HAS RUN ADDRESS BEEN FIXED YET?
+20C9 2706             (        build.asm):00118                 BEQ     NXCH1                             ;YES, DO NOT CHANGE
+20CB B322BA           (        build.asm):00119                 SUBD    RUNADR                            ;CONVERT TO OFFSET
+20CE C326CD           (        build.asm):00120                 ADDD    #MODBUF                           ;OFFSET TO MUDULT
+20D1                  (        build.asm):00121         NXCH1
+20D1 1F01             (        build.asm):00122                 TFR     D,X                               ;'X' = POINTER TO BUFFER
+20D3 20D3             (        build.asm):00123                 BRA     NXCHR                             ;AND GET NEXT CHAR
+                      (        build.asm):00124         ;* NORMAL CHARACTER, SAVE IT IN THE MODULE. IF THIS IS
+                      (        build.asm):00125         ;* THE FIRST CHARACTER OUTPUT, ESTABLISH FILE RUN ADDRESS
+                      (        build.asm):00126         ;* AND SET UP POINTER INTO MODULE
+20D5                  (        build.asm):00127         NORCHR
+20D5 F622BE           (        build.asm):00128                 LDB     SETADR                            ;HAS FLAG BEEN SET?
+20D8 2609             (        build.asm):00129                 BNE     NORCH1                            ;YES, ITS HAS
+20DA BF22BA           (        build.asm):00130                 STX     RUNADR                            ;SET UP RUN ADDRESS
+20DD 8E26CD           (        build.asm):00131                 LDX     #MODBUF                           ;BEGIN AT START OF MODULE
+20E0 7A22BE           (        build.asm):00132                 DEC     SETADR                            ;INDICATE RUN ADDRESS
+20E3                  (        build.asm):00133         NORCH1
+20E3 A780             (        build.asm):00134                 STA     ,X+                               ;SAVE IN GENERATING MODULE
+20E5 BC22BC           (        build.asm):00135                 CMPX    HIADR                             ;ARE WE ABOVE OUR HIGHEST?
+20E8 23BE             (        build.asm):00136                 BLS     NXCHR                             ;NO, GET NEXT CHARACTER
+20EA BF22BC           (        build.asm):00137                 STX     HIADR                             ;SAVE THIS AS OUR NEW HIGH ADDRESS
+20ED 20B9             (        build.asm):00138                 BRA     NXCHR                             ;READ NEXT
+                      (        build.asm):00139         ;* INVALID COMMAND
+20EF                  (        build.asm):00140         INVCMD
+20EF 3F               (        build.asm):00141                 SWI
+20F0 19               (        build.asm):00142                 FCB     25                                ;MESSAGE
+20F1 496E76616C696420 (        build.asm):00143                 FCN     'Invalid OBJ file format'
+     4F424A2066696C65
+     20666F726D617400
+2109 8663             (        build.asm):00144                 LDA     #99                               ;RETURN CODE
+210B 3F               (        build.asm):00145                 SWI
+210C 00               (        build.asm):00146                 FCB     0                                 ;EXIT
+                      (        build.asm):00147         ;* MODULE IS BUILT, SAVE IT OUT
+210D                  (        build.asm):00148         SAVMOD
+210D B622B5           (        build.asm):00149                 LDA     KEEP                              ;DO WE KEEP FILE?
+2110 2702             (        build.asm):00150                 BEQ     SAVM1                             ;YES, DON'T DELETE
+2112 3F               (        build.asm):00151                 SWI
+2113 49               (        build.asm):00152                 FCB     73                                ;DELETE THE FILE
+2114                  (        build.asm):00153         SAVM1
+2114 BE22B8           (        build.asm):00154                 LDX     FILPTR                            ;GET FILE POINTER
+2117 CC4558           (        build.asm):00155                 LDD     #$4558                            ;FIRST TWO CHARS 'EX'
+211A ED84             (        build.asm):00156                 STD     ,X                                ;WRITE IT OUT
+211C A702             (        build.asm):00157                 STA     2,X                               ;SET LAST CHAR
+                      (        build.asm):00158         ;* DISPLAY STATS ON THE OUTPUT FILE
+211E B622B7           (        build.asm):00159                 LDA     QUIET                             ;BEING QUIET?
+2121 2736             (        build.asm):00160                 BEQ     SAVM2                             ;YES, NO DISPLAY
+2123 3F               (        build.asm):00161                 SWI
+2124 18               (        build.asm):00162                 FCB     24                                ;DISPLAY MESSAGE
+2125 4C6F616420616464 (        build.asm):00163                 FCN     'Load addr= $'  MESSAGE
+     723D202400
+2132 FC22BA           (        build.asm):00164                 LDD     RUNADR                            ;GET RUN ADDRESS
+2135 3F               (        build.asm):00165                 SWI
+2136 1B               (        build.asm):00166                 FCB     27                                ;DISPLAY
+2137 3F               (        build.asm):00167                 SWI
+2138 16               (        build.asm):00168                 FCB     22                                ;NEW LINE
+2139 3F               (        build.asm):00169                 SWI
+213A 18               (        build.asm):00170                 FCB     24                                ;OUTPUT MESSAGE
+213B 46696C652053697A (        build.asm):00171                 FCN     'File Size= '
+     653D2000
+2147 FC22BC           (        build.asm):00172                 LDD     HIADR                             ;GET HIGHEST ADDRESS
+214A 8326CD           (        build.asm):00173                 SUBD    #MODBUF                           ;CONVERT TO OFFSET
+214D 3F               (        build.asm):00174                 SWI
+214E 1A               (        build.asm):00175                 FCB     26                                ;DISPLAY IN DECIMAL
+214F 3F               (        build.asm):00176                 SWI
+2150 19               (        build.asm):00177                 FCB     25                                ;OUTPUT MESSAGE
+2151 2042797465732E00 (        build.asm):00178                 FCN     ' Bytes.'
+2159                  (        build.asm):00179         SAVM2
+2159 FC22BC           (        build.asm):00180                 LDD     HIADR                             ;GET HIGHEST ADDRESS
+215C 8326CD           (        build.asm):00181                 SUBD    #MODBUF                           ;CONVERT TO OFFSET
+215F 44               (        build.asm):00182                 LSRA                                      ;     CONVERT TO SECTOR ADDR
+2160 4C               (        build.asm):00183                 INCA                                      ;     ADD ONE FOR PARTIAL SECTORS
+2161 1F89             (        build.asm):00184                 TFR     A,B                               ;COPY TO LOW BYTE
+2163 4F               (        build.asm):00185                 CLRA                                      ;     CLEAR HIGH BYTE
+2164 8E26CD           (        build.asm):00186                 LDX     #MODBUF                           ;POINT TO MODULE BUFFER
+2167 3F               (        build.asm):00187                 SWI
+2168 36               (        build.asm):00188                 FCB     54                                ;WRITE FILE
+2169 2627             (        build.asm):00189                 BNE     ABORT1                            ;COULDN'T WRITE
+216B 3F               (        build.asm):00190                 SWI
+216C 44               (        build.asm):00191                 FCB     68                                ;FIND DIRECTORY ENTRY
+216D FC22BA           (        build.asm):00192                 LDD     RUNADR                            ;GET RUN ADDRESS
+2170 ED8815           (        build.asm):00193                 STD     DRADR,X                           ;SAVE NEW RUN ADDRESS
+2173 3F               (        build.asm):00194                 SWI
+2174 55               (        build.asm):00195                 FCB     85                                ;INDICATE WE CHANGED
+                      (        build.asm):00196         ;*
+                      (        build.asm):00197         ;* INDICATE WE CREATED A FILE
+                      (        build.asm):00198         ;*
+2175                  (        build.asm):00199         CREFIL
+2175 B622B7           (        build.asm):00200                 LDA     QUIET                             ;KEEPING QUIET?
+2178 2717             (        build.asm):00201                 BEQ     CREF1                             ;IF SO, SAY NOTHING
+217A 3F               (        build.asm):00202                 SWI
+217B 18               (        build.asm):00203                 FCB     24                                ;DISPLAY MESSAGE
+217C 4F75747075742066 (        build.asm):00204                 FCN     'Output file is: '
+     696C652069733A20
+     00
+218D 3F               (        build.asm):00205                 SWI
+218E 1E               (        build.asm):00206                 FCB     30                                ;DISPLAY
+218F 3F               (        build.asm):00207                 SWI
+2190 16               (        build.asm):00208                 FCB     22                                ;NEW LINE
+2191                  (        build.asm):00209         CREF1
+2191 4F               (        build.asm):00210                 CLRA                                      ;     ZERO RC
+2192                  (        build.asm):00211         ABORT1
+2192 3F               (        build.asm):00212                 SWI
+2193 00               (        build.asm):00213                 FCB     0                                 ;BACK TO OS
+                      (        build.asm):00214         ;*
+                      (        build.asm):00215         ;* CREATE A MOTOROLA HEX FORMAT OUTPUT FILE
+                      (        build.asm):00216         ;*
+2194                  (        build.asm):00217         DOMHX
+2194 8E26CD           (        build.asm):00218                 LDX     #MODBUF                           ;POINT TO MODULE BUFFER
+2197 1F12             (        build.asm):00219                 TFR     X,Y                               ;SET UP OUTPUT PTR
+2199 3F               (        build.asm):00220                 SWI
+219A 35               (        build.asm):00221                 FCB     53                                ;LOAD THE OBJECT FILE
+219B BF22BC           (        build.asm):00222                 STX     HIADR                             ;SET HIGH ADDRESS
+219E B622B5           (        build.asm):00223                 LDA     KEEP                              ;DO WE KEEP THE FILE?
+21A1 2702             (        build.asm):00224                 BEQ     DOMHX1                            ;YES, DON'T DELETE
+21A3 3F               (        build.asm):00225                 SWI
+21A4 49               (        build.asm):00226                 FCB     73                                ;DELETE THE FILE
+21A5                  (        build.asm):00227         DOMHX1
+21A5 BE22B8           (        build.asm):00228                 LDX     FILPTR                            ;GET FILE POINTER
+21A8 CC4D48           (        build.asm):00229                 LDD     #$4d48                            ;GET FIRST TWO CHARS 'MH'
+21AB ED84             (        build.asm):00230                 STD     ,X                                ;SET TYPE
+21AD 8658             (        build.asm):00231                 LDA     #'X'                              ;GET LAST CHAR
+21AF A702             (        build.asm):00232                 STA     2,X                               ;SET LAST CHAR
+21B1 CE24C3           (        build.asm):00233                 LDU     #OUTFIL                           ;GET OUTPUT PTR
+21B4 3F               (        build.asm):00234                 SWI
+21B5 38               (        build.asm):00235                 FCB     56                                ;OPEN FILE FOR WRITE
+21B6 26DA             (        build.asm):00236                 BNE     ABORT1                            ;ERROR, DON'T WRITE
+                      (        build.asm):00237         ;* WRITE THE FILE FROM THE MEMORY IMAGE
+21B8                  (        build.asm):00238         GENREC
+21B8 5F               (        build.asm):00239                 CLRB                                      ;     START HERE
+21B9 8E26CD           (        build.asm):00240                 LDX     #MODBUF                           ;POINT TO BUFFER
+21BC                  (        build.asm):00241         GENR1
+21BC 10BC22BC         (        build.asm):00242                 CMPY    HIADR                             ;ARE WE OVER?
+21C0 1024FF2B         (        build.asm):00243                 LBHS    INVCMD                            ;INVALID
+21C4 A6A0             (        build.asm):00244                 LDA     ,Y+                               ;GET CHAR
+21C6 81CF             (        build.asm):00245                 CMPA    #$CF                              ;SPECIAL CHARACTER?
+21C8 261C             (        build.asm):00246                 BNE     CHRNOR                            ;NO, IT'S OK
+21CA A6A0             (        build.asm):00247                 LDA     ,Y+                               ;READ NEXT CHARACTER
+21CC 81CF             (        build.asm):00248                 CMPA    #$CF                              ;SPECIAL CHARACTER?
+21CE 2716             (        build.asm):00249                 BEQ     CHRNOR                            ;NORMAL CHARACTER
+21D0 4D               (        build.asm):00250                 TSTA                                      ;     IS IT END OF FILE?
+21D1 271E             (        build.asm):00251                 BEQ     CLOSE                             ;IF SO, CLOSE FILE AND RETIRE
+21D3 4A               (        build.asm):00252                 DECA                                      ;     TEST FOR ADDRESS CHANGE
+21D4 1026FF17         (        build.asm):00253                 LBNE    INVCMD                            ;INVALID ENTRY
+21D8 8D2B             (        build.asm):00254                 BSR     WRREC                             ;WRITE OUT RECORD
+21DA A6A0             (        build.asm):00255                 LDA     ,Y+                               ;GET HIGH BYTE OF ADDRESS
+21DC B722BA           (        build.asm):00256                 STA     RUNADR                            ;SET RUN ADDRESS
+21DF A6A0             (        build.asm):00257                 LDA     ,Y+                               ;GET LOW BYTE OF ADDRESS
+21E1 B722BB           (        build.asm):00258                 STA     RUNADR+1        SET LOW BYTE OF RUN ADDRESS
+21E4 20D2             (        build.asm):00259                 BRA     GENREC                            ;GENERATE A NEW RECORD
+21E6                  (        build.asm):00260         CHRNOR
+21E6 A780             (        build.asm):00261                 STA     ,X+                               ;SAVE IN RECORD
+21E8 5C               (        build.asm):00262                 INCB                                      ;     ADVANCE B REGISTER
+21E9 C120             (        build.asm):00263                 CMPB    #32                               ;ARE WE OVER ONE RECORD?
+21EB 25CF             (        build.asm):00264                 BLO     GENR1                             ;IF NOT, KEEP GOING
+21ED 8D16             (        build.asm):00265                 BSR     WRREC                             ;WRITE A RECORD
+21EF 20C7             (        build.asm):00266                 BRA     GENREC                            ;AND START A NEW ONE
+                      (        build.asm):00267         ;*
+                      (        build.asm):00268         ;* CLOSE FILE
+                      (        build.asm):00269         ;*
+21F1                  (        build.asm):00270         CLOSE
+21F1 8D12             (        build.asm):00271                 BSR     WRREC                             ;OUTPUT LAST RECORD IF ANY
+21F3 8E2297           (        build.asm):00272                 LDX     #S9REC                            ;LAST MESSAGE
+21F6                  (        build.asm):00273         CLOS1
+21F6 A684             (        build.asm):00274                 LDA     ,X                                ;GET CHARACTER FROM MESSAGE
+21F8 8D75             (        build.asm):00275                 BSR     WRCHAR                            ;OUTPUT CHARACTER
+21FA A680             (        build.asm):00276                 LDA     ,X+                               ;GET CHAR BACK
+21FC 810D             (        build.asm):00277                 CMPA    #$0D                              ;CARRIAGE RETURN?
+21FE 26F6             (        build.asm):00278                 BNE     CLOS1                             ;NO, KEEP GOING
+2200                  (        build.asm):00279         CLSFIL
+2200 3F               (        build.asm):00280                 SWI
+2201 39               (        build.asm):00281                 FCB     57                                ;CLOSE FILE
+2202 16FF70           (        build.asm):00282                 LBRA    CREFIL                            ;OUTPUT MESSAGE
+                      (        build.asm):00283         ;*
+                      (        build.asm):00284         ;* WRITES A RECORD TO THE OUTPUT FILE
+                      (        build.asm):00285         ;*
+2205                  (        build.asm):00286         WRREC
+2205 5D               (        build.asm):00287                 TSTB                                      ;     WHAT IS LENGTH?
+2206 2752             (        build.asm):00288                 BEQ     NOREC                             ;DON'T WRITE RECORD
+2208 CE24C3           (        build.asm):00289                 LDU     #OUTFIL                           ;PT TO OUTPUT
+220B 8E26CD           (        build.asm):00290                 LDX     #MODBUF                           ;POINT TO BUFFER
+220E 8653             (        build.asm):00291                 LDA     #'S'                              ;GET RECORD
+2210 8D5D             (        build.asm):00292                 BSR     WRCHAR                            ;OUTPUT CHAR
+2212 8631             (        build.asm):00293                 LDA     #'1'                              ;TYPE ONE
+2214 8D59             (        build.asm):00294                 BSR     WRCHAR                            ;OUTPUT CHAR
+2216 3404             (        build.asm):00295                 PSHS    B                                 ;SAVE LENGTH
+2218 F722C1           (        build.asm):00296                 STB     OFFSET                            ;SAVE COUNT
+221B CB03             (        build.asm):00297                 ADDB    #3                                ;ADVANCE FOR LENGTH BYTES
+221D 1F98             (        build.asm):00298                 TFR     B,A                               ;SAVE FOR LATER
+221F BB22BA           (        build.asm):00299                 ADDA    RUNADR                            ;ADD IN HIGH ADDRESS
+2222 BB22BB           (        build.asm):00300                 ADDA    RUNADR+1        AND LOW ADDRESS
+2225 B722BE           (        build.asm):00301                 STA     SETADR                            ;START CHECKSUM
+2228 1F98             (        build.asm):00302                 TFR     B,A                               ;RESTORE LENGTH
+222A 8D2F             (        build.asm):00303                 BSR     WRBYTE                            ;OUTPUT
+222C FC22BA           (        build.asm):00304                 LDD     RUNADR                            ;GET RUN ADDRESS
+222F 8D2A             (        build.asm):00305                 BSR     WRBYTE                            ;OUTPUT
+2231 1F98             (        build.asm):00306                 TFR     B,A                               ;COPY TO ACCA
+2233 8D26             (        build.asm):00307                 BSR     WRBYTE                            ;OUTPUT LOW ADDRESS
+2235                  (        build.asm):00308         WRE1
+2235 A684             (        build.asm):00309                 LDA     ,X                                ;GET BYTE OF DATA
+2237 8D22             (        build.asm):00310                 BSR     WRBYTE                            ;OUTPUT
+2239 A680             (        build.asm):00311                 LDA     ,X+                               ;GET BYTE BACK
+223B BB22BE           (        build.asm):00312                 ADDA    SETADR                            ;ADD TO CHECKSUM
+223E B722BE           (        build.asm):00313                 STA     SETADR                            ;RESAVE CHECKSUM
+2241 7A22C1           (        build.asm):00314                 DEC     OFFSET                            ;IS THIS IT?
+2244 26EF             (        build.asm):00315                 BNE     WRE1                              ;NO, KEEP GOING
+2246                  (        build.asm):00316         WRE2
+2246 86FF             (        build.asm):00317                 LDA     #$FF                              ;GET -1
+2248 B022BE           (        build.asm):00318                 SUBA    SETADR                            ;CALCULATE CHECKSUM VALUE
+224B 8D0E             (        build.asm):00319                 BSR     WRBYTE                            ;OUTPUT
+224D 860D             (        build.asm):00320                 LDA     #$0D                              ;NEW LINE
+224F 8D1E             (        build.asm):00321                 BSR     WRCHAR                            ;OUTPUT CHAR
+2251 3504             (        build.asm):00322                 PULS    B                                 ;RESTORE LENGTH
+2253 4F               (        build.asm):00323                 CLRA                                      ;     ZERO HIGH BYTE
+2254 F322BA           (        build.asm):00324                 ADDD    RUNADR                            ;OFSET INTO MEMORY ADDRESS
+2257 FD22BA           (        build.asm):00325                 STD     RUNADR                            ;RESAVE
+225A                  (        build.asm):00326         NOREC
+225A 39               (        build.asm):00327                 RTS
+                      (        build.asm):00328         ;*
+                      (        build.asm):00329         ;* WRITES A BYTE IN HEX TO THE SERIAL FILE
+                      (        build.asm):00330         ;*
+225B                  (        build.asm):00331         WRBYTE
+225B 3402             (        build.asm):00332                 PSHS    A                                 ;SAVE A REGISTER
+225D 47               (        build.asm):00333                 ASRA
+225E 47               (        build.asm):00334                 ASRA                                      ;     ROTATE HIGH NIBBLE
+225F 47               (        build.asm):00335                 ASRA                                      ;     INTO LOW NIBBLE
+2260 47               (        build.asm):00336                 ASRA
+2261 8D02             (        build.asm):00337                 BSR     WRNIB                             ;OUTPUT A NIBBLE
+2263 3502             (        build.asm):00338                 PULS    A                                 ;RESTORE LOW NIBBLE
+2265                  (        build.asm):00339         WRNIB
+2265 840F             (        build.asm):00340                 ANDA    #$F                               ;REMOVE HIGH GARBAGE
+2267 8B30             (        build.asm):00341                 ADDA    #$30                              ;CONVERT TO ASCII
+2269 813A             (        build.asm):00342                 CMPA    #$3A                              ;IS IT '0' TO '9'
+226B 2502             (        build.asm):00343                 BLO     WRCHAR                            ;IF SO, IT'S OK
+226D 8B07             (        build.asm):00344                 ADDA    #7                                ;CONVERT TO ALPHA
+                      (        build.asm):00345         ;* WRITE A CHARACTER TO THE OUTPUT FILE
+226F                  (        build.asm):00346         WRCHAR
+226F 3F               (        build.asm):00347                 SWI
+2270 3D               (        build.asm):00348                 FCB     61                                ;OUTPUT CHARACTER
+2271 27E7             (        build.asm):00349                 BEQ     NOREC                             ;SUCCESS, CONTINUE
+2273 3F               (        build.asm):00350                 SWI
+2274 00               (        build.asm):00351                 FCB     0                                 ;ABORT WRITE
+                      (        build.asm):00352         ;*
+                      (        build.asm):00353         ;* READ A CHARACTER FROM THE INPUT FILE
+                      (        build.asm):00354         ;*
+2275                  (        build.asm):00355         RDCHR
+2275 3414             (        build.asm):00356                 PSHS    B,X                               ;SAVE REGS
+2277 BE22C1           (        build.asm):00357                 LDX     >OFFSET                           ;GET OFFSET INFO FILE
+227A 8C24C3           (        build.asm):00358                 CMPX    #WRKSPC+512     OVER LIMIT?
+227D 2511             (        build.asm):00359                 BLO     RDC1                              ;NO, WE ARE OK
+227F FC22BF           (        build.asm):00360                 LDD     >SECTOR                           ;GET SECTOR
+2282 3F               (        build.asm):00361                 SWI
+2283 4D               (        build.asm):00362                 FCB     77                                ;LOOKUP LINK
+2284 1027FE67         (        build.asm):00363                 LBEQ    INVCMD                            ;INVALID FILE
+2288 FD22BF           (        build.asm):00364                 STD     >SECTOR                           ;RESAVE SECTOR
+228B 8E22C3           (        build.asm):00365                 LDX     #WRKSPC                           ;POINT TO WORK AREA
+228E 3F               (        build.asm):00366                 SWI
+228F 5C               (        build.asm):00367                 FCB     92                                ;READ SECTOR
+2290                  (        build.asm):00368         RDC1
+2290 A680             (        build.asm):00369                 LDA     ,X+                               ;GET CHAR
+2292 BF22C1           (        build.asm):00370                 STX     >OFFSET                           ;RESAVE OFFSET
+2295 3594             (        build.asm):00371                 PULS    B,X,PC
+                      (        build.asm):00372         ;*
+                      (        build.asm):00373         ;* END OF FILE RECORD FOR MHX FORMAT
+                      (        build.asm):00374         ;*
+2297                  (        build.asm):00375         S9REC
+2297 5339303330303030 (        build.asm):00376                 FCC     'S9030000FC'
+     4643
+22A1 0D               (        build.asm):00377                 FCB     $0D
+                      (        build.asm):00378         ;*
+                      (        build.asm):00379         ;* QUALIFIER  TABLE
+                      (        build.asm):00380         ;*
+22A2                  (        build.asm):00381         QTABLE
+22A2 82               (        build.asm):00382                 FCB     $82
+22A3 2F4B454550       (        build.asm):00383                 FCC     '/KEEP'
+22A8 82               (        build.asm):00384                 FCB     $82
+22A9 2F4D4858         (        build.asm):00385                 FCC     '/MHX'
+22AD 82               (        build.asm):00386                 FCB     $82
+22AE 2F5155494554     (        build.asm):00387                 FCC     '/QUIET'
+22B4 80               (        build.asm):00388                 FCB     $80
+     0003             (        build.asm):00389         QMAX            = 3                               ;TWO OUTPUT FORMATS APPLICABLE
+                      (        build.asm):00390         ;* QUALIFIER FLAG TABLE
+     22B5             (        build.asm):00391         QFLAGS          = *
+22B5                  (        build.asm):00392         KEEP
+22B5 FF               (        build.asm):00393                 FCB     $FF                               ;KEEP '.OBJ' FILE
+22B6                  (        build.asm):00394         MHX
+22B6 FF               (        build.asm):00395                 FCB     $FF                               ;WRITE MHX FILE
+22B7                  (        build.asm):00396         QUIET
+22B7 FF               (        build.asm):00397                 FCB     $FF                               ;KEEP QUIET
+                      (        build.asm):00398         ;*
+22B8                  (        build.asm):00399         FILPTR
+22B8 0000             (        build.asm):00400                 FDB     0                                 ;POINTER TO FILE SPACE
+22BA                  (        build.asm):00401         RUNADR
+22BA 0000             (        build.asm):00402                 FDB     0                                 ;FILE RUN ADDRESS
+22BC                  (        build.asm):00403         HIADR
+22BC 0000             (        build.asm):00404                 FDB     0                                 ;HIGEST ADDRESS IN GENERATION
+22BE                  (        build.asm):00405         SETADR
+22BE 00               (        build.asm):00406                 FCB     0                                 ;FLAG THAT ADDRESS HAS BEEN SET
+22BF                  (        build.asm):00407         SECTOR
+22BF                  (        build.asm):00408                 RMB     2                                 ;INPUT FILE SECTOR
+22C1                  (        build.asm):00409         OFFSET
+22C1                  (        build.asm):00410                 RMB     2                                 ;INPUT FILE DRIVE
+22C3                  (        build.asm):00411         WRKSPC
+22C3                  (        build.asm):00412                 RMB     512                               ;INPUT FILE BUFFER
+24C3                  (        build.asm):00413         OUTFIL
+24C3                  (        build.asm):00414                 RMB     522                               ;OUTPUT FILE BUFFER
+     26CD             (        build.asm):00415         MODBUF          = *
+
+Symbol Table:
+[ G] ABORT                            2078
+[ G] ABORT1                           2192
+[ G] BUILD                            2000
+[ G] CHRNOR                           21E6
+[ G] CLOS1                            21F6
+[ G] CLOSE                            21F1
+[ G] CLSFIL                           2200
+[ G] CREF1                            2191
+[ G] CREFIL                           2175
+[ G] DATTR                            0017
+[ G] DDADR                            0013
+[ G] DNAME                            0008
+[ G] DOMHX                            2194
+[ G] DOMHX1                           21A5
+[ G] DPREFIX                          0000
+[ G] DRADR                            0015
+[ G] DSQU1                            2060
+[ G] DTYPE                            0010
+[ G] FILPTR                           22B8
+[ G] GENR1                            21BC
+[ G] GENREC                           21B8
+[ G] GOABO                            2072
+[ G] HIADR                            22BC
+[ G] INVCMD                           20EF
+[ G] KEEP                             22B5
+[ G] MAIN                             207A
+[ G] MHX                              22B6
+[ G] MODBUF                           26CD
+[ G] NORCH1                           20E3
+[ G] NORCHR                           20D5
+[ G] NOREC                            225A
+[ G] NXCH1                            20D1
+[ G] NXCHR                            20A8
+[ G] OFFSET                           22C1
+[ G] OSRAM                            2000
+[ G] OUTFIL                           24C3
+[ G] QERR                             2048
+[ G] QFLAGS                           22B5
+[ G] QMAX                             0003
+[ G] QTABLE                           22A2
+[ G] QUAL                             2032
+[ G] QUIET                            22B7
+[ G] RDC1                             2290
+[ G] RDCHR                            2275
+[ G] RUNADR                           22BA
+[ G] S9REC                            2297
+[ G] SAVM1                            2114
+[ G] SAVM2                            2159
+[ G] SAVMOD                           210D
+[ G] SECTOR                           22BF
+[ G] SETADR                           22BE
+[ G] WRBYTE                           225B
+[ G] WRCHAR                           226F
+[ G] WRE1                             2235
+[ G] WRE2                             2246
+[ G] WRKSPC                           22C3
+[ G] WRNIB                            2265
+[ G] WRREC                            2205
