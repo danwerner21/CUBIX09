@@ -43,13 +43,16 @@ Included applications:
   -  Intel 8080 simulator with integrated debugger.
 
 ---
+New SSRs
+* 111 get drive table
+* 112 get drive parameters table
 
+---
 To Do List for this port:
 
-* ADD REMAPABLE DRIVES
-* ADD SLICES
-* ADD MULTIPLE IDE DRIVE SUPPORT
+* UTILITY TO DISPLAY DRIVE MAPPINGS
 * DRIVE MAPPER UTILITY
+* DSKY V2 support
 * MICRO C
 * ADD FLOPPY DRIVE SUPPORT
 * Microsoft Basic

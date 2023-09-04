@@ -149,6 +149,8 @@ SYSDRV
         RMB     1                                 ; SYSTEM DRIVE
 SYSDIR
         RMB     8                                 ; SYSTEM DIRECTORY
+DRIVEMAP
+        RMB     8                                 ; DRIVE MAPPINGS
 ;* NON-INITIALIZED GLOBAL RAM
 FDRIVE
         RMB     1                                 ; CURRENT DISK DRIVE

@@ -1,21 +1,6 @@
 ;	TITLE	I/O DRIVERS
 ;***************************************************************
-;*     Sample I/O drivers for the CUBIX operating system.      *
-;*-------------------------------------------------------------*
-;* The drivers are designed to deal with four 6551 type serial *
-;* devices, and a 765 type floppy disk controller controlling  *
-;* up to four standard 40 track single or double sided floppy  *
-;* diskette drives.                                            *
-;*-------------------------------------------------------------*
-;* Although these drivers are fully functional and may be used *
-;* in a port of the system, their primary purpose is intended  *
-;* to be as an example of CUBIX to I/O driver interfaceing. As *
-;* such the device control side of the drivers (Which will be  *
-;* VERY system specific) has been kept very simple and easy to *
-;* follow. In particular, no interrupt lines are used, and all *
-;* I/O operations are accomplished via software polling.       *
-;*-------------------------------------------------------------*
-;*             Copyright 1983-2004 Dave Dunfield               *
+;*     I/O drivers for the CUBIX operating system.             *
 ;***************************************************************
 ;*
 ;* CUBIX SYSTEM ADDRESSES
@@ -78,7 +63,7 @@ DHOME
 ;*	LDAA	#$00
 ;*	JMP	SETTRACK		; DIRECT ATTACHED FLOPPY HOME
 ;*NOTHDB:
-        LDA     #$03                              ; HOME DISK
+;        LDA     #$03                              ; HOME DISK
 ;	JSR	ECB_OUTCHAR		;
 ;	LDA	DRIVE,U			; GET DRIVE
 ;	JSR	ECB_ENC_OUTCHAR		; SEND TO Z80
@@ -89,25 +74,16 @@ DHOME
 ;* READ A SECTOR, FROM DISK ('U' POINTS TO DCB) TO MEMORY(X)
 ;*
 DRDSEC
-;*	JSR	SEGDISPLAY
-
-        LDA     DRIVE,U                           ; GET DRIVE
-;*	CMPA	#$00			; DRIVE A?
-;*	BNE 	NOTRDA			;
-;JMP	Z80RDRIVE		; USE Z80 A:
-;*NOTRDA
-;*	CMPA	#$01			; DRIVE B?
-;*	BNE 	NOTRDB			;
-;*	JMP	READFL			; USE DIRECT ATTACHED FLOPPY
-;*NOTRDB
-;*	CMPA	#$02			; DRIVE C?
-;*	BNE 	NOTRDC			;
-;*	JMP	Z80RDRIVE		; USE Z80 C:
-;*NOTRDC
-        CMPA    #$03                              ; DRIVE D?
-        BNE     NOTRDD                            ;
+        JSR     DECODEDRIVE
+        ANDA    #$F0
+;*	CMPA	#$10			; FLOPPY?
+;*	BNE 	>			;
+;*	JMP	Z80WDRIVE		; USE Z80 C:
+;*!
+        CMPA    #$20                              ; IDE?
+        BNE     >                                 ;
         JMP     IDE_READ_SECTOR                   ; USE DIRECT ATTACHED IDE
-NOTRDD
+!
         RTS
 
 
@@ -115,33 +91,37 @@ NOTRDD
 ;* WRITE A SECTOR TO DISK ('U' POINTS TO DCB) FROM MEMORY(X)
 ;*
 DWRSEC
-;*	JSR	SEGDISPLAY
-        LDA     DRIVE,U                           ; GET DRIVE
-;*	CMPA	#$00			; DRIVE A?
-;*	BNE 	NOTWDA			;
-;	JMP	Z80WDRIVE		; USE Z80 A:
-;*NOTWDA
-;*	CMPA	#$01			; DRIVE B?
-;*	BNE 	NOTWDB			;
-;*	JMP	WRITEFL			; USE DIRECT ATTACHED FLOPPY
-;*NOTWDB
-;*	CMPA	#$02			; DRIVE C?
-;*	BNE 	NOTWDC			;
+        JSR     DECODEDRIVE
+        ANDA    #$F0
+;*	CMPA	#$10			; FLOPPY?
+;*	BNE 	>			;
 ;*	JMP	Z80WDRIVE		; USE Z80 C:
-;*NOTWDC
-        CMPA    #$03                              ; DRIVE D?
-        BNE     NOTWDD                            ;
+;*!
+        CMPA    #$20                              ; IDD?
+        BNE     >                                 ;
         JMP     IDE_WRITE_SECTOR                  ; USE DIRECT ATTACHED IDE
-NOTWDD
+!
         RTS
 
+DECODEDRIVE:
+        PSHS    y
+        CLRA
+        LDB     DRIVE,U                           ; GET DRIVE
+        ASLB                                      ; a=a*2
+        TFR     D,Y
+        LDA     DRIVEMAP,Y
+        LDB     DRIVEMAP+1,Y
+        STA     CURRENTDEVICE
+        STB     CURRENTSLICE
+        PULS    y,pc
+CURRENTDEVICE:
+        FCB     $00
+CURRENTSLICE:
+        FCB     $00
+        FCB     $00
 
         INCLUDE ../nhyodyne/cubix_serial.asm
         INCLUDE ../nhyodyne/cubix_ide.asm
-;*	include CUBIXOS\CUBFLP.asm	FLOPPY I/O DRIVERS
-;*	include CUBIXOS\CUBDSKY.asm	DSKY I/O DRIVERS
-;*	include CUBIXOS\CUBVDU.asm	DSKY VDU DRIVERS
-
 
 
         ORG     $FF00
@@ -188,6 +168,12 @@ RITAB           EQU *
         FCB     3                                 ;SYSTEM DRIVE (A)
         FCC     'SYSTEM'                          ;SYSTEM DIRECTORY
         FCB     0,0                               ;(FILLER)
+; DRIVE MAPPING TABLE
+        FCB     $00,$00                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
+        FCB     $21,$02                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE
+        FCB     $21,$01                           ;     LOW NIBBLE IS DEVICE ADDRESS
+        FCB     $21,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
+                                                  ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
 
 RISIZ           EQU *-RITAB                       ;SIZE OF INITILAIZED RAM
 ;

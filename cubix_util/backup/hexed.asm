@@ -468,7 +468,7 @@ DSCREEN
         FCN     'File: '
         SWI
         FCB     30                                ;DISPLAY NAME
-        LDD     #TEXT_D+2                         ; POSITION
+        LDD     #(TEXT_D*256)+2                   ; POSITION
         JSR     GOTOXY                            ;POSITION CURSOR
         SWI
         FCB     24                                ;OUTPUT STRING

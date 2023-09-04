@@ -66,10 +66,10 @@ RDSER1
         LDA     UART5                             ; READ LINE STATUS REGISTER
         ANDA    #$01                              ; TEST IF DATA IN RECEIVE BUFFER
         CMPA    #$00
-        BEQ     RDSER1N                           ; NO DATA
+        BEQ     >                                 ; NO DATA
         LDA     UART0                             ; THEN READ THE CHAR FROM THE UART
         ORCC    #%00000100                        ; SET 'Z'
         RTS
-RDSER1N
+!
         LDA     #$FF                              ;
         RTS                                       ;

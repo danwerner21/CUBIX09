@@ -639,11 +639,11 @@ FSIZE
 ;* FUNCTION KEY EDIT AREA
 ;*
 IDATA
-        RMB     ISIZE                             *INUM
+        RMB     ISIZE*INUM
 FDATA
-        RMB     ISIZE                             *FNUM
+        RMB     ISIZE*FNUM
 ODATA
-        RMB     ISIZE                             *ONUM
+        RMB     ISIZE*ONUM
 GDATA           = ODATA+ISIZE
 IEND
         RMB     100                               ;END OF INIT, STACK SPACE

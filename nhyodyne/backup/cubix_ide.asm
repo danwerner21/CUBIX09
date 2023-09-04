@@ -509,9 +509,12 @@ MESSAGE6
 ;*____________________________________________________________________________________________________
 IDE_SETUP_LBA:
         PSHS    D
+
+        LDA     DRIVE,U                           ; GET DRIVE NUMBER
+
+
 ;            IF      USEDSKYNG = 1
-;  	PRTDBG "DSKY OUTPUT 1$"
-;                LDA     CURDRV
+;                LDA     DRIVE,U
 ;                STA     DSKY_HEXBUF
 ;                LDA     HEAD,U
 ;                STA     DSKY_HEXBUF+1
@@ -525,7 +528,7 @@ IDE_SETUP_LBA:
         LDA     #PPIDE_DEVICE
         STA     PPIDECOMMAND
         LDA     #$00
-        LDB     DRIVE,U
+        LDB     CURRENTDEVICE
         ANDB    #$01                              ; only want drive cfg
         ASLB                                      ; SHIFT 4
         ASLB                                      ;
@@ -538,6 +541,7 @@ IDE_SETUP_LBA:
         STA     PPIDECOMMAND
         LDA     #$00
         LDB     HEAD,U
+        ADDB    CURRENTSLICE
         JSR     IDE_WRITE
 
         LDA     #PPIDE_LBAMID

@@ -1,0 +1,27 @@
+?* Command File to execute the Micro-C compiler
+?* to preprocess, compile, optimize, link, assemble and build
+?* a single .C file into a .EXE file
+?? .?1 .
+?F?A2
+?P Use: CC filename
+?E
+?OPreprocess... 
+RUN A:[MC]MCP ?1.C ?1.C1 -Q -L L=[MC]
+?F?E
+?OCompile... 
+RUN A:[MC]MCC09 ?1.C1 ?1.A1 -Q -F -L
+?F?E
+DEL ?1.C1
+?OOptimize... 
+RUN A:[MC]MCO09 ?1.A1 ?1.A2 -Q
+?F?E
+DEL ?1.A1
+?OLink... 
+RUN A:[MC]SLINK ?1.A2 ?1.ASM -Q L=[MC]MCLIB.LIB
+?F?E
+DEL ?1.A2
+?PAssemble...
+ASM/T/E ?1
+?F?E
+DEL ?1.ASM
+BUILD ?1

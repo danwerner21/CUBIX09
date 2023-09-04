@@ -149,6 +149,8 @@ SYSDRV
         RMB     1                                 ; SYSTEM DRIVE
 SYSDIR
         RMB     8                                 ; SYSTEM DIRECTORY
+DRIVEMAP
+        RMB     8                                 ; DRIVE MAPPINGS
 ;* NON-INITIALIZED GLOBAL RAM
 FDRIVE
         RMB     1                                 ; CURRENT DISK DRIVE
@@ -1236,6 +1238,12 @@ SVECT
 RETZ1
         ORCC    #4                                ;SET 'Z' CODE
         PULS    U,PC                              ;RESTORE & RETURN
+GETDRVTBL                                         ;SSR 111-GET DRIVE TABLE
+        LDD     #DRIVEMAP
+        RTS
+GETDRVPTBL                                        ;SSR 112-GET DRIVE PARAMETER TABLE
+        LDD     #DCTRL
+        RTS
 ;*
 ;* PERFORMS 16 BIT MULTIPLICATION (D=X*D)
 ;*
@@ -1510,6 +1518,8 @@ SSRTAB
         FDB     DIV16                             ;108-16 BIT DIVISION (X=X/D, D=REMAINDER)
         FDB     DMPREG                            ;109-DISPLAY REGISTERS
         FDB     DNLDEV                            ;110-DOWNLOAD FROM DEVICE
+        FDB     GETDRVTBL                         ;111-GET DRIVE TABLE
+        FDB     GETDRVPTBL                        ;112-GET DRIVE PARAMETER TABLE
 NUMSSR          EQU (*-SSRTAB)/2                  ;# SSR'S IMPLEMENTED
 ;*
 ;* HARDWARE DEPENDANT I/O DRIVERS

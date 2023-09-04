@@ -1,0 +1,751 @@
+CUBIX commands:
+{@ - Batch command processor
+Format		: @<command file name> [<operands>]
+Type		: Special Internal
+Area of use	: Procedure automation
+Related commands: All commands
+Qualifiers	: NONE
+
+The '@' command initiates the execution of a command file. The
+file indicated by '<command file name>.@' is opened and commands to
+be executed are read from it.
+
+For more information, consult the COMMAND FILE section of this
+manual.}
+{ASM - 6809 Assembler
+Format		: ASM <pgmname>
+Type		: Application
+Area of use	: Software development
+Related commands: ASP, BUILD, RAID
+Qualifiers	: /ERROR	- List only lines with errors.
+		  /FAST		- Skip optimization passes.
+		  /QUIET	- Suppress progress messages.
+		  /SYMBOL	- Include symbol table in listing.
+		  /TERM		- List output to terminal, not file.
+
+The ASM command invokes the resident 6809 assembler, to assemble a
+source file into an intermediate object file. The <pgmname> operand is the
+name of the source file to be assembled. The assembler always assumes a
+file type of '.ASM'. The file will be assembled, and an object file ('.OBJ')
+will be generated. The listing file will be placed in <pgmname>.LST if it is
+not directed to the console with the '/TERM' qualifier.
+
+For more information, consult the ASM manual.}
+{ASP - Assembly Source Preprocessor
+Format		: ASP <pgmname>
+Type		: Application
+Area of use	: Software development
+Related commands: ASM, BUILD, RAID
+Qualifiers	: /COMMENT - Include comments for source.
+		  /QUIET   - Suppress progress messages.
+		  /SOURCE  - Include source file as comments.
+
+ASP is an Assembly Source code Preprocessor, which accepts structured
+constructs such as IF/THEN/ELSE and WHILE/END, and converts them to
+standard assembler source code.
+
+For more information, consult the ASP manual.}
+{BASIC - Micro-BASIC
+Format		: BASIC [program]
+Type		: Application
+Area of use	: Application programming
+Related commands:
+Qualifiers	: NONE
+
+BASIC (Micro BASIC) is a BASIC interpreter for CUBIX and the 6809.
+
+If executed with no operands, an interactive session will be started. If
+a program name is supplied, the file program.BAS will be automatically
+loaded and started.
+
+For more information, consult the BASIC manual.}
+{BUILD - Builds executable files
+Format		: BUILD <objname>
+Type		: Application
+Area of use	: Software development
+Related commands: ASM, ASP, RAID, DOWNLOAD
+Qualifiers	: /KEEP  - Keep the '.OBJ' file.
+		  /MHX   - Build downloadable file.
+		  /QUIET - Inhibit output file statistics.
+
+The BUILD command takes an intermediate object file such as is produced
+by the assember, and builds a complete program image.}
+{CALC - Desktop Calculator
+Format		: CALC [expression ...]
+Type		: Utility
+Area of use	: General & Software development
+Related commands:
+Qualifiers	: NONE
+
+CALC is a simple Hexidecimal/Decimal desk calculator. If the operand
+<expression> is supplied, CALC evaluates it, and displays the results in
+both decimal and hexidecimal. If CALC is not given an operand, it enters
+an interactive session, and prompts for expressions, which it evaluates
+and displays. Entering a NULL line will terminate interactive CALC.}
+{CC - Compile C program
+Format		: CC programname
+Type		: Command File
+Area of use	: Application programming
+Related commands: MCP, MCC09, MCO09, SLINK, ASM, BUILD
+Qualifiers	: NONE
+
+Invokes the Micro-C compiler to compile a .C program into a .EXE
+executable file.
+For more information, consult the Micro-C manual.}
+{CD - Change Directory
+Format		: CD [<directory>]
+Type		: Command File
+Area of use	: General
+Related commands: SET DEFUALT, SHOW DEFAULT
+Qualifiers	: NONE
+
+The CD command provides an easy way to change your default directory
+prefix. The usual '[' & ']' square brackets surrounding a directory name
+are optional with the CD command.
+
+CD displays the full drive and directory name of your new directory.
+
+If no operand is given to CD, it simply displays the full name of your
+current default directory.}
+{CHGDISK - Change Disk utility
+Format		: CHGDISK [<command string>]
+Type		: Special Utility
+Area of use	: General
+Related commands: All Applications & Utilities
+Qualifiers	: NONE
+
+CHGDISK allows you to load an application or utility program from one disk,
+and place a new disk in the drive before it is executed.
+
+If CHGDISK is invoked with no operands. It prompts for a command string,
+allowing you to change disks (In case the command you wish to execute is
+on a different disk from the CHGDISK utility).
+
+Once the command is entered, CHGDISK reads the application or
+utility program from the disk, and prompts for you to change disks.
+After changing disks, press <RETURN>, CHGDISK will then execute
+the loaded program.}
+{CHKDISK - Check Disk for errors
+Format		: CHKDISK <drive>
+Type		: Application
+Area of use	: Disk Maintenance
+Related commands: FORMAT
+Qualifiers	: /NOALLOC - Supress allocation test.
+		  /NOMEDIA - Supress disk media test.
+		  /QUIET   - Supress progress messages.
+		  /REBUILD - Rebuild disk allocation without prompting.
+
+CHKDISK verifies the consistency of the file system, ensuring that all files
+are linked correctly and contain no unallocated or cross linked sectors. Any
+sectors marked as allocated and not actually used are also detected. The
+'/NOALLOC' qualifier will cause CHKDISK to skip this test.
+
+CHKDISK next performs a media test, verifying that all sectors on the disk
+are usable. The '/NOMEDIA' qualifier will cause CHKDISK to skip this test.
+
+If errors are encountered CHKDISK will prompt with: Write updated link table?
+Entering 'Y' will repair the link table, thereby releasing any misallocated
+sectors, and marking as busy any unusable sectors.}
+{CONCAT - Concatinate files
+Format		: CONCAT <dest_file> <file1> [<file2> ...]
+Type		: Application
+Area of use	: File Maintenance
+Related commands: COPY, TYPE
+Qualifiers	: /QUIET - Suppress size report.
+
+CONCAT reads one or more input files, and writes the data from
+all of them to one destination file.
+
+Unless the '/QUIET' qualifier is specified, CONCAT reports the
+total number of lines written.
+
+Only ASCII text files will be correctly joined by the CONCAT
+command.}
+{CONNECT - Connect to serial port
+Format		: COnnect <device>
+Type		: Internal
+Area of use	: Communications
+Related commands: DOWNLOAD, INTIO, STTY
+Qualifiers	: NONE
+
+The CONNECT command creates a logical connection between the console
+device, and the specified device. Any characters received from that device
+will be sent to the console device. All characters except for the ESCAPE
+character which are entered at the console will be transmitted from the
+specified device. Entering ESCAPE at the console terminates the connect
+command.
+
+On systems where the console device is an integral keyboard and
+video display, CONNECT provides an easy way to emulate a dumb terminal.
+
+For external serial console devices, CONNECT is more often used as
+a "pass through" mechanism to access a communications medium such as
+a modem or switched network.}
+{COPY - Copy/Move files
+Format		: COPY <source spec> [<dest spec>]
+Type		: Application
+Area of use	: File Maintenance
+Related commands: CONCAT, TYPE, COPYDISK
+Qualifiers	: /MOVE    - Move file instead of copy.
+		  /NEW     - Don't overwrite existing files.
+		  /PROT    - Copy file protections.
+		  /QUIET   - Suppress progress messages.
+		  /REPLACE - Replace files without prompt.
+
+The COPY command copies files from one location to another.
+
+The source file specification may contain wildcards ('*'), in which
+case all files matching that pattern will be copied. Wildcard ('*')
+characters in the destination specification indicates sections of the
+original name which are to be retained.}
+{COPYDISK - Copy complete disk
+Format		: COPYDISK <source drive> <dest drive>
+Type		: Application
+Area of use	: Disk Maintenance
+Related commands: FORMAT, CHKDISK, COPY
+Qualifiers	: /PROMPT - Prompt to insert disks.
+		  /QUIET  - Suppress progress messages.
+
+COPYDISK copies an entire disk to another disk.
+
+The disks must be the same size. COPYDISK will fail with the error
+message 'Incompatable drive sizes' unless this is true.
+
+If the source and destination are specified as the same drive,
+COPYDISK will prompt you to insert the source and destination
+disks, allowing a disk copy to be performed on a single drive.}
+{CREATE - Create file
+Format		: CReate <filename> [<addr>]
+Type		: Internal
+Area of use	: File maintenance
+Related commands: DELETE, FILES, LOAD, SAVE
+Qualifiers	: NONE
+
+The CREATE command creates a file with the specified name. If the optional
+address value is specified, the file is created with that load address. The
+created file is one block in size.}
+{DELETE - Delete file
+Format		: DELete <filespec>
+Type		: Internal
+Area of use	: File maintenance
+Related commands: CREATE, FILES, LOAD, SAVE
+Qualifiers	: NONE
+
+The DELETE command permanently removes a file from the disk.
+
+Any disk sectors used by the file will be released, allowing them
+to be reused by other files.
+
+If <filespec> does not contain wildcard characters, DELETE will simply
+delete the named file. If <filespec> does contain wildcard characters,
+the DELETE command will prompt for the action to take for each file.
+
+A file will not be deleted if it does not have 'D' delete
+permission set in its protection string.}
+{DIR - Display directory listing
+Format		: DIR <dir spec>
+Type		: Application
+Area of use	: File maintenance
+Related commands: FILES, SET FILE, SHOW FILE, DIRF
+Qualifiers	: /DISK     - Include file disk address.
+		  /LOAD     - Include file load address.
+		  /SIZE     - Include file size.
+		  /TOTAL    - Display only directory names and total files.
+		  /NOHEADER - Suppress directory header.
+		  /PROT     - Include file protections.
+
+The DIR command displays the names of files on the disk in a format
+which is easier to read than that of the FILES command.
+
+The operand <dir spec> may be any directory or file specification
+which is valid for the FILES command.
+
+The names to be shown are sorted and displayed as well as the total
+number of files.}
+{DIRF - List directory to file
+Format		: DIRF <file> <pattern> [<prefix> [<postfix>]]
+Type		: Utility
+Area of use	: File maintenance
+Related commands: FILES, DIR, @
+Qualifiers	: /NODISK      - Don't include drive prefix.
+		  /NODIRECTORY - Don't include directory.
+		  /NOTYPE      - Don't include file type.
+
+The DIRF command produces a directory listing and writes it to a file.
+The directory listing is of similar format to that of the FILES command.
+
+If the <prefix>/<postfix> is specified, it must be enclosed within unique
+delimiter characters, and will be placed ahead/after of each filename in
+the output file.
+
+This command is very useful for creating command files which perform an
+operation on many files	:
+
+   eg	: "DIRF SETEXE.@ *.EXE 'SET FILE ' ' PROT=E'"}
+{DOWNLOAD - Download from serial port
+Format		: DOwnload <device> [<filename>]
+Type		: Internal
+Area of use	: Communications
+Related commands: BUILD, CONNECT, INTIO, STTY
+Qualifiers	: NONE
+
+The DOWNLOAD command accepts a standard Motorola hexidecimal format
+load file from the specified serial device, and loads it into memory
+at the address contained in the load records of the file.
+
+If the optional filename is specified, DOWNLOAD also writes the memory
+image to that file.
+
+If the specified file does not already exist, it will be created, and
+the load address will be set to the address contained in the first load
+record in the download file.}
+{ED - Tiny screen editor
+Format		: ED <filename>
+Type		: Application
+Area of use	: File maintainance, Development
+Related commands: ED, EDIT
+Qualifiers	: NONE
+
+ED is a tiny screen oriented text editor, which operates using a
+VT100 or compatable terminal.
+
+Pressing the HELP key from within ED will display a short summary
+of the ED commands.
+
+This editor has been superceeded by the 'EDT' screen editor, and
+is provided for backwards compatabliity only.
+
+For more information, consult the ED manual.}
+{EDIT - Line editor
+Format		: EDIT <filename> [<command file>]
+Type		: Application
+Area of use	: File maintainance, Development
+Related commands: ED, SDE
+Qualifiers	: /BATCH - Read commands from file.
+		  /QUIET - Don't display editing session.
+
+EDIT is a simple line oriented text editor. It is used to create and
+edit disk files containing ASCII text.}
+{EDT - Screen editor
+Format		: EDT <filename>
+Type		: Application
+Area of use	: File maintainance, Development
+Related commands: ED, EDIT, TTYPATCH
+Qualifiers	: NONE
+
+EDT is a fully featured text editor for use under CUBIX. It supports both
+line and visual (screen) oriented modes of operation, and has many powerful
+commands.
+
+When operating in visual mode, EDT uses the standard "TTY" interface,
+allowing the "TTYPATCH" utility to be used to define the terminal control
+codes and functon keys used.
+
+For more information, consult the EDT manual.}
+{FILES - Display file names
+Format		: FIles [<filespec>]
+Type		: Internal
+Area of use	: File maintenance
+Related commands: CREATE, DELETE, DIR
+Qualifiers	: NONE
+
+The FILES command displays the names of files on the disk.
+
+If <filespec> is a directory prefix, then all files having that
+directory prefix are displayed.
+
+If the operand is a full file specification (which may contain
+wildcards), FILES displays the names of all files on the disk which
+match that pattern.
+
+If no operand is given, the names of all files in your current default
+directory are displayed.}
+{FLINK - Link directory entry to file
+Format		: FLINK <filename> [<filename> ...]
+Type		: Utility
+Area of use	: File maintenance
+Related commands: CHKDISK
+Qualifiers	: /UNLINK - Unlink file from directory.
+
+The FLINK command creates one or more directory entries with the given
+name(s), which are linked to the disk data of the first file. This has the
+effect of making one file accessable by multiple names (Perhaps in different
+directories, or with different load address or protections).
+
+Care MUST be taken to never DELETE a file which is linked to another file,
+because the data area (used by all linked files) on the disk will be
+released, and all other linked directory entries would be left pointing to
+unallocated (or worse reused) file system space.
+
+When the '/UNLINK' qualifier is used, FLINK removes the directory
+entries for all named files, WITHOUT releasing the data space allocated
+to them. This allows the multiple directory entries created by FLINK to
+be removed leaving the disk data intact for other file links.}
+{FORMAT - Format a disk
+Format		: FORMat <drive> [Address=<value> Cylinders=<value>
+		     Directory=<value> Heads=<value> Interleave=<value>
+		     Sectors=<value>]
+Type		: Internal
+Area of use	: Disk maintenance
+Related commands: SET DRIVE, CHKDISK
+Qualifiers	: NONE
+
+The FORMAT command formats the specified disk, and creates a
+file system on it. After displaying the selected parameter settings,
+the FORMAT command prompts with 'Ok?'. Entering 'Y' will format and
+initialize the disk. 'N' cancels the command.
+
+All disks used on the system must be formatted before use.}
+{FORTH - Forth programming language
+Format		: FORTH
+Type		: Application
+Area of use	: Application programming
+Related commands:
+Qualifiers	: NONE
+
+FORTH is an implementation of the FORTH language. This version of
+FORTH is unique in that it compiles to directly executable 6809 machine
+code, instead of the usual intermediate interpreted code. This results
+in much faster execution than is possible with most FORTH systems.
+
+For more information, consult the FORTH manual.}
+{HELP - Display help text
+Format		: HELP [<topic> [<subtopic...>]]
+Type		: Utility
+Area of use	: System & Application documentation
+Related commands:
+Qualifiers	: /<library> - Select help library.
+		  /    - Display available libraries.
+
+HELP displays selections in a help library, and prompts for topics and
+subtopics, at the prompt, you may enter	:
+
+ name   - Subtopic to view
+ <null> - A blank line backs up one subtopic level
+ ?      - Redisplay (Sub)Topic text
+ ^C     - Control-C will exit help at any point.
+
+A list of the available HELP libraries can be obtained by typing 'HELP/'.}
+{HEXED - Hexidecimal file editor
+Format		: HEXED <filename>
+Type		: Application
+Area of use	: File patching
+Related commands: EDIT, EDT, TTYPATCH
+Qualifiers	: NONE
+
+HEXED is a screen oriented hexadecimal file patch utility. It uses the
+"TTY" screen interface, which allows it to be customized with the "TTYPATCH"
+utility for use on any terminal.}
+{INTIO - Interrupt I/O driver
+Format		: INTIO [<device>]
+Type		: Special Utility
+Area of use	: Serial Communication
+Related commands: CONNECT, DOWNLOAD, STTY
+Qualifiers	: /OFF - Remove Interrupt I/O driver
+
+The INTIO utility installs a temporary device driver which performs
+buffered interrupt driven input from the serial device. This allows the
+the system to receive serial data at much higher speeds, and supports
+XON/XOFF flow control for both receive and transmit data streams.
+
+The '/OFF' qualifier removes a previously installed interrupt I/O
+driver. No other parameters are required when using this qualifier.
+
+INTIO is a hardware dependant utility which may vary between systems.}
+{LDIR - List directories
+Format		: LDIR [<file or directory spec>]
+Type		: Application
+Area of use	: File & Directory maintenance
+Related commands: FILES, DIR
+Qualifiers	: /TOTAL - Only display total number of matching directories.
+
+The LDIR command lists the names of all directories on the disk which
+contain files matching the specified pattern.
+
+If the pattern specified does not contain an explicit directory prefix
+it defaults to '[*]', which shows all directories that have a matching file.
+
+If the pattern specified does not contain an explicit filename and type,
+it defaults to '*.*', which shows the directory if any file exists with that
+prefix.}
+{LOAD - Load file from disk to memory
+Format		: LOad <filename> [<addr>]
+Type		: Internal
+Area of use	: File access
+Related commands: SAVE
+Qualifiers	: NONE
+
+The LOAD command loads the specified file from disk to memory at the
+specified address. If no address is specified, the file is loaded at its
+load address, as indicated by its directory entry.
+
+The file is BLOCK loaded, so a multiple of 512 bytes of data is
+always transferred.}
+{MAPL - Micro-APL
+Format		: MAPL
+Type		: Application
+Area of use	: Application programming
+Related commands: MOVEAPL
+Qualifiers	: NONE
+
+MAPL (Micro APL) is an interactive computer language which is a subset
+of the APL language. MAPL has it's own library system of workspaces, and
+supports user defined functions and variables, recursion, and many of the
+basic operators from APL. MAPL supports integer and character types.
+
+Unlike APL, MAPL does not require a special terminal, but uses normal upper
+and lower case ASCII characters to represent the many special operators.
+
+For more information, consult the MAPL manual.}
+{MOVEAPL - Relocate APL workspace
+Format		: MOVEAPL <filename> <address>
+Type		: Application
+Area of use	: Porting MAPL applications
+Related commands: MAPL
+Qualifiers	: NONE
+
+The MOVEAPL command is used to change the RAM load address of a MAPL
+workspace file. This must be done before you can use the MAPL workspace on
+a system with a different memory map from the one on which it was created.
+
+In addition to changing the load address of the file, MOVEAPL adjusts
+the symbol table pointers in the workspace to reflect the new load address
+of each variable or function.
+
+The correct load address for a particular system may be determined by
+examining the load address of the MAPL.EXE image in the [SYSTEM] directory,
+and adding an 8K ($2000) offset to it.}
+{RAID - Runtime Aid for Interactive Debugging
+Format		: RAID/<dev> [<filename> [<operands>]]
+Type		: Special Utility
+Area of use	: Application programming
+Related commands: ASM, ASP, BUILD
+Qualifiers	: /<dev> - Debug to this device.
+
+RAID (Runtime Aid for Interactive Debugging) is a program which aids
+in the debugging process, by allowing the user to monitor and control
+the execution of a program under test.
+
+For more information, consult the RAID manual.}
+{READ - Read disk sectors to memory
+Format		: REad <drive> <sector> <addr> [<size>]
+Type		: Internal
+Area of use	: Disk maintenance
+Related commands: WRITE
+Qualifiers	: NONE
+
+The READ command reads disk sectors from the specified drive, and places
+them in memory at the specified address. If <size> is not specified, one
+sector is transferred.
+
+The READ command bypasses the normal DOS file system, and should only be
+used by persons familiar with the disk structure during recovery procedures.
+It is not intended that READ be used in the normal every day operation of
+the system.}
+{REDIRECT - Redirect serial I/O to/from disk file
+Format		: REDIRECT <filename> [<device>]
+Type		: Special Utility
+Area of use	: I/O Redirection
+Related commands:
+Qualifiers	: /ALL   - Pass ALL character codes
+		  /CLOSE - Terminate redirect
+		  /WRITE - Redirect writes to device
+
+The REDIRECT utility installs a temporary device driver which causes
+accesses to the specified serial device to be redirected to a file.
+
+If no <device> parameter is given, REDIRECT operates on the current
+console device.}
+{RETURN - Return to application
+Format		: RETURN
+Type		: Internal
+Area of use	: Application programs
+Related commands: NONE
+Qualifiers	: NONE
+
+The RETURN command is used to return to an application that has
+temporarily entered the dos via a system call.
+
+When an application program enters the dos this way, only internal
+commands and utility programs should be run. If any other applications
+are executed, the original application will be terminated.}
+{RUN - Execute a program
+Format		: RUn <pgmname>
+Type		: Internal
+Area of use	: Application programs
+Related commands: NONE
+Qualifiers	: NONE
+
+The RUn command loads the specified file into memory at its load
+address and executes it. The file type '.EXE' is assumed.
+
+The indicated file (with the name <pgmname>.EXE) is loaded into
+memory at its Load address, and execution is transferred to offset
+zero (0) within that code.
+
+The remainder of the command line is made available to the executing
+program so that parameters can be evaluated.
+
+A file will not be executed if it does not have 'E' execute permission
+set in its protection string.}
+{SAVE - Save file from memory to disk
+Format		: SAve <filename> <addr> <size>
+Type		: Internal
+Area of use	: File access
+Related commands: LOAD
+Qualifiers	: NONE
+
+The SAVE command saves a memory image in the specified file.
+
+The memory image is saved starting at the indicated address
+(in hex), for the number of 512 byte disk sectors specified by
+<size>.
+
+If the file did not previously exist, it is created, and its load
+address is set to the value of <addr>.}
+{SEARCH - Search file(s) for data string
+Format		: SEARCH <filespec> <search string>
+Type		: Utility
+Area of use	: File maintenance
+Related commands:
+Qualifiers	: /BINARY - Treat input as binary file.
+		  /CASE   - Convert lower to upper case.
+		  /HEX    - Search string is in hex.
+		  /TOTAL  - Display only total found.
+
+The SEARCH utility scans specified files, and displays a list of
+the occurrences of the given search string. Wildcard ('*') characters
+may be specified in the <filespec> operand. The search string may be
+delimited by any character which is not part of the actual search string.}
+{SET - Set system parameters
+Format		: SEt	COnsole [Input=<device> Output=<device>]
+			DEBug ON|OFF
+			DEFault <directory>
+			DRive <drive> [Address=<value> Cylinders=<value>
+					Heads=<value> Sectors=<value>]
+			FIle <name> [Load_address=<addr> Protection=<string>]
+			MEMory <addr> <data> [<data> ...]
+			MESsage ON|OFF
+			SYstem <directory>
+			TRace ON|OFF
+Type		: Internal
+Area of use	: System Maintenance
+Related commands: SHOW
+Qualifiers	: NONE
+
+The SET command controls many functions relating to the internal
+operation of the operating system.
+{MORE
+ CONSOLE selects the serial device to be used for console I/O.
+ DEBUG   enables/disables display of the operating system calls.
+ DEFAULT changes the default directory prefix.
+ DRIVE   changes the physical characteristics of a drive (see FORMAT)
+ FILE    changes attributes of the specified file.
+ MEMORY  alters the contents of system memory.
+ MESSAGE enables/disables the display of DOS error messages.
+ SYSTEM  changes the system directory prefix.
+ TRACE   enables/disables the display of command file commands.}}
+{SHOW - Display system parameters
+Format		: SHOW	COnsole
+			DEBug
+			DEFault
+			DRive <drive>
+			FIle <name>
+			FRee <drive>
+			MEMory <addr> [<addr>]
+			MESsage
+			SYstem
+			TRace
+Type		: Internal
+Area of use	: System Maintenance
+Related commands: SET
+Qualifiers	: NONE
+
+The SHOW command displays information about the system	:
+{MORE
+ CONSOLE displays the current assignments of the console device.
+ DEBUG   displays the current setting (ON or OFF) of the debug flag.
+ DEFAULT displays the current default directory prefix.
+ DRIVE   displays the physical characteristics of the specified drive.
+ FILE    displays the information about the specified file.
+ FREE    displays the number of free disk blocks on a drive
+ MEMORY  displays the contents of memory.
+ MESSAGE displays the current setting of the error message output flag.
+ SYSTEM  displays the current system directory prefix.
+ TRACE   displays the current setting of the trace flag.}}
+{SIM80 - Simulte 8080 processor
+Format		: SIM80 <8080 code file name>
+Type		: Application
+Area of use	: Program development, compatibility.
+Related commands:
+Qualifiers	: /DEBUG - Invoke the 8080 debugger.
+
+SIM80 is an application program which simulates the execution of
+an Intel 8080 microprocessor, by interpreting the opcodes it reads
+from memory.
+
+SIM80 loads the 8080 code file at its load address, and begins
+interpreting at offset zero (0) within that image. The filetype '.80'
+is assumed.
+
+For more information, consult the SIM80 manual.}
+{STTY - Set TTY parameters
+Format		: STTY <device> [SPEED=<baud rate>] [PARITY=<parity type>]
+			[BITS=<bits per char>] [STOP=<# stop bits>]
+Type		: Utility
+Area of use	: Serial Communications
+Related commands: CONNECT, DOWNLOAD, INTIO
+Qualifiers	: None
+
+STTY is a utility which sets the options for the serial communications
+devices. This is a system specific utility, and the implementation of
+parameters to the right of the device number may vary, depending on the
+hardware in use.
+
+If only the device number is given, STTY will display the current
+settings for that device.}
+{TTYPATCH - Patch application for TTY control
+Format		: TTYPATCH
+Type		: Application
+Area of use	: Terminal customization
+Related commands: EDT, HEXED
+Qualifiers	: NONE
+
+The TTYPATCH utliity provides the capability of modifying the terminal
+control codes and function keys used by certain screen oriented application
+programs. Any application which uses the "TTY" interface library to control
+the terminal may be modified using "TTYPATCH".
+
+For more information, consult the "TTY" manual.}
+{TYPE - Display data
+Format		: TYPE <filename>|<address> [<device>]
+Type		: Utility
+Area of use	: File maintenance.
+Related commands:
+Qualifiers	: /DISK   - Display a disk sector chain.
+		  /DUMP   - Output in hex/ASCII dump format.
+		  /MEMORY - Display absolute memory contents.
+		  /PAGE   - Wait for key every 22 lines.
+
+The TYPE utility displays the contents of a file, a disk sector, or
+of main memory. The data is displayed as ASCII text, unless the '/DUMP'
+qualiifer is given, in which case it is output in Hexidecimal/ASCII dump
+format.
+
+When displaying text files, TYPE expands tab characters to an
+appriopriate number of spaces assuming eight character tab stops.}
+{WRITE - Write disk sectors from memory
+Format		: WRite <drive> <sector> <addr> [<size>]
+Type		: Internal
+Area of use	: Disk maintenance
+Related commands: READ
+Qualifiers	: NONE
+
+The WRITE command WRITES disk sectors to the specified drive from memory at
+the specified address. If <size> not specified, one sector is transferred.
+
+WARNING: The WRITE command bypasses the DOS filesystem, and if
+improperly used, could DESTROY the contents of a disk. It should be
+used only by persons familiar with disk structures during recovery
+procedures. Even so, it is recomended that the recovery be performed
+on a copy of the original disk.}
