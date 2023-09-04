@@ -8,19 +8,6 @@ OSRAM           = $2000       APPLICATION RAM AREA
 OSEND           = $DBFF       END OF GENERAL RAM
 OSUTIL          = $D000       UTILITY ADDRESS SPACE
 
-        ORG     0
-DPREFIX
-        RMB     8
-DNAME
-        RMB     8
-DTYPE
-        RMB     3
-DDADR
-        RMB     2
-DRADR
-        RMB     2
-DATTR
-        RMB     1
 ;*
         ORG     OSUTIL                            ;PROGRAM LOCATION
 
@@ -33,24 +20,26 @@ SHOWDRV:
         SWI
         FCB     111                               ; GET DISK TABLE IN D
         TFR     D,X
-        LDY     #$0004
-        LDA     #'A'
+        LDY     #$0000
 !
+        TFR     Y,A
+        ADDA    #'A'
         SWI
         FCB     33
         SWI
         FCB     24
         FCN     ':    '
         LDB     ,X+
+        LDA     ,X+
         JSR     SHOWDRIVETYPE
-        LDB     ,X+
         JSR     SHOWDRIVESLICE
         SWI
         FCB     22
-        INCA
-        DEY
-        CMPY    #0
+        INY
+        CMPY    #4
         BNE     <
+        SWI
+        FCB     22
         RTS
 
 SHOWDRIVETYPE:
@@ -59,6 +48,7 @@ SHOWDRIVETYPE:
         ANDB    #$F0
         CMPB    #$00
         BNE     >
+        SWI
         FCB     24
         FCN     'NONE.'
         PULS    A
@@ -66,12 +56,14 @@ SHOWDRIVETYPE:
 !
         CMPB    #$10
         BNE     >
+        SWI
         FCB     24
         FCN     'FLOPPY UNIT '
         BRA     SHOWDRIVETYPE1
 !
         CMPB    #$20
         BNE     SHOWDRIVETYPE2
+        SWI
         FCB     24
         FCN     'IDE UNIT '
 SHOWDRIVETYPE1:
@@ -80,30 +72,20 @@ SHOWDRIVETYPE1:
         PULS    A
         RTS
 SHOWDRIVETYPE2:
+        SWI
         FCB     24
         FCN     'UNKNOWN.'
         PULS    A
         RTS
 SHOWDRIVESLICE:
+        CMPB    #$20
+        BNE     >
+        TFR     A,B
+        CLRA
+        SWI
+        FCB     24
+        FCN     ', SLICE '
+        SWI
+        FCB     26
+!
         RTS
-NODISK
-        FCB     $FF                               ;DON'T INCLUDE DISK PREFIX
-NODIR
-        FCB     $FF                               ;DON'T INCLUDE DIRECTORY
-NOTYPE
-        FCB     $FF                               ;DON'T INCLUDE TYPE
-;* MISC LOCAL VARIABLES
-DISK
-        RMB     1                                 ;DIRECTORY DISK DRIVE
-TEMP
-        RMB     2                                 ;TEMP STORAGE
-DELIM
-        RMB     1                                 ;STRING DELIMITER
-WRKSPC
-        RMB     512                               ;DIRECTORY LOOKUP SECTOR
-OUTFIL
-        RMB     522                               ;OUTPUT FILE BUFFER
-PREFIX
-        RMB     64                                ;PREFIX STRING
-POST
-        RMB     64                                ;POSTFIX STRING

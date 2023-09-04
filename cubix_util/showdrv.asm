@@ -38,6 +38,8 @@ SHOWDRV:
         INY
         CMPY    #4
         BNE     <
+        SWI
+        FCB     22
         RTS
 
 SHOWDRIVETYPE:
