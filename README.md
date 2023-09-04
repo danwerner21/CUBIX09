@@ -11,7 +11,7 @@ More information about Dunfield Development services is included in the dunfield
 ---
 Dunfield Development Services (DDS) offers software and firmware
 development services specializing in systems and embedded applications.
-For more information, visit: http://www.dunfield.com
+For more information, visit: https://dunfield.themindfactory.com/
 
 CUBIX Operating System Version 1.5
 
@@ -46,22 +46,13 @@ Included applications:
 
 To Do List for this port:
 
-ADD REMAPABLE DRIVES
-
-ADD SLICES
-
-ADD MULTIPLE IDE DRIVE SUPPORT
-
-DRIVE MAPPER UTILITY
-
-MICRO C
-
-ADD FLOPPY DRIVE SUPPORT
-
-Microsoft Basic
-
-Create an XMODEM program
-
-MONITOR
-
-PAGER SUPPORT
+* ADD REMAPABLE DRIVES
+* ADD SLICES
+* ADD MULTIPLE IDE DRIVE SUPPORT
+* DRIVE MAPPER UTILITY
+* MICRO C
+* ADD FLOPPY DRIVE SUPPORT
+* Microsoft Basic
+* Create an XMODEM program
+* Advanced MONITOR
+* ram PAGER SUPPORT
