@@ -288,9 +288,9 @@ QTABLE
         FCB     $82
         FCC     '/MEMORY'
         FCB     $80                               ;END OF TABLE
-QMAX = 4  ;LARGEST QUALIFIER VALUE
+QMAX            = 4                               ;LARGEST QUALIFIER VALUE
 ;* QUALIFIER FLAGS
-QFLAGS = *
+QFLAGS          = *
 PAGE
         FCB     $FF                               ;PAGE OUTPUT
 DUMP
@@ -313,4 +313,4 @@ SECTOR
 SAVSTK
         RMB     2                                 ;SAVED STACK POINTER
 ;*
-WRKSPC =  *   ;WORK AREA
+WRKSPC          = *                               ;WORK AREA

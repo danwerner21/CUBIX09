@@ -20,9 +20,6 @@
 ;*
 ;* CUBIX SYSTEM ADDRESSES
 ;*
-DRIVERS         EQU $E99F		FIRST FREE LOCATION IN ROM
-;* $E99F FOR NO VDU, $E09F FOR VDU
-
 ;*
 ;* DISK CONTROL BLOCK FORMAT
 ;*
@@ -191,5 +188,6 @@ RITAB           EQU *
         FCB     3                                 ;SYSTEM DRIVE (A)
         FCC     'SYSTEM'                          ;SYSTEM DIRECTORY
         FCB     0,0                               ;(FILLER)
+
 RISIZ           EQU *-RITAB                       ;SIZE OF INITILAIZED RAM
 ;

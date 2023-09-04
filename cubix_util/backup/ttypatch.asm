@@ -39,7 +39,7 @@ FPROT
 MAIN
         SWI
         FCB     25                                ;DISPLAY MESSAGE
-        FCC     '     ;*** TTY patch utility ***'
+        FCC     '     *** TTY patch utility ***'
         FCB     $0A,$0D
         FCC     'Carriage-return to exit a Sub-Menu'
         FCB     $0A,0
@@ -639,11 +639,11 @@ FSIZE
 ;* FUNCTION KEY EDIT AREA
 ;*
 IDATA
-        RMB     ISIZE                             ;*INUM
+        RMB     ISIZE                             *INUM
 FDATA
-        RMB     ISIZE                             ;*FNUM
+        RMB     ISIZE                             *FNUM
 ODATA
-        RMB     ISIZE                             ;*ONUM
+        RMB     ISIZE                             *ONUM
 GDATA           = ODATA+ISIZE
 IEND
         RMB     100                               ;END OF INIT, STACK SPACE

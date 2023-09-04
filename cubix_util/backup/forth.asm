@@ -42,7 +42,8 @@ PROMPT
         FCB     $0A,$0D                           ;NEW LINE
         FCN     'Ok>'                             ;PROMPT
 ERMSG1
-        FCN     'Error: '                         ;ERROR PREFIX
+        FCC     'Error: '                         ;ERROR PREFIX
+        FCB     $27,$00
 ERMSG2
         FCB     $27,$20,$00                       ;ERROR SUFFIX
 REDMSG
@@ -407,7 +408,7 @@ UMUL2
         STD     ,U
         STX     2,U
         RTS
-;* ';*' - SIGNED MULTIPLY
+;* '*' - SIGNED MULTIPLY
         FCB     $80
         FCC     '*'
         FDB     UMULT
@@ -901,8 +902,8 @@ VOC9
         RTS
 ;* ''S' - OBTAIN STACK ADDRESS
         FCB     $80
-        FCC     'S'
-        FDB     $27,SPFIX
+        FCB     $53,$27
+        FDB     SPFIX
 TICS
         STU     ,--U                              ;SAVE DATA STACK POINTER
         RTS
@@ -1406,7 +1407,7 @@ DOTQ
         STD     ,X++                              ;COMPILE INTO DICT
         BRA     COMR2                             ;RESAVE FREE POINTER
 ;* '"' - COMPILE STRING INTO DICTIONARY
-        FCB     $83,$22,DOTQ
+        FCB     $83,$22,$2A,DOTQ
 QUOTE
         LDA     #$8D                              ;'BSR' INSTRUCTION
         STA     ,X++                              ;COMPILE INTO DICT
