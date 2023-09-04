@@ -1,5 +1,6 @@
 all:  	asm.s19 asp.s19 basic.s19 build.s19 calc.s19 chgdisk.s19 chkdisk.s19 concat.s19 copy.s19 dir.s19 dirf.s19 ed.s19 edit.s19 edt.s19 \
- 		flink.s19 forth.s19 help.s19 hexed.s19 ldir.s19 mapl.s19 moveapl.s19 raid.s19 redirect.s19 search.s19 sim80.s19 ttypatch.s19 type.s19
+ 		flink.s19 forth.s19 help.s19 hexed.s19 ldir.s19 mapl.s19 moveapl.s19 raid.s19 redirect.s19 search.s19 sim80.s19 ttypatch.s19 type.s19 \
+		showdrv.s19
 
 
 asm.s19: asm.asm
@@ -158,11 +159,17 @@ ttypatch.s19: ttypatch.asm
 	sed -i -e '$$aS9' ttypatch.s19
 	@cp ttypatch.s19 ../bin/utilities
 
-type.s19: search.asm
+type.s19: type.asm
 	lwasm --6809 type.asm -s --list=type.lst --map=type.map --output=type.s --format=srec
 	srec_cat type.s -o type.s19 -data-only
 	sed -i -e '$$aS9' type.s19
 	@cp type.s19 ../bin/utilities
+
+showdrv.s19: showdrv.asm
+	lwasm --6809 --6800compat  showdrv.asm -s --list=showdrv.lst --map=showdrv.map --output=showdrv.s --format=srec
+	srec_cat showdrv.s -o showdrv.s19 -data-only
+	sed -i -e '$$aS9' showdrv.s19
+	@cp showdrv.s19 ../bin/utilities
 
 pretty:
 	cp *.asm ./backup
@@ -193,6 +200,7 @@ pretty:
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/sim80.asm sim80.asm
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/ttypatch.asm ttypatch.asm
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/type.asm type.asm
+	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/showdrv.asm showdrv.asm
 
 clean:
 	@rm -f *.o

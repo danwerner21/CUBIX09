@@ -50,13 +50,13 @@ D045 39               (       search.asm):00040                 RTS
 D046                  (       search.asm):00043         QUAL
 D046 A6A4             (       search.asm):00044                 LDA     ,Y                                ;GET CHAR FROM COMMAND LINE
 D048 812F             (       search.asm):00045                 CMPA    #'/'                              ;IS IT A QUALIFIER?
-D04A 2672             (       search.asm):00046                 BNE     MAIN                              ;NO, DO PGM
-D04C 308D0291         (       search.asm):00047                 LEAX    QTABLE,PCR      POINT TO QUALIFIER TABLE
+D04A 2676             (       search.asm):00046                 BNE     MAIN                              ;NO, DO PGM
+D04C 308D0295         (       search.asm):00047                 LEAX    QTABLE,PCR      POINT TO QUALIFIER TABLE
 D050 3F               (       search.asm):00048                 SWI
 D051 12               (       search.asm):00049                 FCB     18                                ;LOOK IT UP
 D052 C104             (       search.asm):00050                 CMPB    #QMAX                             ;IS IT IN RANGE
 D054 2408             (       search.asm):00051                 BHS     QERR                              ;IF SO, IT'S INVALID
-D056 308D02A2         (       search.asm):00052                 LEAX    QFLAGS,PCR      POINT TO QUALIFIER FLAGS
+D056 308D02A6         (       search.asm):00052                 LEAX    QFLAGS,PCR      POINT TO QUALIFIER FLAGS
 D05A 6F85             (       search.asm):00053                 CLR     B,X                               ;SET THE FLAG
 D05C 20E8             (       search.asm):00054                 BRA     QUAL                              ;LOOK FOR ANOTHER QUALIFIER
 D05E                  (       search.asm):00055         QERR
@@ -88,411 +88,413 @@ D09B A6A0             (       search.asm):00078                 LDA     ,Y+     
 D09D A6A0             (       search.asm):00079                 LDA     ,Y+                               ;GET CHARACTER
 D09F A6A0             (       search.asm):00080                 LDA     ,Y+                               ;GET CHARACTER
 D0A1 A6A0             (       search.asm):00081                 LDA     ,Y+                               ;GET CHARACTER
-D0A3                  (       search.asm):00082         DSQU1
-D0A3 3F               (       search.asm):00083                 SWI
-D0A4 21               (       search.asm):00084                 FCB     33                                ;DISPLAY
-D0A5 A6A0             (       search.asm):00085                 LDA     ,Y+                               ;GET NEXT CHAR
-D0A7 270C             (       search.asm):00086                 BEQ     GOABO                             ;NULL IS DELIMITER
-D0A9 812F             (       search.asm):00087                 CMPA    #'/'                              ;START OF ANOTHER QUALIFIER?
-D0AB 2708             (       search.asm):00088                 BEQ     GOABO                             ;IF SO, QUIT
-D0AD 8120             (       search.asm):00089                 CMPA    #' '                              ;SPACE?
-D0AF 2704             (       search.asm):00090                 BEQ     GOABO                             ;IF SO, QUIT
-D0B1 810D             (       search.asm):00091                 CMPA    #$0D                              ;END OF LINE?
-D0B3 26EE             (       search.asm):00092                 BNE     DSQU1                             ;NO, KEEP DUMPING
-D0B5                  (       search.asm):00093         GOABO
-D0B5 3F               (       search.asm):00094                 SWI
-D0B6 19               (       search.asm):00095                 FCB     25                                ;DISPLAY MESSAGE
-D0B7 2700             (       search.asm):00096                 FCB     $27,0                             ;CHARACTERS TO DISPLAY
-D0B9 8601             (       search.asm):00097                 LDA     #1                                ;INVALID OPERAND RETURN CODE
-D0BB 1600B7           (       search.asm):00098                 LBRA    ABORT                             ;GIVE UP
-                      (       search.asm):00099         ;* MAIN PROGRAM
-D0BE                  (       search.asm):00100         MAIN
-D0BE 3F               (       search.asm):00101                 SWI
-D0BF 09               (       search.asm):00102                 FCB     9                                 ;GET PATTERN
-D0C0 102600B1         (       search.asm):00103                 LBNE    ABORT                             ;BAD, GIVE UP
-D0C4 A61F             (       search.asm):00104                 LDA     -1,X                              ;GET DRIVE
-D0C6 3F               (       search.asm):00105                 SWI
-D0C7 4C               (       search.asm):00106                 FCB     76                                ;Select this drive
-D0C8 CED313           (       search.asm):00107                 LDU     #BUFFER                           ;POINT TO BUFFER
-D0CB 7FD30A           (       search.asm):00108                 CLR     BUFSIZ                            ;BUFFER SIZE INDICATOR
-D0CE 7DD2FC           (       search.asm):00109                 TST     HEX                               ;IS STRING HEX
-D0D1 2613             (       search.asm):00110                 BNE     STRIN                             ;NO, INPUT A STRING
-                      (       search.asm):00111         ;* INPUT HEX BYTES TO SEARCH FOR
-D0D3                  (       search.asm):00112         HEXIN
-D0D3 3F               (       search.asm):00113                 SWI
-D0D4 07               (       search.asm):00114                 FCB     7                                 ;GET HEX NUMBER
-D0D5 1026009C         (       search.asm):00115                 LBNE    ABORT                             ;INVALID, QUIT
-D0D9 1F10             (       search.asm):00116                 TFR     X,D                               ;COPY
-D0DB E7C0             (       search.asm):00117                 STB     ,U+                               ;SAVE IT
-D0DD 7CD30A           (       search.asm):00118                 INC     BUFSIZ                            ;ADVANCE SIZE
-D0E0 3F               (       search.asm):00119                 SWI
-D0E1 04               (       search.asm):00120                 FCB     4                                 ;MORE OPERANDS?
-D0E2 26EF             (       search.asm):00121                 BNE     HEXIN                             ;GET NEXT OPERAND
-D0E4 2024             (       search.asm):00122                 BRA     GOTOP                             ;WE HAVE OEPRAND
-                      (       search.asm):00123         ;* INPUT A STRING VALUE
-D0E6                  (       search.asm):00124         STRIN
-D0E6 3F               (       search.asm):00125                 SWI
-D0E7 04               (       search.asm):00126                 FCB     4                                 ;GET VALUE
-D0E8 271B             (       search.asm):00127                 BEQ     BADSTR                            ;ITS BAD
-D0EA 3121             (       search.asm):00128                 LEAY    1,Y                               ;SKIP IT
-D0EC B7D304           (       search.asm):00129                 STA     TEMP                              ;SAVE
-D0EF A1A4             (       search.asm):00130                 CMPA    ,Y                                ;NULL STRING?
-D0F1 2712             (       search.asm):00131                 BEQ     BADSTR                            ;ITS BAD
-D0F3                  (       search.asm):00132         STR1
-D0F3 A6A0             (       search.asm):00133                 LDA     ,Y+                               ;GET CHAR FROM STRING
-D0F5 270E             (       search.asm):00134                 BEQ     BADSTR                            ;ITS BAD
-D0F7 B1D304           (       search.asm):00135                 CMPA    TEMP                              ;ARE WE AT END?
-D0FA 270E             (       search.asm):00136                 BEQ     GOTOP                             ;WE HAVE IT
-D0FC 7CD30A           (       search.asm):00137                 INC     BUFSIZ                            ;ADVANCE
-D0FF A7C0             (       search.asm):00138                 STA     ,U+                               ;SAVE
-D101 810D             (       search.asm):00139                 CMPA    #$0D                              ;CR?
-D103 26EE             (       search.asm):00140                 BNE     STR1                              ;NO, ITS OK
-                      (       search.asm):00141         ;* STRING OPERAND IS INVALID
-D105                  (       search.asm):00142         BADSTR
-D105 3F               (       search.asm):00143                 SWI
-D106 2B               (       search.asm):00144                 FCB     43                                ;INVALID OPERAND MESSAGE
-D107 16006B           (       search.asm):00145                 LBRA    ABORT                             ;GO HOME
-                      (       search.asm):00146         ;* WE HAVE SEARCH OPERAND
-D10A                  (       search.asm):00147         GOTOP
-D10A CC0000           (       search.asm):00148                 LDD     #DIRLOC                           ;DIRECTORY STARTS HERE
-D10D                  (       search.asm):00149         SCAND
-D10D FDD306           (       search.asm):00150                 STD     SECTOR                            ;SAVE DIRECTORY SECTOR
-D110 8ED3B3           (       search.asm):00151                 LDX     #DIRBUF                           ;POINT TO FREE SPACE
-D113 3F               (       search.asm):00152                 SWI
-D114 5C               (       search.asm):00153                 FCB     92                                ;READ DISK
-D115 1026005C         (       search.asm):00154                 LBNE    ABORT                             ;DISK ERROR
-D119                  (       search.asm):00155         SCAND1
-D119 3F               (       search.asm):00156                 SWI
-D11A 13               (       search.asm):00157                 FCB     19                                ;DOES THIS ONE MATCH?
-D11B 275A             (       search.asm):00158                 BEQ     SCANF                             ;IF SO, SCAN THE FILE
-D11D                  (       search.asm):00159         NXTDIR
-D11D 308820           (       search.asm):00160                 LEAX    32,X                              ;SKIP TO NEXT
-D120 8CD5B3           (       search.asm):00161                 CMPX    #DIRBUF+512     BEYOND END?
-D123 25F4             (       search.asm):00162                 BLO     SCAND1                            ;NO, WE ARE OK
-D125 FCD306           (       search.asm):00163                 LDD     SECTOR                            ;GET SECTOR NUMBER
-D128 3F               (       search.asm):00164                 SWI
-D129 4D               (       search.asm):00165                 FCB     77                                ;GET NEXT SECTOR
-D12A 26E1             (       search.asm):00166                 BNE     SCAND                             ;CONTINUE IF MORE
-D12C FCD300           (       search.asm):00167                 LDD     FMATCH                            ;DID ANY FILES MATCH?
-D12F 2742             (       search.asm):00168                 BEQ     NOMAT                             ;NO, ERROR
-D131 10830001         (       search.asm):00169                 CMPD    #1                                ;SEARCHED ONLY ONE
-D135 2739             (       search.asm):00170                 BEQ     SEREND                            ;IF SO, NO GRAND TOTAL
-D137 3F               (       search.asm):00171                 SWI
-D138 18               (       search.asm):00172                 FCB     24                                ;DISPLAY MSG
-D139 5365617263686564 (       search.asm):00173                 FCN     'Searched '
+D0A3 A6A0             (       search.asm):00082                 LDA     ,Y+                               ;GET CHARACTER
+D0A5 A6A0             (       search.asm):00083                 LDA     ,Y+                               ;GET CHARACTER
+D0A7                  (       search.asm):00084         DSQU1
+D0A7 3F               (       search.asm):00085                 SWI
+D0A8 21               (       search.asm):00086                 FCB     33                                ;DISPLAY
+D0A9 A6A0             (       search.asm):00087                 LDA     ,Y+                               ;GET NEXT CHAR
+D0AB 270C             (       search.asm):00088                 BEQ     GOABO                             ;NULL IS DELIMITER
+D0AD 812F             (       search.asm):00089                 CMPA    #'/'                              ;START OF ANOTHER QUALIFIER?
+D0AF 2708             (       search.asm):00090                 BEQ     GOABO                             ;IF SO, QUIT
+D0B1 8120             (       search.asm):00091                 CMPA    #' '                              ;SPACE?
+D0B3 2704             (       search.asm):00092                 BEQ     GOABO                             ;IF SO, QUIT
+D0B5 810D             (       search.asm):00093                 CMPA    #$0D                              ;END OF LINE?
+D0B7 26EE             (       search.asm):00094                 BNE     DSQU1                             ;NO, KEEP DUMPING
+D0B9                  (       search.asm):00095         GOABO
+D0B9 3F               (       search.asm):00096                 SWI
+D0BA 19               (       search.asm):00097                 FCB     25                                ;DISPLAY MESSAGE
+D0BB 2700             (       search.asm):00098                 FCB     $27,0                             ;CHARACTERS TO DISPLAY
+D0BD 8601             (       search.asm):00099                 LDA     #1                                ;INVALID OPERAND RETURN CODE
+D0BF 1600B7           (       search.asm):00100                 LBRA    ABORT                             ;GIVE UP
+                      (       search.asm):00101         ;* MAIN PROGRAM
+D0C2                  (       search.asm):00102         MAIN
+D0C2 3F               (       search.asm):00103                 SWI
+D0C3 09               (       search.asm):00104                 FCB     9                                 ;GET PATTERN
+D0C4 102600B1         (       search.asm):00105                 LBNE    ABORT                             ;BAD, GIVE UP
+D0C8 A61F             (       search.asm):00106                 LDA     -1,X                              ;GET DRIVE
+D0CA 3F               (       search.asm):00107                 SWI
+D0CB 4C               (       search.asm):00108                 FCB     76                                ;Select this drive
+D0CC CED317           (       search.asm):00109                 LDU     #BUFFER                           ;POINT TO BUFFER
+D0CF 7FD30E           (       search.asm):00110                 CLR     BUFSIZ                            ;BUFFER SIZE INDICATOR
+D0D2 7DD300           (       search.asm):00111                 TST     HEX                               ;IS STRING HEX
+D0D5 2613             (       search.asm):00112                 BNE     STRIN                             ;NO, INPUT A STRING
+                      (       search.asm):00113         ;* INPUT HEX BYTES TO SEARCH FOR
+D0D7                  (       search.asm):00114         HEXIN
+D0D7 3F               (       search.asm):00115                 SWI
+D0D8 07               (       search.asm):00116                 FCB     7                                 ;GET HEX NUMBER
+D0D9 1026009C         (       search.asm):00117                 LBNE    ABORT                             ;INVALID, QUIT
+D0DD 1F10             (       search.asm):00118                 TFR     X,D                               ;COPY
+D0DF E7C0             (       search.asm):00119                 STB     ,U+                               ;SAVE IT
+D0E1 7CD30E           (       search.asm):00120                 INC     BUFSIZ                            ;ADVANCE SIZE
+D0E4 3F               (       search.asm):00121                 SWI
+D0E5 04               (       search.asm):00122                 FCB     4                                 ;MORE OPERANDS?
+D0E6 26EF             (       search.asm):00123                 BNE     HEXIN                             ;GET NEXT OPERAND
+D0E8 2024             (       search.asm):00124                 BRA     GOTOP                             ;WE HAVE OEPRAND
+                      (       search.asm):00125         ;* INPUT A STRING VALUE
+D0EA                  (       search.asm):00126         STRIN
+D0EA 3F               (       search.asm):00127                 SWI
+D0EB 04               (       search.asm):00128                 FCB     4                                 ;GET VALUE
+D0EC 271B             (       search.asm):00129                 BEQ     BADSTR                            ;ITS BAD
+D0EE 3121             (       search.asm):00130                 LEAY    1,Y                               ;SKIP IT
+D0F0 B7D308           (       search.asm):00131                 STA     TEMP                              ;SAVE
+D0F3 A1A4             (       search.asm):00132                 CMPA    ,Y                                ;NULL STRING?
+D0F5 2712             (       search.asm):00133                 BEQ     BADSTR                            ;ITS BAD
+D0F7                  (       search.asm):00134         STR1
+D0F7 A6A0             (       search.asm):00135                 LDA     ,Y+                               ;GET CHAR FROM STRING
+D0F9 270E             (       search.asm):00136                 BEQ     BADSTR                            ;ITS BAD
+D0FB B1D308           (       search.asm):00137                 CMPA    TEMP                              ;ARE WE AT END?
+D0FE 270E             (       search.asm):00138                 BEQ     GOTOP                             ;WE HAVE IT
+D100 7CD30E           (       search.asm):00139                 INC     BUFSIZ                            ;ADVANCE
+D103 A7C0             (       search.asm):00140                 STA     ,U+                               ;SAVE
+D105 810D             (       search.asm):00141                 CMPA    #$0D                              ;CR?
+D107 26EE             (       search.asm):00142                 BNE     STR1                              ;NO, ITS OK
+                      (       search.asm):00143         ;* STRING OPERAND IS INVALID
+D109                  (       search.asm):00144         BADSTR
+D109 3F               (       search.asm):00145                 SWI
+D10A 2B               (       search.asm):00146                 FCB     43                                ;INVALID OPERAND MESSAGE
+D10B 16006B           (       search.asm):00147                 LBRA    ABORT                             ;GO HOME
+                      (       search.asm):00148         ;* WE HAVE SEARCH OPERAND
+D10E                  (       search.asm):00149         GOTOP
+D10E CC0000           (       search.asm):00150                 LDD     #DIRLOC                           ;DIRECTORY STARTS HERE
+D111                  (       search.asm):00151         SCAND
+D111 FDD30A           (       search.asm):00152                 STD     SECTOR                            ;SAVE DIRECTORY SECTOR
+D114 8ED3B7           (       search.asm):00153                 LDX     #DIRBUF                           ;POINT TO FREE SPACE
+D117 3F               (       search.asm):00154                 SWI
+D118 5C               (       search.asm):00155                 FCB     92                                ;READ DISK
+D119 1026005C         (       search.asm):00156                 LBNE    ABORT                             ;DISK ERROR
+D11D                  (       search.asm):00157         SCAND1
+D11D 3F               (       search.asm):00158                 SWI
+D11E 13               (       search.asm):00159                 FCB     19                                ;DOES THIS ONE MATCH?
+D11F 275A             (       search.asm):00160                 BEQ     SCANF                             ;IF SO, SCAN THE FILE
+D121                  (       search.asm):00161         NXTDIR
+D121 308820           (       search.asm):00162                 LEAX    32,X                              ;SKIP TO NEXT
+D124 8CD5B7           (       search.asm):00163                 CMPX    #DIRBUF+512     BEYOND END?
+D127 25F4             (       search.asm):00164                 BLO     SCAND1                            ;NO, WE ARE OK
+D129 FCD30A           (       search.asm):00165                 LDD     SECTOR                            ;GET SECTOR NUMBER
+D12C 3F               (       search.asm):00166                 SWI
+D12D 4D               (       search.asm):00167                 FCB     77                                ;GET NEXT SECTOR
+D12E 26E1             (       search.asm):00168                 BNE     SCAND                             ;CONTINUE IF MORE
+D130 FCD304           (       search.asm):00169                 LDD     FMATCH                            ;DID ANY FILES MATCH?
+D133 2742             (       search.asm):00170                 BEQ     NOMAT                             ;NO, ERROR
+D135 10830001         (       search.asm):00171                 CMPD    #1                                ;SEARCHED ONLY ONE
+D139 2739             (       search.asm):00172                 BEQ     SEREND                            ;IF SO, NO GRAND TOTAL
+D13B 3F               (       search.asm):00173                 SWI
+D13C 18               (       search.asm):00174                 FCB     24                                ;DISPLAY MSG
+D13D 5365617263686564 (       search.asm):00175                 FCN     'Searched '
      2000
-D143 3F               (       search.asm):00174                 SWI
-D144 1A               (       search.asm):00175                 FCB     26                                ;DISPLAY
-D145 3F               (       search.asm):00176                 SWI
-D146 18               (       search.asm):00177                 FCB     24                                ;DISPLAY MSG
-D147 2066696C65732C20 (       search.asm):00178                 FCN     ' files, for a total of '
+D147 3F               (       search.asm):00176                 SWI
+D148 1A               (       search.asm):00177                 FCB     26                                ;DISPLAY
+D149 3F               (       search.asm):00178                 SWI
+D14A 18               (       search.asm):00179                 FCB     24                                ;DISPLAY MSG
+D14B 2066696C65732C20 (       search.asm):00180                 FCN     ' files, for a total of '
      666F72206120746F
      74616C206F662000
-D15F FCD302           (       search.asm):00179                 LDD     GMATCH                            ;GET GRAND TOTAL MATCHES
-D162 3F               (       search.asm):00180                 SWI
-D163 1A               (       search.asm):00181                 FCB     26                                ;DISPLAY
-D164 3F               (       search.asm):00182                 SWI
-D165 19               (       search.asm):00183                 FCB     25                                ;DISPLLY MESSAGE
-D166 206D617463686573 (       search.asm):00184                 FCN     ' matches.'
+D163 FCD306           (       search.asm):00181                 LDD     GMATCH                            ;GET GRAND TOTAL MATCHES
+D166 3F               (       search.asm):00182                 SWI
+D167 1A               (       search.asm):00183                 FCB     26                                ;DISPLAY
+D168 3F               (       search.asm):00184                 SWI
+D169 19               (       search.asm):00185                 FCB     25                                ;DISPLLY MESSAGE
+D16A 206D617463686573 (       search.asm):00186                 FCN     ' matches.'
      2E00
-D170                  (       search.asm):00185         SEREND
-D170 4F               (       search.asm):00186                 CLRA                                      ;     ZERO RETURN CODE
-D171 2002             (       search.asm):00187                 BRA     ABORT                             ;QUIT
-D173                  (       search.asm):00188         NOMAT
-D173 3F               (       search.asm):00189                 SWI
-D174 2C               (       search.asm):00190                 FCB     44                                ;FILE NOT FOUND
-D175                  (       search.asm):00191         ABORT
-D175 3F               (       search.asm):00192                 SWI
-D176 00               (       search.asm):00193                 FCB     0                                 ;GO HOME
-                      (       search.asm):00194         ;* MATCHING FILE WAS FOUND, SEARCH IT
-D177                  (       search.asm):00195         SCANF
-D177 3410             (       search.asm):00196                 PSHS    X                                 ;SAVE POINTER INTO ENTRY
-D179 FCD300           (       search.asm):00197                 LDD     FMATCH                            ;FILE MATCH,
-D17C C30001           (       search.asm):00198                 ADDD    #1                                ;INCREMENT
-D17F FDD300           (       search.asm):00199                 STD     FMATCH                            ;RESAVE
-D182 3F               (       search.asm):00200                 SWI
-D183 18               (       search.asm):00201                 FCB     24                                ;DISPLAY MESSAGE
-D184 5363616E6E696E67 (       search.asm):00202                 FCN     'Scanning file: '
+D174                  (       search.asm):00187         SEREND
+D174 4F               (       search.asm):00188                 CLRA                                      ;     ZERO RETURN CODE
+D175 2002             (       search.asm):00189                 BRA     ABORT                             ;QUIT
+D177                  (       search.asm):00190         NOMAT
+D177 3F               (       search.asm):00191                 SWI
+D178 2C               (       search.asm):00192                 FCB     44                                ;FILE NOT FOUND
+D179                  (       search.asm):00193         ABORT
+D179 3F               (       search.asm):00194                 SWI
+D17A 00               (       search.asm):00195                 FCB     0                                 ;GO HOME
+                      (       search.asm):00196         ;* MATCHING FILE WAS FOUND, SEARCH IT
+D17B                  (       search.asm):00197         SCANF
+D17B 3410             (       search.asm):00198                 PSHS    X                                 ;SAVE POINTER INTO ENTRY
+D17D FCD304           (       search.asm):00199                 LDD     FMATCH                            ;FILE MATCH,
+D180 C30001           (       search.asm):00200                 ADDD    #1                                ;INCREMENT
+D183 FDD304           (       search.asm):00201                 STD     FMATCH                            ;RESAVE
+D186 3F               (       search.asm):00202                 SWI
+D187 18               (       search.asm):00203                 FCB     24                                ;DISPLAY MESSAGE
+D188 5363616E6E696E67 (       search.asm):00204                 FCN     'Scanning file: '
      2066696C653A2000
-D194 3F               (       search.asm):00203                 SWI
-D195 1F               (       search.asm):00204                 FCB     31                                ;DISPLAY
-D196 A68817           (       search.asm):00205                 LDA     DATTR,X                           ;GET ATTRIBUTES
-D199 8580             (       search.asm):00206                 BITA    #RPERM                            ;CAN WE READ
-D19B 261D             (       search.asm):00207                 BNE     PROTOK
-D19D 3F               (       search.asm):00208                 SWI
-D19E 19               (       search.asm):00209                 FCB     25
-D19F 202D2050726F7465 (       search.asm):00210                 FCN     ' - Protection violation'
+D198 3F               (       search.asm):00205                 SWI
+D199 1F               (       search.asm):00206                 FCB     31                                ;DISPLAY
+D19A A68817           (       search.asm):00207                 LDA     DATTR,X                           ;GET ATTRIBUTES
+D19D 8580             (       search.asm):00208                 BITA    #RPERM                            ;CAN WE READ
+D19F 261D             (       search.asm):00209                 BNE     PROTOK
+D1A1 3F               (       search.asm):00210                 SWI
+D1A2 19               (       search.asm):00211                 FCB     25
+D1A3 202D2050726F7465 (       search.asm):00212                 FCN     ' - Protection violation'
      6374696F6E207669
      6F6C6174696F6E00
-D1B7 16FF63           (       search.asm):00211                 LBRA    NXTDIR                            ;GET NEXT
-D1BA                  (       search.asm):00212         PROTOK
-D1BA 3F               (       search.asm):00213                 SWI
-D1BB 16               (       search.asm):00214                 FCB     22                                ;NEW LINE
-D1BC 4F               (       search.asm):00215                 CLRA
-D1BD 5F               (       search.asm):00216                 CLRB
-D1BE FDD311           (       search.asm):00217                 STD     BYTCT                             ;SAVE BYTE COUNT
-D1C1 FDD30D           (       search.asm):00218                 STD     NMATCH                            ;SAVE NUMBER OF MATCHES
-D1C4 5C               (       search.asm):00219                 INCB
-D1C5 FDD30F           (       search.asm):00220                 STD     LINCT                             ;CURRENT LINE COUNTER
-                      (       search.asm):00221         ;* READ SECTORS FROM FILE, AND SCAN THEM
-D1C8 EC8813           (       search.asm):00222                 LDD     DDADR,X                           ;GET DISK ADDRESS
-D1CB                  (       search.asm):00223         SCSEC
-D1CB FDD308           (       search.asm):00224                 STD     FSEC                              ;SAVE
-D1CE 8ED5B3           (       search.asm):00225                 LDX     #WRKBUF                           ;POINT TO WORK BUFFER
-D1D1 BFD30B           (       search.asm):00226                 STX     WRKPTR                            ;SAVE POINTER
-D1D4 3F               (       search.asm):00227                 SWI
-D1D5 5C               (       search.asm):00228                 FCB     92                                ;READ SECTOR
-D1D6 269D             (       search.asm):00229                 BNE     ABORT                             ;INVALID
-                      (       search.asm):00230         ;* SCAN 1K SECTOR(X) FOR CONTENTS OF BUFFER
-D1D8 108ED363         (       search.asm):00231                 LDY     #BUFF1                            ;POINT TO BUFFER
-D1DC F6D30A           (       search.asm):00232                 LDB     BUFSIZ                            ;GET BUFFER SIZE
-                      (       search.asm):00233         ;* FILL COMPARE BUFFER FROM FILE
-D1DF                  (       search.asm):00234         SCAN1
-D1DF 8D79             (       search.asm):00235                 BSR     RDFIL                             ;READ FILE
-D1E1 A7A0             (       search.asm):00236                 STA     ,Y+                               ;SAVE IN BUFFER
-D1E3 5A               (       search.asm):00237                 DECB                                      ;     REDUCE COUNT
-D1E4 26F9             (       search.asm):00238                 BNE     SCAN1                             ;CONTINUE
-                      (       search.asm):00239         ;* COMPARE COMPARE BUFFER WITH FILE CONTENTS
-D1E6                  (       search.asm):00240         SCAN2
-D1E6 8ED313           (       search.asm):00241                 LDX     #BUFFER                           ;POINT TO BUFFER
-D1E9 108ED363         (       search.asm):00242                 LDY     #BUFF1                            ;POINT TO OTHER BUFFER
-D1ED F6D30A           (       search.asm):00243                 LDB     BUFSIZ                            ;GET BUFFER SIZE
-D1F0                  (       search.asm):00244         SCAN3
-D1F0 A680             (       search.asm):00245                 LDA     ,X+                               ;GET CHAR FROM BUFFER
-D1F2 A1A0             (       search.asm):00246                 CMPA    ,Y+                               ;COMPARE WITH OTHER
-D1F4 2651             (       search.asm):00247                 BNE     SCAN4                             ;NO MATCH
-D1F6 5A               (       search.asm):00248                 DECB                                      ;     REDUCE COUNT
-D1F7 26F7             (       search.asm):00249                 BNE     SCAN3                             ;KEEP LOOKING
-                      (       search.asm):00250         ;* STRING WAS FOUND
-D1F9 FCD30D           (       search.asm):00251                 LDD     NMATCH                            ;GET NUMBER OF MATCHES
-D1FC C30001           (       search.asm):00252                 ADDD    #1                                ;ADVANCE
-D1FF FDD30D           (       search.asm):00253                 STD     NMATCH                            ;RESAVE
-D202 B6D2FE           (       search.asm):00254                 LDA     TOTAL                             ;IS IT TOTAL ONLY?
-D205 2740             (       search.asm):00255                 BEQ     SCAN4                             ;YES, DON'T DISPLAY
-D207 B6D2FD           (       search.asm):00256                 LDA     BINARY                            ;BINARY ONLY?
-D20A 2713             (       search.asm):00257                 BEQ     BINDI                             ;IF DSO, DISPLAY OFFSET ONLY
-D20C 3F               (       search.asm):00258                 SWI
-D20D 18               (       search.asm):00259                 FCB     24                                ;DISPLAY MSG
-D20E 4C696E653A2000   (       search.asm):00260                 FCN     'Line: '
-D215 FCD30F           (       search.asm):00261                 LDD     LINCT                             ;GET LINE COUNTER
-D218 3F               (       search.asm):00262                 SWI
-D219 1A               (       search.asm):00263                 FCB     26                                ;DISPLAY
-D21A 3F               (       search.asm):00264                 SWI
-D21B 18               (       search.asm):00265                 FCB     24                                ;DISPLAY MSG
-D21C 2C2000           (       search.asm):00266                 FCN     ', '
-D21F                  (       search.asm):00267         BINDI
-D21F 3F               (       search.asm):00268                 SWI
-D220 18               (       search.asm):00269                 FCB     24
-D221 4F66667365743A20 (       search.asm):00270                 FCN     'Offset: '
+D1BB 16FF63           (       search.asm):00213                 LBRA    NXTDIR                            ;GET NEXT
+D1BE                  (       search.asm):00214         PROTOK
+D1BE 3F               (       search.asm):00215                 SWI
+D1BF 16               (       search.asm):00216                 FCB     22                                ;NEW LINE
+D1C0 4F               (       search.asm):00217                 CLRA
+D1C1 5F               (       search.asm):00218                 CLRB
+D1C2 FDD315           (       search.asm):00219                 STD     BYTCT                             ;SAVE BYTE COUNT
+D1C5 FDD311           (       search.asm):00220                 STD     NMATCH                            ;SAVE NUMBER OF MATCHES
+D1C8 5C               (       search.asm):00221                 INCB
+D1C9 FDD313           (       search.asm):00222                 STD     LINCT                             ;CURRENT LINE COUNTER
+                      (       search.asm):00223         ;* READ SECTORS FROM FILE, AND SCAN THEM
+D1CC EC8813           (       search.asm):00224                 LDD     DDADR,X                           ;GET DISK ADDRESS
+D1CF                  (       search.asm):00225         SCSEC
+D1CF FDD30C           (       search.asm):00226                 STD     FSEC                              ;SAVE
+D1D2 8ED5B7           (       search.asm):00227                 LDX     #WRKBUF                           ;POINT TO WORK BUFFER
+D1D5 BFD30F           (       search.asm):00228                 STX     WRKPTR                            ;SAVE POINTER
+D1D8 3F               (       search.asm):00229                 SWI
+D1D9 5C               (       search.asm):00230                 FCB     92                                ;READ SECTOR
+D1DA 269D             (       search.asm):00231                 BNE     ABORT                             ;INVALID
+                      (       search.asm):00232         ;* SCAN 1K SECTOR(X) FOR CONTENTS OF BUFFER
+D1DC 108ED367         (       search.asm):00233                 LDY     #BUFF1                            ;POINT TO BUFFER
+D1E0 F6D30E           (       search.asm):00234                 LDB     BUFSIZ                            ;GET BUFFER SIZE
+                      (       search.asm):00235         ;* FILL COMPARE BUFFER FROM FILE
+D1E3                  (       search.asm):00236         SCAN1
+D1E3 8D79             (       search.asm):00237                 BSR     RDFIL                             ;READ FILE
+D1E5 A7A0             (       search.asm):00238                 STA     ,Y+                               ;SAVE IN BUFFER
+D1E7 5A               (       search.asm):00239                 DECB                                      ;     REDUCE COUNT
+D1E8 26F9             (       search.asm):00240                 BNE     SCAN1                             ;CONTINUE
+                      (       search.asm):00241         ;* COMPARE COMPARE BUFFER WITH FILE CONTENTS
+D1EA                  (       search.asm):00242         SCAN2
+D1EA 8ED317           (       search.asm):00243                 LDX     #BUFFER                           ;POINT TO BUFFER
+D1ED 108ED367         (       search.asm):00244                 LDY     #BUFF1                            ;POINT TO OTHER BUFFER
+D1F1 F6D30E           (       search.asm):00245                 LDB     BUFSIZ                            ;GET BUFFER SIZE
+D1F4                  (       search.asm):00246         SCAN3
+D1F4 A680             (       search.asm):00247                 LDA     ,X+                               ;GET CHAR FROM BUFFER
+D1F6 A1A0             (       search.asm):00248                 CMPA    ,Y+                               ;COMPARE WITH OTHER
+D1F8 2651             (       search.asm):00249                 BNE     SCAN4                             ;NO MATCH
+D1FA 5A               (       search.asm):00250                 DECB                                      ;     REDUCE COUNT
+D1FB 26F7             (       search.asm):00251                 BNE     SCAN3                             ;KEEP LOOKING
+                      (       search.asm):00252         ;* STRING WAS FOUND
+D1FD FCD311           (       search.asm):00253                 LDD     NMATCH                            ;GET NUMBER OF MATCHES
+D200 C30001           (       search.asm):00254                 ADDD    #1                                ;ADVANCE
+D203 FDD311           (       search.asm):00255                 STD     NMATCH                            ;RESAVE
+D206 B6D302           (       search.asm):00256                 LDA     TOTAL                             ;IS IT TOTAL ONLY?
+D209 2740             (       search.asm):00257                 BEQ     SCAN4                             ;YES, DON'T DISPLAY
+D20B B6D301           (       search.asm):00258                 LDA     BINARY                            ;BINARY ONLY?
+D20E 2713             (       search.asm):00259                 BEQ     BINDI                             ;IF DSO, DISPLAY OFFSET ONLY
+D210 3F               (       search.asm):00260                 SWI
+D211 18               (       search.asm):00261                 FCB     24                                ;DISPLAY MSG
+D212 4C696E653A2000   (       search.asm):00262                 FCN     'Line: '
+D219 FCD313           (       search.asm):00263                 LDD     LINCT                             ;GET LINE COUNTER
+D21C 3F               (       search.asm):00264                 SWI
+D21D 1A               (       search.asm):00265                 FCB     26                                ;DISPLAY
+D21E 3F               (       search.asm):00266                 SWI
+D21F 18               (       search.asm):00267                 FCB     24                                ;DISPLAY MSG
+D220 2C2000           (       search.asm):00268                 FCN     ', '
+D223                  (       search.asm):00269         BINDI
+D223 3F               (       search.asm):00270                 SWI
+D224 18               (       search.asm):00271                 FCB     24
+D225 4F66667365743A20 (       search.asm):00272                 FCN     'Offset: '
      00
-D22A F6D30A           (       search.asm):00271                 LDB     BUFSIZ                            ;GET BUFFER SIZE
-D22D 4F               (       search.asm):00272                 CLRA                                      ;     ZERO HIGH
-D22E 3406             (       search.asm):00273                 PSHS    A,B                               ;SAVE
-D230 FCD311           (       search.asm):00274                 LDD     BYTCT                             ;GET BYTE COUNT
-D233 A3E4             (       search.asm):00275                 SUBD    ,S                                ;CONVERT
-D235 EDE4             (       search.asm):00276                 STD     ,S                                ;SAVE
-D237 3F               (       search.asm):00277                 SWI
-D238 1A               (       search.asm):00278                 FCB     26                                ;DISPLAY
-D239 3F               (       search.asm):00279                 SWI
-D23A 18               (       search.asm):00280                 FCB     24                                ;DISPLAY MESSAGE
-D23B 20282400         (       search.asm):00281                 FCN     ' ($'
-D23F 3506             (       search.asm):00282                 PULS    A,B                               ;RESTORE
-D241 3F               (       search.asm):00283                 SWI
-D242 1B               (       search.asm):00284                 FCB     27                                ;DISPLAY
-D243 3F               (       search.asm):00285                 SWI
-D244 19               (       search.asm):00286                 FCB     25                                ;DISPLAY MESSAGE
-D245 2900             (       search.asm):00287                 FCN     ')'
-D247                  (       search.asm):00288         SCAN4
-D247 8ED363           (       search.asm):00289                 LDX     #BUFF1                            ;POINT TO COMPARE BUFFER
-D24A F6D30A           (       search.asm):00290                 LDB     BUFSIZ                            ;GET SIZE
-D24D                  (       search.asm):00291         SCAN5
-D24D A601             (       search.asm):00292                 LDA     1,X                               ;GET CHAR
-D24F A780             (       search.asm):00293                 STA     ,X+                               ;RESAVE
-D251 5A               (       search.asm):00294                 DECB                                      ;     REDUCE COUNT
-D252 26F9             (       search.asm):00295                 BNE     SCAN5                             ;CONTINUE
-D254 8D04             (       search.asm):00296                 BSR     RDFIL                             ;READ A CHAR
-D256 A71F             (       search.asm):00297                 STA     -1,X                              ;SAVE
-D258 208C             (       search.asm):00298                 BRA     SCAN2                             ;CONTINUE
-                      (       search.asm):00299         ;*
-                      (       search.asm):00300         ;* RDFILE
+D22E F6D30E           (       search.asm):00273                 LDB     BUFSIZ                            ;GET BUFFER SIZE
+D231 4F               (       search.asm):00274                 CLRA                                      ;     ZERO HIGH
+D232 3406             (       search.asm):00275                 PSHS    A,B                               ;SAVE
+D234 FCD315           (       search.asm):00276                 LDD     BYTCT                             ;GET BYTE COUNT
+D237 A3E4             (       search.asm):00277                 SUBD    ,S                                ;CONVERT
+D239 EDE4             (       search.asm):00278                 STD     ,S                                ;SAVE
+D23B 3F               (       search.asm):00279                 SWI
+D23C 1A               (       search.asm):00280                 FCB     26                                ;DISPLAY
+D23D 3F               (       search.asm):00281                 SWI
+D23E 18               (       search.asm):00282                 FCB     24                                ;DISPLAY MESSAGE
+D23F 20282400         (       search.asm):00283                 FCN     ' ($'
+D243 3506             (       search.asm):00284                 PULS    A,B                               ;RESTORE
+D245 3F               (       search.asm):00285                 SWI
+D246 1B               (       search.asm):00286                 FCB     27                                ;DISPLAY
+D247 3F               (       search.asm):00287                 SWI
+D248 19               (       search.asm):00288                 FCB     25                                ;DISPLAY MESSAGE
+D249 2900             (       search.asm):00289                 FCN     ')'
+D24B                  (       search.asm):00290         SCAN4
+D24B 8ED367           (       search.asm):00291                 LDX     #BUFF1                            ;POINT TO COMPARE BUFFER
+D24E F6D30E           (       search.asm):00292                 LDB     BUFSIZ                            ;GET SIZE
+D251                  (       search.asm):00293         SCAN5
+D251 A601             (       search.asm):00294                 LDA     1,X                               ;GET CHAR
+D253 A780             (       search.asm):00295                 STA     ,X+                               ;RESAVE
+D255 5A               (       search.asm):00296                 DECB                                      ;     REDUCE COUNT
+D256 26F9             (       search.asm):00297                 BNE     SCAN5                             ;CONTINUE
+D258 8D04             (       search.asm):00298                 BSR     RDFIL                             ;READ A CHAR
+D25A A71F             (       search.asm):00299                 STA     -1,X                              ;SAVE
+D25C 208C             (       search.asm):00300                 BRA     SCAN2                             ;CONTINUE
                       (       search.asm):00301         ;*
-D25A                  (       search.asm):00302         RDFIL
-D25A 3414             (       search.asm):00303                 PSHS    B,X                               ;SAVE REG
-D25C FCD311           (       search.asm):00304                 LDD     BYTCT                             ;GET BYTE COUNT
-D25F C30001           (       search.asm):00305                 ADDD    #1                                ;ADVANCE
-D262 FDD311           (       search.asm):00306                 STD     BYTCT                             ;RESAVE
-D265 BED30B           (       search.asm):00307                 LDX     WRKPTR                            ;GET POINTER
-D268 8CD7B3           (       search.asm):00308                 CMPX    #WRKBUF+512     ADVANCE
-D26B 2513             (       search.asm):00309                 BLO     RDFOK                             ;OK
-D26D FCD308           (       search.asm):00310                 LDD     FSEC                              ;GET FILE SECTOR
-D270 3F               (       search.asm):00311                 SWI
-D271 4D               (       search.asm):00312                 FCB     77                                ;NEW SECTOR?
-D272 2735             (       search.asm):00313                 BEQ     FILEOF                            ;END OF FILE
-D274 8ED5B3           (       search.asm):00314                 LDX     #WRKBUF                           ;SET IT UP
-D277 FDD308           (       search.asm):00315                 STD     FSEC                              ;RESAVE
-D27A 3F               (       search.asm):00316                 SWI
-D27B 5C               (       search.asm):00317                 FCB     92                                ;READ DISK
-D27C 1026FEF5         (       search.asm):00318                 LBNE    ABORT                             ;BAD
-D280                  (       search.asm):00319         RDFOK
-D280 A680             (       search.asm):00320                 LDA     ,X+                               ;GET CHAR
-D282 2A05             (       search.asm):00321                 BPL     RDFO1                             ;NORMAL
-D284 F6D2FD           (       search.asm):00322                 LDB     BINARY                            ;ARE WE TREATING AS BINARY
-D287 2620             (       search.asm):00323                 BNE     FILEOF                            ;NO, END OF FILE
-D289                  (       search.asm):00324         RDFO1
-D289 BFD30B           (       search.asm):00325                 STX     WRKPTR                            ;RESAVE POINTER
-D28C 810D             (       search.asm):00326                 CMPA    #$0D                              ;NEW LINE?
-D28E 2608             (       search.asm):00327                 BNE     RDF1                              ;NO
-D290 BED30F           (       search.asm):00328                 LDX     LINCT                             ;GET LINE COUNT
-D293 3001             (       search.asm):00329                 LEAX    1,X                               ;ADVANCE
-D295 BFD30F           (       search.asm):00330                 STX     LINCT                             ;RESAVE
-D298                  (       search.asm):00331         RDF1
-D298 F6D2FF           (       search.asm):00332                 LDB     CASE                              ;IS LOWER CASE CONVERT ENABLED?
-D29B 260A             (       search.asm):00333                 BNE     RDF2                              ;NO, SKIP IT
-D29D 8161             (       search.asm):00334                 CMPA    #$61                              ;LOWER CASE?
-D29F 2506             (       search.asm):00335                 BLO     RDF2                              ;NO, DON'T CONVERT
-D2A1 817A             (       search.asm):00336                 CMPA    #$7A                              ;LOWER CASE?
-D2A3 2202             (       search.asm):00337                 BHI     RDF2                              ;NO, DON'T CONVERT
-D2A5 845F             (       search.asm):00338                 ANDA    #$5F                              ;CONVERT TO UPPER CASE
-D2A7                  (       search.asm):00339         RDF2
-D2A7 3594             (       search.asm):00340                 PULS    B,X,PC
-D2A9                  (       search.asm):00341         FILEOF
-D2A9 3265             (       search.asm):00342                 LEAS    5,S                               ;SKIP SAVED X AND PC
-D2AB 3F               (       search.asm):00343                 SWI
-D2AC 18               (       search.asm):00344                 FCB     24                                ;DISPLAY MESSAGE
-D2AD 546F74616C206F66 (       search.asm):00345                 FCN     'Total of '
+                      (       search.asm):00302         ;* RDFILE
+                      (       search.asm):00303         ;*
+D25E                  (       search.asm):00304         RDFIL
+D25E 3414             (       search.asm):00305                 PSHS    B,X                               ;SAVE REG
+D260 FCD315           (       search.asm):00306                 LDD     BYTCT                             ;GET BYTE COUNT
+D263 C30001           (       search.asm):00307                 ADDD    #1                                ;ADVANCE
+D266 FDD315           (       search.asm):00308                 STD     BYTCT                             ;RESAVE
+D269 BED30F           (       search.asm):00309                 LDX     WRKPTR                            ;GET POINTER
+D26C 8CD7B7           (       search.asm):00310                 CMPX    #WRKBUF+512     ADVANCE
+D26F 2513             (       search.asm):00311                 BLO     RDFOK                             ;OK
+D271 FCD30C           (       search.asm):00312                 LDD     FSEC                              ;GET FILE SECTOR
+D274 3F               (       search.asm):00313                 SWI
+D275 4D               (       search.asm):00314                 FCB     77                                ;NEW SECTOR?
+D276 2735             (       search.asm):00315                 BEQ     FILEOF                            ;END OF FILE
+D278 8ED5B7           (       search.asm):00316                 LDX     #WRKBUF                           ;SET IT UP
+D27B FDD30C           (       search.asm):00317                 STD     FSEC                              ;RESAVE
+D27E 3F               (       search.asm):00318                 SWI
+D27F 5C               (       search.asm):00319                 FCB     92                                ;READ DISK
+D280 1026FEF5         (       search.asm):00320                 LBNE    ABORT                             ;BAD
+D284                  (       search.asm):00321         RDFOK
+D284 A680             (       search.asm):00322                 LDA     ,X+                               ;GET CHAR
+D286 2A05             (       search.asm):00323                 BPL     RDFO1                             ;NORMAL
+D288 F6D301           (       search.asm):00324                 LDB     BINARY                            ;ARE WE TREATING AS BINARY
+D28B 2620             (       search.asm):00325                 BNE     FILEOF                            ;NO, END OF FILE
+D28D                  (       search.asm):00326         RDFO1
+D28D BFD30F           (       search.asm):00327                 STX     WRKPTR                            ;RESAVE POINTER
+D290 810D             (       search.asm):00328                 CMPA    #$0D                              ;NEW LINE?
+D292 2608             (       search.asm):00329                 BNE     RDF1                              ;NO
+D294 BED313           (       search.asm):00330                 LDX     LINCT                             ;GET LINE COUNT
+D297 3001             (       search.asm):00331                 LEAX    1,X                               ;ADVANCE
+D299 BFD313           (       search.asm):00332                 STX     LINCT                             ;RESAVE
+D29C                  (       search.asm):00333         RDF1
+D29C F6D303           (       search.asm):00334                 LDB     CASE                              ;IS LOWER CASE CONVERT ENABLED?
+D29F 260A             (       search.asm):00335                 BNE     RDF2                              ;NO, SKIP IT
+D2A1 8161             (       search.asm):00336                 CMPA    #$61                              ;LOWER CASE?
+D2A3 2506             (       search.asm):00337                 BLO     RDF2                              ;NO, DON'T CONVERT
+D2A5 817A             (       search.asm):00338                 CMPA    #$7A                              ;LOWER CASE?
+D2A7 2202             (       search.asm):00339                 BHI     RDF2                              ;NO, DON'T CONVERT
+D2A9 845F             (       search.asm):00340                 ANDA    #$5F                              ;CONVERT TO UPPER CASE
+D2AB                  (       search.asm):00341         RDF2
+D2AB 3594             (       search.asm):00342                 PULS    B,X,PC
+D2AD                  (       search.asm):00343         FILEOF
+D2AD 3265             (       search.asm):00344                 LEAS    5,S                               ;SKIP SAVED X AND PC
+D2AF 3F               (       search.asm):00345                 SWI
+D2B0 18               (       search.asm):00346                 FCB     24                                ;DISPLAY MESSAGE
+D2B1 546F74616C206F66 (       search.asm):00347                 FCN     'Total of '
      2000
-D2B7 FCD30D           (       search.asm):00346                 LDD     NMATCH                            ;GET NUMBER OF MATCHES
-D2BA 3F               (       search.asm):00347                 SWI
-D2BB 1A               (       search.asm):00348                 FCB     26                                ;DISPLAY IN DECIMAL
-D2BC 3F               (       search.asm):00349                 SWI
-D2BD 19               (       search.asm):00350                 FCB     25                                ;DISPLAY MESSAGE
-D2BE 206D617463686573 (       search.asm):00351                 FCN     ' matches were found.'
+D2BB FCD311           (       search.asm):00348                 LDD     NMATCH                            ;GET NUMBER OF MATCHES
+D2BE 3F               (       search.asm):00349                 SWI
+D2BF 1A               (       search.asm):00350                 FCB     26                                ;DISPLAY IN DECIMAL
+D2C0 3F               (       search.asm):00351                 SWI
+D2C1 19               (       search.asm):00352                 FCB     25                                ;DISPLAY MESSAGE
+D2C2 206D617463686573 (       search.asm):00353                 FCN     ' matches were found.'
      207765726520666F
      756E642E00
-D2D3 FCD302           (       search.asm):00352                 LDD     GMATCH                            ;GET GRAND MATCH TOTAL
-D2D6 F3D30D           (       search.asm):00353                 ADDD    NMATCH                            ;ADD IN THIS MATCHES
-D2D9 FDD302           (       search.asm):00354                 STD     GMATCH                            ;SAVE
-D2DC 3510             (       search.asm):00355                 PULS    X                                 ;RESTORE POINTER
-D2DE 16FE3C           (       search.asm):00356                 LBRA    NXTDIR
-                      (       search.asm):00357         ;* STRINGS
-D2E1                  (       search.asm):00358         QTABLE
-D2E1 82               (       search.asm):00359                 FCB     $82
-D2E2 2F484558         (       search.asm):00360                 FCC     '/HEX'                            ;HEX INPUT
-D2E6 82               (       search.asm):00361                 FCB     $82
-D2E7 2F42494E415259   (       search.asm):00362                 FCC     '/BINARY'       BINARY INPUT FILE
-D2EE 82               (       search.asm):00363                 FCB     $82
-D2EF 2F544F54414C     (       search.asm):00364                 FCC     '/TOTAL'        TOTAL MATCHES ONLY
-D2F5 82               (       search.asm):00365                 FCB     $82
-D2F6 2F43415345       (       search.asm):00366                 FCC     '/CASE'                           ;CASE CONVERSION
-D2FB 80               (       search.asm):00367                 FCB     $80
-     0004             (       search.asm):00368         QMAX            = 4
-                      (       search.asm):00369         ;*
-     D2FC             (       search.asm):00370         QFLAGS          = *
-D2FC                  (       search.asm):00371         HEX
-D2FC FF               (       search.asm):00372                 FCB     $FF                               ;HEX INPUT STRING
-D2FD                  (       search.asm):00373         BINARY
-D2FD FF               (       search.asm):00374                 FCB     $FF                               ;BINARY INPUT FILE
-D2FE                  (       search.asm):00375         TOTAL
-D2FE FF               (       search.asm):00376                 FCB     $FF                               ;DISPLAY TOTALS ONLY
-D2FF                  (       search.asm):00377         CASE
-D2FF FF               (       search.asm):00378                 FCB     $FF                               ;FORCE CASE CONVERSIONS
-                      (       search.asm):00379         ;*
-                      (       search.asm):00380         ;* LOCAL STORAGE
+D2D7 FCD306           (       search.asm):00354                 LDD     GMATCH                            ;GET GRAND MATCH TOTAL
+D2DA F3D311           (       search.asm):00355                 ADDD    NMATCH                            ;ADD IN THIS MATCHES
+D2DD FDD306           (       search.asm):00356                 STD     GMATCH                            ;SAVE
+D2E0 3510             (       search.asm):00357                 PULS    X                                 ;RESTORE POINTER
+D2E2 16FE3C           (       search.asm):00358                 LBRA    NXTDIR
+                      (       search.asm):00359         ;* STRINGS
+D2E5                  (       search.asm):00360         QTABLE
+D2E5 82               (       search.asm):00361                 FCB     $82
+D2E6 2F484558         (       search.asm):00362                 FCC     '/HEX'                            ;HEX INPUT
+D2EA 82               (       search.asm):00363                 FCB     $82
+D2EB 2F42494E415259   (       search.asm):00364                 FCC     '/BINARY'       BINARY INPUT FILE
+D2F2 82               (       search.asm):00365                 FCB     $82
+D2F3 2F544F54414C     (       search.asm):00366                 FCC     '/TOTAL'        TOTAL MATCHES ONLY
+D2F9 82               (       search.asm):00367                 FCB     $82
+D2FA 2F43415345       (       search.asm):00368                 FCC     '/CASE'                           ;CASE CONVERSION
+D2FF 80               (       search.asm):00369                 FCB     $80
+     0004             (       search.asm):00370         QMAX            = 4
+                      (       search.asm):00371         ;*
+     D300             (       search.asm):00372         QFLAGS          = *
+D300                  (       search.asm):00373         HEX
+D300 FF               (       search.asm):00374                 FCB     $FF                               ;HEX INPUT STRING
+D301                  (       search.asm):00375         BINARY
+D301 FF               (       search.asm):00376                 FCB     $FF                               ;BINARY INPUT FILE
+D302                  (       search.asm):00377         TOTAL
+D302 FF               (       search.asm):00378                 FCB     $FF                               ;DISPLAY TOTALS ONLY
+D303                  (       search.asm):00379         CASE
+D303 FF               (       search.asm):00380                 FCB     $FF                               ;FORCE CASE CONVERSIONS
                       (       search.asm):00381         ;*
-D300                  (       search.asm):00382         FMATCH
-D300 0000             (       search.asm):00383                 FDB     0
-D302                  (       search.asm):00384         GMATCH
-D302 0000             (       search.asm):00385                 FDB     0
-D304                  (       search.asm):00386         TEMP
-D304                  (       search.asm):00387                 RMB     2
-D306                  (       search.asm):00388         SECTOR
-D306                  (       search.asm):00389                 RMB     2
-D308                  (       search.asm):00390         FSEC
-D308                  (       search.asm):00391                 RMB     2
-D30A                  (       search.asm):00392         BUFSIZ
-D30A                  (       search.asm):00393                 RMB     1
-D30B                  (       search.asm):00394         WRKPTR
-D30B                  (       search.asm):00395                 RMB     2
-D30D                  (       search.asm):00396         NMATCH
-D30D                  (       search.asm):00397                 RMB     2
-D30F                  (       search.asm):00398         LINCT
-D30F                  (       search.asm):00399                 RMB     2
-D311                  (       search.asm):00400         BYTCT
-D311                  (       search.asm):00401                 RMB     2
-D313                  (       search.asm):00402         BUFFER
-D313                  (       search.asm):00403                 RMB     80
-D363                  (       search.asm):00404         BUFF1
-D363                  (       search.asm):00405                 RMB     80
-D3B3                  (       search.asm):00406         DIRBUF
-D3B3                  (       search.asm):00407                 RMB     512
-D5B3                  (       search.asm):00408         WRKBUF
-D5B3                  (       search.asm):00409                 RMB     512
+                      (       search.asm):00382         ;* LOCAL STORAGE
+                      (       search.asm):00383         ;*
+D304                  (       search.asm):00384         FMATCH
+D304 0000             (       search.asm):00385                 FDB     0
+D306                  (       search.asm):00386         GMATCH
+D306 0000             (       search.asm):00387                 FDB     0
+D308                  (       search.asm):00388         TEMP
+D308                  (       search.asm):00389                 RMB     2
+D30A                  (       search.asm):00390         SECTOR
+D30A                  (       search.asm):00391                 RMB     2
+D30C                  (       search.asm):00392         FSEC
+D30C                  (       search.asm):00393                 RMB     2
+D30E                  (       search.asm):00394         BUFSIZ
+D30E                  (       search.asm):00395                 RMB     1
+D30F                  (       search.asm):00396         WRKPTR
+D30F                  (       search.asm):00397                 RMB     2
+D311                  (       search.asm):00398         NMATCH
+D311                  (       search.asm):00399                 RMB     2
+D313                  (       search.asm):00400         LINCT
+D313                  (       search.asm):00401                 RMB     2
+D315                  (       search.asm):00402         BYTCT
+D315                  (       search.asm):00403                 RMB     2
+D317                  (       search.asm):00404         BUFFER
+D317                  (       search.asm):00405                 RMB     80
+D367                  (       search.asm):00406         BUFF1
+D367                  (       search.asm):00407                 RMB     80
+D3B7                  (       search.asm):00408         DIRBUF
+D3B7                  (       search.asm):00409                 RMB     512
+D5B7                  (       search.asm):00410         WRKBUF
+D5B7                  (       search.asm):00411                 RMB     512
 
 Symbol Table:
-[ G] ABORT                            D175
-[ G] BADSTR                           D105
-[ G] BINARY                           D2FD
-[ G] BINDI                            D21F
-[ G] BUFF1                            D363
-[ G] BUFFER                           D313
-[ G] BUFSIZ                           D30A
-[ G] BYTCT                            D311
-[ G] CASE                             D2FF
+[ G] ABORT                            D179
+[ G] BADSTR                           D109
+[ G] BINARY                           D301
+[ G] BINDI                            D223
+[ G] BUFF1                            D367
+[ G] BUFFER                           D317
+[ G] BUFSIZ                           D30E
+[ G] BYTCT                            D315
+[ G] CASE                             D303
 [ G] DATTR                            0017
 [ G] DDADR                            0013
-[ G] DIRBUF                           D3B3
+[ G] DIRBUF                           D3B7
 [ G] DIRLOC                           0000
 [ G] DNAME                            0008
 [ G] DPERM                            0010
 [ G] DPREFIX                          0000
 [ G] DRADR                            0015
-[ G] DSQU1                            D0A3
+[ G] DSQU1                            D0A7
 [ G] DTYPE                            0010
 [ G] EPERM                            0020
-[ G] FILEOF                           D2A9
-[ G] FMATCH                           D300
-[ G] FSEC                             D308
-[ G] GMATCH                           D302
-[ G] GOABO                            D0B5
-[ G] GOTOP                            D10A
-[ G] HEX                              D2FC
-[ G] HEXIN                            D0D3
-[ G] LINCT                            D30F
-[ G] MAIN                             D0BE
-[ G] NMATCH                           D30D
-[ G] NOMAT                            D173
-[ G] NXTDIR                           D11D
+[ G] FILEOF                           D2AD
+[ G] FMATCH                           D304
+[ G] FSEC                             D30C
+[ G] GMATCH                           D306
+[ G] GOABO                            D0B9
+[ G] GOTOP                            D10E
+[ G] HEX                              D300
+[ G] HEXIN                            D0D7
+[ G] LINCT                            D313
+[ G] MAIN                             D0C2
+[ G] NMATCH                           D311
+[ G] NOMAT                            D177
+[ G] NXTDIR                           D121
 [ G] OSEND                            DBFF
 [ G] OSRAM                            2000
 [ G] OSUTIL                           D000
-[ G] PROTOK                           D1BA
+[ G] PROTOK                           D1BE
 [ G] QERR                             D05E
-[ G] QFLAGS                           D2FC
+[ G] QFLAGS                           D300
 [ G] QMAX                             0004
-[ G] QTABLE                           D2E1
+[ G] QTABLE                           D2E5
 [ G] QUAL                             D046
-[ G] RDF1                             D298
-[ G] RDF2                             D2A7
-[ G] RDFIL                            D25A
-[ G] RDFO1                            D289
-[ G] RDFOK                            D280
+[ G] RDF1                             D29C
+[ G] RDF2                             D2AB
+[ G] RDFIL                            D25E
+[ G] RDFO1                            D28D
+[ G] RDFOK                            D284
 [ G] RPERM                            0080
-[ G] SCAN1                            D1DF
-[ G] SCAN2                            D1E6
-[ G] SCAN3                            D1F0
-[ G] SCAN4                            D247
-[ G] SCAN5                            D24D
-[ G] SCAND                            D10D
-[ G] SCAND1                           D119
-[ G] SCANF                            D177
-[ G] SCSEC                            D1CB
+[ G] SCAN1                            D1E3
+[ G] SCAN2                            D1EA
+[ G] SCAN3                            D1F4
+[ G] SCAN4                            D24B
+[ G] SCAN5                            D251
+[ G] SCAND                            D111
+[ G] SCAND1                           D11D
+[ G] SCANF                            D17B
+[ G] SCSEC                            D1CF
 [ G] SEARCH                           D000
-[ G] SECTOR                           D306
-[ G] SEREND                           D170
-[ G] STR1                             D0F3
-[ G] STRIN                            D0E6
-[ G] TEMP                             D304
-[ G] TOTAL                            D2FE
+[ G] SECTOR                           D30A
+[ G] SEREND                           D174
+[ G] STR1                             D0F7
+[ G] STRIN                            D0EA
+[ G] TEMP                             D308
+[ G] TOTAL                            D302
 [ G] WPERM                            0040
-[ G] WRKBUF                           D5B3
-[ G] WRKPTR                           D30B
+[ G] WRKBUF                           D5B7
+[ G] WRKPTR                           D30F

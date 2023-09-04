@@ -163,15 +163,17 @@ F0DD B7FE68           (       scream.asm):00162 [5]             STA     UART0   
 F0E0 B7FE68           (       scream.asm):00163 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
 F0E3 B7FE68           (       scream.asm):00164 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
 F0E6 B7FE68           (       scream.asm):00165 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
-F0E9 7EF003           (       scream.asm):00166 [4]             JMP     SERIAL_OUTCH
-                      (       scream.asm):00167         
-                      (       scream.asm):00168                 ORG     $FFFE                             ; SET RESET VECTOR TO
+F0E9 B7FE68           (       scream.asm):00166 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F0EC B7FE68           (       scream.asm):00167 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F0EF 7EF003           (       scream.asm):00168 [4]             JMP     SERIAL_OUTCH
                       (       scream.asm):00169         
-                      (       scream.asm):00170         
-FFFE                  (       scream.asm):00171         RESETV:
-FFFE F000             (       scream.asm):00172                 FDB     $F000
-                      (       scream.asm):00173         
-                      (       scream.asm):00174                 END
+                      (       scream.asm):00170                 ORG     $FFFE                             ; SET RESET VECTOR TO
+                      (       scream.asm):00171         
+                      (       scream.asm):00172         
+FFFE                  (       scream.asm):00173         RESETV:
+FFFE F000             (       scream.asm):00174                 FDB     $F000
+                      (       scream.asm):00175         
+                      (       scream.asm):00176                 END
 
 Symbol Table:
 [ G] COLD_START                       F000
