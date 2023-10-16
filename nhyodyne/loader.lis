@@ -1,0 +1,179 @@
+loader.asm:
+     1                          ;________________________________________________________________________________________________________________________________
+     2                          ;
+     3                          ;	Nhyodyne CUBIX CP/M loader program
+     4                          ;
+     5                          ;  DWERNER 04/24/2022 	Initial
+     6                          ;  PSUMMERS 8/7/2022    Accept a command line argument for CPU to switch to (0-9)
+     7                          ;  DWERNER 10/15/2023   MODIFY CODE FOR CUBIX09
+     8                          ;________________________________________________________________________________________________________________________________
+     9                          BDOS:           EQU $0005                         ; BDOS invocation vector
+    10                          DEFFCB:         EQU $5C                           ; Location of default FCB
+    11                          MPCL_RAM:       EQU 78H                           ; CONTROL PORT, SHOULD ONLY BE CHANGED WHILE
+    12                          ;									  IN UPPER MEMORY PAGE 08000h-$FFFF OR LIKELY
+    13                          ;									  LOSS OF CPU MEMORY CONTEXT
+    14                          ; for Nhyodyne:
+    15                          ; RAM BANK $0C is RAM area for Drivers
+    16                          ; RAM BANK $0E is operating bank for CUBIX $8000-$FFFF
+    17                          ; RAM BANK $0F is fixed bank $0000-$7FFF
+    18                          ; ROM BANKS $00 and $0C-$0F are reserved for ROMWBW code
+    19                          ;
+    20                          ;
+    21                                  SECTION ADDR0100
+    22                                  ORG     0100H
+    23                          ;
+    24                          ; Check for cpu unit
+    25   000000 3a0000                  LD      A,(DEFFCB+1)                      ; Get first char of filename
+    26                          ;
+    27   000003 fe00                    CP      '9' + 1                           ; > '9'
+    28   000005 3000                    JR      NC,CopyLoader                     ; YES, NOT 0-9, Invalid argument
+    29                          ;
+    30   000007 d600                    SUB     '0'                               ; < '0'?
+    31   000009 3800                    JR      C,CopyLoader                      ; YES, NOT 0-9, Invalid argument
+    32                          ;
+    33                          ;		SUB	'0'							; Convert CPU unit '0' - '9'
+    34   00000b 2f                      CPL                                       ; to port and save
+    35   00000c 320000                  LD      (CPUunit),A                       ; Unit 0 = FFH, 1 = FEH etc
+    36                          ;
+    37                          CopyLoader:
+    38                          
+    39   00000f f3                      DI                                        ; DISABLE INTERRUPTS
+    40                          ; copy LOADER code to $8100
+    41   000010 010000                  LD      BC,LoaderCodeEnd-LoaderCode1      ; BYTES TO MOVE
+    42   000013 110000                  LD      DE,8100H                          ; DESTINATION ADDRESS
+    43   000016 210000                  LD      HL,LoaderCode                     ; SOURCE ADDRESS
+    44   000019 edb0                    LDIR                                      ; COPY RAM
+    45   00001b c30000                  JP      8100H
+    46                          ;
+    47                          BootCUBIX:
+    48   00001e 0e00                    LD      C,9
+    49   000020 110000                  LD      DE,SMSGFIL
+    50   000023 cd0000                  CALL    BDOS                              ; Do it
+    51   000026 f3                      DI                                        ; DISABLE INTERRUPTS
+    52   000027 010000                  LD      BC,2000H                          ; BYTES TO MOVE
+    53   00002a 110000                  LD      DE,6000H                          ; DESTINATION ADDRESS (6809 IS !A15)
+    54   00002d 210000                  LD      HL,LoaderCodeEnd-LoaderCode1+loaderEnd; SOURCE ADDRESS
+    55   000030 edb0                    LDIR                                      ; COPY RAM
+    56   000032 3a0000                  LD      A,(CPUunit)                       ; GET CPU PORT
+    57   000035 4f                      LD      C,A
+    58   000036 ed78                    IN      A,(C)                             ; ENABLE 6502
+    59                          ; should never get here
+    60   000038 00                      NOP
+    61   000039 00                      NOP
+    62   00003a 00                      NOP
+    63   00003b 00                      NOP
+    64   00003c 00                      NOP
+    65   00003d 00                      NOP
+    66   00003e 76                      HALT
+    67                          ;
+    68                          CPUunit:
+    69   00003f 00                      DB      0F0h                              ; Default CPU unit port
+    70                          ;
+    71                          loaderEnd:
+    72                          LoaderCode:
+    73                                  SECTION ADDR8000
+    74                                  ORG     8100H
+    75                          LoaderCode1:
+    76                          ; load .SYS file
+    77                          _LD0:
+    78   000000 0e0f                    LD      C,15                              ; CPM Open File function
+    79   000002 00b600                  LD      DE,FCB                            ; FCB
+    80   000005 cd0500                  CALL    BDOS                              ; Do it
+    81   000008 30                      INC     A                                 ; Test for error $FF
+    82   000009 ca5600                  JP      Z,ERRFIL                          ; Handle file error
+    83                          
+    84   00000c 210008                  LD      HL,0800H                          ; load address
+    85   00000f 22b400                  LD      (DMA),HL                          ;
+    86                          
+    87                          _LD:
+    88   000012 00f600                  LD      DE,BUFFER                         ;
+    89   000015 811a                    LD      C,26                              ; CPM Set DMA function
+    90   000017 400500                  CALL    BDOS                              ; Read next 128 bytes
+    91                          ;
+    92   00001a 0e14                    LD      C,20                              ; CPM Read Sequential function
+    93   00001c 00b600                  LD      DE,FCB                            ; FCB
+    94   00001f 090500                  CALL    BDOS                              ; Read next 128 bytes
+    95   000022 00                      OR      A                                 ; Set flags to check EOF
+    96   000023 2026                    JR      NZ,_LDX                           ; Non-zero is EOF
+    97                          
+    98                          
+    99                          ; flip BANKS
+   100   000025 008c                    LD      A,8CH                             ; LOAD VALUE TO SWITCH OUT BANK TO DRIVERS
+   101   000027 d378                    OUT     (MPCL_RAM),A                      ;
+   102   000029 20                      NOP
+   103   00002a 00                      NOP
+   104   00002b 00                      NOP
+   105   00002c 608000                  LD      BC,128                            ; BYTES TO MOVE
+   106   00002f 015bb400                LD      DE,(DMA)                          ; DESTINATION ADDRESS
+   107   000033 3ff600                  LD      HL,BUFFER                         ; SOURCE ADDRESS
+   108   000036 edb0                    LDIR                                      ; COPY RAM
+   109                          ; flip BANKS
+   110   000038 3e8e                    LD      A,8EH                             ; LOAD VALUE TO SWITCH BANK BACK TO PRIMARY
+   111   00003a d378                    OUT     (MPCL_RAM),A                      ;
+   112   00003c 00                      NOP
+   113   00003d 00                      NOP
+   114   00003e 00                      NOP
+   115                          ;
+   116   00003f f0b400                  LD      HL,(DMA)                          ; Save for next loop
+   117   000042 118000                  LD      DE,128                            ; Bump by size of
+   118   000045 19                      ADD     HL,DE                             ; ... one record
+   119   000046 22b400                  LD      (DMA),HL                          ; Save for next loop
+   120   000049 18c7                    JR      _LD                               ; Load loop
+   121                          ;
+   122                          _LDX:
+   123   00004b 0e10                    LD      C,16                              ; CPM Close File function
+   124   00004d 11b600                  LD      DE,FCB                            ; FCB
+   125   000050 cd0500                  CALL    BDOS                              ; Do it
+   126   000053 c31e00                  JP      BootCUBIX
+   127                          
+   128                          ERRFIL: ; Error opening driver file
+   129   000056 0e09                    LD      C,9
+   130   000058 116700                  LD      DE,MSGFIL
+   131   00005b cd0500                  CALL    BDOS                              ; Do it
+   132   00005e 3e8e                    LD      A,8EH                             ; LOAD VALUE TO SWITCH BANK BACK TO PRIMARY
+   133   000060 d378                    OUT     (MPCL_RAM),A                      ;
+   134   000062 0e00                    LD      C,0
+   135   000064 c30500                  JP      BDOS                              ; Do it
+   136                          ;
+   137                          MSGFIL:
+   138   000067 0a0d                    DB      0AH,0DH
+   139   000069 4355424958445256        DM      "CUBIXDRV.SYS NOT FOUND, EXITING."
+                2e535953204e4f54
+                20464f554e442c20
+                45584954494e472e
+   140   000089 0a0d                    DB      0AH,0DH
+   141   00008b 24                      DM      "$"
+   142                          
+   143                          SMSGFIL:
+   144   00008c 0a0d                    DB      0AH,0DH
+   145   00008e 4355424958445256        DM      "CUBIXDRV.SYS LOADED, STARTING CUBIX"
+                2e535953204c4f41
+                4445442c20535441
+                5254494e47204355
+                424958          
+   146   0000b1 0a0d                    DB      0AH,0DH
+   147   0000b3 24                      DM      "$"
+   148                          
+   149                          
+   150                          DMA:
+   151   0000b4 0000                    DB      00,00
+   152                          FCB:
+   153                          DRIVE:
+   154   0000b6 00                      DB      00d
+   155   0000b7 4355424958445256        DM      "CUBIXDRV"
+   156   0000bf 535953                  DM      "SYS"
+   157   0000c2 00                      DB      00
+   158   0000c3 00                      DB      00
+   159   0000c4 00                      DB      00
+   160   0000c5 00                      DB      00
+   161   0000c6 0000000000000000        DB      00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00
+                0000000000000000
+   162   0000d6 0000000000000000        DB      00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00
+                0000000000000000
+   163   0000e6 0000000000000000        DB      00,00,00,00,00,00,00,00,00,00,00,00,00,00,00,00
+                0000000000000000
+   164                          BUFFER:
+   165                          LoaderCodeEnd:
+   166                          
+   167                                  .END
+   168                          

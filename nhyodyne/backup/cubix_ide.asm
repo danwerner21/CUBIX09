@@ -8,7 +8,8 @@
 ;		IDE_WRITE_SECTOR - write a sector to drive   ('U' POINTS TO DCB, X TO MEMORY)
 ;________________________________________________________________________________________________________________________________
 ;
-PPIDE_PPI       = $FE60                           ; PORT A
+HSTBUF          = $0300
+PPIDE_PPI       = $0560                           ; PORT A
 ;
 PPIDELO         = PPIDE_PPI+0                     ; LSB
 PPIDEHI         = PPIDE_PPI+1                     ; MSB
@@ -67,7 +68,7 @@ PPIDETIMEOUT:
         .BYTE   $00,$00
 PPIDEWORKVAR:
         .BYTE   $00,$00
-HSTBUF          = $0400
+
 
 ;__PPIDE_INIT_________________________________________________________________________________________
 ;
@@ -129,7 +130,6 @@ PPIDE_PROBE:
 
         LDA     #$00
         STA     PPIDELO                           ; PPI PORT A, DATALO
-
         JSR     IDE_WAIT_NOT_BUSY                 ; WAIT FOR BUSY TO CLEAR
         BCS     PPIDE_PROBE_FAIL                  ; IF TIMEOUT, REPORT NO IDE PRESENT
         LDA     #PPIDE_STATUS                     ; GET STATUS
@@ -190,7 +190,6 @@ IDE_READ_INFO:
         JSR     IDE_WRITE                         ;ASK THE DRIVE TO READ IT
         JSR     IDE_WAIT_DRQ                      ;WAIT UNTIL IT'S GOT THE DATA
         BCS     IDE_READ_INFO_ABORT
-        LDX     #HSTBUF
         JSR     IDE_READ_BUFFER                   ; GRAB THE 256 WORDS FROM THE BUFFER
         LDX     #MESSAGE6
         JSR     WRSTR
@@ -256,9 +255,11 @@ IDE_READ_SECTOR_1:
         BCS     IDE_READ_SECTOR_ERROR             ; IF TIMEOUT, REPORT NO IDE PRESENT
         JSR     IDE_READ_BUFFER                   ; GRAB THE 256 WORDS FROM THE BUFFER
         CLRA                                      ; ZERO = 1 ON RETURN = OPERATION OK
+        STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
         RTS
 IDE_READ_SECTOR_ERROR:
         LDA     #$02                              ; SET ERROR CONDITION
+        STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
         RTS
 
 ;*__IDE_WRITE_SECTOR__________________________________________________________________________________
@@ -280,9 +281,11 @@ IDE_WRITE_SECTOR:
         JSR     IDE_WAIT_NOT_BUSY                 ;WAIT UNTIL THE WRITE IS COMPLETE
         BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
         CLRA                                      ; ZERO = 1 ON RETURN = OPERATION OK
+        STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
         RTS
 IDE_WRITE_SECTOR_ERROR:
         LDA     #$02
+        STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
         RTS
 
 ;*__PPIDE_RESET____________________________________________________________________________________
@@ -379,14 +382,15 @@ IDE_WAIT_DRQ3:
 ;*
 ;*____________________________________________________________________________________________________
 IDE_READ_BUFFER:
-        LDY     #$0100                            ; INDEX
+        LDY     #$0000                            ; INDEX
 IDEBUFRD:
         LDA     #PPIDE_DATA
         JSR     IDE_READ_NO_SETUP
-        STB     ,X+                               ; 'ID DRIVE' IDE RESPONSE IS LITTLE ENDIAN FORMAT
-        STA     ,X+                               ; 'ID DRIVE' IDE RESPONSE IS LITTLE ENDIAN FORMAT
-        DEY
-        CMPY    #$0000                            ;
+        STB     HSTBUF,Y                          ; 'ID DRIVE' IDE RESPONSE IS LITTLE ENDIAN FORMAT
+        INY
+        STA     HSTBUF,Y                          ; 'ID DRIVE' IDE RESPONSE IS LITTLE ENDIAN FORMAT
+        INY
+        CMPY    #$0200                            ;
         BNE     IDEBUFRD                          ;
         RTS                                       ;
 
@@ -396,15 +400,16 @@ IDEBUFRD:
 ;*
 ;*____________________________________________________________________________________________________
 IDE_WRITE_BUFFER:
-        LDY     #$0100                            ; INDEX
+        LDY     #$0000                            ; INDEX
 IDEBUFWT:
         LDA     #PPIDE_DATA
         STA     PPIDECOMMAND
-        LDB     ,X+                               ; SECTORS ARE BIG ENDIAN
-        LDA     ,X+                               ; SECTORS ARE BIG ENDIAN
-        DEY                                       ;
+        LDB     HSTBUF,Y                          ; SECTORS ARE BIG ENDIAN
+        INY
+        LDA     HSTBUF,Y                          ; SECTORS ARE BIG ENDIAN
+        INYY                                      ;
         JSR     IDE_WRITE
-        CMPY    #$0000                            ;
+        CMPY    #$0200                            ;
         BNE     IDEBUFWT                          ;
         RTS                                       ;
 
@@ -509,10 +514,6 @@ MESSAGE6
 ;*____________________________________________________________________________________________________
 IDE_SETUP_LBA:
         PSHS    D
-
-        LDA     DRIVE,U                           ; GET DRIVE NUMBER
-
-
 ;            IF      USEDSKYNG = 1
 ;                LDA     DRIVE,U
 ;                STA     DSKY_HEXBUF
@@ -540,20 +541,20 @@ IDE_SETUP_LBA:
         LDA     #PPIDE_LBAHI
         STA     PPIDECOMMAND
         LDA     #$00
-        LDB     HEAD,U
+        LDB     CURRENTHEAD
         ADDB    CURRENTSLICE
         JSR     IDE_WRITE
 
         LDA     #PPIDE_LBAMID
         STA     PPIDECOMMAND
         LDA     #$00
-        LDB     CYL,U                             ;
+        LDB     CURRENTCYL                        ;
         JSR     IDE_WRITE
 
         LDA     #PPIDE_LBALOW
         STA     PPIDECOMMAND
         LDA     #$00
-        LDB     SEC,U                             ;
+        LDB     CURRENTSEC                        ;
         JSR     IDE_WRITE
 
         LDA     #PPIDE_SEC_CNT

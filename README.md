@@ -49,13 +49,46 @@ New SSRs
 
 ---
 To Do List for this port:
-
-* UTILITY TO DISPLAY DRIVE MAPPINGS
-* DRIVE MAPPER UTILITY
+* reorganize source to pull constants into sep file
 * DSKY V2 support
 * MICRO C
+* DRIVE MAPPER UTILITY
 * ADD FLOPPY DRIVE SUPPORT
 * Microsoft Basic
 * Create an XMODEM program
 * Advanced MONITOR
-* ram PAGER SUPPORT
+
+---
+
+Memory Map:
+
+Standard Cubix memory Map:
+            $0000-$1FFF - I/O devices (Incl. memory mapped video etc).
+            $2000-$DFFF - Random Access Memory.
+            $E000-$FFFF - CUBIX Operating System ROM
+            
+
+CONSOLEDEVICE   = $0100          (BYTE)
+DISKERROR       = $01F7          (BYTE)            
+CURRENTHEAD     = $01F8          (BYTE)
+CURRENTCYL      = $01F9          (BYTE)
+CURRENTSEC      = $01FA          (BYTE)
+CURRENTDEVICE   = $01FB          (BYTE)
+CURRENTSLICE    = $01FC          (WORD)
+farpointer      = $01FE          (WORD)
+
+
+            
+Nhyodyne Map:
+            $0000-$01FF - FREE WORKING RAM
+            $0200-$02FF - PAGER CODE
+            $0300-$04FF - DISK BUFFER
+            $0500-$05FF - Memory Mapped IO
+            $0600-$1FFF - FREE WORKING RAM
+            $2000-$DBFF - Application Random Access Memory.     
+            $DC00-$DFFF - OS LOCAL STORAGE   
+            $E000-$F944 - CUBIX Operating System 
+            $F945-$FEFF - CUBIX Low Memory Device Drivers
+            $FF00-$FFF1 - OS VECTORS AND CONFIG TABLES
+            $FFF2-$FFFF - HARDWARE VECTORS
+

@@ -5,6 +5,16 @@
 ;*
 ;* CUBIX SYSTEM ADDRESSES
 ;*
+CONSOLEDEVICE   = $0100                           ; (BYTE)
+DISKERROR       = $01F7                           ; (BYTE)
+CURRENTHEAD     = $01F8                           ; (BYTE)
+CURRENTCYL      = $01F9                           ; (BYTE)
+CURRENTSEC      = $01FA                           ; (BYTE)
+CURRENTDEVICE   = $01FB                           ; (BYTE)
+CURRENTSLICE    = $01FC                           ; (WORD)
+farpointer      = $01FE                           ; (WORD)
+HSTBUF          = $0300
+
 ;*
 ;* DISK CONTROL BLOCK FORMAT
 ;*
@@ -31,10 +41,33 @@ HWIN1
         DECB                                      ;REDUCE COUNT
         BNE     HWIN1                             ;MOVE ENTIRE TABLE
 
-        JSR     SERIALINIT
-        JSR     PPIDE_INIT
-;*	JSR	SETUPDRIVE
+        LDA     #00
+        STA     CONSOLEDEVICE                     ; set console device for driver output
+
+        JSR     PAGER_INIT                        ; INIT PAGER
+;
+        LDB     #02                               ;INIT SERIAL PORT
+        JSR     MD_PAGERA
+;
+        LDB     #21                               ;INIT IDE
+        JSR     MD_PAGERA
         RTS
+
+WRSER:
+        LDB     #00                               ;WRITE SERIAL PORT
+        JMP     MD_PAGERA
+
+RDSER:
+        LDB     #01                               ;READ SERIAL PORT
+        JSR     MD_PAGERA
+        CMPA    #$FF
+        BEQ     >
+        ORCC    #%00000100                        ; SET 'Z'
+        RTS
+!
+        LDA     #$FF                              ; CLEAR 'Z'
+        RTS                                       ;
+;
 
 ;* NULL DEVICE DRIVERS
 RDNULL
@@ -82,15 +115,39 @@ DRDSEC
 ;*!
         CMPA    #$20                              ; IDE?
         BNE     >                                 ;
-        JMP     IDE_READ_SECTOR                   ; USE DIRECT ATTACHED IDE
+        LDB     #22                               ;IDE_READ_SECTOR
+        JSR     MD_PAGERA
+        BSR     CPYHOSTBUF
+        LDA     DISKERROR                         ; GET ERROR CONDITION
 !
         RTS
-
+CPYHOSTBUF:
+        PSHS    Y
+        LDY     #$0000
+!
+        LDA     HSTBUF,Y
+        STA     ,X+
+        INY
+        CMPY    #$0200
+        BNE     <
+        PULS    Y
+        RTS
 
 ;*
 ;* WRITE A SECTOR TO DISK ('U' POINTS TO DCB) FROM MEMORY(X)
 ;*
 DWRSEC
+; START BY POPULATING THE HOST BUFFER
+        PSHS    Y
+        LDY     #$0000
+!
+        LDA     ,X+
+        STA     HSTBUF,Y
+        INY
+        CMPY    #$0200
+        BNE     <
+        PULS    Y
+; NOW DO SOME DRIVE MAGIC
         JSR     DECODEDRIVE
         ANDA    #$F0
 ;*	CMPA	#$10			; FLOPPY?
@@ -99,12 +156,20 @@ DWRSEC
 ;*!
         CMPA    #$20                              ; IDD?
         BNE     >                                 ;
-        JMP     IDE_WRITE_SECTOR                  ; USE DIRECT ATTACHED IDE
+        LDB     #23                               ;IDE_WRITE_SECTOR
+        JSR     MD_PAGERA
+        LDA     DISKERROR                         ; GET ERROR CONDITION
 !
         RTS
 
 DECODEDRIVE:
         PSHS    y
+        LDA     HEAD,U
+        STA     CURRENTHEAD
+        LDA     CYL,U
+        STA     CURRENTCYL
+        LDA     SEC,U
+        STA     CURRENTSEC
         CLRA
         LDB     DRIVE,U                           ; GET DRIVE
         ASLB                                      ; a=a*2
@@ -114,14 +179,10 @@ DECODEDRIVE:
         STA     CURRENTDEVICE
         STB     CURRENTSLICE
         PULS    y,pc
-CURRENTDEVICE:
-        FCB     $00
-CURRENTSLICE:
-        FCB     $00
-        FCB     $00
 
-        INCLUDE ../nhyodyne/cubix_serial.asm
-        INCLUDE ../nhyodyne/cubix_ide.asm
+        INCLUDE ../nhyodyne/cubix_pager.asm
+;        INCLUDE ../nhyodyne/cubix_ide.asm
+;     INCLUDE ../nhyodyne/cubix_dskyng.asm
 
 
         ORG     $FF00
@@ -147,8 +208,8 @@ RITAB           EQU *
         FCB     1                                 ;CONSOLE INPUT DEVICE
         FCB     1                                 ;CONSOLE OUTPUT DEVICE
 ;* SERIAL DEVICE DRIVERS
-        FDB     RDNULL,RDSER1,0,0,0,0,0,0
-        FDB     WRNULL,WRSER1,0,0,0,0,0,0
+        FDB     RDNULL,RDSER,0,0,0,0,0,0
+        FDB     WRNULL,WRSER,0,0,0,0,0,0
 ;* DISK DEVICE DRIVERS
         FDB     DHOME,DRDSEC,DWRSEC,DFORMAT
 ;* 6809 HARDWARE VECTORS
@@ -169,7 +230,7 @@ RITAB           EQU *
         FCC     'SYSTEM'                          ;SYSTEM DIRECTORY
         FCB     0,0                               ;(FILLER)
 ; DRIVE MAPPING TABLE
-        FCB     $00,$00                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
+        FCB     $21,$03                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
         FCB     $21,$02                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE
         FCB     $21,$01                           ;     LOW NIBBLE IS DEVICE ADDRESS
         FCB     $21,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS

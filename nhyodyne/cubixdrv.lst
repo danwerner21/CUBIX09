@@ -1,0 +1,951 @@
+                      (     cubixdrv.asm):00001         ;________________________________________________________________________________________________________________________________
+                      (     cubixdrv.asm):00002         ;
+                      (     cubixdrv.asm):00003         ;       Nhyodyne Cubix banked driver code
+                      (     cubixdrv.asm):00004         ;       Intended for RAM BANK $0C
+                      (     cubixdrv.asm):00005         ;
+                      (     cubixdrv.asm):00006         ;  DWERNER 10/15/2023   Initial
+                      (     cubixdrv.asm):00007         ;________________________________________________________________________________________________________________________________
+                      (     cubixdrv.asm):00008         
+     02F5             (     cubixdrv.asm):00009         PAGER_STACK     = $02F5
+     02F7             (     cubixdrv.asm):00010         PAGER_U         = $02F7
+     02F8             (     cubixdrv.asm):00011         PAGER_D         = $02F8
+     02FA             (     cubixdrv.asm):00012         PAGER_X         = $02FA
+     02FC             (     cubixdrv.asm):00013         PAGER_Y         = $02FC
+     02FE             (     cubixdrv.asm):00014         PAGER_S         = $02FE
+     0100             (     cubixdrv.asm):00015         CONSOLEDEVICE   = $0100                           ; (BYTE)
+     01F7             (     cubixdrv.asm):00016         DISKERROR       = $01F7                           ; (BYTE)
+     01F8             (     cubixdrv.asm):00017         CURRENTHEAD     = $01F8                           ; (BYTE)
+     01F9             (     cubixdrv.asm):00018         CURRENTCYL      = $01F9                           ; (BYTE)
+     01FA             (     cubixdrv.asm):00019         CURRENTSEC      = $01FA                           ; (BYTE)
+     01FB             (     cubixdrv.asm):00020         CURRENTDEVICE   = $01FB                           ; (BYTE)
+     01FC             (     cubixdrv.asm):00021         CURRENTSLICE    = $01FC                           ; (WORD)
+     01FE             (     cubixdrv.asm):00022         farpointer      = $01FE                           ; (WORD)                      ;
+                      (     cubixdrv.asm):00023         
+                      (     cubixdrv.asm):00024         
+                      (     cubixdrv.asm):00025                 ORG     $8800
+                      (     cubixdrv.asm):00026         
+                      (     cubixdrv.asm):00027         ; for Nhyodyne:
+                      (     cubixdrv.asm):00028         ; RAM BANK $0C is RAM area for Drivers
+                      (     cubixdrv.asm):00029         ; RAM BANK $0E is operating bank for DOS/65 $8000-$FFFF
+                      (     cubixdrv.asm):00030         ; RAM BANK $0F is fixed bank $0000-$7FFF
+                      (     cubixdrv.asm):00031         ; ROM BANKS $00 and $0C-$0F are reserved for ROMWBW code (AS A SECONDARY CPU)
+                      (     cubixdrv.asm):00032         
+                      (     cubixdrv.asm):00033         ;       Area from $0C:8000 to $0C:8800 reserved for work RAM for drivers (FOR SECONDARY CPU, UNDER ROMWBW)
+                      (     cubixdrv.asm):00034         ;       Area from $0C:8000 to $0C:8800 reserved for ROM for drivers (FOR PRIMARY CPU, NO ROMWBW)
+                      (     cubixdrv.asm):00035         ;
+                      (     cubixdrv.asm):00036         
+                      (     cubixdrv.asm):00037         ;__DISPATCHER________________________________________________________________________________________
+                      (     cubixdrv.asm):00038         ;
+                      (     cubixdrv.asm):00039         ;  Function dispatcher
+                      (     cubixdrv.asm):00040         ;  function to call is located in "farfunct"
+                      (     cubixdrv.asm):00041         ;____________________________________________________________________________________________________
+                      (     cubixdrv.asm):00042         ;
+8800                  (     cubixdrv.asm):00043         FUNCTION_DISPATCHER:
+8800 58               (     cubixdrv.asm):00044                 ASLB                                      ; DOUBLE NUMBER FOR TABLE LOOKUP
+8801 8600             (     cubixdrv.asm):00045                 LDA     #$00
+8803 1F01             (     cubixdrv.asm):00046                 TFR     D,X
+8805 EC898813         (     cubixdrv.asm):00047                 LDD     DISPATCHTABLE,X
+8809 FD01FE           (     cubixdrv.asm):00048                 STD     farpointer
+880C FC02F8           (     cubixdrv.asm):00049                 LDD     >PAGER_D                          ; RESTORE 'D'
+880F 6E9F01FE         (     cubixdrv.asm):00050                 JMP     [farpointer]
+                      (     cubixdrv.asm):00051         
+                      (     cubixdrv.asm):00052         
+8813                  (     cubixdrv.asm):00053         DISPATCHTABLE:
+8813 884A             (     cubixdrv.asm):00054                 .WORD   WRSER1                            ; FUNCTION 00 - WRITE SERIAL PORT
+8815 8857             (     cubixdrv.asm):00055                 .WORD   RDSER1                            ; FUNCTION 01 - READ SERIAL PORT
+8817 8849             (     cubixdrv.asm):00056                 .WORD   SERIALINIT                        ; FUNCTION 02 - SERIAL PORT INIT
+                      (     cubixdrv.asm):00057         
+8819 8B65             (     cubixdrv.asm):00058                 .WORD   drv_noop                          ; FUNCTION 03 - WRITE VIDEO
+881B 8B65             (     cubixdrv.asm):00059                 .WORD   drv_noop                          ; FUNCTION 04 - READ KEYBOARD
+881D 8B65             (     cubixdrv.asm):00060                 .WORD   drv_noop                          ; FUNCTION 05 - INIT INTERFACE
+                      (     cubixdrv.asm):00061         
+881F 8B65             (     cubixdrv.asm):00062                 .WORD   drv_noop                          ; FUNCTION 06
+8821 8B65             (     cubixdrv.asm):00063                 .WORD   drv_noop                          ; FUNCTION 07
+8823 8B65             (     cubixdrv.asm):00064                 .WORD   drv_noop                          ; FUNCTION 08
+                      (     cubixdrv.asm):00065         
+8825 8B65             (     cubixdrv.asm):00066                 .WORD   drv_noop                          ; FUNCTION 09
+8827 8B65             (     cubixdrv.asm):00067                 .WORD   drv_noop                          ; FUNCTION 10
+8829 8B65             (     cubixdrv.asm):00068                 .WORD   drv_noop                          ; FUNCTION 11
+                      (     cubixdrv.asm):00069         
+882B 8B65             (     cubixdrv.asm):00070                 .WORD   drv_noop                          ; FUNCTION 12
+882D 8B65             (     cubixdrv.asm):00071                 .WORD   drv_noop                          ; FUNCTION 13
+882F 8B65             (     cubixdrv.asm):00072                 .WORD   drv_noop                          ; FUNCTION 14
+                      (     cubixdrv.asm):00073         
+8831 8B65             (     cubixdrv.asm):00074                 .WORD   drv_noop                          ; FUNCTION 15 - called during OS init
+8833 8B65             (     cubixdrv.asm):00075                 .WORD   drv_noop                          ; FUNCTION 16 - read a sector from drive
+8835 8B65             (     cubixdrv.asm):00076                 .WORD   drv_noop                          ; FUNCTION 17 - write a sector to drive
+                      (     cubixdrv.asm):00077         ;
+8837 8B65             (     cubixdrv.asm):00078                 .WORD   drv_noop                          ; FUNCTION 18 -
+8839 8B65             (     cubixdrv.asm):00079                 .WORD   drv_noop                          ; FUNCTION 19 -
+883B 8B65             (     cubixdrv.asm):00080                 .WORD   drv_noop                          ; FUNCTION 20 -
+                      (     cubixdrv.asm):00081         ;
+883D 8877             (     cubixdrv.asm):00082                 .WORD   PPIDE_INIT                        ; FUNCTION 21 - init floppy device
+883F 8979             (     cubixdrv.asm):00083                 .WORD   IDE_READ_SECTOR                   ; FUNCTION 22 - read a sector from floppy device
+8841 899F             (     cubixdrv.asm):00084                 .WORD   IDE_WRITE_SECTOR                  ; FUNCTION 23 - write a sector to floppy device
+                      (     cubixdrv.asm):00085         ;
+8843 8B65             (     cubixdrv.asm):00086                 .WORD   drv_noop                          ; FUNCTION 24 -
+8845 8B65             (     cubixdrv.asm):00087                 .WORD   drv_noop                          ; FUNCTION 25 -
+8847 8B65             (     cubixdrv.asm):00088                 .WORD   drv_noop                          ; FUNCTION 26 -
+                      (     cubixdrv.asm):00089         ;
+                      (     cubixdrv.asm):00090         ;        .WORD   DSKY_INIT       ; FUNCTION 40 -
+                      (     cubixdrv.asm):00091         ;        .WORD   DSKY_SHOW       ; FUNCTION 41 -
+                      (     cubixdrv.asm):00092         ;        .WORD   DSKY_BIN2SEG    ; FUNCTION 42 -
+                      (     cubixdrv.asm):00093         ;        .WORD   DSKY_RESET      ; FUNCTION 43 -
+                      (     cubixdrv.asm):00094         ;        .WORD   DSKY_STAT       ; FUNCTION 44 -
+                      (     cubixdrv.asm):00095         ;        .WORD   DSKY_GETKEY     ; FUNCTION 45 -
+                      (     cubixdrv.asm):00096         ;        .WORD   DSKY_BEEP       ; FUNCTION 46 -
+                      (     cubixdrv.asm):00097         ;        .WORD   DSKY_DSPL       ; FUNCTION 47 -
+                      (     cubixdrv.asm):00098         ;        .WORD   DSKY_PUTLED     ; FUNCTION 48 -
+                      (     cubixdrv.asm):00099         ;        .WORD   DSKY_BLANK      ; FUNCTION 49 -
+                      (     cubixdrv.asm):00100         ;
+                      (     cubixdrv.asm):00101         
+                      (     cubixdrv.asm):00102         
+                      (     cubixdrv.asm):00103         ;__DRIVERS___________________________________________________________________________________________
+                      (     cubixdrv.asm):00104         ;
+                      (     cubixdrv.asm):00105                 INCLUDE cubix_serial.asm
+                      ( cubix_serial.asm):00001         ;__SERIAL DRIVERS________________________________________________________________________________________________________________
+                      ( cubix_serial.asm):00002         ;
+                      ( cubix_serial.asm):00003         ;       CUBIX serial drivers for 6809 IO card
+                      ( cubix_serial.asm):00004         ;
+                      ( cubix_serial.asm):00005         ;       Entry points:
+                      ( cubix_serial.asm):00006         ;               SERIALINIT  - called during OS init
+                      ( cubix_serial.asm):00007         ;               RDSER1      - read a byte from serial port ('A' POINTS TO BYTE)
+                      ( cubix_serial.asm):00008         ;               WRSER1      - write a byte from serial port  ('A' POINTS TO BYTE)
+                      ( cubix_serial.asm):00009         ;________________________________________________________________________________________________________________________________
+                      ( cubix_serial.asm):00010         ;
+                      ( cubix_serial.asm):00011         ;*
+                      ( cubix_serial.asm):00012         ;*        HARDWARE I/O ADDRESSES
+                      ( cubix_serial.asm):00013         ;*
+                      ( cubix_serial.asm):00014         ; UART 16C550 SERIAL
+     0568             ( cubix_serial.asm):00015         UART0           EQU $0568                         ; DATA IN/OUT
+     0569             ( cubix_serial.asm):00016         UART1           EQU $0569                         ; CHECK RX
+     056A             ( cubix_serial.asm):00017         UART2           EQU $056A                         ; INTERRUPTS
+     056B             ( cubix_serial.asm):00018         UART3           EQU $056B                         ; LINE CONTROL
+     056C             ( cubix_serial.asm):00019         UART4           EQU $056C                         ; MODEM CONTROL
+     056D             ( cubix_serial.asm):00020         UART5           EQU $056D                         ; LINE STATUS
+     056E             ( cubix_serial.asm):00021         UART6           EQU $056E                         ; MODEM STATUS
+     056F             ( cubix_serial.asm):00022         UART7           EQU $056F                         ; SCRATCH REG.
+                      ( cubix_serial.asm):00023         
+                      ( cubix_serial.asm):00024         
+                      ( cubix_serial.asm):00025         ;__SERIALINIT____________________________________________________________________________________________________________________
+                      ( cubix_serial.asm):00026         ;
+                      ( cubix_serial.asm):00027         ;       INITIALIZE SERIAL PORTS
+                      ( cubix_serial.asm):00028         ;________________________________________________________________________________________________________________________________
+                      ( cubix_serial.asm):00029         ;
+8849                  ( cubix_serial.asm):00030         SERIALINIT:
+                      ( cubix_serial.asm):00031         ; these are all set by CP/M prior to activating the 6809 card. If 6809 is the primary CPU, these need to be set
+                      ( cubix_serial.asm):00032         ;       LDA             #$80            ;
+                      ( cubix_serial.asm):00033         ;       STA             UART3           ; SET DLAB FLAG
+                      ( cubix_serial.asm):00034         ;       LDA             #12                     ; SET TO 12 = 9600 BAUD
+                      ( cubix_serial.asm):00035         ;       STA             UART0           ; save baud rate
+                      ( cubix_serial.asm):00036         ;       LDA             #00                     ;
+                      ( cubix_serial.asm):00037         ;       STA             UART1           ;
+                      ( cubix_serial.asm):00038         ;       LDA             #03                     ;
+                      ( cubix_serial.asm):00039         ;       STA             UART3           ; SET 8 BIT DATA, 1 STOPBIT
+                      ( cubix_serial.asm):00040         ;       STA             UART4           ;
+8849 39               ( cubix_serial.asm):00041                 RTS
+                      ( cubix_serial.asm):00042         
+                      ( cubix_serial.asm):00043         
+                      ( cubix_serial.asm):00044         
+                      ( cubix_serial.asm):00045         ;__WRSER1________________________________________________________________________________________________________________________
+                      ( cubix_serial.asm):00046         ;
+                      ( cubix_serial.asm):00047         ;       WRITE CHARACTER(A) TO UART
+                      ( cubix_serial.asm):00048         ;________________________________________________________________________________________________________________________________
+                      ( cubix_serial.asm):00049         ;
+884A                  ( cubix_serial.asm):00050         WRSER1
+                      ( cubix_serial.asm):00051         !
+884A F6056D           ( cubix_serial.asm):00052                 LDB     UART5                             ; READ LINE STATUS REGISTER
+884D C420             ( cubix_serial.asm):00053                 ANDB    #$20                              ; TEST IF UART IS READY TO SEND (BIT 5)
+884F C100             ( cubix_serial.asm):00054                 CMPB    #$00
+8851 27F7             ( cubix_serial.asm):00055                 BEQ     <                                 ; IF NOT REPEAT
+8853 B70568           ( cubix_serial.asm):00056                 STA     UART0                             ; THEN WRITE THE CHAR TO UART
+8856 39               ( cubix_serial.asm):00057                 RTS
+                      ( cubix_serial.asm):00058         
+                      ( cubix_serial.asm):00059         ;__RDSER1________________________________________________________________________________________________________________________
+                      ( cubix_serial.asm):00060         ;
+                      ( cubix_serial.asm):00061         ;       READ CHARACTER FROM UART TO (A)
+                      ( cubix_serial.asm):00062         ;________________________________________________________________________________________________________________________________
+                      ( cubix_serial.asm):00063         ;
+8857                  ( cubix_serial.asm):00064         RDSER1
+8857 B6056D           ( cubix_serial.asm):00065                 LDA     UART5                             ; READ LINE STATUS REGISTER
+885A 8401             ( cubix_serial.asm):00066                 ANDA    #$01                              ; TEST IF DATA IN RECEIVE BUFFER
+885C 8100             ( cubix_serial.asm):00067                 CMPA    #$00
+885E 2707             ( cubix_serial.asm):00068                 BEQ     >                                 ; NO DATA
+8860 B60568           ( cubix_serial.asm):00069                 LDA     UART0                             ; THEN READ THE CHAR FROM THE UART
+8863 B702F8           ( cubix_serial.asm):00070                 STA     >PAGER_D                          ; SAVE 'D'
+8866 39               ( cubix_serial.asm):00071                 RTS
+                      ( cubix_serial.asm):00072         !
+8867 86FF             ( cubix_serial.asm):00073                 LDA     #$FF                              ;
+8869 B702F8           ( cubix_serial.asm):00074                 STA     >PAGER_D                          ; SAVE 'D'
+886C 39               ( cubix_serial.asm):00075                 RTS                                       ;
+                      (     cubixdrv.asm):00106                 INCLUDE cubix_ide.asm
+                      (    cubix_ide.asm):00001         ;__IDE DRIVERS___________________________________________________________________________________________________________________
+                      (    cubix_ide.asm):00002         ;
+                      (    cubix_ide.asm):00003         ;       CUBIX IDE disk drivers for direct attached disk-io card
+                      (    cubix_ide.asm):00004         ;
+                      (    cubix_ide.asm):00005         ;       Entry points:
+                      (    cubix_ide.asm):00006         ;               PPIDE_INIT      - CALLED DURING OS INIT
+                      (    cubix_ide.asm):00007         ;               IDE_READ_SECTOR  - read a sector from drive  ('U' POINTS TO DCB, X TO MEMORY)
+                      (    cubix_ide.asm):00008         ;               IDE_WRITE_SECTOR - write a sector to drive   ('U' POINTS TO DCB, X TO MEMORY)
+                      (    cubix_ide.asm):00009         ;________________________________________________________________________________________________________________________________
+                      (    cubix_ide.asm):00010         ;
+     0300             (    cubix_ide.asm):00011         HSTBUF          = $0300
+     0560             (    cubix_ide.asm):00012         PPIDE_PPI       = $0560                           ; PORT A
+                      (    cubix_ide.asm):00013         ;
+     0560             (    cubix_ide.asm):00014         PPIDELO         = PPIDE_PPI+0                     ; LSB
+     0561             (    cubix_ide.asm):00015         PPIDEHI         = PPIDE_PPI+1                     ; MSB
+     0562             (    cubix_ide.asm):00016         PPIDECNTRL      = PPIDE_PPI+2                     ; CONTROL SIGNALS
+     0563             (    cubix_ide.asm):00017         PPIDEPPIC       = PPIDE_PPI+3                     ; CONTROL BYTE PPI 82C55
+                      (    cubix_ide.asm):00018         
+     0001             (    cubix_ide.asm):00019         PPIDE_A0_LINE   = $01                             ;DIRECT FROM 8255 TO IDE INTERFACE
+     0002             (    cubix_ide.asm):00020         PPIDE_A1_LINE   = $02                             ;DIRECT FROM 8255 TO IDE INTERFACE
+     0004             (    cubix_ide.asm):00021         PPIDE_A2_LINE   = $04                             ;DIRECT FROM 8255 TO IDE INTERFACE
+     0008             (    cubix_ide.asm):00022         PPIDE_CS0_LINE  = $08                             ;INVERTER BETWEEN 8255 AND IDE INTERFACE
+     0010             (    cubix_ide.asm):00023         PPIDE_CS1_LINE  = $10                             ;INVERTER BETWEEN 8255 AND IDE INTERFACE
+     0020             (    cubix_ide.asm):00024         PPIDE_WR_LINE   = $20                             ;INVERTER BETWEEN 8255 AND IDE INTERFACE
+     0040             (    cubix_ide.asm):00025         PPIDE_RD_LINE   = $40                             ;INVERTER BETWEEN 8255 AND IDE INTERFACE
+     0080             (    cubix_ide.asm):00026         PPIDE_RST_LINE  = $80                             ;INVERTER BETWEEN 8255 AND IDE INTERFACE
+                      (    cubix_ide.asm):00027         
+     0008             (    cubix_ide.asm):00028         PPIDE_DATA      = PPIDE_CS0_LINE
+     0009             (    cubix_ide.asm):00029         PPIDE_ERR       = PPIDE_CS0_LINE+PPIDE_A0_LINE
+     000A             (    cubix_ide.asm):00030         PPIDE_SEC_CNT   = PPIDE_CS0_LINE+PPIDE_A1_LINE
+     000B             (    cubix_ide.asm):00031         PPIDE_LBALOW    = PPIDE_CS0_LINE+PPIDE_A1_LINE+PPIDE_A0_LINE
+     000C             (    cubix_ide.asm):00032         PPIDE_LBAMID    = PPIDE_CS0_LINE+PPIDE_A2_LINE
+     000D             (    cubix_ide.asm):00033         PPIDE_LBAHI     = PPIDE_CS0_LINE+PPIDE_A2_LINE+PPIDE_A0_LINE
+     000E             (    cubix_ide.asm):00034         PPIDE_DEVICE    = PPIDE_CS0_LINE+PPIDE_A2_LINE+PPIDE_A1_LINE
+     000F             (    cubix_ide.asm):00035         PPIDE_COMMAND   = PPIDE_CS0_LINE+PPIDE_A2_LINE+PPIDE_A1_LINE+PPIDE_A0_LINE
+     000F             (    cubix_ide.asm):00036         PPIDE_STATUS    = PPIDE_CS0_LINE+PPIDE_A2_LINE+PPIDE_A1_LINE+PPIDE_A0_LINE
+     0016             (    cubix_ide.asm):00037         PPIDE_CONTROL   = PPIDE_CS1_LINE+PPIDE_A2_LINE+PPIDE_A1_LINE
+     0017             (    cubix_ide.asm):00038         PPIDE_ASTATUS   = PPIDE_CS1_LINE+PPIDE_A2_LINE+PPIDE_A1_LINE+PPIDE_A0_LINE
+                      (    cubix_ide.asm):00039         
+                      (    cubix_ide.asm):00040         
+                      (    cubix_ide.asm):00041         ;IDE COMMAND CONSTANTS.  THESE SHOULD NEVER CHANGE.
+     0010             (    cubix_ide.asm):00042         PPIDE_CMD_RECAL = $10
+     0020             (    cubix_ide.asm):00043         PPIDE_CMD_READ  = $20
+     0030             (    cubix_ide.asm):00044         PPIDE_CMD_WRITE = $30
+     0091             (    cubix_ide.asm):00045         PPIDE_CMD_INIT  = $91
+     00EC             (    cubix_ide.asm):00046         PPIDE_CMD_ID    = $EC
+     00E0             (    cubix_ide.asm):00047         PPIDE_CMD_SPINDOWN = $E0
+     00E1             (    cubix_ide.asm):00048         PPIDE_CMD_SPINUP = $E1
+                      (    cubix_ide.asm):00049         
+                      (    cubix_ide.asm):00050         
+     0092             (    cubix_ide.asm):00051         PPRD_IDE_8255   = %10010010                       ;IDE_8255_CTL OUT, IDE_8255_LSB/MSB INPUT
+     0080             (    cubix_ide.asm):00052         PPWR_IDE_8255   = %10000000                       ;ALL THREE PORTS OUTPUT
+                      (    cubix_ide.asm):00053         
+                      (    cubix_ide.asm):00054         ;ALLOCATE THE FOLLOWING DATA AREAS TO UNUSED RAM SPACE
+886D                  (    cubix_ide.asm):00055         DEBCYLL:
+886D 00               (    cubix_ide.asm):00056                 .BYTE   0                                 ; DEBLOCKED CYLINDER LSB
+886E                  (    cubix_ide.asm):00057         DEBCYLM:
+886E 00               (    cubix_ide.asm):00058                 .BYTE   0                                 ; DEBLOCKED CYLINDER MSB
+886F                  (    cubix_ide.asm):00059         DEBSEHD:
+886F 00               (    cubix_ide.asm):00060                 .BYTE   0                                 ; DEBLOCKED SECTOR AND HEAD (HS)
+8870                  (    cubix_ide.asm):00061         PPIDETMP:
+8870 00               (    cubix_ide.asm):00062                 .BYTE   0                                 ; TEMP
+8871                  (    cubix_ide.asm):00063         PPIDELOTMP:
+8871 00               (    cubix_ide.asm):00064                 .BYTE   0
+8872                  (    cubix_ide.asm):00065         PPIDECOMMAND:
+8872 00               (    cubix_ide.asm):00066                 .BYTE   0
+8873                  (    cubix_ide.asm):00067         PPIDETIMEOUT:
+8873 0000             (    cubix_ide.asm):00068                 .BYTE   $00,$00
+8875                  (    cubix_ide.asm):00069         PPIDEWORKVAR:
+8875 0000             (    cubix_ide.asm):00070                 .BYTE   $00,$00
+                      (    cubix_ide.asm):00071         
+                      (    cubix_ide.asm):00072         
+                      (    cubix_ide.asm):00073         ;__PPIDE_INIT_________________________________________________________________________________________
+                      (    cubix_ide.asm):00074         ;
+                      (    cubix_ide.asm):00075         ;  INIT AND DISPLAY IDE INFO
+                      (    cubix_ide.asm):00076         ;____________________________________________________________________________________________________
+                      (    cubix_ide.asm):00077         ;
+8877                  (    cubix_ide.asm):00078         PPIDE_INIT:
+8877 BD8B66           (    cubix_ide.asm):00079                 JSR     LFCR                              ; AND CRLF
+887A BD8B66           (    cubix_ide.asm):00080                 JSR     LFCR                              ; AND CRLF
+887D 8E8AD5           (    cubix_ide.asm):00081                 LDX     #MESSAGE1
+8880 BD8B6F           (    cubix_ide.asm):00082                 JSR     WRSTR                             ; DO PROMPT
+8883 BD8B66           (    cubix_ide.asm):00083                 JSR     LFCR                              ; AND CRLF
+8886 BD896B           (    cubix_ide.asm):00084                 JSR     IDE_PPIDETECT                     ; TEST FOR PPI HARDWARE
+8889 261A             (    cubix_ide.asm):00085                 BNE     IDE_ABORT                         ; BAIL OUT IF NOT THERE
+                      (    cubix_ide.asm):00086         ;
+888B 8E8ADD           (    cubix_ide.asm):00087                 LDX     #MESSAGE2
+888E BD8B6F           (    cubix_ide.asm):00088                 JSR     WRSTR                             ; DO PROMPT
+8891 CC0560           (    cubix_ide.asm):00089                 LDD     #PPIDE_PPI                        ; GET BASE PORT
+8894 FD8875           (    cubix_ide.asm):00090                 STD     PPIDEWORKVAR
+8897 BD8B7C           (    cubix_ide.asm):00091                 JSR     WRHEXW                            ; PRINT BASE PORT
+                      (    cubix_ide.asm):00092         ;
+889A BD89CA           (    cubix_ide.asm):00093                 JSR     PPIDE_RESET                       ; RESET THE BUS
+889D BD88CB           (    cubix_ide.asm):00094                 JSR     PPIDE_PROBE                       ; DETECT AN ATA DEVICE, ABORT IF NOT FOUND
+88A0 2503             (    cubix_ide.asm):00095                 BCS     IDE_ABORT
+88A2 7E88AE           (    cubix_ide.asm):00096                 JMP     IDE_PRINT_INFO
+88A5                  (    cubix_ide.asm):00097         IDE_ABORT:
+88A5 8E8AE4           (    cubix_ide.asm):00098                 LDX     #MESSAGE3
+88A8 BD8B6F           (    cubix_ide.asm):00099                 JSR     WRSTR                             ; DO PROMPT
+88AB 7E88C7           (    cubix_ide.asm):00100                 JMP     IDE_INITA
+88AE                  (    cubix_ide.asm):00101         IDE_PRINT_INFO:
+88AE BD8B66           (    cubix_ide.asm):00102                 JSR     LFCR                              ; AND CRLF
+88B1 8E8AF1           (    cubix_ide.asm):00103                 LDX     #MESSAGE4
+88B4 BD8B6F           (    cubix_ide.asm):00104                 JSR     WRSTR                             ; DO PROMPT
+88B7 8600             (    cubix_ide.asm):00105                 LDA     #$00
+88B9 BD890C           (    cubix_ide.asm):00106                 JSR     IDE_READ_INFO                     ; GET DRIVE INFO, ABORT IF ERROR
+88BC 8E8B02           (    cubix_ide.asm):00107                 LDX     #MESSAGE5
+88BF BD8B6F           (    cubix_ide.asm):00108                 JSR     WRSTR                             ; DO PROMPT
+88C2 8601             (    cubix_ide.asm):00109                 LDA     #$01
+88C4 BD890C           (    cubix_ide.asm):00110                 JSR     IDE_READ_INFO                     ; GET DRIVE INFO, ABORT IF ERROR
+88C7                  (    cubix_ide.asm):00111         IDE_INITA:
+88C7 BD8B66           (    cubix_ide.asm):00112                 JSR     LFCR                              ; AND CRLF
+88CA 39               (    cubix_ide.asm):00113                 RTS                                       ; DONE
+                      (    cubix_ide.asm):00114         ;
+                      (    cubix_ide.asm):00115         ;__PPIDE_PROBE_______________________________________________________________________________________
+                      (    cubix_ide.asm):00116         ;
+                      (    cubix_ide.asm):00117         ;  PROBE FOR IDE HARDWARE
+                      (    cubix_ide.asm):00118         ;____________________________________________________________________________________________________
+                      (    cubix_ide.asm):00119         ;
+88CB                  (    cubix_ide.asm):00120         PPIDE_PROBE:
+                      (    cubix_ide.asm):00121         ;
+                      (    cubix_ide.asm):00122         ; BELOW TESTS FOR EXISTENCE OF AN IDE CONTROLLER ON THE
+                      (    cubix_ide.asm):00123         ; PPIDE INTERFACE.  WE WRITE A VALUE OF ZERO FIRST SO THAT
+                      (    cubix_ide.asm):00124         ; THE PPI BUS HOLD WILL RETURN A VALUE OF ZERO IF THERE IS
+                      (    cubix_ide.asm):00125         ; NOTHING CONNECTED TO PPI PORT A.  THEN WE READ THE STATUS
+                      (    cubix_ide.asm):00126         ; REGISTER.  IF AN IDE CONTROLLER IS THERE, IT SHOULD ALWAYS
+                      (    cubix_ide.asm):00127         ; RETURN SOMETHING OTHER THAN ZERO.  IF AN IDE CONTROLLER IS
+                      (    cubix_ide.asm):00128         ; THERE, THEN THE VALUE WRITTEN TO PPI PORT A IS IGNORED
+                      (    cubix_ide.asm):00129         ; BECAUSE THE WRITE SIGNAL IS NEVER PULSED.
+                      (    cubix_ide.asm):00130         
+88CB 8600             (    cubix_ide.asm):00131                 LDA     #$00
+88CD B70560           (    cubix_ide.asm):00132                 STA     PPIDELO                           ; PPI PORT A, DATALO
+88D0 BD89E1           (    cubix_ide.asm):00133                 JSR     IDE_WAIT_NOT_BUSY                 ; WAIT FOR BUSY TO CLEAR
+88D3 2534             (    cubix_ide.asm):00134                 BCS     PPIDE_PROBE_FAIL                  ; IF TIMEOUT, REPORT NO IDE PRESENT
+88D5 860F             (    cubix_ide.asm):00135                 LDA     #PPIDE_STATUS                     ; GET STATUS
+88D7 BD8A71           (    cubix_ide.asm):00136                 JSR     IDE_READ
+88DA C440             (    cubix_ide.asm):00137                 ANDB    #%01000000
+88DC C100             (    cubix_ide.asm):00138                 CMPB    #$00
+88DE 2729             (    cubix_ide.asm):00139                 BEQ     PPIDE_PROBE_FAIL                  ; IF NOT RDY BIT (BIT 6) THEN REPORT NO IDE PRESENT
+                      (    cubix_ide.asm):00140         
+                      (    cubix_ide.asm):00141         ; CHECK SIGNATURE
+88E0 860A             (    cubix_ide.asm):00142                 LDA     #PPIDE_SEC_CNT
+88E2 BD8A71           (    cubix_ide.asm):00143                 JSR     IDE_READ
+88E5 C101             (    cubix_ide.asm):00144                 CMPB    #$01
+88E7 2620             (    cubix_ide.asm):00145                 BNE     PPIDE_PROBE_FAIL                  ; IF NOT '01' THEN REPORT NO IDE PRESENT
+88E9 860B             (    cubix_ide.asm):00146                 LDA     #PPIDE_LBALOW
+88EB BD8A71           (    cubix_ide.asm):00147                 JSR     IDE_READ
+88EE C101             (    cubix_ide.asm):00148                 CMPB    #$01
+88F0 2617             (    cubix_ide.asm):00149                 BNE     PPIDE_PROBE_FAIL                  ; IF NOT '01' THEN REPORT NO IDE PRESENT
+88F2 860C             (    cubix_ide.asm):00150                 LDA     #PPIDE_LBAMID
+88F4 BD8A71           (    cubix_ide.asm):00151                 JSR     IDE_READ
+88F7 C100             (    cubix_ide.asm):00152                 CMPB    #$00
+88F9 260E             (    cubix_ide.asm):00153                 BNE     PPIDE_PROBE_FAIL                  ; IF NOT '00' THEN REPORT NO IDE PRESENT
+88FB 860D             (    cubix_ide.asm):00154                 LDA     #PPIDE_LBAHI
+88FD BD8A71           (    cubix_ide.asm):00155                 JSR     IDE_READ
+8900 C100             (    cubix_ide.asm):00156                 CMPB    #$00
+8902 2605             (    cubix_ide.asm):00157                 BNE     PPIDE_PROBE_FAIL                  ; IF NOT '00' THEN REPORT NO IDE PRESENT
+8904 1CFE             (    cubix_ide.asm):00158                 CLC
+8906 7E890B           (    cubix_ide.asm):00159                 JMP     PPIDE_PROBE_SUCCESS
+8909                  (    cubix_ide.asm):00160         PPIDE_PROBE_FAIL:
+                      (    cubix_ide.asm):00161         
+8909 1A01             (    cubix_ide.asm):00162                 SEC
+890B                  (    cubix_ide.asm):00163         PPIDE_PROBE_SUCCESS:
+890B 39               (    cubix_ide.asm):00164                 RTS                                       ; DONE, NOTE THAT A=0 AND Z IS SET
+                      (    cubix_ide.asm):00165         
+                      (    cubix_ide.asm):00166         ;*__IDE_READ_INFO___________________________________________________________________________________
+                      (    cubix_ide.asm):00167         ;*
+                      (    cubix_ide.asm):00168         ;*  READ IDE INFORMATION
+                      (    cubix_ide.asm):00169         ;*      CARRY SET ON ERROR
+                      (    cubix_ide.asm):00170         ;*      A=MST/SLV
+                      (    cubix_ide.asm):00171         ;*____________________________________________________________________________________________________
+890C                  (    cubix_ide.asm):00172         IDE_READ_INFO:
+                      (    cubix_ide.asm):00173         ; SET DRIVE BIT
+890C C60E             (    cubix_ide.asm):00174                 LDB     #PPIDE_DEVICE
+890E F78872           (    cubix_ide.asm):00175                 STB     PPIDECOMMAND
+8911 8401             (    cubix_ide.asm):00176                 ANDA    #$01                              ; ONLY WANT THE 1 BIT (MST/SLV)
+8913 48               (    cubix_ide.asm):00177                 ASLA                                      ; SHIFT 4
+8914 48               (    cubix_ide.asm):00178                 ASLA                                      ;
+8915 48               (    cubix_ide.asm):00179                 ASLA                                      ;
+8916 48               (    cubix_ide.asm):00180                 ASLA                                      ;
+8917 8AE0             (    cubix_ide.asm):00181                 ORA     #$E0                              ; E0=MST  F0=SLV
+8919 1F89             (    cubix_ide.asm):00182                 TFR     A,B
+891B 8600             (    cubix_ide.asm):00183                 LDA     #$00
+891D BD8A9A           (    cubix_ide.asm):00184                 JSR     IDE_WRITE
+8920 BD89E1           (    cubix_ide.asm):00185                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
+8923 2534             (    cubix_ide.asm):00186                 BCS     IDE_READ_INFO_ABORT
+8925 860F             (    cubix_ide.asm):00187                 LDA     #PPIDE_COMMAND                    ;SELECT IDE REGISTER
+8927 B78872           (    cubix_ide.asm):00188                 STA     PPIDECOMMAND
+892A CC00EC           (    cubix_ide.asm):00189                 LDD     #PPIDE_CMD_ID
+892D BD8A9A           (    cubix_ide.asm):00190                 JSR     IDE_WRITE                         ;ASK THE DRIVE TO READ IT
+8930 BD8A08           (    cubix_ide.asm):00191                 JSR     IDE_WAIT_DRQ                      ;WAIT UNTIL IT'S GOT THE DATA
+8933 2524             (    cubix_ide.asm):00192                 BCS     IDE_READ_INFO_ABORT
+8935 BD8A36           (    cubix_ide.asm):00193                 JSR     IDE_READ_BUFFER                   ; GRAB THE 256 WORDS FROM THE BUFFER
+8938 8E8B13           (    cubix_ide.asm):00194                 LDX     #MESSAGE6
+893B BD8B6F           (    cubix_ide.asm):00195                 JSR     WRSTR
+893E B6037B           (    cubix_ide.asm):00196                 LDA     HSTBUF+123
+8941 BD8B85           (    cubix_ide.asm):00197                 JSR     WRHEX
+8944 B6037A           (    cubix_ide.asm):00198                 LDA     HSTBUF+122
+8947 BD8B85           (    cubix_ide.asm):00199                 JSR     WRHEX
+894A B60379           (    cubix_ide.asm):00200                 LDA     HSTBUF+121
+894D BD8B85           (    cubix_ide.asm):00201                 JSR     WRHEX
+8950 B60378           (    cubix_ide.asm):00202                 LDA     HSTBUF+120
+8953 BD8B85           (    cubix_ide.asm):00203                 JSR     WRHEX
+8956 7E8965           (    cubix_ide.asm):00204                 JMP     IDE_READ_INFO_OK
+8959                  (    cubix_ide.asm):00205         IDE_READ_INFO_ABORT:
+8959 8E8AE4           (    cubix_ide.asm):00206                 LDX     #MESSAGE3
+895C BD8B6F           (    cubix_ide.asm):00207                 JSR     WRSTR                             ;DO PROMPT
+895F BD8B66           (    cubix_ide.asm):00208                 JSR     LFCR                              ;AND CRLF
+8962 1A01             (    cubix_ide.asm):00209                 SEC
+8964 39               (    cubix_ide.asm):00210                 RTS                                       ;
+8965                  (    cubix_ide.asm):00211         IDE_READ_INFO_OK:
+8965 BD8B66           (    cubix_ide.asm):00212                 JSR     LFCR                              ; AND CRLF
+8968 1CFE             (    cubix_ide.asm):00213                 CLC
+896A 39               (    cubix_ide.asm):00214                 RTS
+                      (    cubix_ide.asm):00215         
+                      (    cubix_ide.asm):00216         
+                      (    cubix_ide.asm):00217         ;__IDE_PPIDETECT____________________________________________________________________________________
+                      (    cubix_ide.asm):00218         ;
+                      (    cubix_ide.asm):00219         ;  PROBE FOR PPI HARDWARE
+                      (    cubix_ide.asm):00220         ;____________________________________________________________________________________________________
+                      (    cubix_ide.asm):00221         ;
+896B                  (    cubix_ide.asm):00222         IDE_PPIDETECT:
+                      (    cubix_ide.asm):00223         ;
+                      (    cubix_ide.asm):00224         ; TEST FOR PPI EXISTENCE
+                      (    cubix_ide.asm):00225         ; WE SETUP THE PPI TO WRITE, THEN WRITE A VALUE OF ZERO
+                      (    cubix_ide.asm):00226         ; TO PORT A (DATALO), THEN READ IT BACK.  IF THE PPI IS THERE
+                      (    cubix_ide.asm):00227         ; THEN THE BUS HOLD CIRCUITRY WILL READ BACK THE ZERO. SINCE
+                      (    cubix_ide.asm):00228         ; WE ARE IN WRITE MODE, AN IDE CONTROLLER WILL NOT BE ABLE TO
+                      (    cubix_ide.asm):00229         ; INTERFERE WITH THE VALUE BEING READ.
+896B BD8AC7           (    cubix_ide.asm):00230                 JSR     SET_PPI_WR
+                      (    cubix_ide.asm):00231         ;
+896E 8600             (    cubix_ide.asm):00232                 LDA     #$00                              ; VALUE ZERO
+8970 B70560           (    cubix_ide.asm):00233                 STA     PPIDELO                           ; PUSH VALUE TO PORT
+8973 B60560           (    cubix_ide.asm):00234                 LDA     PPIDELO                           ; GET PORT VALUE
+8976 8100             (    cubix_ide.asm):00235                 CMPA    #$00
+8978 39               (    cubix_ide.asm):00236                 RTS                                       ; AND RETURN
+                      (    cubix_ide.asm):00237         ;
+                      (    cubix_ide.asm):00238         
+                      (    cubix_ide.asm):00239         
+                      (    cubix_ide.asm):00240         ;*__IDE_READ_SECTOR___________________________________________________________________________________
+                      (    cubix_ide.asm):00241         ;*
+                      (    cubix_ide.asm):00242         ;*  READ IDE SECTOR (IN LBA) INTO BUFFER
+                      (    cubix_ide.asm):00243         ;*
+                      (    cubix_ide.asm):00244         ;*____________________________________________________________________________________________________
+8979                  (    cubix_ide.asm):00245         IDE_READ_SECTOR:
+8979 BD89E1           (    cubix_ide.asm):00246                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
+897C 251B             (    cubix_ide.asm):00247                 BCS     IDE_READ_SECTOR_ERROR             ; IF TIMEOUT, REPORT NO IDE PRESENT
+897E                  (    cubix_ide.asm):00248         IDE_READ_SECTOR_1:
+897E BD8B16           (    cubix_ide.asm):00249                 JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
+8981 860F             (    cubix_ide.asm):00250                 LDA     #PPIDE_COMMAND                    ;SELECT IDE REGISTER
+8983 B78872           (    cubix_ide.asm):00251                 STA     PPIDECOMMAND
+8986 CC0020           (    cubix_ide.asm):00252                 LDD     #PPIDE_CMD_READ
+8989 BD8A9A           (    cubix_ide.asm):00253                 JSR     IDE_WRITE                         ; ASK THE DRIVE TO READ IT
+898C BD8A08           (    cubix_ide.asm):00254                 JSR     IDE_WAIT_DRQ                      ; WAIT UNTIL IT'S GOT THE DATA
+898F 2508             (    cubix_ide.asm):00255                 BCS     IDE_READ_SECTOR_ERROR             ; IF TIMEOUT, REPORT NO IDE PRESENT
+8991 BD8A36           (    cubix_ide.asm):00256                 JSR     IDE_READ_BUFFER                   ; GRAB THE 256 WORDS FROM THE BUFFER
+8994 4F               (    cubix_ide.asm):00257                 CLRA                                      ; ZERO = 1 ON RETURN = OPERATION OK
+8995 B701F7           (    cubix_ide.asm):00258                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
+8998 39               (    cubix_ide.asm):00259                 RTS
+8999                  (    cubix_ide.asm):00260         IDE_READ_SECTOR_ERROR:
+8999 8602             (    cubix_ide.asm):00261                 LDA     #$02                              ; SET ERROR CONDITION
+899B B701F7           (    cubix_ide.asm):00262                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
+899E 39               (    cubix_ide.asm):00263                 RTS
+                      (    cubix_ide.asm):00264         
+                      (    cubix_ide.asm):00265         ;*__IDE_WRITE_SECTOR__________________________________________________________________________________
+                      (    cubix_ide.asm):00266         ;*
+                      (    cubix_ide.asm):00267         ;*  WRITE IDE SECTOR (IN LBA) FROM BUFFER
+                      (    cubix_ide.asm):00268         ;*
+                      (    cubix_ide.asm):00269         ;*____________________________________________________________________________________________________
+899F                  (    cubix_ide.asm):00270         IDE_WRITE_SECTOR:
+899F BD89E1           (    cubix_ide.asm):00271                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
+89A2 2520             (    cubix_ide.asm):00272                 BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
+89A4 BD8B16           (    cubix_ide.asm):00273                 JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
+89A7 860F             (    cubix_ide.asm):00274                 LDA     #PPIDE_COMMAND
+89A9 B78872           (    cubix_ide.asm):00275                 STA     PPIDECOMMAND
+89AC CC0030           (    cubix_ide.asm):00276                 LDD     #PPIDE_CMD_WRITE
+89AF BD8A9A           (    cubix_ide.asm):00277                 JSR     IDE_WRITE                         ;TELL DRIVE TO WRITE A SECTOR
+89B2 BD8A08           (    cubix_ide.asm):00278                 JSR     IDE_WAIT_DRQ                      ;WAIT UNIT IT WANTS THE DATA
+89B5 250D             (    cubix_ide.asm):00279                 BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
+89B7 BD8A52           (    cubix_ide.asm):00280                 JSR     IDE_WRITE_BUFFER                  ;GIVE THE DATA TO THE DRIVE
+89BA BD89E1           (    cubix_ide.asm):00281                 JSR     IDE_WAIT_NOT_BUSY                 ;WAIT UNTIL THE WRITE IS COMPLETE
+89BD 2505             (    cubix_ide.asm):00282                 BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
+89BF 4F               (    cubix_ide.asm):00283                 CLRA                                      ; ZERO = 1 ON RETURN = OPERATION OK
+89C0 B701F7           (    cubix_ide.asm):00284                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
+89C3 39               (    cubix_ide.asm):00285                 RTS
+89C4                  (    cubix_ide.asm):00286         IDE_WRITE_SECTOR_ERROR:
+89C4 8602             (    cubix_ide.asm):00287                 LDA     #$02
+89C6 B701F7           (    cubix_ide.asm):00288                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
+89C9 39               (    cubix_ide.asm):00289                 RTS
+                      (    cubix_ide.asm):00290         
+                      (    cubix_ide.asm):00291         ;*__PPIDE_RESET____________________________________________________________________________________
+                      (    cubix_ide.asm):00292         ;*
+                      (    cubix_ide.asm):00293         ;*  SOFT RESET IDE CHANNEL
+                      (    cubix_ide.asm):00294         ;*
+                      (    cubix_ide.asm):00295         ;*____________________________________________________________________________________________________
+89CA                  (    cubix_ide.asm):00296         PPIDE_RESET:
+                      (    cubix_ide.asm):00297         ;       PRTDBG "IDE RESET$"
+89CA 8680             (    cubix_ide.asm):00298                 LDA     #PPIDE_RST_LINE
+89CC B70562           (    cubix_ide.asm):00299                 STA     PPIDECNTRL                        ; ASSERT RST LINE ON IDE INTERFACE
+                      (    cubix_ide.asm):00300         
+89CF 108E0100         (    cubix_ide.asm):00301                 LDY     #$0100
+                      (    cubix_ide.asm):00302         ;       PRTDBG "IDE RESET DELAY$"
+89D3                  (    cubix_ide.asm):00303         RST_DLY:
+89D3 313F             (    cubix_ide.asm):00304                 DEY
+89D5 108C0000         (    cubix_ide.asm):00305                 CMPY    #$0000
+89D9 26F8             (    cubix_ide.asm):00306                 BNE     RST_DLY
+89DB 8600             (    cubix_ide.asm):00307                 LDA     #$00
+89DD B70562           (    cubix_ide.asm):00308                 STA     PPIDECNTRL                        ; DEASSERT RST LINE ON IDE INTERFACE
+                      (    cubix_ide.asm):00309         
+                      (    cubix_ide.asm):00310         ; IF A DSKYNG IS ACTIVE AND IS ON THE SAME PPI PORT AS THE PPISDa:a BEING
+                      (    cubix_ide.asm):00311         ; RESET, THEN THE DSKYNG WILL ALSO BE RESET.  SO, THE DSKY IS ALSO INITIALIZED.
+                      (    cubix_ide.asm):00312         ;    IF      USEDSKYNG = 1
+                      (    cubix_ide.asm):00313         ;        JSR     DSKY_REINIT
+                      (    cubix_ide.asm):00314         ;        ENDC
+                      (    cubix_ide.asm):00315         
+89E0 39               (    cubix_ide.asm):00316                 RTS
+                      (    cubix_ide.asm):00317         
+                      (    cubix_ide.asm):00318         
+                      (    cubix_ide.asm):00319         ;*__IDE_WAIT_NOT_BUSY_______________________________________________________________________________
+                      (    cubix_ide.asm):00320         ;*
+                      (    cubix_ide.asm):00321         ;*  WAIT FOR IDE CHANNEL TO BECOME READY
+                      (    cubix_ide.asm):00322         ;*
+                      (    cubix_ide.asm):00323         ;*____________________________________________________________________________________________________
+89E1                  (    cubix_ide.asm):00324         IDE_WAIT_NOT_BUSY:
+89E1 3406             (    cubix_ide.asm):00325                 PSHS    A,B
+89E3 8600             (    cubix_ide.asm):00326                 LDA     #$00
+89E5 B78873           (    cubix_ide.asm):00327                 STA     PPIDETIMEOUT
+89E8 B78874           (    cubix_ide.asm):00328                 STA     PPIDETIMEOUT+1
+89EB                  (    cubix_ide.asm):00329         IDE_WAIT_NOT_BUSY1:
+89EB 860F             (    cubix_ide.asm):00330                 LDA     #PPIDE_STATUS                     ;WAIT FOR RDY BIT TO BE SET
+89ED BD8A71           (    cubix_ide.asm):00331                 JSR     IDE_READ
+89F0 C480             (    cubix_ide.asm):00332                 ANDB    #$80
+89F2 270F             (    cubix_ide.asm):00333                 BEQ     IDE_WAIT_NOT_BUSY2
+89F4 7C8873           (    cubix_ide.asm):00334                 INC     PPIDETIMEOUT
+89F7 26F2             (    cubix_ide.asm):00335                 BNE     IDE_WAIT_NOT_BUSY1
+89F9 7C8874           (    cubix_ide.asm):00336                 INC     PPIDETIMEOUT+1
+89FC 26ED             (    cubix_ide.asm):00337                 BNE     IDE_WAIT_NOT_BUSY1
+89FE 1A01             (    cubix_ide.asm):00338                 SEC
+8A00 7E8A05           (    cubix_ide.asm):00339                 JMP     IDE_WAIT_NOT_BUSY3
+8A03                  (    cubix_ide.asm):00340         IDE_WAIT_NOT_BUSY2:
+8A03 1CFE             (    cubix_ide.asm):00341                 CLC
+8A05                  (    cubix_ide.asm):00342         IDE_WAIT_NOT_BUSY3:
+8A05 3586             (    cubix_ide.asm):00343                 PULS    PC,A,B
+8A07 39               (    cubix_ide.asm):00344                 RTS
+                      (    cubix_ide.asm):00345         
+                      (    cubix_ide.asm):00346         ;*__IDE_WAIT_DRQ______________________________________________________________________________________
+                      (    cubix_ide.asm):00347         ;*
+                      (    cubix_ide.asm):00348         ;*      WAIT FOR THE DRIVE TO BE READY TO TRANSFER DATA.
+                      (    cubix_ide.asm):00349         ;*
+                      (    cubix_ide.asm):00350         ;*____________________________________________________________________________________________________
+8A08                  (    cubix_ide.asm):00351         IDE_WAIT_DRQ:
+8A08 3426             (    cubix_ide.asm):00352                 PSHS    A,B,Y
+8A0A 8600             (    cubix_ide.asm):00353                 LDA     #$00
+8A0C B78873           (    cubix_ide.asm):00354                 STA     PPIDETIMEOUT
+8A0F B78874           (    cubix_ide.asm):00355                 STA     PPIDETIMEOUT+1
+8A12                  (    cubix_ide.asm):00356         IDE_WAIT_DRQ1:
+8A12 860F             (    cubix_ide.asm):00357                 LDA     #PPIDE_STATUS                     ;WAIT FOR DRQ BIT TO BE SET
+8A14 BD8A71           (    cubix_ide.asm):00358                 JSR     IDE_READ
+8A17 C488             (    cubix_ide.asm):00359                 ANDB    #%10001000                        ; MASK OFF BUSY(7) AND DRQ(3)
+8A19 C108             (    cubix_ide.asm):00360                 CMPB    #%00001000                        ; WE WANT BUSY(7) TO BE 0 AND DRQ (3) TO BE 1
+8A1B 2715             (    cubix_ide.asm):00361                 BEQ     IDE_WAIT_DRQ2
+8A1D C401             (    cubix_ide.asm):00362                 ANDB    #%00000001                        ; IS ERROR?
+8A1F C101             (    cubix_ide.asm):00363                 CMPB    #%00000001                        ;
+8A21 270A             (    cubix_ide.asm):00364                 BEQ     IDE_WAIT_DRQE
+8A23 7C8873           (    cubix_ide.asm):00365                 INC     PPIDETIMEOUT
+8A26 26EA             (    cubix_ide.asm):00366                 BNE     IDE_WAIT_DRQ1
+8A28 7C8874           (    cubix_ide.asm):00367                 INC     PPIDETIMEOUT+1
+8A2B 26E5             (    cubix_ide.asm):00368                 BNE     IDE_WAIT_DRQ1
+8A2D                  (    cubix_ide.asm):00369         IDE_WAIT_DRQE:
+8A2D 1A01             (    cubix_ide.asm):00370                 SEC
+8A2F 7E8A34           (    cubix_ide.asm):00371                 JMP     IDE_WAIT_DRQ3
+8A32                  (    cubix_ide.asm):00372         IDE_WAIT_DRQ2:
+8A32 1CFE             (    cubix_ide.asm):00373                 CLC
+8A34                  (    cubix_ide.asm):00374         IDE_WAIT_DRQ3:
+8A34 35A6             (    cubix_ide.asm):00375                 PULS    PC,A,B,Y
+                      (    cubix_ide.asm):00376         
+                      (    cubix_ide.asm):00377         
+                      (    cubix_ide.asm):00378         
+                      (    cubix_ide.asm):00379         ;*__IDE_READ_BUFFER___________________________________________________________________________________
+                      (    cubix_ide.asm):00380         ;*
+                      (    cubix_ide.asm):00381         ;*  READ IDE BUFFER LITTLE ENDIAN
+                      (    cubix_ide.asm):00382         ;*
+                      (    cubix_ide.asm):00383         ;*____________________________________________________________________________________________________
+8A36                  (    cubix_ide.asm):00384         IDE_READ_BUFFER:
+8A36 108E0000         (    cubix_ide.asm):00385                 LDY     #$0000                            ; INDEX
+8A3A                  (    cubix_ide.asm):00386         IDEBUFRD:
+8A3A 8608             (    cubix_ide.asm):00387                 LDA     #PPIDE_DATA
+8A3C BD8A74           (    cubix_ide.asm):00388                 JSR     IDE_READ_NO_SETUP
+8A3F E7A90300         (    cubix_ide.asm):00389                 STB     HSTBUF,Y                          ; 'ID DRIVE' IDE RESPONSE IS LITTLE ENDIAN FORMAT
+8A43 3121             (    cubix_ide.asm):00390                 INY
+8A45 A7A90300         (    cubix_ide.asm):00391                 STA     HSTBUF,Y                          ; 'ID DRIVE' IDE RESPONSE IS LITTLE ENDIAN FORMAT
+8A49 3121             (    cubix_ide.asm):00392                 INY
+8A4B 108C0200         (    cubix_ide.asm):00393                 CMPY    #$0200                            ;
+8A4F 26E9             (    cubix_ide.asm):00394                 BNE     IDEBUFRD                          ;
+8A51 39               (    cubix_ide.asm):00395                 RTS                                       ;
+                      (    cubix_ide.asm):00396         
+                      (    cubix_ide.asm):00397         ;*__IDE_WRITE_BUFFER___________________________________________________________________________________
+                      (    cubix_ide.asm):00398         ;*
+                      (    cubix_ide.asm):00399         ;*  WRITE IDE BUFFER LITTLE ENDIAN
+                      (    cubix_ide.asm):00400         ;*
+                      (    cubix_ide.asm):00401         ;*____________________________________________________________________________________________________
+8A52                  (    cubix_ide.asm):00402         IDE_WRITE_BUFFER:
+8A52 108E0000         (    cubix_ide.asm):00403                 LDY     #$0000                            ; INDEX
+8A56                  (    cubix_ide.asm):00404         IDEBUFWT:
+8A56 8608             (    cubix_ide.asm):00405                 LDA     #PPIDE_DATA
+8A58 B78872           (    cubix_ide.asm):00406                 STA     PPIDECOMMAND
+8A5B E6A90300         (    cubix_ide.asm):00407                 LDB     HSTBUF,Y                          ; SECTORS ARE BIG ENDIAN
+8A5F 3121             (    cubix_ide.asm):00408                 INY
+8A61 A6A90300         (    cubix_ide.asm):00409                 LDA     HSTBUF,Y                          ; SECTORS ARE BIG ENDIAN
+8A65 3121             (    cubix_ide.asm):00410                 INY                                       ;
+8A67 BD8A9A           (    cubix_ide.asm):00411                 JSR     IDE_WRITE
+8A6A 108C0200         (    cubix_ide.asm):00412                 CMPY    #$0200                            ;
+8A6E 26E6             (    cubix_ide.asm):00413                 BNE     IDEBUFWT                          ;
+8A70 39               (    cubix_ide.asm):00414                 RTS                                       ;
+                      (    cubix_ide.asm):00415         
+                      (    cubix_ide.asm):00416         
+                      (    cubix_ide.asm):00417         ;-------------------------------------------------------------------------------
+                      (    cubix_ide.asm):00418         
+                      (    cubix_ide.asm):00419         ; LOW LEVEL I/O TO THE DRIVE.  THESE ARE THE ROUTINES THAT TALK
+                      (    cubix_ide.asm):00420         ; DIRECTLY TO THE DRIVE, VIA THE 8255 CHIP.  NORMALLY A MAIN
+                      (    cubix_ide.asm):00421         ; PROGRAM WOULD NOT CALL TO THESE.
+                      (    cubix_ide.asm):00422         
+                      (    cubix_ide.asm):00423         ;DO A READ BUS CYCLE TO THE DRIVE, USING THE 8255.
+                      (    cubix_ide.asm):00424         ;INPUT A = IDE REGSITER ADDRESS
+                      (    cubix_ide.asm):00425         ;OUTPUT D = WORD READ FROM IDE DRIVE
+8A71                  (    cubix_ide.asm):00426         IDE_READ:
+8A71 BD8AB9           (    cubix_ide.asm):00427                 JSR     SET_PPI_RD                        ; SETUP FOR A READ CYCLE
+8A74                  (    cubix_ide.asm):00428         IDE_READ_NO_SETUP:
+8A74 B70562           (    cubix_ide.asm):00429                 STA     PPIDECNTRL                        ;DRIVE ADDRESS ONTO CONTROL LINES
+8A77 8A40             (    cubix_ide.asm):00430                 ORA     #PPIDE_RD_LINE                    ; ASSERT RD PIN
+8A79 B70562           (    cubix_ide.asm):00431                 STA     PPIDECNTRL
+8A7C 3402             (    cubix_ide.asm):00432                 PSHS    A
+8A7E F60560           (    cubix_ide.asm):00433                 LDB     PPIDELO                           ; READ LOWER BYTE
+8A81 B60561           (    cubix_ide.asm):00434                 LDA     PPIDEHI                           ; READ UPPER BYTE
+8A84 B78871           (    cubix_ide.asm):00435                 STA     PPIDELOTMP
+8A87 3502             (    cubix_ide.asm):00436                 PULS    A                                 ; RESTORE REGISTER VALUE
+8A89 B70562           (    cubix_ide.asm):00437                 STA     PPIDECNTRL                        ;DRIVE ADDRESS ONTO CONTROL LINES
+8A8C 8840             (    cubix_ide.asm):00438                 EORA    #PPIDE_RD_LINE                    ; ASSERT RD PIN
+8A8E B70562           (    cubix_ide.asm):00439                 STA     PPIDECNTRL
+8A91 8600             (    cubix_ide.asm):00440                 LDA     #$00
+8A93 B70562           (    cubix_ide.asm):00441                 STA     PPIDECNTRL                        ;DEASSERT ALL CONTROL PINS
+8A96 B68871           (    cubix_ide.asm):00442                 LDA     PPIDELOTMP
+8A99 39               (    cubix_ide.asm):00443                 RTS
+                      (    cubix_ide.asm):00444         
+                      (    cubix_ide.asm):00445         
+                      (    cubix_ide.asm):00446         
+                      (    cubix_ide.asm):00447         ;DO A WRITE BUS CYCLE TO THE DRIVE, VIA THE 8255
+                      (    cubix_ide.asm):00448         ;INPUT PPIDECOMMAND = IDE REGISTER ADDRESS
+                      (    cubix_ide.asm):00449         ;INPUT REGISTER D = WORD TO WRITE
+                      (    cubix_ide.asm):00450         ;
+                      (    cubix_ide.asm):00451         
+8A9A                  (    cubix_ide.asm):00452         IDE_WRITE:
+8A9A BD8AC7           (    cubix_ide.asm):00453                 JSR     SET_PPI_WR                        ; SETUP FOR A WRITE CYCLE
+8A9D F70560           (    cubix_ide.asm):00454                 STB     PPIDELO                           ; WRITE LOWER BYTE
+8AA0 B70561           (    cubix_ide.asm):00455                 STA     PPIDEHI                           ; WRITE UPPER BYTE
+8AA3 B68872           (    cubix_ide.asm):00456                 LDA     PPIDECOMMAND
+8AA6 B70562           (    cubix_ide.asm):00457                 STA     PPIDECNTRL                        ;DRIVE ADDRESS ONTO CONTROL LINES
+8AA9 8A20             (    cubix_ide.asm):00458                 ORA     #PPIDE_WR_LINE                    ; ASSERT WRITE PIN
+8AAB B70562           (    cubix_ide.asm):00459                 STA     PPIDECNTRL
+8AAE 8820             (    cubix_ide.asm):00460                 EORA    #PPIDE_WR_LINE                    ; DE ASSERT WR PIN
+8AB0 B70562           (    cubix_ide.asm):00461                 STA     PPIDECNTRL
+8AB3 8600             (    cubix_ide.asm):00462                 LDA     #$00
+8AB5 B70562           (    cubix_ide.asm):00463                 STA     PPIDECNTRL                        ;DEASSERT ALL CONTROL PINS
+8AB8 39               (    cubix_ide.asm):00464                 RTS
+                      (    cubix_ide.asm):00465         
+                      (    cubix_ide.asm):00466         
+                      (    cubix_ide.asm):00467         ;-----------------------------------------------------------------------------------
+                      (    cubix_ide.asm):00468         ; PPI SETUP ROUTINE TO CONFIGURE THE APPROPRIATE PPI MODE
+                      (    cubix_ide.asm):00469         ;
+                      (    cubix_ide.asm):00470         ;------------------------------------------------------------------------------------
+                      (    cubix_ide.asm):00471         
+8AB9                  (    cubix_ide.asm):00472         SET_PPI_RD:
+8AB9 3402             (    cubix_ide.asm):00473                 PSHS    A
+8ABB 8600             (    cubix_ide.asm):00474                 LDA     #$00
+8ABD B70562           (    cubix_ide.asm):00475                 STA     PPIDECNTRL                        ;DEASSERT ALL CONTROL PINS
+8AC0 8692             (    cubix_ide.asm):00476                 LDA     #PPRD_IDE_8255
+8AC2 B70563           (    cubix_ide.asm):00477                 STA     PPIDEPPIC                         ;CONFIG 8255 CHIP, READ MODE
+8AC5 3582             (    cubix_ide.asm):00478                 PULS    A,PC
+                      (    cubix_ide.asm):00479         
+8AC7                  (    cubix_ide.asm):00480         SET_PPI_WR:
+8AC7 3402             (    cubix_ide.asm):00481                 PSHS    A
+8AC9 8600             (    cubix_ide.asm):00482                 LDA     #$00
+8ACB B70562           (    cubix_ide.asm):00483                 STA     PPIDECNTRL                        ;DEASSERT ALL CONTROL PINS
+8ACE 8680             (    cubix_ide.asm):00484                 LDA     #PPWR_IDE_8255
+8AD0 B70563           (    cubix_ide.asm):00485                 STA     PPIDEPPIC                         ;CONFIG 8255 CHIP, WRITE MODE
+8AD3 3582             (    cubix_ide.asm):00486                 PULS    A,PC
+                      (    cubix_ide.asm):00487         
+                      (    cubix_ide.asm):00488         
+8AD5                  (    cubix_ide.asm):00489         MESSAGE1
+8AD5 5050494445203A   (    cubix_ide.asm):00490                 FCC     "PPIDE :"
+8ADC 00               (    cubix_ide.asm):00491                 FCB     00
+8ADD                  (    cubix_ide.asm):00492         MESSAGE2
+8ADD 20494F3D3078     (    cubix_ide.asm):00493                 FCC     " IO=0x"
+8AE3 00               (    cubix_ide.asm):00494                 FCB     00
+8AE4                  (    cubix_ide.asm):00495         MESSAGE3
+8AE4 204E4F5420505245 (    cubix_ide.asm):00496                 FCC     " NOT PRESENT"
+     53454E54
+8AF0 00               (    cubix_ide.asm):00497                 FCB     00
+8AF1                  (    cubix_ide.asm):00498         MESSAGE4
+8AF1 205050494445303A (    cubix_ide.asm):00499                 FCC     " PPIDE0: BLOCKS="
+     20424C4F434B533D
+8B01 00               (    cubix_ide.asm):00500                 FCB     00
+8B02                  (    cubix_ide.asm):00501         MESSAGE5
+8B02 205050494445313A (    cubix_ide.asm):00502                 FCC     " PPIDE1: BLOCKS="
+     20424C4F434B533D
+8B12 00               (    cubix_ide.asm):00503                 FCB     00
+8B13                  (    cubix_ide.asm):00504         MESSAGE6
+8B13 3078             (    cubix_ide.asm):00505                 FCC     "0x"
+8B15 00               (    cubix_ide.asm):00506                 FCB     00
+                      (    cubix_ide.asm):00507         
+                      (    cubix_ide.asm):00508         
+                      (    cubix_ide.asm):00509         ;*__IDE_SETUP_LBA_____________________________________________________________________________________
+                      (    cubix_ide.asm):00510         ;*
+                      (    cubix_ide.asm):00511         ;*
+                      (    cubix_ide.asm):00512         ;        SETUP   LBA DATA
+                      (    cubix_ide.asm):00513         ;*
+                      (    cubix_ide.asm):00514         ;*____________________________________________________________________________________________________
+8B16                  (    cubix_ide.asm):00515         IDE_SETUP_LBA:
+8B16 3406             (    cubix_ide.asm):00516                 PSHS    D
+                      (    cubix_ide.asm):00517         ;            IF      USEDSKYNG = 1
+                      (    cubix_ide.asm):00518         ;                LDA     DRIVE,U
+                      (    cubix_ide.asm):00519         ;                STA     DSKY_HEXBUF
+                      (    cubix_ide.asm):00520         ;                LDA     HEAD,U
+                      (    cubix_ide.asm):00521         ;                STA     DSKY_HEXBUF+1
+                      (    cubix_ide.asm):00522         ;                LDA     CYL,U
+                      (    cubix_ide.asm):00523         ;                STA     DSKY_HEXBUF+2
+                      (    cubix_ide.asm):00524         ;                LDA     SEC,U
+                      (    cubix_ide.asm):00525         ;                STA     DSKY_HEXBUF+3
+                      (    cubix_ide.asm):00526         ;                JSR     DSKY_BIN2SEG
+                      (    cubix_ide.asm):00527         ;                JSR     DSKY_SHOW
+                      (    cubix_ide.asm):00528         ;                ENDC
+8B18 860E             (    cubix_ide.asm):00529                 LDA     #PPIDE_DEVICE
+8B1A B78872           (    cubix_ide.asm):00530                 STA     PPIDECOMMAND
+8B1D 8600             (    cubix_ide.asm):00531                 LDA     #$00
+8B1F F601FB           (    cubix_ide.asm):00532                 LDB     CURRENTDEVICE
+8B22 C401             (    cubix_ide.asm):00533                 ANDB    #$01                              ; only want drive cfg
+8B24 58               (    cubix_ide.asm):00534                 ASLB                                      ; SHIFT 4
+8B25 58               (    cubix_ide.asm):00535                 ASLB                                      ;
+8B26 58               (    cubix_ide.asm):00536                 ASLB                                      ;
+8B27 58               (    cubix_ide.asm):00537                 ASLB                                      ;
+8B28 CAE0             (    cubix_ide.asm):00538                 ORB     #$E0                              ; E0=MST  F0=SLV
+8B2A BD8A9A           (    cubix_ide.asm):00539                 JSR     IDE_WRITE
+                      (    cubix_ide.asm):00540         
+8B2D 860D             (    cubix_ide.asm):00541                 LDA     #PPIDE_LBAHI
+8B2F B78872           (    cubix_ide.asm):00542                 STA     PPIDECOMMAND
+8B32 8600             (    cubix_ide.asm):00543                 LDA     #$00
+8B34 F601F8           (    cubix_ide.asm):00544                 LDB     CURRENTHEAD
+8B37 FB01FC           (    cubix_ide.asm):00545                 ADDB    CURRENTSLICE
+8B3A BD8A9A           (    cubix_ide.asm):00546                 JSR     IDE_WRITE
+                      (    cubix_ide.asm):00547         
+8B3D 860C             (    cubix_ide.asm):00548                 LDA     #PPIDE_LBAMID
+8B3F B78872           (    cubix_ide.asm):00549                 STA     PPIDECOMMAND
+8B42 8600             (    cubix_ide.asm):00550                 LDA     #$00
+8B44 F601F9           (    cubix_ide.asm):00551                 LDB     CURRENTCYL                        ;
+8B47 BD8A9A           (    cubix_ide.asm):00552                 JSR     IDE_WRITE
+                      (    cubix_ide.asm):00553         
+8B4A 860B             (    cubix_ide.asm):00554                 LDA     #PPIDE_LBALOW
+8B4C B78872           (    cubix_ide.asm):00555                 STA     PPIDECOMMAND
+8B4F 8600             (    cubix_ide.asm):00556                 LDA     #$00
+8B51 F601FA           (    cubix_ide.asm):00557                 LDB     CURRENTSEC                        ;
+8B54 BD8A9A           (    cubix_ide.asm):00558                 JSR     IDE_WRITE
+                      (    cubix_ide.asm):00559         
+8B57 860A             (    cubix_ide.asm):00560                 LDA     #PPIDE_SEC_CNT
+8B59 B78872           (    cubix_ide.asm):00561                 STA     PPIDECOMMAND
+8B5C 8600             (    cubix_ide.asm):00562                 LDA     #$00
+8B5E C601             (    cubix_ide.asm):00563                 LDB     #$01
+8B60 BD8A9A           (    cubix_ide.asm):00564                 JSR     IDE_WRITE
+8B63 3586             (    cubix_ide.asm):00565                 PULS    D,PC
+                      (     cubixdrv.asm):00107         ;.INCLUDE "doside.asm"
+                      (     cubixdrv.asm):00108         ;.INCLUDE "dosdskyn.asm"
+                      (     cubixdrv.asm):00109         ;.INCLUDE "dosmd.asm"
+                      (     cubixdrv.asm):00110         ;.INCLUDE "dosflp.asm"
+                      (     cubixdrv.asm):00111         ;.INCLUDE "dospager.asm"
+                      (     cubixdrv.asm):00112         
+                      (     cubixdrv.asm):00113         
+                      (     cubixdrv.asm):00114         
+8B65                  (     cubixdrv.asm):00115         drv_noop:
+8B65 39               (     cubixdrv.asm):00116                 RTS
+                      (     cubixdrv.asm):00117         
+                      (     cubixdrv.asm):00118         ;*
+                      (     cubixdrv.asm):00119         ;* OUTPUT LFCR TO CONSOLE
+                      (     cubixdrv.asm):00120         ;*
+8B66                  (     cubixdrv.asm):00121         LFCR:
+8B66 860A             (     cubixdrv.asm):00122                 LDA     #10
+8B68 8D35             (     cubixdrv.asm):00123                 BSR     PUTCHR
+8B6A 860D             (     cubixdrv.asm):00124                 LDA     #13
+8B6C 8D31             (     cubixdrv.asm):00125                 BSR     PUTCHR
+8B6E 39               (     cubixdrv.asm):00126                 RTS
+                      (     cubixdrv.asm):00127         ;*
+                      (     cubixdrv.asm):00128         ;* WRITE STRING(X) TO CONSOLE
+                      (     cubixdrv.asm):00129         ;*
+8B6F                  (     cubixdrv.asm):00130         WRSTR:
+8B6F 3406             (     cubixdrv.asm):00131                 PSHS    A,B                               ;SAVE A
+8B71                  (     cubixdrv.asm):00132         WRST1:
+8B71 A680             (     cubixdrv.asm):00133                 LDA     ,X+                               ;GET CHAR
+8B73 2704             (     cubixdrv.asm):00134                 BEQ     WRST2                             ;END, QUIT
+8B75 8D28             (     cubixdrv.asm):00135                 BSR     PUTCHR
+8B77 20F8             (     cubixdrv.asm):00136                 BRA     WRST1                             ;CONTINUE
+8B79                  (     cubixdrv.asm):00137         WRST2:
+8B79 3506             (     cubixdrv.asm):00138                 PULS    A,B
+8B7B 39               (     cubixdrv.asm):00139                 RTS
+                      (     cubixdrv.asm):00140         ;*
+                      (     cubixdrv.asm):00141         ;* OUTPUT NUMBER IN 'D' TO CONSOLE IN HEX
+                      (     cubixdrv.asm):00142         ;*
+8B7C                  (     cubixdrv.asm):00143         WRHEXW
+8B7C 8D07             (     cubixdrv.asm):00144                 BSR     WRHEX                             ;OUTPUT
+8B7E 1E89             (     cubixdrv.asm):00145                 EXG     A,B                               ;SWAP
+8B80 8D03             (     cubixdrv.asm):00146                 BSR     WRHEX                             ;OUTPUT
+8B82 1E89             (     cubixdrv.asm):00147                 EXG     A,B                               ;BACK
+8B84 39               (     cubixdrv.asm):00148                 RTS
+                      (     cubixdrv.asm):00149         ;*
+                      (     cubixdrv.asm):00150         ;* OUTPUT 'A' NUMBER TO CONSOLE IN HEX
+                      (     cubixdrv.asm):00151         ;*
+8B85                  (     cubixdrv.asm):00152         WRHEX
+8B85 3402             (     cubixdrv.asm):00153                 PSHS    A                                 ;SAVE IT
+8B87 44               (     cubixdrv.asm):00154                 LSRA                                      ;SHIFT
+8B88 44               (     cubixdrv.asm):00155                 LSRA                                      ;HIGH NIBBLE
+8B89 44               (     cubixdrv.asm):00156                 LSRA                                      ;INTO
+8B8A 44               (     cubixdrv.asm):00157                 LSRA                                      ;LOW NIBBLE
+8B8B 8D06             (     cubixdrv.asm):00158                 BSR     HOUT                              ;HIGH
+8B8D A6E4             (     cubixdrv.asm):00159                 LDA     ,S                                ;GET LOW
+8B8F 8D02             (     cubixdrv.asm):00160                 BSR     HOUT                              ;OUTPUT
+8B91 3582             (     cubixdrv.asm):00161                 PULS    A,PC                              ;RESTORE IT
+                      (     cubixdrv.asm):00162         ;* OUTPUT NIBBLE IN HEX
+8B93                  (     cubixdrv.asm):00163         HOUT
+8B93 840F             (     cubixdrv.asm):00164                 ANDA    #%00001111                        ;REMOVE HIGH
+8B95 8B30             (     cubixdrv.asm):00165                 ADDA    #'0'                              ;CONVERT
+8B97 8139             (     cubixdrv.asm):00166                 CMPA    #'9'                              ;OK?
+8B99 2304             (     cubixdrv.asm):00167                 BLS     PUTCHR                            ;OK, OUTPUT
+8B9B 8B07             (     cubixdrv.asm):00168                 ADDA    #7                                ;CONVERT TO 'A'-'F'
+8B9D 2000             (     cubixdrv.asm):00169                 BRA     PUTCHR                            ;OUTPUT
+8B9F                  (     cubixdrv.asm):00170         PUTCHR:
+8B9F 7E884A           (     cubixdrv.asm):00171                 JMP     WRSER1
+8BA2 3404             (     cubixdrv.asm):00172                 PSHS    B
+8BA4 3402             (     cubixdrv.asm):00173                 PSHS    A
+8BA6 58               (     cubixdrv.asm):00174                 ASLB                                      ; DOUBLE NUMBER FOR TABLE LOOKUP
+8BA7 8600             (     cubixdrv.asm):00175                 LDA     #$00
+8BA9 F60100           (     cubixdrv.asm):00176                 LDB     CONSOLEDEVICE
+8BAC 1F01             (     cubixdrv.asm):00177                 TFR     D,X
+8BAE EC898813         (     cubixdrv.asm):00178                 LDD     DISPATCHTABLE,X
+8BB2 FD01FE           (     cubixdrv.asm):00179                 STD     farpointer
+8BB5 3502             (     cubixdrv.asm):00180                 PULS    A
+8BB7 AD9F01FE         (     cubixdrv.asm):00181                 JSR     [farpointer]
+8BBB 3504             (     cubixdrv.asm):00182                 PULS    B
+8BBD 39               (     cubixdrv.asm):00183                 RTS
+                      (     cubixdrv.asm):00184         
+                      (     cubixdrv.asm):00185                 END
+
+Symbol Table:
+[ G] CONSOLEDEVICE                    0100
+[ G] CURRENTCYL                       01F9
+[ G] CURRENTDEVICE                    01FB
+[ G] CURRENTHEAD                      01F8
+[ G] CURRENTSEC                       01FA
+[ G] CURRENTSLICE                     01FC
+[ G] DEBCYLL                          886D
+[ G] DEBCYLM                          886E
+[ G] DEBSEHD                          886F
+[ G] DISKERROR                        01F7
+[ G] DISPATCHTABLE                    8813
+[ G] drv_noop                         8B65
+[ G] farpointer                       01FE
+[ G] FUNCTION_DISPATCHER              8800
+[ G] HOUT                             8B93
+[ G] HSTBUF                           0300
+[ G] IDE_ABORT                        88A5
+[ G] IDE_INITA                        88C7
+[ G] IDE_PPIDETECT                    896B
+[ G] IDE_PRINT_INFO                   88AE
+[ G] IDE_READ                         8A71
+[ G] IDE_READ_BUFFER                  8A36
+[ G] IDE_READ_INFO                    890C
+[ G] IDE_READ_INFO_ABORT              8959
+[ G] IDE_READ_INFO_OK                 8965
+[ G] IDE_READ_NO_SETUP                8A74
+[ G] IDE_READ_SECTOR                  8979
+[ G] IDE_READ_SECTOR_1                897E
+[ G] IDE_READ_SECTOR_ERROR            8999
+[ G] IDE_SETUP_LBA                    8B16
+[ G] IDE_WAIT_DRQ                     8A08
+[ G] IDE_WAIT_DRQ1                    8A12
+[ G] IDE_WAIT_DRQ2                    8A32
+[ G] IDE_WAIT_DRQ3                    8A34
+[ G] IDE_WAIT_DRQE                    8A2D
+[ G] IDE_WAIT_NOT_BUSY                89E1
+[ G] IDE_WAIT_NOT_BUSY1               89EB
+[ G] IDE_WAIT_NOT_BUSY2               8A03
+[ G] IDE_WAIT_NOT_BUSY3               8A05
+[ G] IDE_WRITE                        8A9A
+[ G] IDE_WRITE_BUFFER                 8A52
+[ G] IDE_WRITE_SECTOR                 899F
+[ G] IDE_WRITE_SECTOR_ERROR           89C4
+[ G] IDEBUFRD                         8A3A
+[ G] IDEBUFWT                         8A56
+[ G] LFCR                             8B66
+[ G] MESSAGE1                         8AD5
+[ G] MESSAGE2                         8ADD
+[ G] MESSAGE3                         8AE4
+[ G] MESSAGE4                         8AF1
+[ G] MESSAGE5                         8B02
+[ G] MESSAGE6                         8B13
+[ G] PAGER_D                          02F8
+[ G] PAGER_S                          02FE
+[ G] PAGER_STACK                      02F5
+[ G] PAGER_U                          02F7
+[ G] PAGER_X                          02FA
+[ G] PAGER_Y                          02FC
+[ G] PPIDE_A0_LINE                    0001
+[ G] PPIDE_A1_LINE                    0002
+[ G] PPIDE_A2_LINE                    0004
+[ G] PPIDE_ASTATUS                    0017
+[ G] PPIDE_CMD_ID                     00EC
+[ G] PPIDE_CMD_INIT                   0091
+[ G] PPIDE_CMD_READ                   0020
+[ G] PPIDE_CMD_RECAL                  0010
+[ G] PPIDE_CMD_SPINDOWN               00E0
+[ G] PPIDE_CMD_SPINUP                 00E1
+[ G] PPIDE_CMD_WRITE                  0030
+[ G] PPIDE_COMMAND                    000F
+[ G] PPIDE_CONTROL                    0016
+[ G] PPIDE_CS0_LINE                   0008
+[ G] PPIDE_CS1_LINE                   0010
+[ G] PPIDE_DATA                       0008
+[ G] PPIDE_DEVICE                     000E
+[ G] PPIDE_ERR                        0009
+[ G] PPIDE_INIT                       8877
+[ G] PPIDE_LBAHI                      000D
+[ G] PPIDE_LBALOW                     000B
+[ G] PPIDE_LBAMID                     000C
+[ G] PPIDE_PPI                        0560
+[ G] PPIDE_PROBE                      88CB
+[ G] PPIDE_PROBE_FAIL                 8909
+[ G] PPIDE_PROBE_SUCCESS              890B
+[ G] PPIDE_RD_LINE                    0040
+[ G] PPIDE_RESET                      89CA
+[ G] PPIDE_RST_LINE                   0080
+[ G] PPIDE_SEC_CNT                    000A
+[ G] PPIDE_STATUS                     000F
+[ G] PPIDE_WR_LINE                    0020
+[ G] PPIDECNTRL                       0562
+[ G] PPIDECOMMAND                     8872
+[ G] PPIDEHI                          0561
+[ G] PPIDELO                          0560
+[ G] PPIDELOTMP                       8871
+[ G] PPIDEPPIC                        0563
+[ G] PPIDETIMEOUT                     8873
+[ G] PPIDETMP                         8870
+[ G] PPIDEWORKVAR                     8875
+[ G] PPRD_IDE_8255                    0092
+[ G] PPWR_IDE_8255                    0080
+[ G] PUTCHR                           8B9F
+[ G] RDSER1                           8857
+[ G] RST_DLY                          89D3
+[ G] SERIALINIT                       8849
+[ G] SET_PPI_RD                       8AB9
+[ G] SET_PPI_WR                       8AC7
+[ G] UART0                            0568
+[ G] UART1                            0569
+[ G] UART2                            056A
+[ G] UART3                            056B
+[ G] UART4                            056C
+[ G] UART5                            056D
+[ G] UART6                            056E
+[ G] UART7                            056F
+[ G] WRHEX                            8B85
+[ G] WRHEXW                           8B7C
+[ G] WRSER1                           884A
+[ G] WRST1                            8B71
+[ G] WRST2                            8B79
+[ G] WRSTR                            8B6F
