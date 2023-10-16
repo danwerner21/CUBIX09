@@ -49,11 +49,15 @@ New SSRs
 
 ---
 To Do List for this port:
-* reorganize source to pull constants into sep file
 * DSKY V2 support
 * MICRO C
 * DRIVE MAPPER UTILITY
 * ADD FLOPPY DRIVE SUPPORT
+* DSKY V1 support
+* ESP32 support
+* TMS VDP support
+* color VDU support
+* RTC and NVRAM support
 * Microsoft Basic
 * Create an XMODEM program
 * Advanced MONITOR
@@ -68,7 +72,10 @@ Standard Cubix memory Map:
             $E000-$FFFF - CUBIX Operating System ROM
             
 
+Significant Bank 0 Fixed Nhyodyne Device Driver Storage Locations:
 CONSOLEDEVICE   = $0100          (BYTE)
+DSKY_BUF        = $01EA          (8 BYTES)
+DSKY_HEXBUF     = $01F3          (4 BYTES)
 DISKERROR       = $01F7          (BYTE)            
 CURRENTHEAD     = $01F8          (BYTE)
 CURRENTCYL      = $01F9          (BYTE)
@@ -77,10 +84,20 @@ CURRENTDEVICE   = $01FB          (BYTE)
 CURRENTSLICE    = $01FC          (WORD)
 farpointer      = $01FE          (WORD)
 
-
             
 Nhyodyne Map:
-            $0000-$01FF - FREE WORKING RAM
+            $0000-$00FF - FREE WORKING RAM
+            $0100       - CONSOLEDEVICE
+            $0101-$01E9 - FREE WORKING RAM
+            $01EA-$01F2 - DSKY_BUF
+            $01F3-$01F6 - DSKY_HEXBUF
+            $01F7       - DISKERROR       
+            $01F8       - CURRENTHEAD     
+            $01F9       - CURRENTCYL      
+            $01FA       - CURRENTSEC      
+            $01FB       - CURRENTDEVICE   
+            $01FC       - CURRENTSLICE    
+            $01FE       - farpointer      
             $0200-$02FF - PAGER CODE
             $0300-$04FF - DISK BUFFER
             $0500-$05FF - Memory Mapped IO

@@ -5,16 +5,7 @@
 ;*
 ;* CUBIX SYSTEM ADDRESSES
 ;*
-CONSOLEDEVICE   = $0100                           ; (BYTE)
-DISKERROR       = $01F7                           ; (BYTE)
-CURRENTHEAD     = $01F8                           ; (BYTE)
-CURRENTCYL      = $01F9                           ; (BYTE)
-CURRENTSEC      = $01FA                           ; (BYTE)
-CURRENTDEVICE   = $01FB                           ; (BYTE)
-CURRENTSLICE    = $01FC                           ; (WORD)
-farpointer      = $01FE                           ; (WORD)
-HSTBUF          = $0300
-
+        INCLUDE cubix_values.asm
 ;*
 ;* DISK CONTROL BLOCK FORMAT
 ;*
@@ -47,6 +38,9 @@ HWIN1
         JSR     PAGER_INIT                        ; INIT PAGER
 ;
         LDB     #02                               ;INIT SERIAL PORT
+        JSR     MD_PAGERA
+;
+        LDB     #27                               ;INIT DSKY/NG
         JSR     MD_PAGERA
 ;
         LDB     #21                               ;INIT IDE
@@ -181,9 +175,6 @@ DECODEDRIVE:
         PULS    y,pc
 
         INCLUDE ../nhyodyne/cubix_pager.asm
-;        INCLUDE ../nhyodyne/cubix_ide.asm
-;     INCLUDE ../nhyodyne/cubix_dskyng.asm
-
 
         ORG     $FF00
 ;

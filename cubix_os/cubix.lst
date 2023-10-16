@@ -3806,182 +3806,203 @@ F943 F69A             (        cubix.asm):01522                 FDB     GETDRVPT
                       (../nhyodyne/drive):00005         ;*
                       (../nhyodyne/drive):00006         ;* CUBIX SYSTEM ADDRESSES
                       (../nhyodyne/drive):00007         ;*
-     0100             (../nhyodyne/drive):00008         CONSOLEDEVICE   = $0100                           ; (BYTE)
-     01F7             (../nhyodyne/drive):00009         DISKERROR       = $01F7                           ; (BYTE)
-     01F8             (../nhyodyne/drive):00010         CURRENTHEAD     = $01F8                           ; (BYTE)
-     01F9             (../nhyodyne/drive):00011         CURRENTCYL      = $01F9                           ; (BYTE)
-     01FA             (../nhyodyne/drive):00012         CURRENTSEC      = $01FA                           ; (BYTE)
-     01FB             (../nhyodyne/drive):00013         CURRENTDEVICE   = $01FB                           ; (BYTE)
-     01FC             (../nhyodyne/drive):00014         CURRENTSLICE    = $01FC                           ; (WORD)
-     01FE             (../nhyodyne/drive):00015         farpointer      = $01FE                           ; (WORD)
-     0300             (../nhyodyne/drive):00016         HSTBUF          = $0300
-                      (../nhyodyne/drive):00017         
-                      (../nhyodyne/drive):00018         ;*
-                      (../nhyodyne/drive):00019         ;* DISK CONTROL BLOCK FORMAT
+                      (../nhyodyne/drive):00008                 INCLUDE cubix_values.asm
+                      ( cubix_values.asm):00001         ;________________________________________________________________________________________________________________________________
+                      ( cubix_values.asm):00002         ;
+                      ( cubix_values.asm):00003         ;       Nhyodyne Cubix System storage locations
+                      ( cubix_values.asm):00004         ;
+                      ( cubix_values.asm):00005         ;  DWERNER 10/15/2023   Initial
+                      ( cubix_values.asm):00006         ;________________________________________________________________________________________________________________________________
+                      ( cubix_values.asm):00007         
+     0200             ( cubix_values.asm):00008         MD_PAGERA       = $0200                           ; PAGE DRIVER ADDRESS
+     02F5             ( cubix_values.asm):00009         PAGER_STACK     = $02F5
+     02F7             ( cubix_values.asm):00010         PAGER_U         = $02F7
+     02F8             ( cubix_values.asm):00011         PAGER_D         = $02F8
+     02FA             ( cubix_values.asm):00012         PAGER_X         = $02FA
+     02FC             ( cubix_values.asm):00013         PAGER_Y         = $02FC
+     02FE             ( cubix_values.asm):00014         PAGER_S         = $02FE
+     0100             ( cubix_values.asm):00015         CONSOLEDEVICE   = $0100                           ; (BYTE)
+     01EA             ( cubix_values.asm):00016         DSKY_BUF        = $01EA                           ; (8 BYTES)
+     01F3             ( cubix_values.asm):00017         DSKY_HEXBUF     = $01F3                           ; (4 BYTES)
+     01F7             ( cubix_values.asm):00018         DISKERROR       = $01F7                           ; (BYTE)
+     01F8             ( cubix_values.asm):00019         CURRENTHEAD     = $01F8                           ; (BYTE)
+     01F9             ( cubix_values.asm):00020         CURRENTCYL      = $01F9                           ; (BYTE)
+     01FA             ( cubix_values.asm):00021         CURRENTSEC      = $01FA                           ; (BYTE)
+     01FB             ( cubix_values.asm):00022         CURRENTDEVICE   = $01FB                           ; (BYTE)
+     01FC             ( cubix_values.asm):00023         CURRENTSLICE    = $01FC                           ; (WORD)
+     01FE             ( cubix_values.asm):00024         farpointer      = $01FE                           ; (WORD)                      ;
+     0300             ( cubix_values.asm):00025         HSTBUF          = $0300
+                      ( cubix_values.asm):00026         
+     8800             ( cubix_values.asm):00027         BANKED_DRIVER_DISPATCHER = $8800
+                      (../nhyodyne/drive):00009         ;*
+                      (../nhyodyne/drive):00010         ;* DISK CONTROL BLOCK FORMAT
+                      (../nhyodyne/drive):00011         ;*
+                      (../nhyodyne/drive):00012         ;       ORG     0
+                      (../nhyodyne/drive):00013         ;DRIVE  RMB     1               DRIVE ID (ADDRESS)
+                      (../nhyodyne/drive):00014         ;NCYL   RMB     1               NUMBER OF CYLINDERS
+                      (../nhyodyne/drive):00015         ;NHEAD  RMB     1               NUMBER OF HEADS
+                      (../nhyodyne/drive):00016         ;NSEC   RMB     1               NUMBER OF SECTORS/TRACK
+                      (../nhyodyne/drive):00017         ;CYL    RMB     1               CURRENT CYLINDER
+                      (../nhyodyne/drive):00018         ;HEAD   RMB     1               CURRENT HEAD
+                      (../nhyodyne/drive):00019         ;SEC    RMB     1               CURRENT SECTOR
                       (../nhyodyne/drive):00020         ;*
-                      (../nhyodyne/drive):00021         ;       ORG     0
-                      (../nhyodyne/drive):00022         ;DRIVE  RMB     1               DRIVE ID (ADDRESS)
-                      (../nhyodyne/drive):00023         ;NCYL   RMB     1               NUMBER OF CYLINDERS
-                      (../nhyodyne/drive):00024         ;NHEAD  RMB     1               NUMBER OF HEADS
-                      (../nhyodyne/drive):00025         ;NSEC   RMB     1               NUMBER OF SECTORS/TRACK
-                      (../nhyodyne/drive):00026         ;CYL    RMB     1               CURRENT CYLINDER
-                      (../nhyodyne/drive):00027         ;HEAD   RMB     1               CURRENT HEAD
-                      (../nhyodyne/drive):00028         ;SEC    RMB     1               CURRENT SECTOR
-                      (../nhyodyne/drive):00029         ;*
-                      (../nhyodyne/drive):00030         ;*
-                      (../nhyodyne/drive):00031         ;* INITIALIZE SYSTEM HARDWARE. ON ENTRY 'Y'
-                      (../nhyodyne/drive):00032         ;* POINTS TO SYSTEM TABLE TO BE FILLED IN.
-                      (../nhyodyne/drive):00033         ;*
-                      (../nhyodyne/drive):00034         ;* INITIALIZE CUBIX SYSTEM TABLE
-F945                  (../nhyodyne/drive):00035         HWINIT
-F945 8EFF09           (../nhyodyne/drive):00036                 LDX     #RITAB                            ;POINT TO OUR TABLE
-F948 C66F             (../nhyodyne/drive):00037                 LDB     #RISIZ                            ;SIZE OF TABLE
-F94A                  (../nhyodyne/drive):00038         HWIN1
-F94A A680             (../nhyodyne/drive):00039                 LDA     ,X+                               ;GET A BYTE FROM TABLE
-F94C A7A0             (../nhyodyne/drive):00040                 STA     ,Y+                               ;WRITE IT TO CUBIX RAM
-F94E 5A               (../nhyodyne/drive):00041                 DECB                                      ;REDUCE COUNT
-F94F 26F9             (../nhyodyne/drive):00042                 BNE     HWIN1                             ;MOVE ENTIRE TABLE
-                      (../nhyodyne/drive):00043         
-F951 8600             (../nhyodyne/drive):00044                 LDA     #00
-F953 B70100           (../nhyodyne/drive):00045                 STA     CONSOLEDEVICE                     ; set console device for driver output
-                      (../nhyodyne/drive):00046         
-F956 BDF9F7           (../nhyodyne/drive):00047                 JSR     PAGER_INIT                        ; INIT PAGER
-                      (../nhyodyne/drive):00048         ;
-F959 C602             (../nhyodyne/drive):00049                 LDB     #02                               ;INIT SERIAL PORT
-F95B BD0200           (../nhyodyne/drive):00050                 JSR     MD_PAGERA
-                      (../nhyodyne/drive):00051         ;
-F95E C615             (../nhyodyne/drive):00052                 LDB     #21                               ;INIT IDE
-F960 BD0200           (../nhyodyne/drive):00053                 JSR     MD_PAGERA
-F963 39               (../nhyodyne/drive):00054                 RTS
-                      (../nhyodyne/drive):00055         
-F964                  (../nhyodyne/drive):00056         WRSER:
-F964 C600             (../nhyodyne/drive):00057                 LDB     #00                               ;WRITE SERIAL PORT
-F966 7E0200           (../nhyodyne/drive):00058                 JMP     MD_PAGERA
-                      (../nhyodyne/drive):00059         
-F969                  (../nhyodyne/drive):00060         RDSER:
-F969 C601             (../nhyodyne/drive):00061                 LDB     #01                               ;READ SERIAL PORT
-F96B BD0200           (../nhyodyne/drive):00062                 JSR     MD_PAGERA
-F96E 81FF             (../nhyodyne/drive):00063                 CMPA    #$FF
-F970 2703             (../nhyodyne/drive):00064                 BEQ     >
-F972 1A04             (../nhyodyne/drive):00065                 ORCC    #%00000100                        ; SET 'Z'
-F974 39               (../nhyodyne/drive):00066                 RTS
-                      (../nhyodyne/drive):00067         !
-F975 86FF             (../nhyodyne/drive):00068                 LDA     #$FF                              ; CLEAR 'Z'
-F977 39               (../nhyodyne/drive):00069                 RTS                                       ;
-                      (../nhyodyne/drive):00070         ;
+                      (../nhyodyne/drive):00021         ;*
+                      (../nhyodyne/drive):00022         ;* INITIALIZE SYSTEM HARDWARE. ON ENTRY 'Y'
+                      (../nhyodyne/drive):00023         ;* POINTS TO SYSTEM TABLE TO BE FILLED IN.
+                      (../nhyodyne/drive):00024         ;*
+                      (../nhyodyne/drive):00025         ;* INITIALIZE CUBIX SYSTEM TABLE
+F945                  (../nhyodyne/drive):00026         HWINIT
+F945 8EFF09           (../nhyodyne/drive):00027                 LDX     #RITAB                            ;POINT TO OUR TABLE
+F948 C66F             (../nhyodyne/drive):00028                 LDB     #RISIZ                            ;SIZE OF TABLE
+F94A                  (../nhyodyne/drive):00029         HWIN1
+F94A A680             (../nhyodyne/drive):00030                 LDA     ,X+                               ;GET A BYTE FROM TABLE
+F94C A7A0             (../nhyodyne/drive):00031                 STA     ,Y+                               ;WRITE IT TO CUBIX RAM
+F94E 5A               (../nhyodyne/drive):00032                 DECB                                      ;REDUCE COUNT
+F94F 26F9             (../nhyodyne/drive):00033                 BNE     HWIN1                             ;MOVE ENTIRE TABLE
+                      (../nhyodyne/drive):00034         
+F951 8600             (../nhyodyne/drive):00035                 LDA     #00
+F953 B70100           (../nhyodyne/drive):00036                 STA     CONSOLEDEVICE                     ; set console device for driver output
+                      (../nhyodyne/drive):00037         
+F956 BDF9FC           (../nhyodyne/drive):00038                 JSR     PAGER_INIT                        ; INIT PAGER
+                      (../nhyodyne/drive):00039         ;
+F959 C602             (../nhyodyne/drive):00040                 LDB     #02                               ;INIT SERIAL PORT
+F95B BD0200           (../nhyodyne/drive):00041                 JSR     MD_PAGERA
+                      (../nhyodyne/drive):00042         ;
+F95E C61B             (../nhyodyne/drive):00043                 LDB     #27                               ;INIT DSKY/NG
+F960 BD0200           (../nhyodyne/drive):00044                 JSR     MD_PAGERA
+                      (../nhyodyne/drive):00045         ;
+F963 C615             (../nhyodyne/drive):00046                 LDB     #21                               ;INIT IDE
+F965 BD0200           (../nhyodyne/drive):00047                 JSR     MD_PAGERA
+F968 39               (../nhyodyne/drive):00048                 RTS
+                      (../nhyodyne/drive):00049         
+F969                  (../nhyodyne/drive):00050         WRSER:
+F969 C600             (../nhyodyne/drive):00051                 LDB     #00                               ;WRITE SERIAL PORT
+F96B 7E0200           (../nhyodyne/drive):00052                 JMP     MD_PAGERA
+                      (../nhyodyne/drive):00053         
+F96E                  (../nhyodyne/drive):00054         RDSER:
+F96E C601             (../nhyodyne/drive):00055                 LDB     #01                               ;READ SERIAL PORT
+F970 BD0200           (../nhyodyne/drive):00056                 JSR     MD_PAGERA
+F973 81FF             (../nhyodyne/drive):00057                 CMPA    #$FF
+F975 2703             (../nhyodyne/drive):00058                 BEQ     >
+F977 1A04             (../nhyodyne/drive):00059                 ORCC    #%00000100                        ; SET 'Z'
+F979 39               (../nhyodyne/drive):00060                 RTS
+                      (../nhyodyne/drive):00061         !
+F97A 86FF             (../nhyodyne/drive):00062                 LDA     #$FF                              ; CLEAR 'Z'
+F97C 39               (../nhyodyne/drive):00063                 RTS                                       ;
+                      (../nhyodyne/drive):00064         ;
+                      (../nhyodyne/drive):00065         
+                      (../nhyodyne/drive):00066         ;* NULL DEVICE DRIVERS
+F97D                  (../nhyodyne/drive):00067         RDNULL
+F97D 86FF             (../nhyodyne/drive):00068                 LDA     #$FF                              ;INDICATE NO CHARACTER
+F97F                  (../nhyodyne/drive):00069         WRNULL
+F97F 39               (../nhyodyne/drive):00070                 RTS     IGNORE OPERATION
                       (../nhyodyne/drive):00071         
-                      (../nhyodyne/drive):00072         ;* NULL DEVICE DRIVERS
-F978                  (../nhyodyne/drive):00073         RDNULL
-F978 86FF             (../nhyodyne/drive):00074                 LDA     #$FF                              ;INDICATE NO CHARACTER
-F97A                  (../nhyodyne/drive):00075         WRNULL
-F97A 39               (../nhyodyne/drive):00076                 RTS     IGNORE OPERATION
-                      (../nhyodyne/drive):00077         
-                      (../nhyodyne/drive):00078         ;*
-                      (../nhyodyne/drive):00079         ;* FORMAT DISK ('U' POINTS TO DCB), INTERLEAVE FACTOR IN 'A'
-                      (../nhyodyne/drive):00080         ;*
-F97B                  (../nhyodyne/drive):00081         DFORMAT
-                      (../nhyodyne/drive):00082         ;*      LDAA    DRIVE,U                 ; GET DRIVE
-                      (../nhyodyne/drive):00083         ;*      CMPA    #$01                    ; DRIVE B?
-                      (../nhyodyne/drive):00084         ;*      BNE     NOTFDB                  ;
-                      (../nhyodyne/drive):00085         ;*      JMP     FORMFL                  ; DIRECT ATTACHED FLOPPY FORMAT
-                      (../nhyodyne/drive):00086         ;*NOTFDB:
-F97B 39               (../nhyodyne/drive):00087                 RTS
-                      (../nhyodyne/drive):00088         
-                      (../nhyodyne/drive):00089         ;*
-                      (../nhyodyne/drive):00090         ;* HOME HEAD ON DRIVE ('U' POINTS TO DCB)
-                      (../nhyodyne/drive):00091         ;*
-F97C                  (../nhyodyne/drive):00092         DHOME
-                      (../nhyodyne/drive):00093         ;*      LDAA    DRIVE,U                 ; GET DRIVE
-                      (../nhyodyne/drive):00094         ;*      CMPA    #$01                    ; DRIVE A?
-                      (../nhyodyne/drive):00095         ;*      BNE     NOTHDB                  ;
-                      (../nhyodyne/drive):00096         ;*      LDAA    #$00
-                      (../nhyodyne/drive):00097         ;*      JMP     SETTRACK                ; DIRECT ATTACHED FLOPPY HOME
-                      (../nhyodyne/drive):00098         ;*NOTHDB:
-                      (../nhyodyne/drive):00099         ;        LDA     #$03                              ; HOME DISK
-                      (../nhyodyne/drive):00100         ;       JSR     ECB_OUTCHAR             ;
-                      (../nhyodyne/drive):00101         ;       LDA     DRIVE,U                 ; GET DRIVE
-                      (../nhyodyne/drive):00102         ;       JSR     ECB_ENC_OUTCHAR         ; SEND TO Z80
-F97C 39               (../nhyodyne/drive):00103                 RTS
-                      (../nhyodyne/drive):00104         
-                      (../nhyodyne/drive):00105         
-                      (../nhyodyne/drive):00106         ;*
-                      (../nhyodyne/drive):00107         ;* READ A SECTOR, FROM DISK ('U' POINTS TO DCB) TO MEMORY(X)
-                      (../nhyodyne/drive):00108         ;*
-F97D                  (../nhyodyne/drive):00109         DRDSEC
-F97D BDF9D0           (../nhyodyne/drive):00110                 JSR     DECODEDRIVE
-F980 84F0             (../nhyodyne/drive):00111                 ANDA    #$F0
-                      (../nhyodyne/drive):00112         ;*      CMPA    #$10                    ; FLOPPY?
-                      (../nhyodyne/drive):00113         ;*      BNE     >                       ;
-                      (../nhyodyne/drive):00114         ;*      JMP     Z80WDRIVE               ; USE Z80 C:
-                      (../nhyodyne/drive):00115         ;*!
-F982 8120             (../nhyodyne/drive):00116                 CMPA    #$20                              ; IDE?
-F984 260A             (../nhyodyne/drive):00117                 BNE     >                                 ;
-F986 C616             (../nhyodyne/drive):00118                 LDB     #22                               ;IDE_READ_SECTOR
-F988 BD0200           (../nhyodyne/drive):00119                 JSR     MD_PAGERA
-F98B 8D04             (../nhyodyne/drive):00120                 BSR     CPYHOSTBUF
-F98D B601F7           (../nhyodyne/drive):00121                 LDA     DISKERROR                         ; GET ERROR CONDITION
-                      (../nhyodyne/drive):00122         !
-F990 39               (../nhyodyne/drive):00123                 RTS
-F991                  (../nhyodyne/drive):00124         CPYHOSTBUF:
-F991 3420             (../nhyodyne/drive):00125                 PSHS    Y
-F993 108E0000         (../nhyodyne/drive):00126                 LDY     #$0000
-                      (../nhyodyne/drive):00127         !
-F997 A6A90300         (../nhyodyne/drive):00128                 LDA     HSTBUF,Y
-F99B A780             (../nhyodyne/drive):00129                 STA     ,X+
-F99D 3121             (../nhyodyne/drive):00130                 INY
-F99F 108C0200         (../nhyodyne/drive):00131                 CMPY    #$0200
-F9A3 26F2             (../nhyodyne/drive):00132                 BNE     <
-F9A5 3520             (../nhyodyne/drive):00133                 PULS    Y
-F9A7 39               (../nhyodyne/drive):00134                 RTS
-                      (../nhyodyne/drive):00135         
-                      (../nhyodyne/drive):00136         ;*
-                      (../nhyodyne/drive):00137         ;* WRITE A SECTOR TO DISK ('U' POINTS TO DCB) FROM MEMORY(X)
-                      (../nhyodyne/drive):00138         ;*
-F9A8                  (../nhyodyne/drive):00139         DWRSEC
-                      (../nhyodyne/drive):00140         ; START BY POPULATING THE HOST BUFFER
-F9A8 3420             (../nhyodyne/drive):00141                 PSHS    Y
-F9AA 108E0000         (../nhyodyne/drive):00142                 LDY     #$0000
-                      (../nhyodyne/drive):00143         !
-F9AE A680             (../nhyodyne/drive):00144                 LDA     ,X+
-F9B0 A7A90300         (../nhyodyne/drive):00145                 STA     HSTBUF,Y
-F9B4 3121             (../nhyodyne/drive):00146                 INY
-F9B6 108C0200         (../nhyodyne/drive):00147                 CMPY    #$0200
-F9BA 26F2             (../nhyodyne/drive):00148                 BNE     <
-F9BC 3520             (../nhyodyne/drive):00149                 PULS    Y
-                      (../nhyodyne/drive):00150         ; NOW DO SOME DRIVE MAGIC
-F9BE BDF9D0           (../nhyodyne/drive):00151                 JSR     DECODEDRIVE
-F9C1 84F0             (../nhyodyne/drive):00152                 ANDA    #$F0
-                      (../nhyodyne/drive):00153         ;*      CMPA    #$10                    ; FLOPPY?
-                      (../nhyodyne/drive):00154         ;*      BNE     >                       ;
-                      (../nhyodyne/drive):00155         ;*      JMP     Z80WDRIVE               ; USE Z80 C:
-                      (../nhyodyne/drive):00156         ;*!
-F9C3 8120             (../nhyodyne/drive):00157                 CMPA    #$20                              ; IDD?
-F9C5 2608             (../nhyodyne/drive):00158                 BNE     >                                 ;
-F9C7 C617             (../nhyodyne/drive):00159                 LDB     #23                               ;IDE_WRITE_SECTOR
-F9C9 BD0200           (../nhyodyne/drive):00160                 JSR     MD_PAGERA
-F9CC B601F7           (../nhyodyne/drive):00161                 LDA     DISKERROR                         ; GET ERROR CONDITION
-                      (../nhyodyne/drive):00162         !
-F9CF 39               (../nhyodyne/drive):00163                 RTS
-                      (../nhyodyne/drive):00164         
-F9D0                  (../nhyodyne/drive):00165         DECODEDRIVE:
-F9D0 3420             (../nhyodyne/drive):00166                 PSHS    y
-F9D2 A645             (../nhyodyne/drive):00167                 LDA     HEAD,U
-F9D4 B701F8           (../nhyodyne/drive):00168                 STA     CURRENTHEAD
-F9D7 A644             (../nhyodyne/drive):00169                 LDA     CYL,U
-F9D9 B701F9           (../nhyodyne/drive):00170                 STA     CURRENTCYL
-F9DC A646             (../nhyodyne/drive):00171                 LDA     SEC,U
-F9DE B701FA           (../nhyodyne/drive):00172                 STA     CURRENTSEC
-F9E1 4F               (../nhyodyne/drive):00173                 CLRA
-F9E2 E6C4             (../nhyodyne/drive):00174                 LDB     DRIVE,U                           ; GET DRIVE
-F9E4 58               (../nhyodyne/drive):00175                 ASLB                                      ; a=a*2
-F9E5 1F02             (../nhyodyne/drive):00176                 TFR     D,Y
-F9E7 A6A9DCB7         (../nhyodyne/drive):00177                 LDA     DRIVEMAP,Y
-F9EB E6A9DCB8         (../nhyodyne/drive):00178                 LDB     DRIVEMAP+1,Y
-F9EF B701FB           (../nhyodyne/drive):00179                 STA     CURRENTDEVICE
-F9F2 F701FC           (../nhyodyne/drive):00180                 STB     CURRENTSLICE
-F9F5 35A0             (../nhyodyne/drive):00181                 PULS    y,pc
-                      (../nhyodyne/drive):00182         
-                      (../nhyodyne/drive):00183                 INCLUDE ../nhyodyne/cubix_pager.asm
+                      (../nhyodyne/drive):00072         ;*
+                      (../nhyodyne/drive):00073         ;* FORMAT DISK ('U' POINTS TO DCB), INTERLEAVE FACTOR IN 'A'
+                      (../nhyodyne/drive):00074         ;*
+F980                  (../nhyodyne/drive):00075         DFORMAT
+                      (../nhyodyne/drive):00076         ;*      LDAA    DRIVE,U                 ; GET DRIVE
+                      (../nhyodyne/drive):00077         ;*      CMPA    #$01                    ; DRIVE B?
+                      (../nhyodyne/drive):00078         ;*      BNE     NOTFDB                  ;
+                      (../nhyodyne/drive):00079         ;*      JMP     FORMFL                  ; DIRECT ATTACHED FLOPPY FORMAT
+                      (../nhyodyne/drive):00080         ;*NOTFDB:
+F980 39               (../nhyodyne/drive):00081                 RTS
+                      (../nhyodyne/drive):00082         
+                      (../nhyodyne/drive):00083         ;*
+                      (../nhyodyne/drive):00084         ;* HOME HEAD ON DRIVE ('U' POINTS TO DCB)
+                      (../nhyodyne/drive):00085         ;*
+F981                  (../nhyodyne/drive):00086         DHOME
+                      (../nhyodyne/drive):00087         ;*      LDAA    DRIVE,U                 ; GET DRIVE
+                      (../nhyodyne/drive):00088         ;*      CMPA    #$01                    ; DRIVE A?
+                      (../nhyodyne/drive):00089         ;*      BNE     NOTHDB                  ;
+                      (../nhyodyne/drive):00090         ;*      LDAA    #$00
+                      (../nhyodyne/drive):00091         ;*      JMP     SETTRACK                ; DIRECT ATTACHED FLOPPY HOME
+                      (../nhyodyne/drive):00092         ;*NOTHDB:
+                      (../nhyodyne/drive):00093         ;        LDA     #$03                              ; HOME DISK
+                      (../nhyodyne/drive):00094         ;       JSR     ECB_OUTCHAR             ;
+                      (../nhyodyne/drive):00095         ;       LDA     DRIVE,U                 ; GET DRIVE
+                      (../nhyodyne/drive):00096         ;       JSR     ECB_ENC_OUTCHAR         ; SEND TO Z80
+F981 39               (../nhyodyne/drive):00097                 RTS
+                      (../nhyodyne/drive):00098         
+                      (../nhyodyne/drive):00099         
+                      (../nhyodyne/drive):00100         ;*
+                      (../nhyodyne/drive):00101         ;* READ A SECTOR, FROM DISK ('U' POINTS TO DCB) TO MEMORY(X)
+                      (../nhyodyne/drive):00102         ;*
+F982                  (../nhyodyne/drive):00103         DRDSEC
+F982 BDF9D5           (../nhyodyne/drive):00104                 JSR     DECODEDRIVE
+F985 84F0             (../nhyodyne/drive):00105                 ANDA    #$F0
+                      (../nhyodyne/drive):00106         ;*      CMPA    #$10                    ; FLOPPY?
+                      (../nhyodyne/drive):00107         ;*      BNE     >                       ;
+                      (../nhyodyne/drive):00108         ;*      JMP     Z80WDRIVE               ; USE Z80 C:
+                      (../nhyodyne/drive):00109         ;*!
+F987 8120             (../nhyodyne/drive):00110                 CMPA    #$20                              ; IDE?
+F989 260A             (../nhyodyne/drive):00111                 BNE     >                                 ;
+F98B C616             (../nhyodyne/drive):00112                 LDB     #22                               ;IDE_READ_SECTOR
+F98D BD0200           (../nhyodyne/drive):00113                 JSR     MD_PAGERA
+F990 8D04             (../nhyodyne/drive):00114                 BSR     CPYHOSTBUF
+F992 B601F7           (../nhyodyne/drive):00115                 LDA     DISKERROR                         ; GET ERROR CONDITION
+                      (../nhyodyne/drive):00116         !
+F995 39               (../nhyodyne/drive):00117                 RTS
+F996                  (../nhyodyne/drive):00118         CPYHOSTBUF:
+F996 3420             (../nhyodyne/drive):00119                 PSHS    Y
+F998 108E0000         (../nhyodyne/drive):00120                 LDY     #$0000
+                      (../nhyodyne/drive):00121         !
+F99C A6A90300         (../nhyodyne/drive):00122                 LDA     HSTBUF,Y
+F9A0 A780             (../nhyodyne/drive):00123                 STA     ,X+
+F9A2 3121             (../nhyodyne/drive):00124                 INY
+F9A4 108C0200         (../nhyodyne/drive):00125                 CMPY    #$0200
+F9A8 26F2             (../nhyodyne/drive):00126                 BNE     <
+F9AA 3520             (../nhyodyne/drive):00127                 PULS    Y
+F9AC 39               (../nhyodyne/drive):00128                 RTS
+                      (../nhyodyne/drive):00129         
+                      (../nhyodyne/drive):00130         ;*
+                      (../nhyodyne/drive):00131         ;* WRITE A SECTOR TO DISK ('U' POINTS TO DCB) FROM MEMORY(X)
+                      (../nhyodyne/drive):00132         ;*
+F9AD                  (../nhyodyne/drive):00133         DWRSEC
+                      (../nhyodyne/drive):00134         ; START BY POPULATING THE HOST BUFFER
+F9AD 3420             (../nhyodyne/drive):00135                 PSHS    Y
+F9AF 108E0000         (../nhyodyne/drive):00136                 LDY     #$0000
+                      (../nhyodyne/drive):00137         !
+F9B3 A680             (../nhyodyne/drive):00138                 LDA     ,X+
+F9B5 A7A90300         (../nhyodyne/drive):00139                 STA     HSTBUF,Y
+F9B9 3121             (../nhyodyne/drive):00140                 INY
+F9BB 108C0200         (../nhyodyne/drive):00141                 CMPY    #$0200
+F9BF 26F2             (../nhyodyne/drive):00142                 BNE     <
+F9C1 3520             (../nhyodyne/drive):00143                 PULS    Y
+                      (../nhyodyne/drive):00144         ; NOW DO SOME DRIVE MAGIC
+F9C3 BDF9D5           (../nhyodyne/drive):00145                 JSR     DECODEDRIVE
+F9C6 84F0             (../nhyodyne/drive):00146                 ANDA    #$F0
+                      (../nhyodyne/drive):00147         ;*      CMPA    #$10                    ; FLOPPY?
+                      (../nhyodyne/drive):00148         ;*      BNE     >                       ;
+                      (../nhyodyne/drive):00149         ;*      JMP     Z80WDRIVE               ; USE Z80 C:
+                      (../nhyodyne/drive):00150         ;*!
+F9C8 8120             (../nhyodyne/drive):00151                 CMPA    #$20                              ; IDD?
+F9CA 2608             (../nhyodyne/drive):00152                 BNE     >                                 ;
+F9CC C617             (../nhyodyne/drive):00153                 LDB     #23                               ;IDE_WRITE_SECTOR
+F9CE BD0200           (../nhyodyne/drive):00154                 JSR     MD_PAGERA
+F9D1 B601F7           (../nhyodyne/drive):00155                 LDA     DISKERROR                         ; GET ERROR CONDITION
+                      (../nhyodyne/drive):00156         !
+F9D4 39               (../nhyodyne/drive):00157                 RTS
+                      (../nhyodyne/drive):00158         
+F9D5                  (../nhyodyne/drive):00159         DECODEDRIVE:
+F9D5 3420             (../nhyodyne/drive):00160                 PSHS    y
+F9D7 A645             (../nhyodyne/drive):00161                 LDA     HEAD,U
+F9D9 B701F8           (../nhyodyne/drive):00162                 STA     CURRENTHEAD
+F9DC A644             (../nhyodyne/drive):00163                 LDA     CYL,U
+F9DE B701F9           (../nhyodyne/drive):00164                 STA     CURRENTCYL
+F9E1 A646             (../nhyodyne/drive):00165                 LDA     SEC,U
+F9E3 B701FA           (../nhyodyne/drive):00166                 STA     CURRENTSEC
+F9E6 4F               (../nhyodyne/drive):00167                 CLRA
+F9E7 E6C4             (../nhyodyne/drive):00168                 LDB     DRIVE,U                           ; GET DRIVE
+F9E9 58               (../nhyodyne/drive):00169                 ASLB                                      ; a=a*2
+F9EA 1F02             (../nhyodyne/drive):00170                 TFR     D,Y
+F9EC A6A9DCB7         (../nhyodyne/drive):00171                 LDA     DRIVEMAP,Y
+F9F0 E6A9DCB8         (../nhyodyne/drive):00172                 LDB     DRIVEMAP+1,Y
+F9F4 B701FB           (../nhyodyne/drive):00173                 STA     CURRENTDEVICE
+F9F7 F701FC           (../nhyodyne/drive):00174                 STB     CURRENTSLICE
+F9FA 35A0             (../nhyodyne/drive):00175                 PULS    y,pc
+                      (../nhyodyne/drive):00176         
+                      (../nhyodyne/drive):00177                 INCLUDE ../nhyodyne/cubix_pager.asm
                       (../nhyodyne/cubix):00001         ;__pager_________________________________________________________________________________________________________________________
                       (../nhyodyne/cubix):00002         ;
                       (../nhyodyne/cubix):00003         ;       Nhyodyne Memory page management code
@@ -3998,139 +4019,128 @@ F9F5 35A0             (../nhyodyne/drive):00181                 PULS    y,pc
                       (../nhyodyne/cubix):00014         ;
      057C             (../nhyodyne/cubix):00015         MPCL_ROM        = $057C                           ; ROM MAPPER
      0578             (../nhyodyne/cubix):00016         MPCL_RAM        = $0578                           ; RAM MAPPER
-     0200             (../nhyodyne/cubix):00017         MD_PAGERA       = $0200                           ; PAGE DRIVER ADDRESS
-     8800             (../nhyodyne/cubix):00018         BANKED_DRIVER_DISPATCHER = $8800
-     02F5             (../nhyodyne/cubix):00019         PAGER_STACK     = $02F5
-     02F6             (../nhyodyne/cubix):00020         PAGER_U         = $02F6
-     02F8             (../nhyodyne/cubix):00021         PAGER_D         = $02F8
-     02FA             (../nhyodyne/cubix):00022         PAGER_X         = $02FA
-     02FC             (../nhyodyne/cubix):00023         PAGER_Y         = $02FC
-     02FE             (../nhyodyne/cubix):00024         PAGER_S         = $02FE
-                      (../nhyodyne/cubix):00025         ;
-                      (../nhyodyne/cubix):00026         ;
-                      (../nhyodyne/cubix):00027         ; ROM MEMORY PAGE CONFIGURATION LATCH CONTROL PORT
-                      (../nhyodyne/cubix):00028         ;       A15 IS INVERTED FOR THE NYHODYNE 6809 CPU . . .
-                      (../nhyodyne/cubix):00029         ;       7 6 5 4  3 2 1 0      APPLICABLE TO THE UPPER MEMORY PAGE $8000-$FFFF
-                      (../nhyodyne/cubix):00030         ;       ^ ^ ^ ^  ^ ^ ^ ^
-                      (../nhyodyne/cubix):00031         ;       : : : :  : : : :--0 = A15 ROM ONLY ADDRESS LINE DEFAULT IS 0 x
-                      (../nhyodyne/cubix):00032         ;       : : : :  : : :----0 = A16 ROM ONLY ADDRESS LINE DEFAULT IS 0
-                      (../nhyodyne/cubix):00033         ;       : : : :  : :------0 = A17 ROM ONLY ADDRESS LINE DEFAULT IS 0
-                      (../nhyodyne/cubix):00034         ;       : : : :  :--------0 = A18 ROM ONLY ADDRESS LINE DEFAULT IS 0 X
-                      (../nhyodyne/cubix):00035         ;       : : : :-----------0 = A19 ROM ONLY ADDRESS LINE DEFAULT IS 0
-                      (../nhyodyne/cubix):00036         ;       : : :-------------0 = A20 ROM ONLY ADDRESS LINE DEFAULT IS 0
-                      (../nhyodyne/cubix):00037         ;       : :---------------0 = ROM BOOT OVERRIDE DEFAULT IS 0
-                      (../nhyodyne/cubix):00038         ;       :-----------------0 = LOWER PAGE ROM SELECT (0=ROM, 1=NOTHING) DEFAULT IS 0
-                      (../nhyodyne/cubix):00039         ;
-                      (../nhyodyne/cubix):00040         ; RAM PAGE CONFIGURATION LATCH CONTROL PORT
-                      (../nhyodyne/cubix):00041         ;
-                      (../nhyodyne/cubix):00042         ;       7 6 5 4  3 2 1 0      APPLICABLE TO THE UPPER MEMORY PAGE $8000-$FFFF
-                      (../nhyodyne/cubix):00043         ;       ^ ^ ^ ^  ^ ^ ^ ^
-                      (../nhyodyne/cubix):00044         ;       : : : :  : : : :--0 = A15 RAM ONLY ADDRESS LINE DEFAULT IS 0
-                      (../nhyodyne/cubix):00045         ;       : : : :  : : :----0 = A16 RAM ONLY ADDRESS LINE DEFAULT IS 0
-                      (../nhyodyne/cubix):00046         ;       : : : :  : :------0 = A17 RAM ONLY ADDRESS LINE DEFAULT IS 0
-                      (../nhyodyne/cubix):00047         ;       : : : :  :--------0 = A18 RAM ONLY ADDRESS LINE DEFAULT IS 0
-                      (../nhyodyne/cubix):00048         ;       : : : :-----------0 = A19 RAM ONLY ADDRESS LINE DEFAULT IS 0
-                      (../nhyodyne/cubix):00049         ;       : : :-------------0 = UNDEFINED DEFAULT IS 0
-                      (../nhyodyne/cubix):00050         ;       : :---------------0 = RAM BOOT OVERRIDE DEFAULT IS 0
-                      (../nhyodyne/cubix):00051         ;       :-----------------0 = LOWER PAGE RAM SELECT (0=NOTHING, 1=RAM) DEFAULT IS 0;
-                      (../nhyodyne/cubix):00052         
-                      (../nhyodyne/cubix):00053         
-                      (../nhyodyne/cubix):00054         ;__PAGER_INIT___________________________________________________________________________________________
-                      (../nhyodyne/cubix):00055         ;
-                      (../nhyodyne/cubix):00056         ;  INIT -- Copy code into $0200-$02FF for controling banking
-                      (../nhyodyne/cubix):00057         ;____________________________________________________________________________________________________
-F9F7                  (../nhyodyne/cubix):00058         PAGER_INIT:
-F9F7 8E0000           (../nhyodyne/cubix):00059                 LDX     #$0000
-                      (../nhyodyne/cubix):00060         !
-F9FA A689FA0A         (../nhyodyne/cubix):00061                 LDA     md_pagecode,X
-F9FE A7890200         (../nhyodyne/cubix):00062                 STA     MD_PAGERA,X
-FA02 3001             (../nhyodyne/cubix):00063                 INX
-FA04 8C0100           (../nhyodyne/cubix):00064                 CMPX    #$0100
-FA07 26F1             (../nhyodyne/cubix):00065                 BNE     <
-FA09 39               (../nhyodyne/cubix):00066                 RTS
-                      (../nhyodyne/cubix):00067         
-                      (../nhyodyne/cubix):00068         ; CODE FOR PAGER OPERATIONS
-FA0A                  (../nhyodyne/cubix):00069         md_pagecode:
-                      (../nhyodyne/cubix):00070         ; CODE TO CALL A "FAR FUNCTION"
-                      (../nhyodyne/cubix):00071         ; THIS CHANGES PAGES AND THEN CALLS THE DISPATCHER
-FA0A FD02F8           (../nhyodyne/cubix):00072                 STD     >PAGER_D                          ; SAVE 'D'
-FA0D BF02FA           (../nhyodyne/cubix):00073                 STX     >PAGER_X                          ; SAVE 'X'
-FA10 10BF02FC         (../nhyodyne/cubix):00074                 STY     >PAGER_Y                          ; SAVE 'Y'
-FA14 FF02F6           (../nhyodyne/cubix):00075                 STU     >PAGER_U                          ; SAVE 'U'
-FA17 10FF02FE         (../nhyodyne/cubix):00076                 STS     >PAGER_S                          ; SAVE STACK
-FA1B 10CE02F5         (../nhyodyne/cubix):00077                 LDS     #PAGER_STACK                      ; SET TEMP STACK
-FA1F 868C             (../nhyodyne/cubix):00078                 LDA     #$8C
-FA21 B70578           (../nhyodyne/cubix):00079                 STA     MPCL_RAM
-FA24 12               (../nhyodyne/cubix):00080                 NOP
-FA25 12               (../nhyodyne/cubix):00081                 NOP
-FA26 BD8800           (../nhyodyne/cubix):00082                 JSR     BANKED_DRIVER_DISPATCHER
-FA29 868E             (../nhyodyne/cubix):00083                 LDA     #$8E
-FA2B B70578           (../nhyodyne/cubix):00084                 STA     MPCL_RAM
-FA2E 10FE02FE         (../nhyodyne/cubix):00085                 LDS     >PAGER_S                          ; RESTORE STACK
-FA32 BE02FA           (../nhyodyne/cubix):00086                 LDX     >PAGER_X                          ; RESTORE 'X'
-FA35 10BE02FC         (../nhyodyne/cubix):00087                 LDY     >PAGER_Y                          ; RESTORE 'Y'
-FA39 FE02F6           (../nhyodyne/cubix):00088                 LDU     >PAGER_U                          ; RESTORE 'U'
-FA3C FC02F8           (../nhyodyne/cubix):00089                 LDD     >PAGER_D                          ; RESTORE 'D'
-FA3F 39               (../nhyodyne/cubix):00090                 RTS
-                      (../nhyodyne/drive):00184         ;        INCLUDE ../nhyodyne/cubix_ide.asm
-                      (../nhyodyne/drive):00185         ;     INCLUDE ../nhyodyne/cubix_dskyng.asm
-                      (../nhyodyne/drive):00186         
-                      (../nhyodyne/drive):00187         
-                      (../nhyodyne/drive):00188                 ORG     $FF00
-                      (../nhyodyne/drive):00189         ;
-                      (../nhyodyne/drive):00190         ; DISK COMMAND BLOCK
-                      (../nhyodyne/drive):00191         ;
-                      (../nhyodyne/drive):00192         ;* IGNORE ANY UNUSED INTERRUPTS
-FF00                  (../nhyodyne/drive):00193         IGNORE
-FF00 3B               (../nhyodyne/drive):00194                 RTI
-                      (../nhyodyne/drive):00195         ;* RESULT CODES FOR FDC OPERATIONS
-FF01                  (../nhyodyne/drive):00196         RESTAB
-FF01 0300020000030401 (../nhyodyne/drive):00197                 FCB     3,0,2,0,0,3,4,1
-                      (../nhyodyne/drive):00198         ;*
-                      (../nhyodyne/drive):00199         ;* INITIALIZATION TABLE FOR CUBIX RAM
-                      (../nhyodyne/drive):00200         ;*
-     FF09             (../nhyodyne/drive):00201         RITAB           EQU *
-                      (../nhyodyne/drive):00202         ;* DEFAULT DRIVE CHARACTISTICS
-FF09 00500209000000   (../nhyodyne/drive):00203                 FCB     0,80,2,9,0,0,0                    ;ADR 0, 80 CYL, 2 HEAD, 9 SEC/TRK
-FF10 01FF01FF000000   (../nhyodyne/drive):00204                 FCB     1,255,1,255,0,0,0                 ;ADR 1, 255 CYL, 1 HEAD, 255 SEC/TRK
-FF17 02FF01FF000000   (../nhyodyne/drive):00205                 FCB     2,255,1,255,0,0,0                 ;ADR 2, 255 CYL, 1 HEAD, 255 SEC/TRK
-FF1E 03FF01FF000000   (../nhyodyne/drive):00206                 FCB     3,255,1,255,0,0,0                 ;ADR 4, 255 CYL, 1 HEAD, 255 SEC/TRK
-                      (../nhyodyne/drive):00207         ;* CONSOLE DEVICE ASSIGNMENTS
-FF25 01               (../nhyodyne/drive):00208                 FCB     1                                 ;CONSOLE INPUT DEVICE
-FF26 01               (../nhyodyne/drive):00209                 FCB     1                                 ;CONSOLE OUTPUT DEVICE
-                      (../nhyodyne/drive):00210         ;* SERIAL DEVICE DRIVERS
-FF27 F978F96900000000 (../nhyodyne/drive):00211                 FDB     RDNULL,RDSER,0,0,0,0,0,0
+                      (../nhyodyne/cubix):00017         ;
+                      (../nhyodyne/cubix):00018         ;
+                      (../nhyodyne/cubix):00019         ; ROM MEMORY PAGE CONFIGURATION LATCH CONTROL PORT
+                      (../nhyodyne/cubix):00020         ;       A15 IS INVERTED FOR THE NYHODYNE 6809 CPU . . .
+                      (../nhyodyne/cubix):00021         ;       7 6 5 4  3 2 1 0      APPLICABLE TO THE UPPER MEMORY PAGE $8000-$FFFF
+                      (../nhyodyne/cubix):00022         ;       ^ ^ ^ ^  ^ ^ ^ ^
+                      (../nhyodyne/cubix):00023         ;       : : : :  : : : :--0 = A15 ROM ONLY ADDRESS LINE DEFAULT IS 0 x
+                      (../nhyodyne/cubix):00024         ;       : : : :  : : :----0 = A16 ROM ONLY ADDRESS LINE DEFAULT IS 0
+                      (../nhyodyne/cubix):00025         ;       : : : :  : :------0 = A17 ROM ONLY ADDRESS LINE DEFAULT IS 0
+                      (../nhyodyne/cubix):00026         ;       : : : :  :--------0 = A18 ROM ONLY ADDRESS LINE DEFAULT IS 0 X
+                      (../nhyodyne/cubix):00027         ;       : : : :-----------0 = A19 ROM ONLY ADDRESS LINE DEFAULT IS 0
+                      (../nhyodyne/cubix):00028         ;       : : :-------------0 = A20 ROM ONLY ADDRESS LINE DEFAULT IS 0
+                      (../nhyodyne/cubix):00029         ;       : :---------------0 = ROM BOOT OVERRIDE DEFAULT IS 0
+                      (../nhyodyne/cubix):00030         ;       :-----------------0 = LOWER PAGE ROM SELECT (0=ROM, 1=NOTHING) DEFAULT IS 0
+                      (../nhyodyne/cubix):00031         ;
+                      (../nhyodyne/cubix):00032         ; RAM PAGE CONFIGURATION LATCH CONTROL PORT
+                      (../nhyodyne/cubix):00033         ;
+                      (../nhyodyne/cubix):00034         ;       7 6 5 4  3 2 1 0      APPLICABLE TO THE UPPER MEMORY PAGE $8000-$FFFF
+                      (../nhyodyne/cubix):00035         ;       ^ ^ ^ ^  ^ ^ ^ ^
+                      (../nhyodyne/cubix):00036         ;       : : : :  : : : :--0 = A15 RAM ONLY ADDRESS LINE DEFAULT IS 0
+                      (../nhyodyne/cubix):00037         ;       : : : :  : : :----0 = A16 RAM ONLY ADDRESS LINE DEFAULT IS 0
+                      (../nhyodyne/cubix):00038         ;       : : : :  : :------0 = A17 RAM ONLY ADDRESS LINE DEFAULT IS 0
+                      (../nhyodyne/cubix):00039         ;       : : : :  :--------0 = A18 RAM ONLY ADDRESS LINE DEFAULT IS 0
+                      (../nhyodyne/cubix):00040         ;       : : : :-----------0 = A19 RAM ONLY ADDRESS LINE DEFAULT IS 0
+                      (../nhyodyne/cubix):00041         ;       : : :-------------0 = UNDEFINED DEFAULT IS 0
+                      (../nhyodyne/cubix):00042         ;       : :---------------0 = RAM BOOT OVERRIDE DEFAULT IS 0
+                      (../nhyodyne/cubix):00043         ;       :-----------------0 = LOWER PAGE RAM SELECT (0=NOTHING, 1=RAM) DEFAULT IS 0;
+                      (../nhyodyne/cubix):00044         
+                      (../nhyodyne/cubix):00045         
+                      (../nhyodyne/cubix):00046         ;__PAGER_INIT___________________________________________________________________________________________
+                      (../nhyodyne/cubix):00047         ;
+                      (../nhyodyne/cubix):00048         ;  INIT -- Copy code into $0200-$02FF for controling banking
+                      (../nhyodyne/cubix):00049         ;____________________________________________________________________________________________________
+F9FC                  (../nhyodyne/cubix):00050         PAGER_INIT:
+F9FC 8E0000           (../nhyodyne/cubix):00051                 LDX     #$0000
+                      (../nhyodyne/cubix):00052         !
+F9FF A689FA0F         (../nhyodyne/cubix):00053                 LDA     md_pagecode,X
+FA03 A7890200         (../nhyodyne/cubix):00054                 STA     MD_PAGERA,X
+FA07 3001             (../nhyodyne/cubix):00055                 INX
+FA09 8C0100           (../nhyodyne/cubix):00056                 CMPX    #$0100
+FA0C 26F1             (../nhyodyne/cubix):00057                 BNE     <
+FA0E 39               (../nhyodyne/cubix):00058                 RTS
+                      (../nhyodyne/cubix):00059         
+                      (../nhyodyne/cubix):00060         ; CODE FOR PAGER OPERATIONS
+FA0F                  (../nhyodyne/cubix):00061         md_pagecode:
+                      (../nhyodyne/cubix):00062         ; CODE TO CALL A "FAR FUNCTION"
+                      (../nhyodyne/cubix):00063         ; THIS CHANGES PAGES AND THEN CALLS THE DISPATCHER
+FA0F FD02F8           (../nhyodyne/cubix):00064                 STD     >PAGER_D                          ; SAVE 'D'
+FA12 BF02FA           (../nhyodyne/cubix):00065                 STX     >PAGER_X                          ; SAVE 'X'
+FA15 10BF02FC         (../nhyodyne/cubix):00066                 STY     >PAGER_Y                          ; SAVE 'Y'
+FA19 FF02F7           (../nhyodyne/cubix):00067                 STU     >PAGER_U                          ; SAVE 'U'
+FA1C 10FF02FE         (../nhyodyne/cubix):00068                 STS     >PAGER_S                          ; SAVE STACK
+FA20 10CE02F5         (../nhyodyne/cubix):00069                 LDS     #PAGER_STACK                      ; SET TEMP STACK
+FA24 868C             (../nhyodyne/cubix):00070                 LDA     #$8C
+FA26 B70578           (../nhyodyne/cubix):00071                 STA     MPCL_RAM
+FA29 12               (../nhyodyne/cubix):00072                 NOP
+FA2A 12               (../nhyodyne/cubix):00073                 NOP
+FA2B BD8800           (../nhyodyne/cubix):00074                 JSR     BANKED_DRIVER_DISPATCHER
+FA2E 868E             (../nhyodyne/cubix):00075                 LDA     #$8E
+FA30 B70578           (../nhyodyne/cubix):00076                 STA     MPCL_RAM
+FA33 10FE02FE         (../nhyodyne/cubix):00077                 LDS     >PAGER_S                          ; RESTORE STACK
+FA37 BE02FA           (../nhyodyne/cubix):00078                 LDX     >PAGER_X                          ; RESTORE 'X'
+FA3A 10BE02FC         (../nhyodyne/cubix):00079                 LDY     >PAGER_Y                          ; RESTORE 'Y'
+FA3E FE02F7           (../nhyodyne/cubix):00080                 LDU     >PAGER_U                          ; RESTORE 'U'
+FA41 FC02F8           (../nhyodyne/cubix):00081                 LDD     >PAGER_D                          ; RESTORE 'D'
+FA44 39               (../nhyodyne/cubix):00082                 RTS
+                      (../nhyodyne/drive):00178         
+                      (../nhyodyne/drive):00179                 ORG     $FF00
+                      (../nhyodyne/drive):00180         ;
+                      (../nhyodyne/drive):00181         ; DISK COMMAND BLOCK
+                      (../nhyodyne/drive):00182         ;
+                      (../nhyodyne/drive):00183         ;* IGNORE ANY UNUSED INTERRUPTS
+FF00                  (../nhyodyne/drive):00184         IGNORE
+FF00 3B               (../nhyodyne/drive):00185                 RTI
+                      (../nhyodyne/drive):00186         ;* RESULT CODES FOR FDC OPERATIONS
+FF01                  (../nhyodyne/drive):00187         RESTAB
+FF01 0300020000030401 (../nhyodyne/drive):00188                 FCB     3,0,2,0,0,3,4,1
+                      (../nhyodyne/drive):00189         ;*
+                      (../nhyodyne/drive):00190         ;* INITIALIZATION TABLE FOR CUBIX RAM
+                      (../nhyodyne/drive):00191         ;*
+     FF09             (../nhyodyne/drive):00192         RITAB           EQU *
+                      (../nhyodyne/drive):00193         ;* DEFAULT DRIVE CHARACTISTICS
+FF09 00500209000000   (../nhyodyne/drive):00194                 FCB     0,80,2,9,0,0,0                    ;ADR 0, 80 CYL, 2 HEAD, 9 SEC/TRK
+FF10 01FF01FF000000   (../nhyodyne/drive):00195                 FCB     1,255,1,255,0,0,0                 ;ADR 1, 255 CYL, 1 HEAD, 255 SEC/TRK
+FF17 02FF01FF000000   (../nhyodyne/drive):00196                 FCB     2,255,1,255,0,0,0                 ;ADR 2, 255 CYL, 1 HEAD, 255 SEC/TRK
+FF1E 03FF01FF000000   (../nhyodyne/drive):00197                 FCB     3,255,1,255,0,0,0                 ;ADR 4, 255 CYL, 1 HEAD, 255 SEC/TRK
+                      (../nhyodyne/drive):00198         ;* CONSOLE DEVICE ASSIGNMENTS
+FF25 01               (../nhyodyne/drive):00199                 FCB     1                                 ;CONSOLE INPUT DEVICE
+FF26 01               (../nhyodyne/drive):00200                 FCB     1                                 ;CONSOLE OUTPUT DEVICE
+                      (../nhyodyne/drive):00201         ;* SERIAL DEVICE DRIVERS
+FF27 F97DF96E00000000 (../nhyodyne/drive):00202                 FDB     RDNULL,RDSER,0,0,0,0,0,0
      0000000000000000
-FF37 F97AF96400000000 (../nhyodyne/drive):00212                 FDB     WRNULL,WRSER,0,0,0,0,0,0
+FF37 F97FF96900000000 (../nhyodyne/drive):00203                 FDB     WRNULL,WRSER,0,0,0,0,0,0
      0000000000000000
-                      (../nhyodyne/drive):00213         ;* DISK DEVICE DRIVERS
-FF47 F97CF97DF9A8F97B (../nhyodyne/drive):00214                 FDB     DHOME,DRDSEC,DWRSEC,DFORMAT
-                      (../nhyodyne/drive):00215         ;* 6809 HARDWARE VECTORS
-FF4F E00B             (../nhyodyne/drive):00216                 FDB     SSR                               ;SWI VECTOR (USED FOR SSRS)
-FF51 FF00             (../nhyodyne/drive):00217                 FDB     IGNORE                            ;SWI2 VECTOR
-FF53 FF00             (../nhyodyne/drive):00218                 FDB     IGNORE                            ;SWI3 VECTOR
-FF55 FF00             (../nhyodyne/drive):00219                 FDB     IGNORE                            ;IRQ  VECTOR
-FF57 FF00             (../nhyodyne/drive):00220                 FDB     IGNORE                            ;FIRQ VECTOR
-FF59 FF00             (../nhyodyne/drive):00221                 FDB     IGNORE                            ;NMI VECTOR
-                      (../nhyodyne/drive):00222         ;* MISC FLAGS & VARIABLES
-FF5B FF               (../nhyodyne/drive):00223                 FCB     $FF                               ;ERROR MESSAGES ENABLED
-FF5C 00               (../nhyodyne/drive):00224                 FCB     0                                 ;TRACE DISABLED
-FF5D 00               (../nhyodyne/drive):00225                 FCB     0                                 ;DEBUG DISABLED
-FF5E 03               (../nhyodyne/drive):00226                 FCB     3                                 ;DEFAULT DRIVE (A)
-FF5F 4D41494E         (../nhyodyne/drive):00227                 FCC     'MAIN'                            ;DEFAULT DIRECTORY
-FF63 00000000         (../nhyodyne/drive):00228                 FCB     0,0,0,0                           ;(FILLER)
-FF67 03               (../nhyodyne/drive):00229                 FCB     3                                 ;SYSTEM DRIVE (A)
-FF68 53595354454D     (../nhyodyne/drive):00230                 FCC     'SYSTEM'                          ;SYSTEM DIRECTORY
-FF6E 0000             (../nhyodyne/drive):00231                 FCB     0,0                               ;(FILLER)
-                      (../nhyodyne/drive):00232         ; DRIVE MAPPING TABLE
-FF70 2103             (../nhyodyne/drive):00233                 FCB     $21,$03                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
-FF72 2102             (../nhyodyne/drive):00234                 FCB     $21,$02                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE
-FF74 2101             (../nhyodyne/drive):00235                 FCB     $21,$01                           ;     LOW NIBBLE IS DEVICE ADDRESS
-FF76 2100             (../nhyodyne/drive):00236                 FCB     $21,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
-                      (../nhyodyne/drive):00237                                                           ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
-                      (../nhyodyne/drive):00238         
-     006F             (../nhyodyne/drive):00239         RISIZ           EQU *-RITAB                       ;SIZE OF INITILAIZED RAM
-                      (../nhyodyne/drive):00240         ;
+                      (../nhyodyne/drive):00204         ;* DISK DEVICE DRIVERS
+FF47 F981F982F9ADF980 (../nhyodyne/drive):00205                 FDB     DHOME,DRDSEC,DWRSEC,DFORMAT
+                      (../nhyodyne/drive):00206         ;* 6809 HARDWARE VECTORS
+FF4F E00B             (../nhyodyne/drive):00207                 FDB     SSR                               ;SWI VECTOR (USED FOR SSRS)
+FF51 FF00             (../nhyodyne/drive):00208                 FDB     IGNORE                            ;SWI2 VECTOR
+FF53 FF00             (../nhyodyne/drive):00209                 FDB     IGNORE                            ;SWI3 VECTOR
+FF55 FF00             (../nhyodyne/drive):00210                 FDB     IGNORE                            ;IRQ  VECTOR
+FF57 FF00             (../nhyodyne/drive):00211                 FDB     IGNORE                            ;FIRQ VECTOR
+FF59 FF00             (../nhyodyne/drive):00212                 FDB     IGNORE                            ;NMI VECTOR
+                      (../nhyodyne/drive):00213         ;* MISC FLAGS & VARIABLES
+FF5B FF               (../nhyodyne/drive):00214                 FCB     $FF                               ;ERROR MESSAGES ENABLED
+FF5C 00               (../nhyodyne/drive):00215                 FCB     0                                 ;TRACE DISABLED
+FF5D 00               (../nhyodyne/drive):00216                 FCB     0                                 ;DEBUG DISABLED
+FF5E 03               (../nhyodyne/drive):00217                 FCB     3                                 ;DEFAULT DRIVE (A)
+FF5F 4D41494E         (../nhyodyne/drive):00218                 FCC     'MAIN'                            ;DEFAULT DIRECTORY
+FF63 00000000         (../nhyodyne/drive):00219                 FCB     0,0,0,0                           ;(FILLER)
+FF67 03               (../nhyodyne/drive):00220                 FCB     3                                 ;SYSTEM DRIVE (A)
+FF68 53595354454D     (../nhyodyne/drive):00221                 FCC     'SYSTEM'                          ;SYSTEM DIRECTORY
+FF6E 0000             (../nhyodyne/drive):00222                 FCB     0,0                               ;(FILLER)
+                      (../nhyodyne/drive):00223         ; DRIVE MAPPING TABLE
+FF70 2103             (../nhyodyne/drive):00224                 FCB     $21,$03                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
+FF72 2102             (../nhyodyne/drive):00225                 FCB     $21,$02                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE
+FF74 2101             (../nhyodyne/drive):00226                 FCB     $21,$01                           ;     LOW NIBBLE IS DEVICE ADDRESS
+FF76 2100             (../nhyodyne/drive):00227                 FCB     $21,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
+                      (../nhyodyne/drive):00228                                                           ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
+                      (../nhyodyne/drive):00229         
+     006F             (../nhyodyne/drive):00230         RISIZ           EQU *-RITAB                       ;SIZE OF INITILAIZED RAM
+                      (../nhyodyne/drive):00231         ;
                       (        cubix.asm):01529                 ENDIF
                       (        cubix.asm):01530         ;*
                       (        cubix.asm):01531         ;* INTERRUPT VECTORS
@@ -4215,7 +4225,7 @@ Symbol Table:
 [ G] CONIN                            DC6C
 [ G] CONOUT                           DC6D
 [ G] CONSOLEDEVICE                    0100
-[ G] CPYHOSTBUF                       F991
+[ G] CPYHOSTBUF                       F996
 [ G] CRD1                             ED22
 [ G] CRD2                             ED28
 [ G] CRE1                             E739
@@ -4246,7 +4256,7 @@ Symbol Table:
 [ G] DCTRL                            DC50
 [ G] DDADR                            0013
 [ G] DECDIG                           E460
-[ G] DECODEDRIVE                      F9D0
+[ G] DECODEDRIVE                      F9D5
 [ G] DEFATR                           00F0
 [ G] DEFDIR                           DCA6
 [ G] DEFDRV                           DCA5
@@ -4254,8 +4264,8 @@ Symbol Table:
 [ G] DELFIL                           EDA2
 [ G] DETAB                            EBA8
 [ G] DEVMSG                           F7CC
-[ G] DFORMAT                          F97B
-[ G] DHOME                            F97C
+[ G] DFORMAT                          F980
+[ G] DHOME                            F981
 [ G] DIGOK                            E439
 [ G] DIRSEC                           0000
 [ G] DISDIR                           E6B6
@@ -4291,13 +4301,15 @@ Symbol Table:
 [ G] DPERM                            0010
 [ G] DPREFIX                          0000
 [ G] DRADR                            0015
-[ G] DRDSEC                           F97D
+[ G] DRDSEC                           F982
 [ G] DRIVE                            0000
 [ G] DRIVEMAP                         DCB7
 [ G] DRVSIZ                           E715
 [ G] DSHFT                            E441
+[ G] DSKY_BUF                         01EA
+[ G] DSKY_HEXBUF                      01F3
 [ G] DTYPE                            0010
-[ G] DWRSEC                           F9A8
+[ G] DWRSEC                           F9AD
 [ G] EOF                              E8BE
 [ G] EPERM                            0020
 [ G] ERRCNT                           DCF4
@@ -4452,7 +4464,7 @@ Symbol Table:
 [ G] LODF1                            EE6B
 [ G] LODFIL                           EE55
 [ G] MBASE                            E002
-[ G] md_pagecode                      FA0A
+[ G] md_pagecode                      FA0F
 [ G] MD_PAGERA                        0200
 [ G] MOVD1                            F036
 [ G] MOVDIR                           F030
@@ -4508,10 +4520,10 @@ Symbol Table:
 [ G] OWERR                            E92A
 [ G] PAD                              E3A9
 [ G] PAGER_D                          02F8
-[ G] PAGER_INIT                       F9F7
+[ G] PAGER_INIT                       F9FC
 [ G] PAGER_S                          02FE
 [ G] PAGER_STACK                      02F5
-[ G] PAGER_U                          02F6
+[ G] PAGER_U                          02F7
 [ G] PAGER_X                          02FA
 [ G] PAGER_Y                          02FC
 [ G] PAR1                             F4CE
@@ -4547,10 +4559,10 @@ Symbol Table:
 [ G] RDDEV                            E5BC
 [ G] RDDLC                            EFB6
 [ G] RDISK                            EADF
-[ G] RDNULL                           F978
+[ G] RDNULL                           F97D
 [ G] RDONE                            EB04
 [ G] RDSEC                            F6EF
-[ G] RDSER                            F969
+[ G] RDSER                            F96E
 [ G] RDW1                             E611
 [ G] RDWRK                            E5FC
 [ G] READB                            E879
@@ -4734,9 +4746,9 @@ Symbol Table:
 [ G] WRKSPC                           DE00
 [ G] WRLIN                            E54E
 [ G] WRMSG                            E57E
-[ G] WRNULL                           F97A
+[ G] WRNULL                           F97F
 [ G] WRSEC                            F6F3
-[ G] WRSER                            F964
+[ G] WRSER                            F969
 [ G] WRST1                            E576
 [ G] WRST2                            E598
 [ G] WRSTR                            E574

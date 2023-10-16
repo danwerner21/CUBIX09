@@ -1,6 +1,6 @@
 all:  	scream.com monitor.com loader.bin cubixdrv.sys
 
-cubixdrv.sys: cubixdrv.asm cubix_serial.asm cubix_ide.asm cubix_dskyng.asm cubix_dsky.asm
+cubixdrv.sys: cubixdrv.asm cubix_serial.asm cubix_ide.asm cubix_dskyng.asm cubix_dsky.asm cubix_values.asm
 	lwasm --6809   --6800compat cubixdrv.asm -s --list=cubixdrv.lst --map=cubixdrv.map --output=cubixdrv.s --format=srec
 	srec_cat  cubixdrv.s -exclude 0x0000 0x8800 -o  cubixdrv.hex  -intel -address-length=2
 	srec_cat  cubixdrv.s -offset -0x8800 -o cubixdrv.sys -binary

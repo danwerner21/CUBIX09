@@ -8,7 +8,6 @@
 ;		IDE_WRITE_SECTOR - write a sector to drive   ('U' POINTS TO DCB, X TO MEMORY)
 ;________________________________________________________________________________________________________________________________
 ;
-HSTBUF          = $0300
 PPIDE_PPI       = $0560                           ; PORT A
 ;
 PPIDELO         = PPIDE_PPI+0                     ; LSB
@@ -514,19 +513,8 @@ MESSAGE6
 ;*____________________________________________________________________________________________________
 IDE_SETUP_LBA:
         PSHS    D
-;            IF      USEDSKYNG = 1
-;                LDA     DRIVE,U
-;                STA     DSKY_HEXBUF
-;                LDA     HEAD,U
-;                STA     DSKY_HEXBUF+1
-;                LDA     CYL,U
-;                STA     DSKY_HEXBUF+2
-;                LDA     SEC,U
-;                STA     DSKY_HEXBUF+3
-;                JSR     DSKY_BIN2SEG
-;                JSR     DSKY_SHOW
-;                ENDC
         LDA     #PPIDE_DEVICE
+        STA     DSKY_HEXBUF
         STA     PPIDECOMMAND
         LDA     #$00
         LDB     CURRENTDEVICE
@@ -543,18 +531,22 @@ IDE_SETUP_LBA:
         LDA     #$00
         LDB     CURRENTHEAD
         ADDB    CURRENTSLICE
+        STB     DSKY_HEXBUF+1
+
         JSR     IDE_WRITE
 
         LDA     #PPIDE_LBAMID
         STA     PPIDECOMMAND
         LDA     #$00
         LDB     CURRENTCYL                        ;
+        STB     DSKY_HEXBUF+2
         JSR     IDE_WRITE
 
         LDA     #PPIDE_LBALOW
         STA     PPIDECOMMAND
         LDA     #$00
         LDB     CURRENTSEC                        ;
+        STB     DSKY_HEXBUF+3
         JSR     IDE_WRITE
 
         LDA     #PPIDE_SEC_CNT

@@ -6,21 +6,9 @@
 ;  DWERNER 10/15/2023 	Initial
 ;________________________________________________________________________________________________________________________________
 
-PAGER_STACK     = $02F5
-PAGER_U         = $02F7
-PAGER_D         = $02F8
-PAGER_X         = $02FA
-PAGER_Y         = $02FC
-PAGER_S         = $02FE
-CONSOLEDEVICE   = $0100                           ; (BYTE)
-DISKERROR       = $01F7                           ; (BYTE)
-CURRENTHEAD     = $01F8                           ; (BYTE)
-CURRENTCYL      = $01F9                           ; (BYTE)
-CURRENTSEC      = $01FA                           ; (BYTE)
-CURRENTDEVICE   = $01FB                           ; (BYTE)
-CURRENTSLICE    = $01FC                           ; (WORD)
-farpointer      = $01FE                           ; (WORD)                      ;
-
+;*
+        INCLUDE cubix_values.asm
+;*
 
         ORG     $8800
 
@@ -87,16 +75,16 @@ DISPATCHTABLE:
         .WORD   drv_noop                          ; FUNCTION 25 -
         .WORD   drv_noop                          ; FUNCTION 26 -
 ;
-;        .WORD   DSKY_INIT       ; FUNCTION 40 -
-;        .WORD   DSKY_SHOW       ; FUNCTION 41 -
-;        .WORD   DSKY_BIN2SEG    ; FUNCTION 42 -
-;        .WORD   DSKY_RESET      ; FUNCTION 43 -
-;        .WORD   DSKY_STAT       ; FUNCTION 44 -
-;        .WORD   DSKY_GETKEY     ; FUNCTION 45 -
-;        .WORD   DSKY_BEEP       ; FUNCTION 46 -
-;        .WORD   DSKY_DSPL       ; FUNCTION 47 -
-;        .WORD   DSKY_PUTLED     ; FUNCTION 48 -
-;        .WORD   DSKY_BLANK      ; FUNCTION 49 -
+        .WORD   DSKY_INIT                         ; FUNCTION 27 -
+        .WORD   DSKY_SHOW                         ; FUNCTION 28 -
+        .WORD   DSKY_BIN2SEG                      ; FUNCTION 29 -
+        .WORD   DSKY_RESET                        ; FUNCTION 30 -
+        .WORD   DSKY_STAT                         ; FUNCTION 31 -
+        .WORD   DSKY_GETKEY                       ; FUNCTION 32 -
+        .WORD   DSKY_BEEP                         ; FUNCTION 33 -
+        .WORD   DSKY_DSPL                         ; FUNCTION 34 -
+        .WORD   DSKY_PUTLED                       ; FUNCTION 35 -
+        .WORD   DSKY_BLANK                        ; FUNCTION 36 -
 ;
 
 
@@ -104,11 +92,11 @@ DISPATCHTABLE:
 ;
         INCLUDE cubix_serial.asm
         INCLUDE cubix_ide.asm
-;.INCLUDE "doside.asm"
-;.INCLUDE "dosdskyn.asm"
-;.INCLUDE "dosmd.asm"
-;.INCLUDE "dosflp.asm"
-;.INCLUDE "dospager.asm"
+        INCLUDE cubix_dskyng.asm
+;        INCLUDE cubix_dsky.asm
+;        INCLUDE cubix_floppy.asm
+;        INCLUDE cubix_esp32.asm
+
 
 
 

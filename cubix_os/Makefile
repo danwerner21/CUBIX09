@@ -1,7 +1,7 @@
 all:  	cubix.com
 
 
-cubix.com: cubix.asm command.os comfile.os filesys.os ../nhyodyne/loader.bin
+cubix.com: cubix.asm command.os comfile.os filesys.os ../nhyodyne/loader.bin ../nhyodyne/cubix_values.asm ../nhyodyne/drivers.asm
 	lwasm --define=nhyodyne --define=dist --6809  --6800compat cubix.asm -s --list=cubix.lst --map=cubix.map --output=cubix.s --format=srec
 	srec_cat  cubix.s -exclude 0x0000 0xE000 -offset -0x8000 -o  cubix.hex  -intel -address-length=2
 	srec_cat  cubix.s -exclude 0x0000 0xE000 -offset -0xE000 -o  cubix.s1  -binary
