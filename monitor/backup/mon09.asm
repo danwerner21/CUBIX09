@@ -1141,28 +1141,7 @@ WRLND
 GETECH
         BSR     GETCHR      GET CHARACTER
         CMPA    #' '        SPACE?
-        BLS     WRLND       IF < DON'T DISPLAY     CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
-        CMPA    #$61        LOWER CASE?
+        BLS     WRLND                             ;IF < DON'T DISPLAY
         CMPA    #$61        LOWER CASE?
         BLO     PUTCHR      OK
         ANDA    #$5F        CONVERT TO UPPER
@@ -1334,28 +1313,7 @@ LOKREG
         LDA     ,U      GET POSTBYTE
         ANDA    #$0F        REMOVE HIGH REGISTER
         CMPA    #5      IS IT PC?
-        BNE     LOK1        NO, IT'S OK TO EXECUTE     LDA ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
-        LDA     ,U      GET REG POSTBYTE BACK
+        BNE     LOK1                              ;NO, IT'S OK TO EXECUTE
         LDA     ,U      GET REG POSTBYTE BACK
         LSRA    SHIFT
         LSRA    HIGH REGISTER
@@ -1499,19 +1457,7 @@ DJMPIN
 ;* FIVE BIT REGISTER OFFSET
         ANDA    #%00011111  SAVE ONLY OFFSET
         CMPA    #%00010000  NEGATIVE?
-        BLO     SINOK       NO, IT'S OK     ORA #%11100000  CONVERT TO NEGATIVE
-        ORA     #%11100000  CONVERT TO NEGATIVE
-        ORA     #%11100000  CONVERT TO NEGATIVE
-        ORA     #%11100000  CONVERT TO NEGATIVE
-        ORA     #%11100000  CONVERT TO NEGATIVE
-        ORA     #%11100000  CONVERT TO NEGATIVE
-        ORA     #%11100000  CONVERT TO NEGATIVE
-        ORA     #%11100000  CONVERT TO NEGATIVE
-        ORA     #%11100000  CONVERT TO NEGATIVE
-        ORA     #%11100000  CONVERT TO NEGATIVE
-        ORA     #%11100000  CONVERT TO NEGATIVE
-        ORA     #%11100000  CONVERT TO NEGATIVE
-        ORA     #%11100000  CONVERT TO NEGATIVE
+        BLO     SINOK       lNO, IT'S OK         ORA     #%11100000  CONVERT TO NEGATIVE
         ORA     #%11100000  CONVERT TO NEGATIVE
         ORA     #%11100000  CONVERT TO NEGATIVE
         ORA     #%11100000  CONVERT TO NEGATIVE
@@ -1680,28 +1626,7 @@ TSTC0
         ANDA    ,X+     MASK OUT NON-APPLICABLE ONES
 TSTC1
         CMPA    ,X+     DOES IT MATCH?
-        BEQ     TSTC2       IT'S OK     DECB            REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
-        DECB    REDUCE COUNT
+        BEQ     TSTC2                             ;IT'S OK
         DECB    REDUCE COUNT
         BNE     TSTC1       CONTINUE
         LDA     #255        INDICATE CONDITIONAL NOT MET
@@ -1725,28 +1650,7 @@ DISA1
         CMPA    #$10        PREFIX BYTE?
         BEQ     SETOP2      NEW TABLE
         CMPA    #$11        OTHER PREFIX BYTE
-        BNE     OPFIND      NO, IT'S OK     LDX #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
-        LDX     #OPTAB3     POINT TO THIRD TABLE
+        BNE     OPFIND                            ;NO, IT'S OK
         LDX     #OPTAB3     POINT TO THIRD TABLE
         BRA     OPFNXT      OK
 SETOP2
@@ -1879,11 +1783,11 @@ INSR1
         BRA     INSREG
 ;* TEST FOR EXTENDED INDIRECT
 EVL5
-        CMPA    #$8F        EXTENDED INDIRECT?
-        BNE     EVL6        NO, TRY NEXT
-        LDD     ,Y++        GET OFFSET
-        LBSR    WRHEXW      OUTPUT
-        BRA     EVLFIN      AND CONTINUE
+        CMPA    #$8F                              ;EXTENDED INDIRECT?
+        BNE     EVL6                              ;NO, TRY NEXT
+        LDD     ,Y++                              ;GET OFFSET
+        LBSR    WRHEXW                            ;OUTPUT
+        BRA     EVLFIN                            ;AND CONTINUE
 ;* TEST FOR PC OFFSET, 8 BIT
 EVL6
         CMPA    #$8C        EIGHT BIT PC OFFSET?
@@ -1915,28 +1819,7 @@ INSREG
         CMPA    #$82        DECREMENT BY ONE?
         BEQ     DEC1        DECREMENT BY ONE
         CMPA    #$83        DECREMENT BY TWO?
-        BNE     NODEC       NO, DON'T DEC     STB ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
-        STB     ,U+     SAVE
+        BNE     NODEC                             ;NO, DON'T DEC
         STB     ,U+     SAVE
 DEC1
         STB     ,U+     AGAIN
@@ -1991,28 +1874,7 @@ PSH1
         PSHS    A,B     SAVE REGS
         LDD     ,X++        GET DATA
         CMPA    #'U'        SAVEING U REGISTER
-        BNE     PSH4        NO, IT'S OK     TST INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
-        TST     INSTYP      SPECIAL CASE
+        BNE     PSH4                              ;NO, IT'S OK
         TST     INSTYP      SPECIAL CASE
         BPL     PSH4        OK
         LDA     #'S'        CONVERT

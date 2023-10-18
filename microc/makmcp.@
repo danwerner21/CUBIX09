@@ -1,0 +1,4 @@
+RUN D:[MC]MCC mcp.C mcp.A1 -Q -F -L
+RUN D:[MC]MCO mcp.A1 mcp.A2 -Q
+RUN D:[MC]SLINK mcp.A2 mcp.ASM -Q L=D:[MC]MCLIB.LIB
+ASM /T/E ?1

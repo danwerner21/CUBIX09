@@ -1,5 +1,7 @@
 {
     "files.associations": {
-        "3TO4.C": "cpp"
+        "3TO4.C": "cpp",
+        "MCP.C": "cpp",
+        "MCPraw.C": "cpp"
     }
 }

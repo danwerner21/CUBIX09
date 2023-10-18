@@ -49,11 +49,13 @@ New SSRs
 
 ---
 To Do List for this port:
-* DSKY V2 support
+* problem with drive mapping 
+   - when the drive gets full enough, stuff gets overwritten?
 * MICRO C
 * DRIVE MAPPER UTILITY
 * ADD FLOPPY DRIVE SUPPORT
 * DSKY V1 support
+* DSKY functions should abort if no DSKY is there.
 * ESP32 support
 * TMS VDP support
 * color VDU support

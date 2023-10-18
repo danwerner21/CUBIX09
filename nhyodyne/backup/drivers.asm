@@ -40,11 +40,12 @@ HWIN1
         LDB     #02                               ;INIT SERIAL PORT
         JSR     MD_PAGERA
 ;
+        LDB     #21                               ;INIT IDE
+        JSR     MD_PAGERA
+;
         LDB     #27                               ;INIT DSKY/NG
         JSR     MD_PAGERA
 ;
-        LDB     #21                               ;INIT IDE
-        JSR     MD_PAGERA
         RTS
 
 WRSER:
@@ -113,6 +114,7 @@ DRDSEC
         JSR     MD_PAGERA
         BSR     CPYHOSTBUF
         LDA     DISKERROR                         ; GET ERROR CONDITION
+        CMPA    #$00
 !
         RTS
 CPYHOSTBUF:
@@ -153,6 +155,7 @@ DWRSEC
         LDB     #23                               ;IDE_WRITE_SECTOR
         JSR     MD_PAGERA
         LDA     DISKERROR                         ; GET ERROR CONDITION
+        CMPA    #$00
 !
         RTS
 

@@ -50,23 +50,13 @@ PPIDE_CMD_SPINUP = $E1
 PPRD_IDE_8255   = %10010010                       ;IDE_8255_CTL OUT, IDE_8255_LSB/MSB INPUT
 PPWR_IDE_8255   = %10000000                       ;ALL THREE PORTS OUTPUT
 
-;ALLOCATE THE FOLLOWING DATA AREAS TO UNUSED RAM SPACE
-DEBCYLL:
-        .BYTE   0                                 ; DEBLOCKED CYLINDER LSB
-DEBCYLM:
-        .BYTE   0                                 ; DEBLOCKED CYLINDER MSB
-DEBSEHD:
-        .BYTE   0                                 ; DEBLOCKED SECTOR AND HEAD (HS)
-PPIDETMP:
-        .BYTE   0                                 ; TEMP
 PPIDELOTMP:
         .BYTE   0
 PPIDECOMMAND:
         .BYTE   0
 PPIDETIMEOUT:
         .BYTE   $00,$00
-PPIDEWORKVAR:
-        .BYTE   $00,$00
+
 
 
 ;__PPIDE_INIT_________________________________________________________________________________________
@@ -86,7 +76,6 @@ PPIDE_INIT:
         LDX     #MESSAGE2
         JSR     WRSTR                             ; DO PROMPT
         LDD     #PPIDE_PPI                        ; GET BASE PORT
-        STD     PPIDEWORKVAR
         JSR     WRHEXW                            ; PRINT BASE PORT
 ;
         JSR     PPIDE_RESET                       ; RESET THE BUS
@@ -308,9 +297,7 @@ RST_DLY:
 
 ; IF A DSKYNG IS ACTIVE AND IS ON THE SAME PPI PORT AS THE PPISDa:a BEING
 ; RESET, THEN THE DSKYNG WILL ALSO BE RESET.  SO, THE DSKY IS ALSO INITIALIZED.
-;    IF      USEDSKYNG = 1
-;        JSR     DSKY_REINIT
-;        ENDC
+        JSR     DSKY_REINIT
 
         RTS
 
@@ -529,8 +516,7 @@ IDE_SETUP_LBA:
         LDA     #PPIDE_LBAHI
         STA     PPIDECOMMAND
         LDA     #$00
-        LDB     CURRENTHEAD
-        ADDB    CURRENTSLICE
+        LDB     CURRENTSLICE
         STB     DSKY_HEXBUF+1
 
         JSR     IDE_WRITE
@@ -554,4 +540,7 @@ IDE_SETUP_LBA:
         LDA     #$00
         LDB     #$01
         JSR     IDE_WRITE
+
+        JSR     DSKY_BIN2SEG
+        JSR     DSKY_SHOW
         PULS    D,PC

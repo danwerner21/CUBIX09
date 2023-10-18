@@ -97,8 +97,6 @@ DSKY_INIT:
         LDX     #DSKYMESSAGE2
         JSR     WRSTR                             ; DO PROMPT
         LDD     #PPIDE_PPI                        ; GET BASE PORT
-        STD     DSKYWORKVAR
-        LDD     #DSKYWORKVAR
         JSR     WRHEXW                            ; PRINT BASE PORT
 
         LDX     #DSKYMESSAGE3
@@ -692,8 +690,6 @@ DSKY_PPIX_VAL:
         .BYTE   0
 DSKY_PRESENT:
         .BYTE   0
-DSKYWORKVAR:
-        .BYTE   $00,$00
 DSKYINITMSG:
         .BYTE   $54,$6E,$5C,$5E,$6E,$54,$79,$40
 

@@ -7,7 +7,7 @@
 
 MD_PAGERA       = $0200                           ; PAGE DRIVER ADDRESS
 PAGER_STACK     = $02F5
-PAGER_U         = $02F7
+PAGER_U         = $02F6
 PAGER_D         = $02F8
 PAGER_X         = $02FA
 PAGER_Y         = $02FC
