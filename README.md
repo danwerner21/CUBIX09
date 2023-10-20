@@ -49,8 +49,6 @@ New SSRs
 
 ---
 To Do List for this port:
-* problem with drive mapping 
-   - when the drive gets full enough, stuff gets overwritten?
 * MICRO C
 * DRIVE MAPPER UTILITY
 * ADD FLOPPY DRIVE SUPPORT
@@ -110,4 +108,5 @@ Nhyodyne Map:
             $F945-$FEFF - CUBIX Low Memory Device Drivers
             $FF00-$FFF1 - OS VECTORS AND CONFIG TABLES
             $FFF2-$FFFF - HARDWARE VECTORS
+
 

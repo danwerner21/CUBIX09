@@ -696,53 +696,59 @@
                       (    cubix_ide.asm):00497         ;*
                       (    cubix_ide.asm):00498         ;        SETUP   LBA DATA
                       (    cubix_ide.asm):00499         ;*
-                      (    cubix_ide.asm):00500         ;*____________________________________________________________________________________________________
-8B24                  (    cubix_ide.asm):00501         IDE_SETUP_LBA:
-8B24 3406             (    cubix_ide.asm):00502                 PSHS    D
-8B26 860E             (    cubix_ide.asm):00503                 LDA     #PPIDE_DEVICE
-8B28 B701F3           (    cubix_ide.asm):00504                 STA     DSKY_HEXBUF
-8B2B B78882           (    cubix_ide.asm):00505                 STA     PPIDECOMMAND
-8B2E 8600             (    cubix_ide.asm):00506                 LDA     #$00
-8B30 F601FB           (    cubix_ide.asm):00507                 LDB     CURRENTDEVICE
-8B33 C401             (    cubix_ide.asm):00508                 ANDB    #$01                              ; only want drive cfg
-8B35 58               (    cubix_ide.asm):00509                 ASLB                                      ; SHIFT 4
-8B36 58               (    cubix_ide.asm):00510                 ASLB                                      ;
-8B37 58               (    cubix_ide.asm):00511                 ASLB                                      ;
-8B38 58               (    cubix_ide.asm):00512                 ASLB                                      ;
-8B39 CAE0             (    cubix_ide.asm):00513                 ORB     #$E0                              ; E0=MST  F0=SLV
-8B3B BD8AA8           (    cubix_ide.asm):00514                 JSR     IDE_WRITE
-                      (    cubix_ide.asm):00515         
-8B3E 860D             (    cubix_ide.asm):00516                 LDA     #PPIDE_LBAHI
-8B40 B78882           (    cubix_ide.asm):00517                 STA     PPIDECOMMAND
-8B43 8600             (    cubix_ide.asm):00518                 LDA     #$00
-8B45 F601FC           (    cubix_ide.asm):00519                 LDB     CURRENTSLICE
-8B48 F701F4           (    cubix_ide.asm):00520                 STB     DSKY_HEXBUF+1
-                      (    cubix_ide.asm):00521         
-8B4B BD8AA8           (    cubix_ide.asm):00522                 JSR     IDE_WRITE
-                      (    cubix_ide.asm):00523         
-8B4E 860C             (    cubix_ide.asm):00524                 LDA     #PPIDE_LBAMID
-8B50 B78882           (    cubix_ide.asm):00525                 STA     PPIDECOMMAND
-8B53 8600             (    cubix_ide.asm):00526                 LDA     #$00
-8B55 F601F9           (    cubix_ide.asm):00527                 LDB     CURRENTCYL                        ;
-8B58 F701F5           (    cubix_ide.asm):00528                 STB     DSKY_HEXBUF+2
-8B5B BD8AA8           (    cubix_ide.asm):00529                 JSR     IDE_WRITE
-                      (    cubix_ide.asm):00530         
-8B5E 860B             (    cubix_ide.asm):00531                 LDA     #PPIDE_LBALOW
-8B60 B78882           (    cubix_ide.asm):00532                 STA     PPIDECOMMAND
-8B63 8600             (    cubix_ide.asm):00533                 LDA     #$00
-8B65 F601FA           (    cubix_ide.asm):00534                 LDB     CURRENTSEC                        ;
-8B68 F701F6           (    cubix_ide.asm):00535                 STB     DSKY_HEXBUF+3
-8B6B BD8AA8           (    cubix_ide.asm):00536                 JSR     IDE_WRITE
-                      (    cubix_ide.asm):00537         
-8B6E 860A             (    cubix_ide.asm):00538                 LDA     #PPIDE_SEC_CNT
-8B70 B78882           (    cubix_ide.asm):00539                 STA     PPIDECOMMAND
-8B73 8600             (    cubix_ide.asm):00540                 LDA     #$00
-8B75 C601             (    cubix_ide.asm):00541                 LDB     #$01
-8B77 BD8AA8           (    cubix_ide.asm):00542                 JSR     IDE_WRITE
+                      (    cubix_ide.asm):00500         ;*    This assumes the drive is setup for 128 sectors, 128 Cylinders, 4 heads. = 65536 total sectors.
+                      (    cubix_ide.asm):00501         ;     LBA ADDRESS   LLLLLLLL CCCCCCCS SSSSSSHH
+                      (    cubix_ide.asm):00502         ;     L=SLICE
+                      (    cubix_ide.asm):00503         ;     H=HEAD
+                      (    cubix_ide.asm):00504         ;     C=CYLINDER
+                      (    cubix_ide.asm):00505         ;     S=SECTOR
+                      (    cubix_ide.asm):00506         ;*
+                      (    cubix_ide.asm):00507         ;*____________________________________________________________________________________________________
+8B24                  (    cubix_ide.asm):00508         IDE_SETUP_LBA:
+8B24 3406             (    cubix_ide.asm):00509                 PSHS    D
+8B26 860E             (    cubix_ide.asm):00510                 LDA     #PPIDE_DEVICE
+8B28 B701F3           (    cubix_ide.asm):00511                 STA     DSKY_HEXBUF
+8B2B B78882           (    cubix_ide.asm):00512                 STA     PPIDECOMMAND
+8B2E 8600             (    cubix_ide.asm):00513                 LDA     #$00
+8B30 F601FB           (    cubix_ide.asm):00514                 LDB     CURRENTDEVICE
+8B33 C401             (    cubix_ide.asm):00515                 ANDB    #$01                              ; only want drive cfg
+8B35 58               (    cubix_ide.asm):00516                 ASLB                                      ; SHIFT 4
+8B36 58               (    cubix_ide.asm):00517                 ASLB                                      ;
+8B37 58               (    cubix_ide.asm):00518                 ASLB                                      ;
+8B38 58               (    cubix_ide.asm):00519                 ASLB                                      ;
+8B39 CAE0             (    cubix_ide.asm):00520                 ORB     #$E0                              ; E0=MST  F0=SLV
+8B3B BD8AA8           (    cubix_ide.asm):00521                 JSR     IDE_WRITE
+                      (    cubix_ide.asm):00522         
+8B3E 860D             (    cubix_ide.asm):00523                 LDA     #PPIDE_LBAHI
+8B40 B78882           (    cubix_ide.asm):00524                 STA     PPIDECOMMAND
+8B43 8600             (    cubix_ide.asm):00525                 LDA     #$00
+8B45 F601FC           (    cubix_ide.asm):00526                 LDB     CURRENTSLICE
+8B48 F701F4           (    cubix_ide.asm):00527                 STB     DSKY_HEXBUF+1
+8B4B BD8AA8           (    cubix_ide.asm):00528                 JSR     IDE_WRITE
+                      (    cubix_ide.asm):00529         
+8B4E 860C             (    cubix_ide.asm):00530                 LDA     #PPIDE_LBAMID
+8B50 B78882           (    cubix_ide.asm):00531                 STA     PPIDECOMMAND
+8B53 8600             (    cubix_ide.asm):00532                 LDA     #$00
+8B55 F601F9           (    cubix_ide.asm):00533                 LDB     CURRENTCYL                        ;
+8B58 F701F5           (    cubix_ide.asm):00534                 STB     DSKY_HEXBUF+2
+8B5B BD8AA8           (    cubix_ide.asm):00535                 JSR     IDE_WRITE
+                      (    cubix_ide.asm):00536         
+8B5E 860B             (    cubix_ide.asm):00537                 LDA     #PPIDE_LBALOW
+8B60 B78882           (    cubix_ide.asm):00538                 STA     PPIDECOMMAND
+8B63 8600             (    cubix_ide.asm):00539                 LDA     #$00
+8B65 F601FA           (    cubix_ide.asm):00540                 LDB     CURRENTSEC                        ;
+8B68 F701F6           (    cubix_ide.asm):00541                 STB     DSKY_HEXBUF+3
+8B6B BD8AA8           (    cubix_ide.asm):00542                 JSR     IDE_WRITE
                       (    cubix_ide.asm):00543         
-8B7A BD8C8D           (    cubix_ide.asm):00544                 JSR     DSKY_BIN2SEG
-8B7D BD8CD4           (    cubix_ide.asm):00545                 JSR     DSKY_SHOW
-8B80 3586             (    cubix_ide.asm):00546                 PULS    D,PC
+8B6E 860A             (    cubix_ide.asm):00544                 LDA     #PPIDE_SEC_CNT
+8B70 B78882           (    cubix_ide.asm):00545                 STA     PPIDECOMMAND
+8B73 8600             (    cubix_ide.asm):00546                 LDA     #$00
+8B75 C601             (    cubix_ide.asm):00547                 LDB     #$01
+8B77 BD8AA8           (    cubix_ide.asm):00548                 JSR     IDE_WRITE
+                      (    cubix_ide.asm):00549         
+8B7A BD8C8D           (    cubix_ide.asm):00550                 JSR     DSKY_BIN2SEG
+8B7D BD8CD4           (    cubix_ide.asm):00551                 JSR     DSKY_SHOW
+8B80 3586             (    cubix_ide.asm):00552                 PULS    D,PC
                       (     cubixdrv.asm):00095                 INCLUDE cubix_dskyng.asm
                       ( cubix_dskyng.asm):00001         ;__DSKYNG DRIVERS_________________________________________________________________________________________________________________
                       ( cubix_dskyng.asm):00002         ;

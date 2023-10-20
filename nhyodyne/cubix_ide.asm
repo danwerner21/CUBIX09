@@ -497,6 +497,13 @@ MESSAGE6
 ;*
 ;        SETUP   LBA DATA
 ;*
+;*    This assumes the drive is setup for 128 sectors, 128 Cylinders, 4 heads. = 65536 total sectors.
+;     LBA ADDRESS   LLLLLLLL CCCCCCCS SSSSSSHH
+;     L=SLICE
+;     H=HEAD
+;     C=CYLINDER
+;     S=SECTOR
+;*
 ;*____________________________________________________________________________________________________
 IDE_SETUP_LBA:
         PSHS    D
@@ -518,7 +525,6 @@ IDE_SETUP_LBA:
         LDA     #$00
         LDB     CURRENTSLICE
         STB     DSKY_HEXBUF+1
-
         JSR     IDE_WRITE
 
         LDA     #PPIDE_LBAMID

@@ -220,14 +220,14 @@ RITAB           EQU *
         FCB     3                                 ;DEFAULT DRIVE (A)
         FCC     'MAIN'                            ;DEFAULT DIRECTORY
         FCB     0,0,0,0                           ;(FILLER)
-        FCB     3                                 ;SYSTEM DRIVE (A)
+        FCB     1                                 ;SYSTEM DRIVE (A)
         FCC     'SYSTEM'                          ;SYSTEM DIRECTORY
         FCB     0,0                               ;(FILLER)
 ; DRIVE MAPPING TABLE
-        FCB     $21,$03                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
-        FCB     $21,$02                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE
+        FCB     $21,$00                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
+        FCB     $21,$00                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE
         FCB     $21,$01                           ;     LOW NIBBLE IS DEVICE ADDRESS
-        FCB     $21,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
+        FCB     $21,$02                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
                                                   ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
 
 RISIZ           EQU *-RITAB                       ;SIZE OF INITILAIZED RAM

@@ -191,14 +191,16 @@ SHRT
 CURSIZ
         LDA     >SDRIVE                           ;GET SELECTED DRIVE
 DRVSIZ
-        PSHS    U
+        PSHS    X,U
         JSR     GETCTL1                           ;GET CONTROL BLOCK
         LDB     NSEC,U                            ;GET # SECS/TRACK
         LDA     NHEAD,U                           ;GET # HEADS
         MUL                                       ;GET SECS/CYLINDER
-        LDA     NCYL,U                            ;GET # CYLINDERS
-        MUL                                       ;CALCULATE TOTAL SIZE
-        PULS    U,PC                              ;RETURN
+        TFR     D,X
+        CLRA
+        LDB     NCYL,U                            ;GET # CYLINDERS
+        JSR     MUL16                             ;
+        PULS    X,U,PC                            ;RETURN
 ;*
 ;* CREATES A FILE
 ;*

@@ -27,7 +27,6 @@
  * Copyright 1999-2005 Dave Dunfield
  * All rights reserved.
  */
-
 #ifdef DEBUG
 	#if (DEBUG < 1) || (DEBUG > 3)
 		#error DEBUG must be in range 1-3
@@ -36,13 +35,11 @@
 #else
 	#define	Debug(a)
 #endif
-
 #if DEBUG > 1
 	#define Debug1(a) printf a;
 #else
 	#define Debug1(a)
 #endif
-
 #if DEBUG > 2
 	#define Debug2(a) printf a;
 #else

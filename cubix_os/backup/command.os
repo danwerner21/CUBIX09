@@ -19,7 +19,7 @@ INI00
         PSHS    B                                 ;SAVE ID
         JSR     GETNUM                            ;GET VALUE
         PULS    A                                 ;RESTORE A
-        TSTA    INTERLEAVE?
+        TSTA                                      ;INTERLEAVE?
         BNE     INI01                             ;NO
         STB     >TEMP4                            ;SAVE INTERLEAVE
         BRA     INI00                             ;TRY FOR NEXT
@@ -79,16 +79,18 @@ INI2
         TFR     A,B                               ;COPY A&B = D/256(ENTRIES/LINKSEC)
         STD     >TEMP3                            ;SAVE FOR LATER
         LDD     #LNKSEC+1                         ;POINT TO LINK SECTOR
+        INC     >TEMP3+1                          ;bump COUNT
+        INC     >TEMP4                            ;bump COUNT
 INI3
         DEC     >TEMP3+1                          ;REDUCE COUNT
-        BMI     INI4                              ;END
+        BEQ     INI4                              ;END
         JSR     WDISK                             ;WRITE IT
         ADDD    #1                                ;NEXT SECTOR
         BRA     INI3                              ;KEEP GOING
 ;* WRITE NON-BASE DIRECTORY SECTORS
 INI4
         DEC     >TEMP4                            ;BACKUP
-        BMI     INI5                              ;THATS ALL
+        BEQ     INI5                              ;THATS ALL
         JSR     WDISK                             ;WRITE IT
         ADDD    #1                                ;NEXT ONE
         BRA     INI4                              ;DO EM ALL
@@ -97,11 +99,15 @@ INI5
         LDD     #$FFFF                            ;END OF CHAIN INDICATOR
         STD     DIRSEC*2,X                        ;SET DIRECTORY FREE
         LEAX    LNKSEC*2,X                        ;OFFSET TO IT
+        LDY     #$0200-LNKSEC*2
         LDD     #LNKSEC+1                         ;POINT TO LINK SECTOR
+        INC     >TEMP3                            ;INC COUNT to adjust loop
 INI6
         DEC     >TEMP3                            ;REDUCE COUNT
-        BMI     INI7                              ;END
+        BEQ     INI7                              ;END
         STD     ,X++                              ;WRITE IT OUT
+        DEY
+        DEY
         ADDD    #1                                ;ADVANCE
         BRA     INI6                              ;DO EM ALL
 INI7
@@ -112,19 +118,49 @@ INI7
 INI8
         LDD     #$FFFF                            ;END OF CHAIN INDICATOR
         STD     ,X++                              ;CLOSE OFF LINKS
+        DEY
+        DEY
+        LDD     #LNKSEC
+        STD     >TEMP3
         PULS    A,B                               ;RESTORE SECTOR ID
+        INC     >TEMP4+1                          ;BUMP COUNT
 INI9
+; if we have crossed the sector boundry, it is important to write the sector, reset x, and continue . . .
+        CMPY    #0
+        BNE     INI9A
+        BSR     INI11
+INI9A:
         DEC     >TEMP4+1                          ;REDUCE COUNT
-        BMI     INI10                             ;EXIT
+        BEQ     INI10                             ;EXIT
         ADDD    #1                                ;NEXT SECTOR
         STD     ,X++                              ;SET LINK FOR DIRECTORY
+        DEY
+        DEY
         BRA     INI9                              ;DO EM ALL
 INI10
         LDD     #$FFFF                            ;END OF CHAIN INDICATOR
         STD     -2,X                              ;CLOSE OFF DIRECTORY
         LDX     #WRKSPC                           ;RESET
-        LDD     #LNKSEC                           ;PT TO IT
+        LDD     >TEMP3                            ;PT TO IT
         JMP     WDISK                             ;WRITE TO DISK
+INI11:
+        PSHS    d
+        LDX     #WRKSPC
+        LDD     >TEMP3                            ;PT TO IT
+        JSR     WDISK                             ;WRITE TO DISK
+;
+        LDY     #$0200
+!
+        CLRA
+        STA     ,x+
+        DEY
+        BNE     <
+;
+        INC     >TEMP3+1
+        LDX     #WRKSPC
+        LDY     #$0200
+        PULS    D
+        RTS
 ;*
 ;* READ DISK COMMAND
 ;*
