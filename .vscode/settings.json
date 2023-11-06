@@ -2,6 +2,8 @@
     "files.associations": {
         "3TO4.C": "cpp",
         "MCP.C": "cpp",
-        "MCPraw.C": "cpp"
+        "MCPraw.C": "cpp",
+        "SLIB.C": "cpp",
+        "COM2EXE.C": "cpp"
     }
 }

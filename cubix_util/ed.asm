@@ -1102,7 +1102,7 @@ OUTPRT
         BEQ     OUT4                              ;IF SO, ALLOW IT TO PRINT
 OUTDIF
         PSHS    A,X                               ;SAVE REGS
-        CMPA    #$7F                              ;TEST FOR DELETE
+        CMPA    #$08                              ;TEST FOR DELETE
         BEQ     OUT2                              ;SPECIAL DELETE NOTATION
         CMPA    #' '                              ;TEST FOR NON-PRINT
         BLT     OUT3                              ;OK TO DISPLAY
@@ -1212,7 +1212,7 @@ CURPOS
         PULS    A,B,PC                            ;RESTORE REGISTERS AND RETURN
 ;*
 ;* KEYBOARD INPUT ROUTINE, EVALUATES INPUT CHARACTERS, LOOKING FOR VT100 ESCAPE
-;* S=ENCES, AND RETURNS A RESULT AS FOLLOWES:
+;* SEQUENCES, AND RETURNS A RESULT AS FOLLOWES:
 ;*
 ;*   $80 - CURSOR UP COMMAND.  ;$81 - CURSOR DOWN COMMAND
 ;*   $82 - CURSOR FORWARD COMMAND.	$83 - CURSOR BACKWARD COMMAND
@@ -1236,7 +1236,7 @@ GETKEY
 KEYIN
         SWI
         FCB     34                                ;GET KEYBOARD INPUT CHARACTER
-        CMPA    #$7F                              ;TEST FOR DELETE KEY
+        CMPA    #$08                              ;TEST FOR DELETE KEY
         BEQ     DELKEY                            ;NOT DELETE
         CMPA    #$1B                              ;TEST FOR ESCAPE (BEGIN OF S=ENCE)
         BEQ     ESCAPE                            ;NORMAL CHARACTER

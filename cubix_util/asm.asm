@@ -460,7 +460,7 @@ NOM1
         STA     CURDP                             ;INSURE NO DIRECT PAGE ADDRESSING
 ;* OPEN OBJECT FILE FOR WRITE
         LDX     FILPTR                            ;GET FILENAME POINTER BACK
-        LDD     #$4F66                            ;'OB' GET 'OB'
+        LDD     #$4F42                            ;'OB' GET 'OB'
         STD     ,X                                ;SAVE IT
         LDA     #'J'                              ;GET 'J'
         STA     2,X                               ;SAVE IN NAME

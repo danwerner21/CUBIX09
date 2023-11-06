@@ -428,7 +428,7 @@
        |         | and returns the drive id number (zero origin) in 'A'.
     ---+---------+-----------------------------------------------------------
     17 |   A,Y   | Gets a file attribute bit mask from the character string
-       |         | ('RWED' etc.) pointed to by 'Y', and returns it in 'A'. 
+       |         | ('RWED' etc.) pointed to by 'Y', and returns it in 'A'.
     ---+---------+-----------------------------------------------------------
     18 | A,B,X,Y | Looks up word(Y) in table(X), returning the index of the
        |         | word (zero origin) in 'B'. If word is not found, the value

@@ -49,7 +49,6 @@ New SSRs
 
 ---
 To Do List for this port:
-* MICRO C
 * DRIVE MAPPER UTILITY
 * ADD FLOPPY DRIVE SUPPORT
 * DSKY V1 support
@@ -59,7 +58,8 @@ To Do List for this port:
 * color VDU support
 * RTC and NVRAM support
 * Microsoft Basic
-* Create an XMODEM program
+* Fix XMODEM CRC problem
+  * convert EXEs to S19s
 * Advanced MONITOR
 
 ---
