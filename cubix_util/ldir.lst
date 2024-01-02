@@ -1,0 +1,318 @@
+                      (         ldir.asm):00001         ;*
+                      (         ldir.asm):00002         ;* LDIR: List directories
+                      (         ldir.asm):00003         ;*
+                      (         ldir.asm):00004         ;* Copyright 1983-2005 Dave Dunfield
+                      (         ldir.asm):00005         ;* All rights reserved.
+                      (         ldir.asm):00006         ;*
+     2000             (         ldir.asm):00007         OSRAM           = $2000                           ;APPLICATION RAM AREA
+     DBFF             (         ldir.asm):00008         OSEND           = $DBFF                           ;END OF GENERAL RAM
+     D000             (         ldir.asm):00009         OSUTIL          = $D000                           ;UTILITY ADDRESS SPACE
+     0000             (         ldir.asm):00010         DIRLOC          = 0                               ;STARTING DIRCTORY LOCATION
+                      (         ldir.asm):00011                 ORG     OSRAM                             ;DOS UTILITY SPACE
+2000                  (         ldir.asm):00012         LDIR
+2000 813F             (         ldir.asm):00013                 CMPA    #'?'                              ;IS IT '?' QUERY?
+2002 2622             (         ldir.asm):00014                 BNE     QUAL                              ;NO, LOOK FOR QUALIFIERS
+2004 3F               (         ldir.asm):00015                 SWI
+2005 19               (         ldir.asm):00016                 FCB     25                                ;DISPLAY MESSAGE
+2006 5573653A204C4449 (         ldir.asm):00017                 FCN     'Use: LDIR[/TOTAL] [<filespec>]'
+     525B2F544F54414C
+     5D205B3C66696C65
+     737065633E5D00
+2025 39               (         ldir.asm):00018                 RTS
+                      (         ldir.asm):00019         ;* PARSE FOR COMMAND QUALIFIERS
+2026                  (         ldir.asm):00020         QUAL
+2026 A6A4             (         ldir.asm):00021                 LDA     ,Y                                ;GET CHAR FROM COMMAND LINE
+2028 812F             (         ldir.asm):00022                 CMPA    #'/'                              ;IS IT A QUALIFIER?
+202A 2645             (         ldir.asm):00023                 BNE     MAIN                              ;NO, CONTINUE WITH MAIN PROGRAM
+202C 308D018B         (         ldir.asm):00024                 LEAX    QTABLE,PCR      POINT TO QUALIFIER TABLE
+2030 3F               (         ldir.asm):00025                 SWI
+2031 12               (         ldir.asm):00026                 FCB     18                                ;LOOK IT UP
+2032 C101             (         ldir.asm):00027                 CMPB    #QMAX                             ;IS IT IN RANGE
+2034 2408             (         ldir.asm):00028                 BHS     QERR                              ;IF SO, IT'S INVALID
+2036 308D0189         (         ldir.asm):00029                 LEAX    QFLAGS,PCR      POINT TO QUALIFIER FLAGS
+203A 6F85             (         ldir.asm):00030                 CLR     B,X                               ;SET THE FLAG
+203C 20E8             (         ldir.asm):00031                 BRA     QUAL                              ;LOOK FOR ANOTHER QUALIFIER
+203E                  (         ldir.asm):00032         QERR
+203E 3F               (         ldir.asm):00033                 SWI
+203F 18               (         ldir.asm):00034                 FCB     24                                ;DISPLAY MESSAGE
+2040 496E76616C696420 (         ldir.asm):00035                 FCN     'Invalid qualifier: '
+     7175616C69666965
+     723A2000
+2054 A6A0             (         ldir.asm):00036                 LDA     ,Y+                               ;GET CHARACTER
+2056                  (         ldir.asm):00037         DSQU1
+2056 3F               (         ldir.asm):00038                 SWI
+2057 21               (         ldir.asm):00039                 FCB     33                                ;DISPLAY
+2058 A6A0             (         ldir.asm):00040                 LDA     ,Y+                               ;GET NEXT CHAR
+205A 270C             (         ldir.asm):00041                 BEQ     GOABO                             ;NULL IS DELIMITER
+205C 812F             (         ldir.asm):00042                 CMPA    #'/'                              ;START OF ANOTHER QUALIFIER?
+205E 2708             (         ldir.asm):00043                 BEQ     GOABO                             ;IF SO, QUIT
+2060 8120             (         ldir.asm):00044                 CMPA    #' '                              ;SPACE?
+2062 2704             (         ldir.asm):00045                 BEQ     GOABO                             ;IF SO, QUIT
+2064 810D             (         ldir.asm):00046                 CMPA    #$0D                              ;END OF LINE?
+2066 26EE             (         ldir.asm):00047                 BNE     DSQU1                             ;NO, KEEP DUMPING
+2068                  (         ldir.asm):00048         GOABO
+2068 3F               (         ldir.asm):00049                 SWI
+2069 19               (         ldir.asm):00050                 FCB     25                                ;DISPLAY MESSAGE
+206A 2700             (         ldir.asm):00051                 FCB     $27,0                             ;CHARACTERS TO DISPLAY
+206C 8601             (         ldir.asm):00052                 LDA     #1                                ;INVALID OPERAND RETURN CODE
+206E 1600EB           (         ldir.asm):00053                 LBRA    ABORT                             ;GO HOME
+                      (         ldir.asm):00054         ;* MAIN PROGRAM
+2071                  (         ldir.asm):00055         MAIN
+2071 3420             (         ldir.asm):00056                 PSHS    Y
+2073 108E21B7         (         ldir.asm):00057                 LDY     #ALLFIL                           ;ALL FILES
+2077 3F               (         ldir.asm):00058                 SWI
+2078 09               (         ldir.asm):00059                 FCB     9                                 ;CLEAR TO ';*', GET DEFAULT DRIVE
+2079 A61F             (         ldir.asm):00060                 LDA     -1,X                              ;GET DEFAULT DRIVE
+207B 8E21AE           (         ldir.asm):00061                 LDX     #DEFDIR                           ;PT TO DEFAULT
+207E A784             (         ldir.asm):00062                 STA     ,X                                ;SAVE IT
+2080 3520             (         ldir.asm):00063                 PULS    Y                                 ;RESTORE Y
+2082 3F               (         ldir.asm):00064                 SWI
+2083 0F               (         ldir.asm):00065                 FCB     15                                ;GET DIR NAME
+2084 A617             (         ldir.asm):00066                 LDA     -9,X                              ;GET ACTUAL DRIVE
+2086 3F               (         ldir.asm):00067                 SWI
+2087 4C               (         ldir.asm):00068                 FCB     76                                ;SELECT DRIVE
+2088 3F               (         ldir.asm):00069                 SWI
+2089 05               (         ldir.asm):00070                 FCB     5                                 ;ANY MORE?
+208A 273D             (         ldir.asm):00071                 BEQ     ENAM                              ;NO, THATS ALL
+208C 313F             (         ldir.asm):00072                 LEAY    -1,Y                              ;BACKUP
+208E 6F84             (         ldir.asm):00073                 CLR     ,X                                ;NOWILD
+2090 C608             (         ldir.asm):00074                 LDB     #8                                ;8 CHARS/NAME
+2092                  (         ldir.asm):00075         SUP1
+2092 3F               (         ldir.asm):00076                 SWI
+2093 05               (         ldir.asm):00077                 FCB     5                                 ;GET CHAR
+2094 2733             (         ldir.asm):00078                 BEQ     ENAM                              ;THATS ALL
+2096 812E             (         ldir.asm):00079                 CMPA    #'.'                              ;TYPE?
+2098 2707             (         ldir.asm):00080                 BEQ     SUP2                              ;GET TYPE
+209A 5A               (         ldir.asm):00081                 DECB                                      ;     BACKUP
+209B 2B15             (         ldir.asm):00082                 BMI     BADOP                             ;INVALID
+209D A780             (         ldir.asm):00083                 STA     ,X+                               ;SAVE
+209F 20F1             (         ldir.asm):00084                 BRA     SUP1                              ;CONTINUE
+20A1                  (         ldir.asm):00085         SUP2
+20A1 3085             (         ldir.asm):00086                 LEAX    B,X                               ;ADVANCE TO TYPE
+20A3 6F84             (         ldir.asm):00087                 CLR     ,X                                ;NO WILDCARD
+20A5 C603             (         ldir.asm):00088                 LDB     #3                                ;THREE CHARS
+20A7                  (         ldir.asm):00089         SUP3
+20A7 3F               (         ldir.asm):00090                 SWI
+20A8 05               (         ldir.asm):00091                 FCB     5                                 ;GET CHAR
+20A9 271E             (         ldir.asm):00092                 BEQ     ENAM                              ;END
+20AB 5A               (         ldir.asm):00093                 DECB                                      ;     REDUCE
+20AC 2B04             (         ldir.asm):00094                 BMI     BADOP                             ;INVALID
+20AE A780             (         ldir.asm):00095                 STA     ,X+                               ;SAVE
+20B0 20F5             (         ldir.asm):00096                 BRA     SUP3                              ;KEEP GOING
+20B2                  (         ldir.asm):00097         BADOP
+20B2 3F               (         ldir.asm):00098                 SWI
+20B3 19               (         ldir.asm):00099                 FCB     25
+20B4 4261642066696C65 (         ldir.asm):00100                 FCN     'Bad file pattern'
+     207061747465726E
+     00
+20C5 8601             (         ldir.asm):00101                 LDA     #1
+20C7 3F               (         ldir.asm):00102                 SWI
+20C8 00               (         ldir.asm):00103                 FCB     0                                 ;QUIT
+20C9                  (         ldir.asm):00104         ENAM
+20C9 8E23C9           (         ldir.asm):00105                 LDX     #RAM+512        POINT TO RAM
+20CC                  (         ldir.asm):00106         CLR
+20CC 6F80             (         ldir.asm):00107                 CLR     ,X+                               ;CLEAR ONE BYTE
+20CE 8C31CB           (         ldir.asm):00108                 CMPX    #RAM+4098       END OF RAM
+20D1 25F9             (         ldir.asm):00109                 BLO     CLR                               ;KEEP GOING
+20D3 CC0000           (         ldir.asm):00110                 LDD     #DIRLOC                           ;GET DIECTORY SECTOR
+20D6                  (         ldir.asm):00111         RDNXT
+20D6 FD21C7           (         ldir.asm):00112                 STD     DIRSEC                            ;SAVE DIRECTORY SECTOR WE ARE IN
+20D9 8E21C9           (         ldir.asm):00113                 LDX     #RAM                              ;POINT TO WORK AREA
+20DC 3F               (         ldir.asm):00114                 SWI
+20DD 5C               (         ldir.asm):00115                 FCB     92                                ;READ DISK
+20DE 1026007A         (         ldir.asm):00116                 LBNE    ABORT
+20E2                  (         ldir.asm):00117         TSTNAM
+20E2 3F               (         ldir.asm):00118                 SWI
+20E3 13               (         ldir.asm):00119                 FCB     19                                ;IS THIS A MATCH?
+20E4 2778             (         ldir.asm):00120                 BEQ     MATCH                             ;IF SO, HANDLE IT
+20E6                  (         ldir.asm):00121         NXTFIL
+20E6 308820           (         ldir.asm):00122                 LEAX    32,X                              ;ADVANCE TO NEXT FILE ENTRY
+20E9 8C23C9           (         ldir.asm):00123                 CMPX    #RAM+512        ARE WE OVER LIMIT
+20EC 25F4             (         ldir.asm):00124                 BLO     TSTNAM                            ;IF NOT, TRY THIS ONE
+20EE FC21C7           (         ldir.asm):00125                 LDD     DIRSEC                            ;GET SECTOR WE ARE IN
+20F1 3F               (         ldir.asm):00126                 SWI
+20F2 4D               (         ldir.asm):00127                 FCB     77                                ;FIND LINK
+20F3 26E1             (         ldir.asm):00128                 BNE     RDNXT                             ;MORE SECTORS, TRY THEM TOO
+20F5                  (         ldir.asm):00129         DISDIR
+20F5 B621C3           (         ldir.asm):00130                 LDA     TOTAL                             ;TOTALS ONLY?
+20F8 2740             (         ldir.asm):00131                 BEQ     END2                              ;IF SO, DON'T DISPLAY
+20FA 3F               (         ldir.asm):00132                 SWI
+20FB 19               (         ldir.asm):00133                 FCB     25                                ;DISPLAY MESSAGE
+20FC 4469726563746F72 (         ldir.asm):00134                 FCN     'Directories:'
+     6965733A00
+2109 8E23C9           (         ldir.asm):00135                 LDX     #RAM+512        POINT TO FREE SPACE
+210C                  (         ldir.asm):00136         DSPLIN
+210C 3F               (         ldir.asm):00137                 SWI
+210D 16               (         ldir.asm):00138                 FCB     22                                ;NEW LINE
+210E C606             (         ldir.asm):00139                 LDB     #6                                ;SIX NAMES/LINE
+2110 F721C6           (         ldir.asm):00140                 STB     TEMP                              ;SAVE IN TEMP SPACE
+2113                  (         ldir.asm):00141         DSPNAM
+2113 6D84             (         ldir.asm):00142                 TST     ,X                                ;GET CHARACTER FROM NAME
+2115 2718             (         ldir.asm):00143                 BEQ     ENDIT                             ;THATS IS LAST ONE
+2117 C608             (         ldir.asm):00144                 LDB     #8                                ;EIGHT CHARACTERS/NAME
+2119                  (         ldir.asm):00145         DS8
+2119 A680             (         ldir.asm):00146                 LDA     ,X+                               ;GET CHARACTER FROM NAME
+211B 2602             (         ldir.asm):00147                 BNE     NOSPA                             ;NO SPACE NEEDED
+211D 8620             (         ldir.asm):00148                 LDA     #' '                              ;GET A SPACE
+211F                  (         ldir.asm):00149         NOSPA
+211F 3F               (         ldir.asm):00150                 SWI
+2120 21               (         ldir.asm):00151                 FCB     33                                ;DISPLAY
+2121 5A               (         ldir.asm):00152                 DECB                                      ;     REDUCE  COUNT
+2122 26F5             (         ldir.asm):00153                 BNE     DS8                               ;KEEP DISPLAYING
+2124 3F               (         ldir.asm):00154                 SWI
+2125 15               (         ldir.asm):00155                 FCB     21                                ;SPACE
+2126 3F               (         ldir.asm):00156                 SWI
+2127 15               (         ldir.asm):00157                 FCB     21                                ;SPACE
+2128 7A21C6           (         ldir.asm):00158                 DEC     TEMP                              ;THIS IS THE END
+212B 26E6             (         ldir.asm):00159                 BNE     DSPNAM                            ;KEEP GOING TILL WE DO ALL
+212D 20DD             (         ldir.asm):00160                 BRA     DSPLIN                            ;KEEP GOING
+212F                  (         ldir.asm):00161         ENDIT
+212F B621C6           (         ldir.asm):00162                 LDA     TEMP                              ;GET POSITION INDICATOR
+2132 8106             (         ldir.asm):00163                 CMPA    #6                                ;ARE WE AT BEGINNING
+2134 2702             (         ldir.asm):00164                 BEQ     END1                              ;YES, SKIP EXTRA CRLF
+2136 3F               (         ldir.asm):00165                 SWI
+2137 16               (         ldir.asm):00166                 FCB     22                                ;NEW LINE
+2138                  (         ldir.asm):00167         END1
+2138 3F               (         ldir.asm):00168                 SWI
+2139 16               (         ldir.asm):00169                 FCB     22                                ;NEW LINE
+213A                  (         ldir.asm):00170         END2
+213A 3F               (         ldir.asm):00171                 SWI
+213B 18               (         ldir.asm):00172                 FCB     24                                ;DISPLAY MESSAGE
+213C 546F74616C206F66 (         ldir.asm):00173                 FCN     'Total of '
+     2000
+2146 FC21C4           (         ldir.asm):00174                 LDD     DTOTAL                            ;GET TOTAL NUMBER OF DIRECTORIES
+2149 3F               (         ldir.asm):00175                 SWI
+214A 1A               (         ldir.asm):00176                 FCB     26                                ;DISPLAY NUMBER
+214B 3F               (         ldir.asm):00177                 SWI
+214C 19               (         ldir.asm):00178                 FCB     25                                ;DISPLAY MESSAGE
+214D 206469726563746F (         ldir.asm):00179                 FCN     ' directories.'
+     726965732E00
+215B 4F               (         ldir.asm):00180                 CLRA                                      ;     ZERO RETURN CODE
+215C                  (         ldir.asm):00181         ABORT
+215C 3F               (         ldir.asm):00182                 SWI
+215D 00               (         ldir.asm):00183                 FCB     0                                 ;BACK OFF
+                      (         ldir.asm):00184         ;*
+                      (         ldir.asm):00185         ;* NAMES MATCHED, INSERT INTO TABLE
+                      (         ldir.asm):00186         ;*
+215E                  (         ldir.asm):00187         MATCH
+215E 108E23C9         (         ldir.asm):00188                 LDY     #RAM+512        POINT TO START OF TABLE
+2162                  (         ldir.asm):00189         CMPN
+2162 3430             (         ldir.asm):00190                 PSHS    X,Y                               ;SAVE REGISTERS
+2164 6DA4             (         ldir.asm):00191                 TST     ,Y                                ;ARE WE AT END
+2166 272F             (         ldir.asm):00192                 BEQ     INLST                             ;IF SO, INSERT IT HERE
+2168 C608             (         ldir.asm):00193                 LDB     #8                                ;EIGHT CHARACTERS
+216A                  (         ldir.asm):00194         CMP8
+216A A680             (         ldir.asm):00195                 LDA     ,X+                               ;GET CHARACTER FROM OUR NAME
+216C A1A0             (         ldir.asm):00196                 CMPA    ,Y+                               ;TEST FOR SAME AS DEST
+216E 250D             (         ldir.asm):00197                 BLO     INSMOV                            ;IF DIFFERENT, THEN TRY HERE
+2170 2605             (         ldir.asm):00198                 BNE     NOTSAM                            ;THEY ARE DIFFERENT
+2172 5A               (         ldir.asm):00199                 DECB                                      ;     REDUCE COUNT
+2173 26F5             (         ldir.asm):00200                 BNE     CMP8                              ;TRY AGAIN
+2175 2032             (         ldir.asm):00201                 BRA     NXTONE                            ;IGNORE IT, WE ALREADY HAVE IT
+2177                  (         ldir.asm):00202         NOTSAM
+2177 3530             (         ldir.asm):00203                 PULS    X,Y                               ;RESTORE REGISTERS
+2179 3128             (         ldir.asm):00204                 LEAY    8,Y                               ;ADVANCE TO NEXT
+217B 20E5             (         ldir.asm):00205                 BRA     CMPN                              ;TRY AGAIN
+217D                  (         ldir.asm):00206         INSMOV
+217D 10AE62           (         ldir.asm):00207                 LDY     2,S                               ;GET OLD Y POINTER BACK
+2180                  (         ldir.asm):00208         FNDEOF
+2180 3128             (         ldir.asm):00209                 LEAY    8,Y                               ;ADVANCE TO NEXT NAME
+2182 A6A4             (         ldir.asm):00210                 LDA     ,Y                                ;IS THIS THE END
+2184 26FA             (         ldir.asm):00211                 BNE     FNDEOF                            ;KEEP LOOKING TILL WE FIND
+2186 3128             (         ldir.asm):00212                 LEAY    8,Y                               ;ADVANCE TO END OF FIELD
+2188 3038             (         ldir.asm):00213                 LEAX    -8,Y                              ;BACKUP TO LAST
+218A                  (         ldir.asm):00214         MOVE
+218A A682             (         ldir.asm):00215                 LDA     ,-X                               ;GET CHARACTER
+218C A7A2             (         ldir.asm):00216                 STA     ,-Y                               ;SAVE IN HIGHER MEMORY
+218E AC62             (         ldir.asm):00217                 CMPX    2,S                               ;ARE WE AT START YET
+2190 26F8             (         ldir.asm):00218                 BNE     MOVE                              ;IF NOT, FORGET IT
+2192 AEE4             (         ldir.asm):00219                 LDX     ,S                                ;RESTORE X REGISTER
+2194 10AE62           (         ldir.asm):00220                 LDY     2,S                               ;GET Y POINTER BACK
+2197                  (         ldir.asm):00221         INLST
+2197 C608             (         ldir.asm):00222                 LDB     #8                                ;MOVE EIGHT CHARACERS
+2199                  (         ldir.asm):00223         MOV8
+2199 A680             (         ldir.asm):00224                 LDA     ,X+                               ;GET CHARACTER
+219B A7A0             (         ldir.asm):00225                 STA     ,Y+                               ;SAVE IN TABLE
+219D 5A               (         ldir.asm):00226                 DECB                                      ;     REDUCE COUNT
+219E 26F9             (         ldir.asm):00227                 BNE     MOV8                              ;KEEP MOVEING
+21A0 FC21C4           (         ldir.asm):00228                 LDD     DTOTAL                            ;GET TOTAL COUNT
+21A3 C30001           (         ldir.asm):00229                 ADDD    #1                                ;INCREMENT COUNT
+21A6 FD21C4           (         ldir.asm):00230                 STD     DTOTAL                            ;RESAVE
+21A9                  (         ldir.asm):00231         NXTONE
+21A9 3530             (         ldir.asm):00232                 PULS    X,Y                               ;RESTORE REGISTERS
+21AB 16FF38           (         ldir.asm):00233                 LBRA    NXTFIL                            ;TRY NEXT FILE IN DIRECTORY
+                      (         ldir.asm):00234         ;* STRINGS
+21AE                  (         ldir.asm):00235         DEFDIR
+21AE 002A000000000000 (         ldir.asm):00236                 FCB     0,'*',0,0,0,0,0,0,0
+     00
+21B7                  (         ldir.asm):00237         ALLFIL
+21B7 2A2E2A           (         ldir.asm):00238                 FCC     '*.*'
+21BA 0D               (         ldir.asm):00239                 FCB     $0D
+                      (         ldir.asm):00240         ;* QUALIFIER TABLE
+21BB                  (         ldir.asm):00241         QTABLE
+21BB 82               (         ldir.asm):00242                 FCB     $82
+21BC 2F544F54414C     (         ldir.asm):00243                 FCC     '/TOTAL'        TOTAL NUMBER OF DIRECTORIES ONLY
+21C2 80               (         ldir.asm):00244                 FCB     $80
+     0001             (         ldir.asm):00245         QMAX            = 1                               ;NUMBER OF QUALIFIERS
+                      (         ldir.asm):00246         ;*
+     21C3             (         ldir.asm):00247         QFLAGS          = *
+21C3                  (         ldir.asm):00248         TOTAL
+21C3 FF               (         ldir.asm):00249                 FCB     $FF
+                      (         ldir.asm):00250         ;* TEMP AND DEFINED STORAGE
+21C4                  (         ldir.asm):00251         DTOTAL
+21C4 0000             (         ldir.asm):00252                 FDB     0                                 ;TOTAL COUNT OF DIRECTORIES
+21C6                  (         ldir.asm):00253         TEMP
+21C6                  (         ldir.asm):00254                 RMB     1                                 ;A BYTE OF FREE STORAGE
+21C7                  (         ldir.asm):00255         DIRSEC
+21C7                  (         ldir.asm):00256                 RMB     2                                 ;AND SOME MORE
+     21C9             (         ldir.asm):00257         RAM             = *                               ;FREE RAM
+
+Symbol Table:
+[ G] ABORT                            215C
+[ G] ALLFIL                           21B7
+[ G] BADOP                            20B2
+[ G] CLR                              20CC
+[ G] CMP8                             216A
+[ G] CMPN                             2162
+[ G] DEFDIR                           21AE
+[ G] DIRLOC                           0000
+[ G] DIRSEC                           21C7
+[ G] DISDIR                           20F5
+[ G] DS8                              2119
+[ G] DSPLIN                           210C
+[ G] DSPNAM                           2113
+[ G] DSQU1                            2056
+[ G] DTOTAL                           21C4
+[ G] ENAM                             20C9
+[ G] END1                             2138
+[ G] END2                             213A
+[ G] ENDIT                            212F
+[ G] FNDEOF                           2180
+[ G] GOABO                            2068
+[ G] INLST                            2197
+[ G] INSMOV                           217D
+[ G] LDIR                             2000
+[ G] MAIN                             2071
+[ G] MATCH                            215E
+[ G] MOV8                             2199
+[ G] MOVE                             218A
+[ G] NOSPA                            211F
+[ G] NOTSAM                           2177
+[ G] NXTFIL                           20E6
+[ G] NXTONE                           21A9
+[ G] OSEND                            DBFF
+[ G] OSRAM                            2000
+[ G] OSUTIL                           D000
+[ G] QERR                             203E
+[ G] QFLAGS                           21C3
+[ G] QMAX                             0001
+[ G] QTABLE                           21BB
+[ G] QUAL                             2026
+[ G] RAM                              21C9
+[ G] RDNXT                            20D6
+[ G] SUP1                             2092
+[ G] SUP2                             20A1
+[ G] SUP3                             20A7
+[ G] TEMP                             21C6
+[ G] TOTAL                            21C3
+[ G] TSTNAM                           20E2

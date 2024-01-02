@@ -68,6 +68,7 @@ RDSER1
         BEQ     >                                 ; NO DATA
         LDA     UART0                             ; THEN READ THE CHAR FROM THE UART
         STA     >PAGER_D                          ; SAVE 'D'
+        ORCC    #%00000100                        ; SET 'Z'
         RTS
 !
         LDA     #$FF                              ;

@@ -261,20 +261,25 @@ int xmodemTransmit()
     }
 }
 
-int main(void)
+main(ac,av)
+   int ac;
+   int *av[];
 {
     int st;
-    char filename[50];
 
-    printf("\n\rEnter Filename:");
-    getstr(filename, 50);
-    reader = fopenr(filename);
+    if(ac<2)
+    {
+        printf("Use: XMS <FILENAME>\n\r");
+        return 0;
+    }
+
+    reader = fopenr(av[1]);
     if (reader == 0)
     {
         printf("FILE OPEN ERROR\n\r");
         return 0;
     }
-    printf("\n\rSending file: %s\n\r", filename);
+    printf("\n\rSending file: %s\n\r", av[1]);
     printf("\n\rPrepare your terminal emulator to receive data now...\n\r");
     st = xmodemTransmit();
     fclose(reader);

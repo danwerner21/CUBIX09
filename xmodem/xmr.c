@@ -244,15 +244,20 @@ int xmodemReceive()
     }
 }
 
-int main(void)
+main(ac,av)
+   int ac;
+   int *av[];
 {
     int st;
-    char filename[50];
 
-    printf("\n\rEnter Filename:");
-    getstr(filename,50);
-    writer = fopenw(filename);
-    printf("\n\rReceiving file: %s\n\r",filename);
+    if(ac<2)
+    {
+        printf("Use: XMR <FILENAME>\n\r");
+        return 0;
+    }
+
+    writer = fopenw(av[1]);
+    printf("\n\rReceiving file: %s\n\r",av[1]);
     printf("\n\rSend data using the xmodem protocol from your terminal emulator now...\n\r");
     st = xmodemReceive();
     fclose(writer);

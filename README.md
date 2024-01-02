@@ -49,7 +49,6 @@ New SSRs
 
 ---
 To Do List for this port:
-* DRIVE MAPPER UTILITY
 * ADD FLOPPY DRIVE SUPPORT
 * DSKY V1 support
 * DSKY functions should abort if no DSKY is there.
@@ -59,7 +58,7 @@ To Do List for this port:
 * RTC and NVRAM support
 * Microsoft Basic
 * Fix XMODEM CRC problem
-  * convert EXEs to S19s
+* convert Xmodem EXEs to S19s
 * Advanced MONITOR
 
 ---
