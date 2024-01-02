@@ -1,328 +1,370 @@
-        TITLE   FLOPPY DRIVERS
-
 ;__FLOPPY DRIVERS________________________________________________________________________________________________________________
 ;
-; 	CUBIX floppy disk drivers for direct attached disk-io card
+; 	CUBIX floppy drivers for MBC FDC card
 ;
 ;	Entry points:
-;		SETUPDRIVE  - called during OS init
-;		FORMFL	    - format floppy disk ('U' POINTS TO DCB)
-;		READFL	    - read a sector from drive ('U' POINTS TO DCB, X TO MEMORY)
-;		WRITEFL	    - write a sector to drive   ('U' POINTS TO DCB, X TO MEMORY)
+;		FL_SETUP        - called during OS init
+;		FL_READ_SECTOR	- read a sector from drive
+;		FL_WRITE_SECTOR	- write a sector to drive
+;
 ;________________________________________________________________________________________________________________________________
 ;
-
-
-
-*
-*
-        HARDWARE I/O ADDRESSES
-*
-FMSR            EQU $F136                         ; ADDRESS OF MAIN STATUS REGISTER
-FDATA           EQU $F137                         ; FLOPPY DATA REGISTER
-FLATCH          EQU $F13A                         ; FLOPPY CONFIGURATION LATCH
-
+;*
+;* HARDWARE I/O ADDRESSES
+;*
+FDC_MSR         = $0530                           ; ADDRESS OF MAIN STATUS REGISTER
+FDC_DATA        = $0531                           ; FLOPPY DATA REGISTER
+FDC_RESET       = $0533                           ; FLOPPY RESET
+FDC_DCR         = $0535                           ; LOAD CONTROL REGISTER
+FDC_DOR         = $0536                           ; CONFIGURATION CONTROL REGISTER
+FDC_TC          = $0537                           ; TERMINAL COUNT
 
 ;
-; FDC CONFIGURATION LATCH OUTPUT BIT PATTERNS
-MOTOR           EQU %00000000                     ; BIT PATTERN IN LATCH FOR MOTOR CONTROL (ON)
-TERMCN          EQU %00000001                     ; BIT PATTERN IN LATCH TO WRITE A TC STROBE
-RESETL          EQU %00000010                     ; BIT PATTERN IN LATCH TO RESET ALL BITS
-MINI            EQU %00000100                     ; BIT PATTERN IN LATCH TO SET MINI MODE FDC9229 LOW DENS=1, HIGH DENS=0
-PRECOMP         EQU %00100000                     ; BIT PATTERN IN LATCH TO SET WRITE PRECOMP 125 NS:
-FDDENSITY       EQU %01000000                     ; BIT PATTERN IN LATCH TO FLOPPY LOW DENSITY (HIGH IS 0)
-FDREADY         EQU %10000000                     ; BIT PATTERN IN LATCH TO FLOPPY READY (P-34):
+; FDC COMMANDS
+;
+CFD_READ        = %00000110                       ; CMD,HDS/DS,C,H,R,N,EOT,GPL,DTL --> ST0,ST1,ST2,C,H,R,N
+CFD_READDEL     = %00001100                       ; CMD,HDS/DS,C,H,R,N,EOT,GPL,DTL --> ST0,ST1,ST2,C,H,R,N
+CFD_WRITE       = %00000101                       ; CMD,HDS/DS,C,H,R,N,EOT,GPL,DTL --> ST0,ST1,ST2,C,H,R,N
+CFD_WRITEDEL    = %00001001                       ; CMD,HDS/DS,C,H,R,N,EOT,GPL,DTL --> ST0,ST1,ST2,C,H,R,N
+CFD_READTRK     = %00000010                       ; CMD,HDS/DS,C,H,R,N,EOT,GPL,DTL --> ST0,ST1,ST2,C,H,R,N
+CFD_READID      = %00001010                       ; CMD,HDS/DS --> ST0,ST1,ST2,C,H,R,N
+CFD_FMTTRK      = %00001101                       ; CMD,HDS/DS,N,SC,GPL,D --> ST0,ST1,ST2,C,H,R,N
+CFD_SCANEQ      = %00010001                       ; CMD,HDS/DS,C,H,R,N,EOT,GPL,STP --> ST0,ST1,ST2,C,H,R,N
+CFD_SCANLOEQ    = %00011001                       ; CMD,HDS/DS,C,H,R,N,EOT,GPL,STP --> ST0,ST1,ST2,C,H,R,N
+CFD_SCANHIEQ    = %00011101                       ; CMD,HDS/DS,C,H,R,N,EOT,GPL,STP --> ST0,ST1,ST2,C,H,R,N
+CFD_RECAL       = %00000111                       ; CMD,DS --> <EMPTY>
+CFD_SENSEINT    = %00001000                       ; CMD --> ST0,PCN
+CFD_SPECIFY     = %00000011                       ; CMD,SRT/HUT,HLT/ND --> <EMPTY>
+CFD_DRVSTAT     = %00000100                       ; CMD,HDS/DS --> ST3
+CFD_SEEK        = %00001111                       ; CMD,HDS/DS --> <EMPTY>
+CFD_VERSION     = %00010000                       ; CMD --> ST0
+
+CFD_MFM         = %01000000                       ;
+
+;
+;
+; Specify Command:
+; +-----+-----+-----+-----+-----+-----+-----+-----+-----+
+; |Byte |  7  |	 6  |  5  |  4	|  3  |	 2  |  1  |  0	|
+; +-----+-----+-----+-----+-----+-----+-----+-----+-----+
+; |  0	|  0  |	 0  |  0  |  0	|  0  |	 0  |  1  |  1	|
+; |  1	| ----- STEP RATE ----- | -- HEAD UNLOAD TIME - |
+; |  2	| ------------ HEAD LOAD TIME ----------- | NDM |
+; +-----+-----+-----+-----+-----+-----+-----+-----+-----+
+;
+;
+; Step Rate (milliseconds):		 Head Unload Time (milliseconds):	Head Load Time (milliseconds):
+; +------+------+------+------+------+	 +------+------+------+------+------+	+------+------+------+------+------+
+; |	 |	   BITRATE	     |	 |	|	  BITRATE	    |	|      |	 BITRATE	   |
+; |  VAL | 1.0M | 500K | 300K | 250K |	 |  VAL | 1.0M | 500K | 300K | 250K |	|  VAL | 1.0M | 500K | 300K | 250K |
+; +------+------+------+------+------+	 +------+------+------+------+------+	+------+------+------+------+------+
+; |    0 |  8.0 | 16.0 | 26.7 | 32.0 |	 |    0 |  128 |  256 |	 426 |	512 |	|    0 |  128 |	 256 |	426 |  512 |
+; |    1 |  7.5 | 15.0 | 25.0 | 30.0 |	 |    1 |    8 |   16 | 26.7 |	 32 |	|    1 |    1 |	   2 |	3.3 |	 4 |
+; |    2 |  7.0 | 14.0 | 23.3 | 28.0 |	 |    2 |   16 |   32 | 53.3 |	 64 |	|    2 |    2 |	   4 |	6.7 |	 8 |
+; |  ... |  ... |  ... |  ... |	 ... |	 |  ... |  ... |  ... |	 ... |	... |	|  ... |  ... |	 ... |	... |  ... |
+; |   14 |  1.0 |  2.0 |  3.3 |	 4.0 |	 |   14 |  112 |  224 |	 373 |	448 |	|  126 |  126 |	 252 |	420 |  504 |
+; |   15 |  0.5 |  1.0 |  1.7 |	 2.0 |	 |   15 |  120 |  240 |	 400 |	480 |	|  127 |  127 |	 254 |	423 |  508 |
+; +------+------+------+------+------+	 +------+------+------+------+------+	+------+------+------+------+------+
+;
+; IBM PS/2 CALLS FOR:
+;   STEP RATE: 3ms (6ms FOR ALL 41mm OR 720K DRIVES)
+;   HEAD LOAD TIME: 15ms
+
+DOR_INIT        = %00001100                       ; SOFT RESET INACTIVE, DMA ENABLED
+DOR_BR250       = DOR_INIT
+DOR_BR500       = DOR_INIT
 
 
 
+FLOPPY_RETRIES  = 6                               ; HOW ABOUT SIX RETIRES?
+FLOPPY_RETRIES1 = 2                               ; TWO ITERATIONS OF RECAL?
 
-;__SETUPDRIVE__________________________________________________________________________________________________________________________
+;__FL_SETUP______________________________________________________________________________________________________________________
 ;
 ;	SETUP FLOPPY DRIVE SETTINGS
 ;________________________________________________________________________________________________________________________________
 ;
+FL_SETUP:
+        LDX     #FMESSAGE1
+        JSR     WRSTR                             ; DO PROMPT
 ;
-;
-SETUPDRIVE:
-        LDAA    #RESETL                           ; RESET SETTINGS
-        ORAA    #MINI                             ; SELECT MINI FLOPPY (low dens=1, high dens=0)
-        ORAA    #PRECOMP                          ; SELECT PRECOMP
-        ORAA    #FDDENSITY                        ; SELECT DENSITY
-        ORAA    #FDREADY                          ; SELECT READY SIGNAL
-        STAA    FLATCH_STORE                      ; SAVE SETTINGS
+        LDX     #FMESSAGE2
+        JSR     WRSTR                             ; DO PROMPT
+        LDD     #FDC_MSR                          ; GET BASE PORT
+        JSR     WRHEXW                            ; PRINT BASE PORT
+        JSR     FD_DETECT                         ; CHECK FOR FDC
+        CMPA    #$00
+        BEQ     >                                 ; CONTINUE IF FOUND
+        LDX     #FMESSAGE3
+        JSR     WRSTR                             ; DO PROMPT
+        JSR     LFCR                              ; AND CRLF
+        LDA     #$FF
+        RTS                                       ; BAIL OUT
+!
+        LDX     #FMESSAGE4
+        JSR     WRSTR                             ; DO PROMPT
+        JSR     LFCR                              ; AND CRLF
+        LDA     #DOR_INIT                         ; RESET SETTINGS
+        STA     FDC_DOR
+
         JSR     CHECKINT                          ;
-        LDA     #$03                              ; SPECIFY COMMAND
+        LDA     #CFD_SPECIFY                      ; SPECIFY COMMAND
         JSR     PFDATA                            ; OUTPUT TO FDC
         LDA     #$7F                              ; 6 MS STEP, 480 MS HEAD UNLOAD
         JSR     PFDATA                            ; OUTPUT TO FDC
         LDA     #$05                              ; 508 MS HEAD LOAD, NON-DMA MODE
         JSR     PFDATA                            ; OUTPUT TO FDC
+
+        JSR     CHECKINT                          ; SEND SEVERAL INTERRUPTS TO ENSURE PROPER STATE
         JSR     CHECKINT                          ;
-        PSHS    A                                 ;
-        JMP     RECAL                             ;
+        JSR     CHECKINT                          ;
+        JSR     CHECKINT                          ;
+        JSR     CHECKINT                          ;
+        JSR     CHECKINT                          ;
 
-;__OUTFLATCH__________________________________________________________________________________________________________________________
-;
-;	SEND SETTINGS TO FLOPPY CONTROLLER
-;________________________________________________________________________________________________________________________________
-;
-OUTFLATCH:
-        LDAA    FLATCH_STORE                      ; SET A TO SETTINGS
-        STAA    FLATCH                            ; OUTPUT TO CONTROLLER
+        LDA     #$00
+        STA     CURRENTDEVICE
+        LDA     #%00010000
+        STA     DSKUNIT
+        JSR     RECAL                             ;
+        LDA     #39                               ;
+        STA     CURRENTCYL                        ;
+        JSR     SETTRK1
+        JSR     RECAL                             ;
+
+        LDA     #$01
+        STA     CURRENTDEVICE
+        LDA     #%00100001
+        STA     DSKUNIT
+        JSR     RECAL                             ;
+        LDA     #39                               ;
+        STA     CURRENTCYL                        ;
+        JSR     SETTRK1
+        JSR     RECAL                             ;
+        LDA     #DOR_INIT                         ; RESET SETTINGS
+        STA     FDC_DOR
         RTS
 
 
-;__FORMFL________________________________________________________________________________________________________________________
-;
-; 	FORMFL
-;________________________________________________________________________________________________________________________________
-;
-FORMFL:
-        CLR     TCYL                              ; START WITH CYLINDER 0
-*
-        FORMAT  ONE CYLINDER
-FORCYL
-        LDAA    FLATCH_STORE                      ; POINT TO FLATCH
-        ANDA    #%11111101                        ;
-        STAA    FLATCH_STORE                      ; POINT TO FLATCH
-        BSR     OUTFLATCH                         ; OUTPUT TO CONTROLLER
-        JSR     CHECKINT                          ; CHECK INTERRUPT STATUS, MAKE SURE IT IS CLEAR
-        JSR     SETTRACK                          ; MOVE TO THE CYLINDER
-        CLR     THEAD                             ; START WITH BOTTOM HEAD
-
-*
-        FORMAT  ONE HEAD
-
-FORHED
-        LDB     #$00                              ; SET SECTOR ID
-        LDA     #$4D                              ; FORMAT COMMAND
-        JSR     PFDATA                            ; OUTPUT TO FDC
-        LDA     THEAD                             ; GET CURRENT HEAD
-        ASLA                                      ; SHIFT INTO...
-        ASLA                                      ; PROPER POSITION
-        ORA     DRIVE,U                           ; INCLUDE DRIVE
-        JSR     PFDATA                            ; OUTPUT TO FDC
-        LDA     #$02                              ; 512 BYTES/SECTOR
-        JSR     PFDATA                            ; OUTPUT TO FDC
-        LDA     NSEC,U                            ; SECTORS/TRACK
-        JSR     PFDATA                            ; OUTPUT TO FDC
-        LDA     #$2A                              ; GAP LENGTH ($38 FOR 10 S/TRK)
-        JSR     PFDATA                            ; OUTPUT TO FDC
-        LDA     #$E5                              ; FILLER BYTE
-        JSR     PFDATA                            ; OUTPUT TO FDC
-
-*
-        FORMAT  ONE SECTOR
-
-FORSEC
-        LDAA    >FMSR                             ; READ FDC STATUS
-        BPL     FORSEC                            ; WAIT TILL READY FOR DATA
-        BITA    #%00100000                        ;
-        BEQ     DSKFMTEND                         ;
-        LDAA    TCYL                              ; GET CYLINDER ID
-        STAA    >FDATA                            ; WRITE TRACK TO FDC
-FORS2
-        LDAA    >FMSR                             ; READ FDC STATUS
-        BPL     FORS2                             ; WAIT TILL READY FOR DATA
-        BITA    #%00100000                        ;
-        BEQ     DSKFMTEND                         ;
-        LDAA    THEAD                             ; GET HEAD ID
-        STAA    >FDATA                            ; WRITE HEAD TO FDC
-FORS3
-        LDAA    >FMSR                             ; READ FDC STATUS
-        BPL     FORS3                             ; WAIT TILL READY FOR DATA
-        BITA    #%00100000                        ;
-        BEQ     DSKFMTEND                         ;
-        INCB                                      ; ADD 1
-        STAB    >FDATA                            ; WRITE SECTOR TO FDC
-FORS5
-        LDAA    >FMSR                             ; READ FDC STATUS
-        BPL     FORS5                             ; WAIT TILL READY FOR DATA
-        BITA    #%00100000                        ;
-        BEQ     DSKFMTEND                         ;
-        LDAA    #$02                              ; 512 BYTES/SECTOR
-        STAA    >FDATA                            ; WRITE DATA BYTE
-        CMPB    #$09                              ; OVER?
-        BNE     FORSEC                            ; NO, ITS OK
-        JSR     DSKOPEND                          ; EVERYTHING OK?
-        INC     THEAD                             ; MOVE TO NEXT HEAD
-        LDAA    THEAD                             ; GET VALUE
-        CMPA    NHEAD,U                           ; HAVE WE DONE EM ALL?
-        BLO     FORHED                            ; NO, DO NEXT HEAD
-        INC     TCYL                              ; MOVE TO NEXT CYLINDER
-        LDAA    TCYL                              ; GET VALUE
-        STAA    CYL,U                             ;
-        CMPA    NCYL,U                            ; HAVE WE DONE EM ALL?
-        BLO     FORCYL1                           ; NO, DO NEXT CYLINDER
-        LDAA    FLATCH_STORE                      ; POINT TO FLATCH
-        ORAA    #%00000010                        ;
-        STAA    FLATCH_STORE                      ; POINT TO FLATCH
-        JSR     OUTFLATCH                         ; OUTPUT TO CONTROLLER					;
-        RTS
-DSKFMTEND:
-        JMP     DSKOPEND                          ; EVERYTHING OK?
-FORCYL1:
-        JMP     FORCYL                            ;
-
-;__READFL________________________________________________________________________________________________________________________
+;__FL_READ_SECTOR________________________________________________________________________________________________________________
 ;
 ; 	READ A FLOPPY SECTOR
 ;________________________________________________________________________________________________________________________________
 ;
-READFL:
-        LDAA    #$46                              ; BIT 6 SETS MFM, 06H IS READ COMMAND
-        STAA    FCMD
-        JMP     DSKOP
+;
+FL_READ_SECTOR:
+        LDA     FLOPPY_DETCT
+        CMPA    #$00
+        BEQ     >
+        RTS
+!
+        LDA     CURRENTDEVICE
+        ANDA    #$01
+        ORA     #%00010000
+        STA     DSKUNIT                           ;
+        LDA     #$00
+        STA     FLRETRY                           ; BLANK RETRIES
+        STA     FLRETRY1
+        LDA     #DOR_INIT
+        ORA     DSKUNIT                           ;
+        STA     FDC_DOR                           ; OUTPUT TO CONTROLLER
 
-;__WRITEFL________________________________________________________________________________________________________________________
+READFL1:
+        LDA     #CFD_READ|CFD_MFM                 ; BIT 6 SETS MFM, 06H IS READ COMMAND
+        STA     FCMD                              ; SET COMMAND
+        JSR     DSKOP                             ; DO DISK OPERATION
+
+        CMPA    #$00
+        BEQ     READFLDONE                        ; OPERATION SUCCESSFUL
+        INC     FLRETRY                           ; LET'S RETRY
+        LDA     FLRETRY
+        CMPA    #FLOPPY_RETRIES
+        BNE     READFL1
+        JSR     RECAL                             ; AFTER X RETRIES, LET'S RECAL THE HEAD
+        JSR     SETTRACK                          ;
+        LDA     #$00                              ;
+        STA     FLRETRY                           ; MORE RETRIES!
+        INC     FLRETRY1
+        LDA     FLRETRY1
+        CMPA    #FLOPPY_RETRIES1
+        BNE     READFL1
+        LDA     #$FF                              ; A = 0 ON RETURN = OPERATION OK
+        RTS                                       ; A = $FF ON RETURN = OPERATION ERROR
+READFLDONE:
+        LDA     #$00                              ; A = 0 ON RETURN = OPERATION OK
+        RTS
+
+;__FL_WRITE_SECTOR_______________________________________________________________________________________________________________
 ;
 ; 	WRITE A FLOPPY SECTOR
 ;________________________________________________________________________________________________________________________________
 ;
-WRITEFL:
-        LDAA    #$45                              ; BIT 6 SETS MFM, 05H IS WRITE COMMAND
-        STAA    FCMD
-        JMP     DSKOP
+FL_WRITE_SECTOR:
+        LDA     FLOPPY_DETCT
+        CMPA    #$00
+        BEQ     >
+        RTS
+!
+        LDA     CURRENTDEVICE
+        ANDA    #$01
+        ORA     #%00010000
+        STA     DSKUNIT                           ;
+        LDA     #$00
+        STA     FLRETRY                           ; BLANK RETRIES
+        STA     FLRETRY1
+
+WRITEFL1:
+        LDA     #CFD_WRITE|CFD_MFM                ; BIT 6 SETS MFM, 05H IS WRITE COMMAND
+        STA     FCMD
+        JSR     DSKOP
+
+        CMPA    #$00
+        BEQ     WRITEFLDONE
+        INC     FLRETRY
+        LDA     FLRETRY
+        CMPA    #FLOPPY_RETRIES
+        BNE     WRITEFL1
+        JSR     RECAL
+        JSR     SETTRACK
+        LDA     #$00
+        STA     FLRETRY
+        INC     FLRETRY1
+        LDA     FLRETRY1
+        CMPA    #FLOPPY_RETRIES1
+        BNE     WRITEFL1
+        LDA     #$FF                              ; INVALIDATE CACHE
+        RTS                                       ; A = $FF ON RETURN = OPERATION ERROR
+WRITEFLDONE:
+        LDA     #$00                              ; A = 0 ON RETURN = OPERATION OK
+        RTS
+
+
 ;__DSKOP__________________________________________________________________________________________________________________________
 ;
 ; 	PERFORM A DISK OPERATION
 ;________________________________________________________________________________________________________________________________
 ;
 DSKOP:
+        SEI
         JSR     CHECKINT                          ; CHECK INTERRUPT STATUS, MAKE SURE IT IS CLEAR
-        CMPA    #$FF                              ; DID IT RTSURN WITH ERROR CODE?
+        CMPA    #$FF                              ; DID IT RETURN WITH ERROR CODE?
         BEQ     DSKEXIT                           ; IF YES, EXIT WITH ERROR CODE
-;
-;
-        LDAA    FLATCH_STORE                      ; POINT TO FLATCH
-        ANDA    #%11111101                        ; SET MOTOR ON
-        STAA    FLATCH_STORE                      ; POINT TO FLATCH
-        JSR     OUTFLATCH                         ; OUTPUT TO CONTROLLER
 ;
         JSR     SETTRACK                          ; PERFORM SEEK TO TRACK
 ;
-        LDAA    FCMD                              ; WHAT COMMAND IS PENDING?
-        CMPA    #$46                              ; IS IT A READ COMMAND?
-        LBNE    WRR_POLL                          ;
+        LDA     FCMD                              ; WHAT COMMAND IS PENDING?
+        CMPA    #CFD_READ|CFD_MFM                 ; IS IT A READ COMMAND?
+        BNE     GWRR_POLL                         ;
         JMP     RDD_POLL                          ;
+GWRR_POLL:
+        JMP     WRR_POLL                          ;
 DSKEXIT:
-        LDAA    FLATCH_STORE                      ; POINT TO FLATCH
-        ORAA    #%00000010                        ; SET MOTOR OFF
-        STAA    FLATCH_STORE                      ; POINT TO FLATCH
-        JSR     OUTFLATCH                         ; OUTPUT TO CONTROLLER
-        LDAA    #$FF                              ; SET -1 IF ERROR
+        LDA     #0                                ; SET MOTOR OFF
+        STA     FDC_DOR                           ; OUTPUT TO CONTROLLER
+        LDA     #$FF                              ; SET IF ERROR
+        CLI
         RTS
+
 SNDFDWR:
-        LDY     #512                              ; BYTES/SECTOR COUNT
-        LDAA    DRIVE,U                           ; GET DISK UNIT NUMBER
-        ANDA    #$03                              ; MASK FOR FOUR DRIVES.
-        STAA    UNIT                              ; PARK IT IN TEMP
-        LDAA    HEAD,U                            ; GET HEAD SELECTION
+        CLC
+        LDA     DSKUNIT                           ; GET DISK UNIT NUMBER
+        ANDA    #$01                              ; MASK FOR TWO DRIVES.
+        STA     TMPSTORAGE                        ; PARK IT IN TEMP
+        LDA     CURRENTHEAD                       ; GET HEAD SELECTION
         ANDA    #$01                              ; INSURE SINGLE BIT
         ASLA                                      ;
         ASLA                                      ; MOVE HEAD TO BIT 2 POSITION
-        ORAA    UNIT                              ; OR HEAD TO UNIT BYTE IN COMMAND BLOCK
-        STAA    UNIT                              ; STORE IN UNIT
-
-        LDAA    FCMD                              ;
+        ORA     TMPSTORAGE                        ; OR HEAD TO UNIT BYTE IN COMMAND BLOCK
+        STA     TMPSTORAGE                        ; STORE IN UNIT
+        LDA     FCMD                              ;
         JSR     PFDATA                            ; PUSH COMMAND TO I8272
-        LDAA    UNIT                              ;
+        LDA     TMPSTORAGE                        ;
         JSR     PFDATA                            ;
-        LDAA    CYL,U                             ;
+        LDA     CURRENTCYL                        ;
         JSR     PFDATA                            ;
-        LDAA    HEAD,U                            ;
+        LDA     CURRENTHEAD                       ;
         JSR     PFDATA                            ;
-        LDAA    SEC,U                             ;
-        INCA
+        CLC                                       ;
+        LDA     CURRENTSEC                        ;
+        INCA                                      ;
         JSR     PFDATA                            ;
-        LDAA    #$02                              ;
+        LDA     #$02                              ;
         JSR     PFDATA                            ; WHAT DENSITY
-        LDAA    #$09                              ;
+        LDA     #$09                              ;
         JSR     PFDATA                            ; ASSUME SC (SECTOR COUNT)  EOT
-        LDAA    #$0D                              ;
+        LDA     #$1B                              ;
         JSR     PFDATA                            ; WHAT GAP IS NEEDED
-        LDAA    #$FF                              ; DTL, IS THE LAST COMMAND BYTE TO I8272
-        JSR     PFDATA
+        LDA     #$FF                              ; DTL, IS THE LAST COMMAND BYTE TO I8272
+        JSR     PFDATAS
         RTS
+
+
 ; PERFORM READ
-; FROM READ TO READ MUST NOT EXCEED 25US WORST CASE MIN.
-; 1 Mhz 6809 = 1 CYC PER US OR 25 CYCLES WORST CASE (50 FOR 2 Mhz)
+; FROM READ TO READ MUST NOT EXCEED 25US WORST CASE MIN. (AT 2MHZ IS 2,000,000 CYCLES PER SECOND == 50 CYCLE BUDGET.)
 ;
 RDD_POLL:
-        BSR     SNDFDWR                           ;
-RDS1
-        LDA     >FMSR                             ; GET STATUS
-        BPL     RDS1                              ; NOT READY
-        BITA    #%00100000                        ; EXECUTION MODE?
+        LDX     #$00
+        LDY     #$00
+        JSR     SNDFDWR                           ;
+RDS1:
+        LDA     FDC_MSR                           ; GET STATUS  (4 CYCLES)
+        BPL     RDS1                              ; FDC IS NOT READY, WAIT FOR IT (UP TO 4 CYCLES)
+        ANDA    #%00100000                        ; EXECUTION MODE? (2 CYCLES)
         BEQ     DSKOPEND                          ; NO, ERROR
-        LDA     >FDATA                            ; GET DATA
-        STA     ,X+                               ; WRITE IT
-        LEAY    -1,Y                              ; REDUCE COUNT
-        BNE     RDS1                              ; KEEP GOING
+RDS1A:
+        LDA     FDC_DATA                          ; GET DATA (4 CYCLES)
+        STA     HSTBUF,Y                          ; WRITE IT (5 CYCLES)
+        INY                                       ; (2 CYCLES)
+        BNE     RDS1                              ; KEEP GOING (UP TO 4 CYCLES)   TOTAL =
+        LDX     #$00
+RDS2:
+        LDA     FDC_MSR                           ; GET STATUS
+        BPL     RDS2                              ; FDC IS NOT READY, WAIT FOR IT (UP TO 4 CYCLES)
+        ANDA    #%00100000                        ; EXECUTION MODE?
+        BEQ     DSKOPEND                          ; NO, ERROR
+RDS2A:
+        LDA     FDC_DATA                          ; GET DATA
+        STA     HSTBUF+256,Y                      ; WRITE IT
+        INY
+        BNE     RDS2                              ; KEEP GOING
 DSKOPEND:
-        LDAA    FLATCH_STORE                      ; POINT TO FLATCH
-        ORAA    #%00000001                        ;
-        STAA    FLATCH_STORE                      ; SET TC
-        JSR     OUTFLATCH                         ; OUTPUT TO CONTROLLER
-        NOP                                       ;
-        NOP                                       ; 2 MICROSECOND DELAY
-        NOP                                       ;
-        NOP                                       ;
-        ANDA    #%11111110                        ;
-        STAA    FLATCH_STORE                      ; CLEAR TC
-        JSR     OUTFLATCH                         ; OUTPUT TO CONTROLLER
-        NOP                                       ;
-        NOP                                       ; 2 MICROSECOND DELAY
-*
-        NOP                                       ;
-*
-        NOP                                       ; 2 MICROSECOND DELAY
-        ORAA    #%00000010                        ; MOTOR OFF
-        STAA    FLATCH_STORE                      ; POINT TO FLATCH
-        JSR     OUTFLATCH                         ; OUTPUT TO CONTROLLER					;
+        LDA     FDC_TC
+        JSR     FDDELAY
 ;
-RSTEXIT:
-        CLR     ,-S                               ;ZERO RESULT CODE
         JSR     GFDATA                            ;GET ERROR TYPE
-        TFR     A,B                               ;'B' = FDC RESULTS
-        JSR     GFDATA                            ;READ STATUS REG#2
-        BEQ     RESUL4                            ;NO SECOND REGISTER
-*
-        ERROR   CODES DETECTED, TRANSLATE
-        LDY     #RESTAB                           ;GET TABLE
-RESUL1
-        LSLA                                      ;SHIFT OUT
-        BCS     RESUL2                            ;FOUND ERROR
-        BEQ     RESUL3                            ;NO MORE LEFT
-        LEAY    1,Y                               ;ADVANCE 'Y'
-        BRA     RESUL1                            ;CONTINUE
-RESUL2
-        LDA     ,Y                                ;GET RESULT CODE
-        STA     ,S                                ;SET RESULT CODE
-*
-        CLEAR   OUT ANY REMAINING DATA
-RESUL3
+        STA     FLERR
+;* CLEAR OUT ANY REMAINING DATA
+RESUL3:
         JSR     GFDATA                            ;READ BYTE FROM FDC
+        CMPA    #$00
         BNE     RESUL3                            ;CLEAR THEM ALL
-RESUL4
-        BITB    #%11000000                        ;TEST FOR ANY ERRORS
-        PULS    A,PC                              ;
+        LDA     FLERR                             ;
+        ANDA    #%11000000                        ;
+        RTS
+
 
 WRR_POLL:
         JSR     SNDFDWR                           ;
-WRS1
-        LDB     ,X+                               ;GET DATA
-WRS2
-        LDA     >FMSR                             ;GET STATUS
-        BPL     WRS2                              ;NOT READY
-        BITA    #%00100000                        ;EXECUTION MODE?
-        BEQ     WRS3                              ;NO, ERROR
-        STB     >FDATA                            ;WRITE TO FDC
-        LEAY    -1,Y                              ;BACKUP COUNT
+WRS1:   ;
+        LDA     FDC_MSR                           ; GET STATUS
+        BPL     WRS1                              ; NOT READY
+        ANDA    #%00100000                        ; EXECUTION MODE?
+        BEQ     WRS3                              ; NO, ERROR
+        LDA     HSTBUF,Y                          ; WRITE IT
+        STA     FDC_DATA                          ; WRITE TO FDC
+        INY
         BNE     WRS1                              ; DO NEXT
-WRS3
-        BRA     DSKOPEND                          ;
-
+WRS2:   ;
+        LDA     FDC_MSR                           ; GET STATUS
+        BPL     WRS2                              ; NOT READY
+        ANDA    #%00100000                        ; EXECUTION MODE?
+        BEQ     WRS3                              ; NO, ERROR
+        LDA     HSTBUF+256,Y                      ; WRITE IT
+        STA     FDC_DATA                          ; WRITE TO FDC
+        INY
+        BNE     WRS2                              ; DO NEXT
+WRS3:
+        JMP     DSKOPEND                          ;
 
 
 ;__SETTRACK__________________________________________________________________________________________________________________________
@@ -332,41 +374,52 @@ WRS3
 ;________________________________________________________________________________________________________________________________
 ;
 SETTRACK:
-        PSHS    A                                 ; STORE A
+        LDA     #DOR_INIT
+        ORA     DSKUNIT                           ; SET MOTOR ON
+        STA     FDC_DOR                           ; OUTPUT TO CONTROLLER
+
 ; ANY INTERUPT PENDING
 ; IF YES FIND OUT WHY/CLEAR
         JSR     CHECKINT                          ; CHECK INTERRUPT STATUS, MAKE SURE IT IS CLEAR
         CMPA    #$FF                              ; DID IT RTSURN WITH ERROR CODE?
         BNE     SETTRK1
         JMP     SETTRKEXIT                        ;
+
 ;
 SETTRK1:
-        LDAA    CYL,U                             ; GET TRACK
+        LDA     CURRENTCYL                        ; GET TRACK
         CMPA    #$00                              ;
         BEQ     RECAL                             ; IF 0 PERFORM RECAL INSTEAD OF SEEK
-        LDAA    #$0F                              ; SEEK COMMAND
+        LDA     #CFD_SEEK                         ; SEEK COMMAND
         JSR     PFDATA                            ; PUSH COMMAND
-        LDAA    DRIVE,U                           ; SAY WHICH UNIT
+        LDA     DSKUNIT                           ; SAY WHICH UNIT
+        ANDA    #$01
         JSR     PFDATA                            ; SEND THAT
-        LDAA    CYL,U                             ; TO WHAT TRACK
+        LDA     CURRENTCYL                        ; TO WHAT TRACK
         JSR     PFDATA                            ; SEND THAT TOO
         JMP     WAINT                             ; WAIT FOR INTERRUPT SAYING DONE
 RECAL:
-        LDAA    #$07                              ; RECAL TO TRACK 0
+        LDA     #DOR_INIT
+        ORA     DSKUNIT                           ; SET MOTOR ON
+        STA     FDC_DOR                           ; OUTPUT TO CONTROLLER
+        LDA     #CFD_RECAL                        ; RECAL TO TRACK 0
         JSR     PFDATA                            ; SEND IT
-        LDAA    DRIVE,U                           ; WHICH UNIT
+        LDA     DSKUNIT                           ; SAY WHICH UNIT
+        ANDA    #$01
         JSR     PFDATA                            ; SEND THAT TOO
 ;
 WAINT:
-;
-SETTRK2:
+        PSHS    A,X
+        LDX     #100
+        JSR     FDVDELAY
+        PULS    A,X
+!
         JSR     CHECKINT
-        LDAA    >FMSR                             ; READ SEEK STATUS
-        BITA    #%00001111                        ; ANY DRIVES SEEKING?
-        BNE     SETTRK2                           ; YES, WAIT FOR THEM
+        LDA     FDC_MSR                           ; READ SEEK STATUS
+        ANDA    #%00001111                        ; ANY DRIVES SEEKING?
+        BNE     <                                 ; YES, WAIT FOR THEM
 ;
 SETTRKEXIT:
-        PULS    A
         RTS
 
 ;__PFDATA__________________________________________________________________________________________________________________________
@@ -384,18 +437,63 @@ SETTRKEXIT:
 ;
 PFDATA:
         PSHS    A                                 ; SAVE DATA BYTE
+        LDY     #$00
 WRF1:
-        LDAA    >FMSR                             ; READ FDC STATUS
-        BPL     WRF1                              ; FDC IS NOT READY, WAIT FOR IT
-        BITA    #%01000000                        ; TEST DIO BIT
+        LDA     FDC_MSR                           ; READ FDC STATUS
+        STA     TMPSTORAGE
+        ANDA    #$80                              ;
+        BNE     >
+        INY
+        BNE     WRF1                              ; FDC IS NOT READY, WAIT FOR IT
+        PULS    A
+        LDA     #$FF
+        RTS
+!
+        LDA     TMPSTORAGE
+        ANDA    #$40                              ; TEST DIO BIT
         BNE     WRF2                              ; FDC IS OUT OF SYNC
         PULS    A                                 ; RESTORE DATA
-        STAA    >FDATA                            ; WRITE TO FDC
+        STA     FDC_DATA                          ; WRITE TO FDC
+        JSR     FDDELAY
+        JSR     FDDELAY
+        JSR     FDDELAY
         RTS
-*       ; FDC IS OUT OF SYNC CLEAR IT OUT AND RE-TRY
+; FDC IS OUT OF SYNC CLEAR IT OUT AND RE-TRY
 WRF2:
-        LDAA    >FDATA                            ; READ DATA REGISTER
-        BRA     WRF1                              ; AND CONTINUE
+        LDA     FDC_DATA                          ; READ DATA REGISTER
+        JMP     WRF1                              ; AND CONTINUE
+
+;__PFDATAS_________________________________________________________________________________________________________________________
+;
+; WRITE A COMMAND OR PARAMETER SEQUENCE (NO PAUSE)
+;
+; TRANSFERS ARE SYNCHONIZED BY MSR D7 <RQM> AND D6 <DIO>
+;	RQM  DIO
+;	0	0	BUSY
+;	1	0	WRITE TO DATA REGISTER PERMITTED
+;	1	1	BYTE FOR READ BY HOST PENDING
+;	0	1	BUSY
+;
+;________________________________________________________________________________________________________________________________
+;
+PFDATAS:
+        PSHS    A                                 ; SAVE DATA BYTE
+WRF1S:
+        LDA     FDC_MSR                           ; READ FDC STATUS
+        STA     TMPSTORAGE
+        ANDA    #$80                              ;
+        BEQ     WRF1S                             ; FDC IS NOT READY, WAIT FOR IT
+        LDA     TMPSTORAGE
+        ANDA    #$40                              ; TEST DIO BIT
+        BNE     WRF2S                             ; FDC IS OUT OF SYNC
+        PULS    A                                 ; RESTORE DATA
+        STA     FDC_DATA                          ; WRITE TO FDC
+        RTS
+; FDC IS OUT OF SYNC CLEAR IT OUT AND RE-TRY
+WRF2S:
+        LDA     FDC_DATA                          ; READ DATA REGISTER
+        JMP     WRF1S                             ; AND CONTINUE
+
 
 
 ;__CHECKINT__________________________________________________________________________________________________________________________
@@ -407,16 +505,34 @@ WRF2:
 ;________________________________________________________________________________________________________________________________
 ;
 CHECKINT:
-        LDAA    >FMSR                             ; READING OR WRITING IS KEYS TO D7 RQM
-        BPL     CHECKINT                          ; WAIT FOR RQM TO BE TRUE. WAIT UNTIL DONE
-        BITA    #%01000000                        ; WAITING FOR INPUT?
-        LBEQ    SENDINT
+        LDY     #$00
+!
+        LDA     FDC_MSR                           ; READING OR WRITING IS KEYS TO D7 RQM
+        ANDA    #$80
+        BNE     >                                 ; WAIT FOR RQM TO BE TRUE. WAIT UNTIL DONE
+        JSR     FDDELAY
+        INY
+        BNE     <
+        JMP     ERRCLR
+
+!
+        LDA     FDC_MSR                           ; READING OR WRITING IS KEYS TO D7 RQM
+        ANDA    #$40                              ; WAITING FOR INPUT?
+        BEQ     SENDINT
+        RTS
+
 ERRCLR:
-        LDAA    >FDATA                            ; CLEAR THE JUNK OUT OF DATA REGISTER
-        LDAA    >FMSR                             ; CHECK WITH RQM
+        LDY     #$00
+!
+        LDA     FDC_DATA                          ; CLEAR THE JUNK OUT OF DATA REGISTER
+        LDA     FDC_MSR                           ; CHECK WITH RQM
         ANDA    #$80                              ; IF STILL NOT READY, READ OUT MORE JUNK
-        BEQ     ERRCLR                            ;
-        LDAA    #$FF                              ; RETURN ERROR CODE -1
+        BNE     >                                 ;
+        JSR     FDDELAY
+        INY
+        BNE     <
+!
+        LDA     #$FF                              ; RETURN ERROR CODE -1
 ;
         RTS
 
@@ -426,15 +542,15 @@ ERRCLR:
 ;________________________________________________________________________________________________________________________________
 ;
 SENDINT:
-        LDAA    #$08                              ; SENSE INTERRUPT COMMAND
-        BSR     PFDATA                            ; SEND IT
+        LDA     #CFD_SENSEINT                     ; SENSE INTERRUPT COMMAND
+        JSR     PFDATA                            ; SEND IT
         JSR     GFDATA                            ; GET RESULTS
-        STAA    ST0                               ; STORE THAT
+        STA     ST0                               ; STORE THAT
         ANDA    #$C0                              ; MASK OFF INTERRUPT STATUS BITS
         CMPA    #$80                              ; CHECK IF INVALID COMMAND
         BEQ     ENDSENDINT                        ; YES, EXIT
         JSR     GFDATA                            ; GET ANOTHER (STATUS CODE 1)
-        LDAA    ST0                               ; GET FIRST ONE
+        LDA     ST0                               ; GET FIRST ONE
         ANDA    #$C0                              ; MASK OFF ALL BUT INTERRUPT CODE 00 IS NORMAL
 ENDSENDINT:
         RTS                                       ; ANYTHING ELSE IS AN ERROR
@@ -454,33 +570,100 @@ ENDSENDINT:
 ;________________________________________________________________________________________________________________________________
 ;
 GFDATA:
-        LDA     >FMSR                             ; GET STATUS
-        BPL     GFDATA                            ; NOT READY, WAIT
+        LDY     #$00
+!
+        LDA     FDC_MSR                           ; GET STATUS
+        STA     TMPSTORAGE                        ;
+        ANDA    #%10000000                        ; NOT READY, WAIT
+        BNE     >                                 ;
+        INY
+        BNE     <
+        LDA     #$00
+        RTS
+!
+        LDA     TMPSTORAGE
         ANDA    #%01000000                        ; ANY DATA FOR US?
         BEQ     GFDATA1                           ; NO, SKIP IT
-        LDA     >FDATA                            ; GET FDC DATA
-        ANDCC   #%11111011                        ; INSURE 'Z' CLEAR
-GFDATA1
+        LDA     FDC_DATA                          ; GET FDC DATA
+GFDATA1:
         RTS
 
-        IFND    BROM
-UNIT:
-        FCB     $00                               ;
-TCYL:
+;__FD_DETECT______________________________________________________________________________________________________________________
+;
+; 	DETECT FLOPPY HARDWARE
+;________________________________________________________________________________________________________________________________
+FD_DETECT:
+; BLINDLY RESET FDC (WHICH MAY OR MAY NOT EXIST)
+        JSR     FC_RESETFDC                       ; RESET FDC
+
+        LDA     FDC_MSR                           ; READ MSR
+        CMPA    #$80
+        BEQ     FD_DETECT1                        ; $80 IS OK
+        CMPA    #$D0
+        BEQ     FD_DETECT1                        ; $D0 IS OK
+        LDA     #$FF                              ; NOT OK
+        STA     FLOPPY_DETCT
+        RTS
+;
+FD_DETECT1:
+        LDX     #100
+        JSR     FDVDELAY                          ; WAIT A BIT FOR FDC
+        LDA     FDC_MSR                           ; READ MSR AGAIN
+        CMPA    #$80
+        BEQ     >                                 ; $80 IS OK
+        CMPA    #$D0
+        LDA     #$FF                              ; NOT OK
+        STA     FLOPPY_DETCT
+        RTS
+!
+        LDA     #$00                              ; OK
+        STA     FLOPPY_DETCT
+        RTS
+
+FC_RESETFDC:
+        LDA     FDC_RESET
+        LDA     FDC_RESET
+        LDX     #150
+        JSR     FDVDELAY                          ; WAIT A BIT FOR FDC
+
+        LDA     #$00
+        STA     FDC_DOR
+        JSR     FDDELAY
+        LDA     #DOR_INIT
+        STA     FDC_DOR
+        LDX     #150                              ;
+        JSR     FDVDELAY
+        RTS
+
+
+FDDELAY:
+        PSHS    A
+        PULS    A
+        PSHS    A
+        PULS    A
+        RTS
+FDVDELAY:
+        PSHS    A
+        PULS    A
+        PSHS    A
+        PULS    A
+        DEX
+        CPX     #$00
+        BNE     FDVDELAY
+        RTS
+
+
+TMPSTORAGE:
         FCB     00
-THEAD:
+FMESSAGE1:
+        FCC     "FD: MODE=MBC$"
         FCB     00
-FCMD:
-        FCB     0                                 ; COMMAND READ OR WRITE,
-ST0:
-        FCB     0                                 ; COMMAND READ OR WRITE,
-FLATCH_STORE:
+FMESSAGE2:
+        FCC     " IO=0x$"
         FCB     00
-        ELSE
-UNIT            EQU $2101                         ;
-TCYL            EQU $2102
-THEAD           EQU $2103
-FCMD            EQU $2104                         ; COMMAND READ OR WRITE,
-ST0             EQU $2105                         ; COMMAND READ OR WRITE,
-FLATCH_STORE    EQU $2106
-        ENDIF
+FMESSAGE3:
+        FCC     " NOT PRESENT$"
+        FCB     00
+FMESSAGE4:
+        FCC     " PRESENT$"
+        FCB     00

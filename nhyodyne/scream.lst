@@ -251,15 +251,19 @@ F1E5 B7FE68           (       scream.asm):00250 [5]             STA     UART0   
 F1E8 B7FE68           (       scream.asm):00251 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
 F1EB B7FE68           (       scream.asm):00252 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
 F1EE B7FE68           (       scream.asm):00253 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
-F1F1 7EF003           (       scream.asm):00254 [4]             JMP     SERIAL_OUTCH
-                      (       scream.asm):00255         
-                      (       scream.asm):00256                 ORG     $FFFE                             ; SET RESET VECTOR TO
-                      (       scream.asm):00257         
-                      (       scream.asm):00258         
-FFFE                  (       scream.asm):00259         RESETV:
-FFFE F000             (       scream.asm):00260                 FDB     $F000
+F1F1 B7FE68           (       scream.asm):00254 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F1F4 B7FE68           (       scream.asm):00255 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F1F7 B7FE68           (       scream.asm):00256 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F1FA B7FE68           (       scream.asm):00257 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F1FD 7EF003           (       scream.asm):00258 [4]             JMP     SERIAL_OUTCH
+                      (       scream.asm):00259         
+                      (       scream.asm):00260                 ORG     $FFFE                             ; SET RESET VECTOR TO
                       (       scream.asm):00261         
-                      (       scream.asm):00262                 END
+                      (       scream.asm):00262         
+FFFE                  (       scream.asm):00263         RESETV:
+FFFE F000             (       scream.asm):00264                 FDB     $F000
+                      (       scream.asm):00265         
+                      (       scream.asm):00266                 END
 
 Symbol Table:
 [ G] COLD_START                       F000

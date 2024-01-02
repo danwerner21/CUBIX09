@@ -35,9 +35,12 @@ HWIN1
         LDA     #00
         STA     CONSOLEDEVICE                     ; set console device for driver output
 
-        JSR     PAGER_INIT                        ; INIT PAGER
+        JSR     PAGER_INIT                        ;INIT PAGER
 ;
         LDB     #02                               ;INIT SERIAL PORT
+        JSR     MD_PAGERA
+;
+        LDB     #18                               ;INIT Floppy
         JSR     MD_PAGERA
 ;
         LDB     #21                               ;INIT IDE
@@ -104,10 +107,15 @@ DHOME
 DRDSEC
         JSR     DECODEDRIVE
         ANDA    #$F0
-;*	CMPA	#$10			; FLOPPY?
-;*	BNE 	>			;
-;*	JMP	Z80WDRIVE		; USE Z80 C:
-;*!
+        CMPA    #$10                              ; FLOPPY?
+        BNE     >                                 ;
+        LDB     #19                               ;Floppy_READ_SECTOR
+        JSR     MD_PAGERA
+        BSR     CPYHOSTBUF
+        LDA     DISKERROR                         ; GET ERROR CONDITION
+        CMPA    #$00
+        RTS
+!
         CMPA    #$20                              ; IDE?
         BNE     >                                 ;
         LDB     #22                               ;IDE_READ_SECTOR
@@ -115,6 +123,7 @@ DRDSEC
         BSR     CPYHOSTBUF
         LDA     DISKERROR                         ; GET ERROR CONDITION
         CMPA    #$00
+        RTS
 !
         RTS
 CPYHOSTBUF:
@@ -146,16 +155,21 @@ DWRSEC
 ; NOW DO SOME DRIVE MAGIC
         JSR     DECODEDRIVE
         ANDA    #$F0
-;*	CMPA	#$10			; FLOPPY?
-;*	BNE 	>			;
-;*	JMP	Z80WDRIVE		; USE Z80 C:
-;*!
+        CMPA    #$10                              ; FLOPPY?
+        BNE     >                                 ;
+        LDB     #20                               ;floppy_WRITE_SECTOR
+        JSR     MD_PAGERA
+        LDA     DISKERROR                         ; GET ERROR CONDITION
+        CMPA    #$00
+        RTS
+!
         CMPA    #$20                              ; IDD?
         BNE     >                                 ;
         LDB     #23                               ;IDE_WRITE_SECTOR
         JSR     MD_PAGERA
         LDA     DISKERROR                         ; GET ERROR CONDITION
         CMPA    #$00
+        RTS
 !
         RTS
 

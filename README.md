@@ -50,6 +50,8 @@ New SSRs
 ---
 To Do List for this port:
 * ADD FLOPPY DRIVE SUPPORT
+* Fix XMODEM CRC problem
+* convert Xmodem EXEs to S19s
 * DSKY V1 support
 * DSKY functions should abort if no DSKY is there.
 * ESP32 support
@@ -57,12 +59,11 @@ To Do List for this port:
 * color VDU support
 * RTC and NVRAM support
 * Microsoft Basic
-* Fix XMODEM CRC problem
-* convert Xmodem EXEs to S19s
 * Advanced MONITOR
 
 ---
 
+```
 Memory Map:
 
 Standard Cubix memory Map:
@@ -108,4 +109,4 @@ Nhyodyne Map:
             $FF00-$FFF1 - OS VECTORS AND CONFIG TABLES
             $FFF2-$FFFF - HARDWARE VECTORS
 
-
+```

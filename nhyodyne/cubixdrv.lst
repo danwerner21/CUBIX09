@@ -23,18 +23,25 @@
      02FC             ( cubix_values.asm):00013         PAGER_Y         = $02FC
      02FE             ( cubix_values.asm):00014         PAGER_S         = $02FE
      0100             ( cubix_values.asm):00015         CONSOLEDEVICE   = $0100                           ; (BYTE)
-     01EA             ( cubix_values.asm):00016         DSKY_BUF        = $01EA                           ; (8 BYTES)
-     01F3             ( cubix_values.asm):00017         DSKY_HEXBUF     = $01F3                           ; (4 BYTES)
-     01F7             ( cubix_values.asm):00018         DISKERROR       = $01F7                           ; (BYTE)
-     01F8             ( cubix_values.asm):00019         CURRENTHEAD     = $01F8                           ; (BYTE)
-     01F9             ( cubix_values.asm):00020         CURRENTCYL      = $01F9                           ; (BYTE)
-     01FA             ( cubix_values.asm):00021         CURRENTSEC      = $01FA                           ; (BYTE)
-     01FB             ( cubix_values.asm):00022         CURRENTDEVICE   = $01FB                           ; (BYTE)
-     01FC             ( cubix_values.asm):00023         CURRENTSLICE    = $01FC                           ; (WORD)
-     01FE             ( cubix_values.asm):00024         farpointer      = $01FE                           ; (WORD)                      ;
-     0300             ( cubix_values.asm):00025         HSTBUF          = $0300
-                      ( cubix_values.asm):00026         
-     8800             ( cubix_values.asm):00027         BANKED_DRIVER_DISPATCHER = $8800
+     01E3             ( cubix_values.asm):00016         ST0             = $01E3                           ; (BYTE)
+     01E4             ( cubix_values.asm):00017         FCMD            = $01E4                           ; (BYTE)
+     01E5             ( cubix_values.asm):00018         FLERR           = $01E5                           ; (BYTE)
+     01E6             ( cubix_values.asm):00019         DSKUNIT         = $01E6                           ; (BYTE)
+     01E7             ( cubix_values.asm):00020         FLOPPY_DETCT    = $01E7                           ; (BYTE)
+     01E8             ( cubix_values.asm):00021         FLRETRY         = $01E8                           ; (BYTE)
+     01E9             ( cubix_values.asm):00022         FLRETRY1        = $01E9                           ; (BYTE)
+     01EA             ( cubix_values.asm):00023         DSKY_BUF        = $01EA                           ; (8 BYTES)
+     01F3             ( cubix_values.asm):00024         DSKY_HEXBUF     = $01F3                           ; (4 BYTES)
+     01F7             ( cubix_values.asm):00025         DISKERROR       = $01F7                           ; (BYTE)
+     01F8             ( cubix_values.asm):00026         CURRENTHEAD     = $01F8                           ; (BYTE)
+     01F9             ( cubix_values.asm):00027         CURRENTCYL      = $01F9                           ; (BYTE)
+     01FA             ( cubix_values.asm):00028         CURRENTSEC      = $01FA                           ; (BYTE)
+     01FB             ( cubix_values.asm):00029         CURRENTDEVICE   = $01FB                           ; (BYTE)
+     01FC             ( cubix_values.asm):00030         CURRENTSLICE    = $01FC                           ; (WORD)
+     01FE             ( cubix_values.asm):00031         farpointer      = $01FE                           ; (WORD)                      ;
+     0300             ( cubix_values.asm):00032         HSTBUF          = $0300
+                      ( cubix_values.asm):00033         
+     8800             ( cubix_values.asm):00034         BANKED_DRIVER_DISPATCHER = $8800
                       (     cubixdrv.asm):00011         ;*
                       (     cubixdrv.asm):00012         
                       (     cubixdrv.asm):00013                 ORG     $8800
@@ -70,37 +77,37 @@
 8815 886B             (     cubixdrv.asm):00043                 .WORD   RDSER1                            ; FUNCTION 01 - READ SERIAL PORT
 8817 885D             (     cubixdrv.asm):00044                 .WORD   SERIALINIT                        ; FUNCTION 02 - SERIAL PORT INIT
                       (     cubixdrv.asm):00045         
-8819 8E56             (     cubixdrv.asm):00046                 .WORD   drv_noop                          ; FUNCTION 03 - WRITE VIDEO
-881B 8E56             (     cubixdrv.asm):00047                 .WORD   drv_noop                          ; FUNCTION 04 - READ KEYBOARD
-881D 8E56             (     cubixdrv.asm):00048                 .WORD   drv_noop                          ; FUNCTION 05 - INIT INTERFACE
+8819 9220             (     cubixdrv.asm):00046                 .WORD   drv_noop                          ; FUNCTION 03 - WRITE VIDEO
+881B 9220             (     cubixdrv.asm):00047                 .WORD   drv_noop                          ; FUNCTION 04 - READ KEYBOARD
+881D 9220             (     cubixdrv.asm):00048                 .WORD   drv_noop                          ; FUNCTION 05 - INIT INTERFACE
                       (     cubixdrv.asm):00049         
-881F 8E56             (     cubixdrv.asm):00050                 .WORD   drv_noop                          ; FUNCTION 06
-8821 8E56             (     cubixdrv.asm):00051                 .WORD   drv_noop                          ; FUNCTION 07
-8823 8E56             (     cubixdrv.asm):00052                 .WORD   drv_noop                          ; FUNCTION 08
+881F 9220             (     cubixdrv.asm):00050                 .WORD   drv_noop                          ; FUNCTION 06
+8821 9220             (     cubixdrv.asm):00051                 .WORD   drv_noop                          ; FUNCTION 07
+8823 9220             (     cubixdrv.asm):00052                 .WORD   drv_noop                          ; FUNCTION 08
                       (     cubixdrv.asm):00053         
-8825 8E56             (     cubixdrv.asm):00054                 .WORD   drv_noop                          ; FUNCTION 09
-8827 8E56             (     cubixdrv.asm):00055                 .WORD   drv_noop                          ; FUNCTION 10
-8829 8E56             (     cubixdrv.asm):00056                 .WORD   drv_noop                          ; FUNCTION 11
+8825 9220             (     cubixdrv.asm):00054                 .WORD   drv_noop                          ; FUNCTION 09
+8827 9220             (     cubixdrv.asm):00055                 .WORD   drv_noop                          ; FUNCTION 10
+8829 9220             (     cubixdrv.asm):00056                 .WORD   drv_noop                          ; FUNCTION 11
                       (     cubixdrv.asm):00057         
-882B 8E56             (     cubixdrv.asm):00058                 .WORD   drv_noop                          ; FUNCTION 12
-882D 8E56             (     cubixdrv.asm):00059                 .WORD   drv_noop                          ; FUNCTION 13
-882F 8E56             (     cubixdrv.asm):00060                 .WORD   drv_noop                          ; FUNCTION 14
+882B 9220             (     cubixdrv.asm):00058                 .WORD   drv_noop                          ; FUNCTION 12
+882D 9220             (     cubixdrv.asm):00059                 .WORD   drv_noop                          ; FUNCTION 13
+882F 9220             (     cubixdrv.asm):00060                 .WORD   drv_noop                          ; FUNCTION 14
                       (     cubixdrv.asm):00061         
-8831 8E56             (     cubixdrv.asm):00062                 .WORD   drv_noop                          ; FUNCTION 15 - called during OS init
-8833 8E56             (     cubixdrv.asm):00063                 .WORD   drv_noop                          ; FUNCTION 16 - read a sector from drive
-8835 8E56             (     cubixdrv.asm):00064                 .WORD   drv_noop                          ; FUNCTION 17 - write a sector to drive
+8831 9220             (     cubixdrv.asm):00062                 .WORD   drv_noop                          ; FUNCTION 15 - called during OS init
+8833 9220             (     cubixdrv.asm):00063                 .WORD   drv_noop                          ; FUNCTION 16 - read a sector from drive
+8835 9220             (     cubixdrv.asm):00064                 .WORD   drv_noop                          ; FUNCTION 17 - write a sector to drive
                       (     cubixdrv.asm):00065         ;
-8837 8E56             (     cubixdrv.asm):00066                 .WORD   drv_noop                          ; FUNCTION 18 -
-8839 8E56             (     cubixdrv.asm):00067                 .WORD   drv_noop                          ; FUNCTION 19 -
-883B 8E56             (     cubixdrv.asm):00068                 .WORD   drv_noop                          ; FUNCTION 20 -
+8837 8E56             (     cubixdrv.asm):00066                 .WORD   FL_SETUP                          ; FUNCTION 18 - init floppy device
+8839 8EE3             (     cubixdrv.asm):00067                 .WORD   FL_READ_SECTOR                    ; FUNCTION 19 - read a sector from floppy device
+883B 8F36             (     cubixdrv.asm):00068                 .WORD   FL_WRITE_SECTOR                   ; FUNCTION 20 - write a sector to floppy device
                       (     cubixdrv.asm):00069         ;
-883D 8887             (     cubixdrv.asm):00070                 .WORD   PPIDE_INIT                        ; FUNCTION 21 - init floppy device
-883F 8986             (     cubixdrv.asm):00071                 .WORD   IDE_READ_SECTOR                   ; FUNCTION 22 - read a sector from floppy device
-8841 89AC             (     cubixdrv.asm):00072                 .WORD   IDE_WRITE_SECTOR                  ; FUNCTION 23 - write a sector to floppy device
+883D 8887             (     cubixdrv.asm):00070                 .WORD   PPIDE_INIT                        ; FUNCTION 21 - init PPIDE device
+883F 8986             (     cubixdrv.asm):00071                 .WORD   IDE_READ_SECTOR                   ; FUNCTION 22 - read a sector from PPIDE device
+8841 89AC             (     cubixdrv.asm):00072                 .WORD   IDE_WRITE_SECTOR                  ; FUNCTION 23 - write a sector to PPIDE device
                       (     cubixdrv.asm):00073         ;
-8843 8E56             (     cubixdrv.asm):00074                 .WORD   drv_noop                          ; FUNCTION 24 -
-8845 8E56             (     cubixdrv.asm):00075                 .WORD   drv_noop                          ; FUNCTION 25 -
-8847 8E56             (     cubixdrv.asm):00076                 .WORD   drv_noop                          ; FUNCTION 26 -
+8843 9220             (     cubixdrv.asm):00074                 .WORD   drv_noop                          ; FUNCTION 24 -
+8845 9220             (     cubixdrv.asm):00075                 .WORD   drv_noop                          ; FUNCTION 25 -
+8847 9220             (     cubixdrv.asm):00076                 .WORD   drv_noop                          ; FUNCTION 26 -
                       (     cubixdrv.asm):00077         ;
 8849 8B84             (     cubixdrv.asm):00078                 .WORD   DSKY_INIT                         ; FUNCTION 27 -
 884B 8CD6             (     cubixdrv.asm):00079                 .WORD   DSKY_SHOW                         ; FUNCTION 28 -
@@ -262,18 +269,18 @@
                       (    cubix_ide.asm):00065         ;____________________________________________________________________________________________________
                       (    cubix_ide.asm):00066         ;
 8887                  (    cubix_ide.asm):00067         PPIDE_INIT:
-8887 BD8E57           (    cubix_ide.asm):00068                 JSR     LFCR                              ; AND CRLF
-888A BD8E57           (    cubix_ide.asm):00069                 JSR     LFCR                              ; AND CRLF
+8887 BD9221           (    cubix_ide.asm):00068                 JSR     LFCR                              ; AND CRLF
+888A BD9221           (    cubix_ide.asm):00069                 JSR     LFCR                              ; AND CRLF
 888D 8E8AE5           (    cubix_ide.asm):00070                 LDX     #MESSAGE1
-8890 BD8E60           (    cubix_ide.asm):00071                 JSR     WRSTR                             ; DO PROMPT
-8893 BD8E57           (    cubix_ide.asm):00072                 JSR     LFCR                              ; AND CRLF
+8890 BD922A           (    cubix_ide.asm):00071                 JSR     WRSTR                             ; DO PROMPT
+8893 BD9221           (    cubix_ide.asm):00072                 JSR     LFCR                              ; AND CRLF
 8896 BD8978           (    cubix_ide.asm):00073                 JSR     IDE_PPIDETECT                     ; TEST FOR PPI HARDWARE
 8899 2617             (    cubix_ide.asm):00074                 BNE     IDE_ABORT                         ; BAIL OUT IF NOT THERE
                       (    cubix_ide.asm):00075         ;
 889B 8E8AED           (    cubix_ide.asm):00076                 LDX     #MESSAGE2
-889E BD8E60           (    cubix_ide.asm):00077                 JSR     WRSTR                             ; DO PROMPT
+889E BD922A           (    cubix_ide.asm):00077                 JSR     WRSTR                             ; DO PROMPT
 88A1 CC0560           (    cubix_ide.asm):00078                 LDD     #PPIDE_PPI                        ; GET BASE PORT
-88A4 BD8E6D           (    cubix_ide.asm):00079                 JSR     WRHEXW                            ; PRINT BASE PORT
+88A4 BD9237           (    cubix_ide.asm):00079                 JSR     WRHEXW                            ; PRINT BASE PORT
                       (    cubix_ide.asm):00080         ;
 88A7 BD89D7           (    cubix_ide.asm):00081                 JSR     PPIDE_RESET                       ; RESET THE BUS
 88AA BD88D8           (    cubix_ide.asm):00082                 JSR     PPIDE_PROBE                       ; DETECT AN ATA DEVICE, ABORT IF NOT FOUND
@@ -281,20 +288,20 @@
 88AF 7E88BB           (    cubix_ide.asm):00084                 JMP     IDE_PRINT_INFO
 88B2                  (    cubix_ide.asm):00085         IDE_ABORT:
 88B2 8E8AF4           (    cubix_ide.asm):00086                 LDX     #MESSAGE3
-88B5 BD8E60           (    cubix_ide.asm):00087                 JSR     WRSTR                             ; DO PROMPT
+88B5 BD922A           (    cubix_ide.asm):00087                 JSR     WRSTR                             ; DO PROMPT
 88B8 7E88D4           (    cubix_ide.asm):00088                 JMP     IDE_INITA
 88BB                  (    cubix_ide.asm):00089         IDE_PRINT_INFO:
-88BB BD8E57           (    cubix_ide.asm):00090                 JSR     LFCR                              ; AND CRLF
+88BB BD9221           (    cubix_ide.asm):00090                 JSR     LFCR                              ; AND CRLF
 88BE 8E8B01           (    cubix_ide.asm):00091                 LDX     #MESSAGE4
-88C1 BD8E60           (    cubix_ide.asm):00092                 JSR     WRSTR                             ; DO PROMPT
+88C1 BD922A           (    cubix_ide.asm):00092                 JSR     WRSTR                             ; DO PROMPT
 88C4 8600             (    cubix_ide.asm):00093                 LDA     #$00
 88C6 BD8919           (    cubix_ide.asm):00094                 JSR     IDE_READ_INFO                     ; GET DRIVE INFO, ABORT IF ERROR
 88C9 8E8B12           (    cubix_ide.asm):00095                 LDX     #MESSAGE5
-88CC BD8E60           (    cubix_ide.asm):00096                 JSR     WRSTR                             ; DO PROMPT
+88CC BD922A           (    cubix_ide.asm):00096                 JSR     WRSTR                             ; DO PROMPT
 88CF 8601             (    cubix_ide.asm):00097                 LDA     #$01
 88D1 BD8919           (    cubix_ide.asm):00098                 JSR     IDE_READ_INFO                     ; GET DRIVE INFO, ABORT IF ERROR
 88D4                  (    cubix_ide.asm):00099         IDE_INITA:
-88D4 BD8E57           (    cubix_ide.asm):00100                 JSR     LFCR                              ; AND CRLF
+88D4 BD9221           (    cubix_ide.asm):00100                 JSR     LFCR                              ; AND CRLF
 88D7 39               (    cubix_ide.asm):00101                 RTS                                       ; DONE
                       (    cubix_ide.asm):00102         ;
                       (    cubix_ide.asm):00103         ;__PPIDE_PROBE_______________________________________________________________________________________
@@ -377,24 +384,24 @@
 8940 2524             (    cubix_ide.asm):00180                 BCS     IDE_READ_INFO_ABORT
 8942 BD8A46           (    cubix_ide.asm):00181                 JSR     IDE_READ_BUFFER                   ; GRAB THE 256 WORDS FROM THE BUFFER
 8945 8E8B23           (    cubix_ide.asm):00182                 LDX     #MESSAGE6
-8948 BD8E60           (    cubix_ide.asm):00183                 JSR     WRSTR
+8948 BD922A           (    cubix_ide.asm):00183                 JSR     WRSTR
 894B B6037B           (    cubix_ide.asm):00184                 LDA     HSTBUF+123
-894E BD8E76           (    cubix_ide.asm):00185                 JSR     WRHEX
+894E BD9240           (    cubix_ide.asm):00185                 JSR     WRHEX
 8951 B6037A           (    cubix_ide.asm):00186                 LDA     HSTBUF+122
-8954 BD8E76           (    cubix_ide.asm):00187                 JSR     WRHEX
+8954 BD9240           (    cubix_ide.asm):00187                 JSR     WRHEX
 8957 B60379           (    cubix_ide.asm):00188                 LDA     HSTBUF+121
-895A BD8E76           (    cubix_ide.asm):00189                 JSR     WRHEX
+895A BD9240           (    cubix_ide.asm):00189                 JSR     WRHEX
 895D B60378           (    cubix_ide.asm):00190                 LDA     HSTBUF+120
-8960 BD8E76           (    cubix_ide.asm):00191                 JSR     WRHEX
+8960 BD9240           (    cubix_ide.asm):00191                 JSR     WRHEX
 8963 7E8972           (    cubix_ide.asm):00192                 JMP     IDE_READ_INFO_OK
 8966                  (    cubix_ide.asm):00193         IDE_READ_INFO_ABORT:
 8966 8E8AF4           (    cubix_ide.asm):00194                 LDX     #MESSAGE3
-8969 BD8E60           (    cubix_ide.asm):00195                 JSR     WRSTR                             ;DO PROMPT
-896C BD8E57           (    cubix_ide.asm):00196                 JSR     LFCR                              ;AND CRLF
+8969 BD922A           (    cubix_ide.asm):00195                 JSR     WRSTR                             ;DO PROMPT
+896C BD9221           (    cubix_ide.asm):00196                 JSR     LFCR                              ;AND CRLF
 896F 1A01             (    cubix_ide.asm):00197                 SEC
 8971 39               (    cubix_ide.asm):00198                 RTS                                       ;
 8972                  (    cubix_ide.asm):00199         IDE_READ_INFO_OK:
-8972 BD8E57           (    cubix_ide.asm):00200                 JSR     LFCR                              ; AND CRLF
+8972 BD9221           (    cubix_ide.asm):00200                 JSR     LFCR                              ; AND CRLF
 8975 1CFE             (    cubix_ide.asm):00201                 CLC
 8977 39               (    cubix_ide.asm):00202                 RTS
                       (    cubix_ide.asm):00203         
@@ -844,23 +851,23 @@
                       ( cubix_dskyng.asm):00091         ; PRTDBG "DSKY INIT:$"
 8B84 BD8BCD           ( cubix_dskyng.asm):00092                 JSR     DSKY_PREINIT
 8B87 8E8E33           ( cubix_dskyng.asm):00093                 LDX     #DSKYMESSAGE1
-8B8A BD8E60           ( cubix_dskyng.asm):00094                 JSR     WRSTR                             ; DO PROMPT
-8B8D BD8E57           ( cubix_dskyng.asm):00095                 JSR     LFCR                              ; AND CRLF
+8B8A BD922A           ( cubix_dskyng.asm):00094                 JSR     WRSTR                             ; DO PROMPT
+8B8D BD9221           ( cubix_dskyng.asm):00095                 JSR     LFCR                              ; AND CRLF
                       ( cubix_dskyng.asm):00096         
 8B90 8E8E39           ( cubix_dskyng.asm):00097                 LDX     #DSKYMESSAGE2
-8B93 BD8E60           ( cubix_dskyng.asm):00098                 JSR     WRSTR                             ; DO PROMPT
+8B93 BD922A           ( cubix_dskyng.asm):00098                 JSR     WRSTR                             ; DO PROMPT
 8B96 CC0560           ( cubix_dskyng.asm):00099                 LDD     #PPIDE_PPI                        ; GET BASE PORT
-8B99 BD8E6D           ( cubix_dskyng.asm):00100                 JSR     WRHEXW                            ; PRINT BASE PORT
+8B99 BD9237           ( cubix_dskyng.asm):00100                 JSR     WRHEXW                            ; PRINT BASE PORT
                       ( cubix_dskyng.asm):00101         
 8B9C 8E8E40           ( cubix_dskyng.asm):00102                 LDX     #DSKYMESSAGE3
-8B9F BD8E60           ( cubix_dskyng.asm):00103                 JSR     WRSTR                             ; DO PROMPT
+8B9F BD922A           ( cubix_dskyng.asm):00103                 JSR     WRSTR                             ; DO PROMPT
                       ( cubix_dskyng.asm):00104         ;
                       ( cubix_dskyng.asm):00105         ;
 8BA2 B68E2A           ( cubix_dskyng.asm):00106                 LDA     DSKY_PRESENT                      ; PRESENT?
 8BA5 81FF             ( cubix_dskyng.asm):00107                 CMPA    #$FF                              ; SET FLAGS
 8BA7 2708             ( cubix_dskyng.asm):00108                 BEQ     DSKY_INITA
 8BA9 8E8E49           ( cubix_dskyng.asm):00109                 LDX     #DSKYMESSAGE4
-8BAC BD8E60           ( cubix_dskyng.asm):00110                 JSR     WRSTR                             ; DO PROMPT
+8BAC BD922A           ( cubix_dskyng.asm):00110                 JSR     WRSTR                             ; DO PROMPT
 8BAF 2018             ( cubix_dskyng.asm):00111                 BRA     DSKY_INITB
 8BB1                  ( cubix_dskyng.asm):00112         DSKY_INITA:
 8BB1 8E0000           ( cubix_dskyng.asm):00113                 LDX     #$00
@@ -874,7 +881,7 @@
 8BC6 BD8DA8           ( cubix_dskyng.asm):00121                 JSR     DSKY_BEEP
                       ( cubix_dskyng.asm):00122         
 8BC9                  ( cubix_dskyng.asm):00123         DSKY_INITB:
-8BC9 BD8E57           ( cubix_dskyng.asm):00124                 JSR     LFCR                              ; AND CRLF
+8BC9 BD9221           ( cubix_dskyng.asm):00124                 JSR     LFCR                              ; AND CRLF
 8BCC 39               ( cubix_dskyng.asm):00125                 RTS                                       ; DONE
                       ( cubix_dskyng.asm):00126         ;
                       ( cubix_dskyng.asm):00127         ;__DSKY_PREINIT______________________________________________________________________________________
@@ -1457,86 +1464,776 @@
 8E49 204E4F5420505245 ( cubix_dskyng.asm):00703                 FCN     " NOT PRESENT"                    ; NOT PRESENT
      53454E5400
                       (     cubixdrv.asm):00096         ;        INCLUDE cubix_dsky.asm
-                      (     cubixdrv.asm):00097         ;        INCLUDE cubix_floppy.asm
+                      (     cubixdrv.asm):00097                 INCLUDE cubix_floppy.asm
+                      ( cubix_floppy.asm):00001         ;__FLOPPY DRIVERS________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00002         ;
+                      ( cubix_floppy.asm):00003         ;       CUBIX floppy drivers for MBC FDC card
+                      ( cubix_floppy.asm):00004         ;
+                      ( cubix_floppy.asm):00005         ;       Entry points:
+                      ( cubix_floppy.asm):00006         ;               FL_SETUP        - called during OS init
+                      ( cubix_floppy.asm):00007         ;               FL_READ_SECTOR  - read a sector from drive
+                      ( cubix_floppy.asm):00008         ;               FL_WRITE_SECTOR - write a sector to drive
+                      ( cubix_floppy.asm):00009         ;
+                      ( cubix_floppy.asm):00010         ;________________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00011         ;
+                      ( cubix_floppy.asm):00012         ;*
+                      ( cubix_floppy.asm):00013         ;* HARDWARE I/O ADDRESSES
+                      ( cubix_floppy.asm):00014         ;*
+     0530             ( cubix_floppy.asm):00015         FDC_MSR         = $0530                           ; ADDRESS OF MAIN STATUS REGISTER
+     0531             ( cubix_floppy.asm):00016         FDC_DATA        = $0531                           ; FLOPPY DATA REGISTER
+     0533             ( cubix_floppy.asm):00017         FDC_RESET       = $0533                           ; FLOPPY RESET
+     0535             ( cubix_floppy.asm):00018         FDC_DCR         = $0535                           ; LOAD CONTROL REGISTER
+     0536             ( cubix_floppy.asm):00019         FDC_DOR         = $0536                           ; CONFIGURATION CONTROL REGISTER
+     0537             ( cubix_floppy.asm):00020         FDC_TC          = $0537                           ; TERMINAL COUNT
+                      ( cubix_floppy.asm):00021         
+                      ( cubix_floppy.asm):00022         ;
+                      ( cubix_floppy.asm):00023         ; FDC COMMANDS
+                      ( cubix_floppy.asm):00024         ;
+     0006             ( cubix_floppy.asm):00025         CFD_READ        = %00000110                       ; CMD,HDS/DS,C,H,R,N,EOT,GPL,DTL --> ST0,ST1,ST2,C,H,R,N
+     000C             ( cubix_floppy.asm):00026         CFD_READDEL     = %00001100                       ; CMD,HDS/DS,C,H,R,N,EOT,GPL,DTL --> ST0,ST1,ST2,C,H,R,N
+     0005             ( cubix_floppy.asm):00027         CFD_WRITE       = %00000101                       ; CMD,HDS/DS,C,H,R,N,EOT,GPL,DTL --> ST0,ST1,ST2,C,H,R,N
+     0009             ( cubix_floppy.asm):00028         CFD_WRITEDEL    = %00001001                       ; CMD,HDS/DS,C,H,R,N,EOT,GPL,DTL --> ST0,ST1,ST2,C,H,R,N
+     0002             ( cubix_floppy.asm):00029         CFD_READTRK     = %00000010                       ; CMD,HDS/DS,C,H,R,N,EOT,GPL,DTL --> ST0,ST1,ST2,C,H,R,N
+     000A             ( cubix_floppy.asm):00030         CFD_READID      = %00001010                       ; CMD,HDS/DS --> ST0,ST1,ST2,C,H,R,N
+     000D             ( cubix_floppy.asm):00031         CFD_FMTTRK      = %00001101                       ; CMD,HDS/DS,N,SC,GPL,D --> ST0,ST1,ST2,C,H,R,N
+     0011             ( cubix_floppy.asm):00032         CFD_SCANEQ      = %00010001                       ; CMD,HDS/DS,C,H,R,N,EOT,GPL,STP --> ST0,ST1,ST2,C,H,R,N
+     0019             ( cubix_floppy.asm):00033         CFD_SCANLOEQ    = %00011001                       ; CMD,HDS/DS,C,H,R,N,EOT,GPL,STP --> ST0,ST1,ST2,C,H,R,N
+     001D             ( cubix_floppy.asm):00034         CFD_SCANHIEQ    = %00011101                       ; CMD,HDS/DS,C,H,R,N,EOT,GPL,STP --> ST0,ST1,ST2,C,H,R,N
+     0007             ( cubix_floppy.asm):00035         CFD_RECAL       = %00000111                       ; CMD,DS --> <EMPTY>
+     0008             ( cubix_floppy.asm):00036         CFD_SENSEINT    = %00001000                       ; CMD --> ST0,PCN
+     0003             ( cubix_floppy.asm):00037         CFD_SPECIFY     = %00000011                       ; CMD,SRT/HUT,HLT/ND --> <EMPTY>
+     0004             ( cubix_floppy.asm):00038         CFD_DRVSTAT     = %00000100                       ; CMD,HDS/DS --> ST3
+     000F             ( cubix_floppy.asm):00039         CFD_SEEK        = %00001111                       ; CMD,HDS/DS --> <EMPTY>
+     0010             ( cubix_floppy.asm):00040         CFD_VERSION     = %00010000                       ; CMD --> ST0
+                      ( cubix_floppy.asm):00041         
+     0040             ( cubix_floppy.asm):00042         CFD_MFM         = %01000000                       ;
+                      ( cubix_floppy.asm):00043         
+                      ( cubix_floppy.asm):00044         ;
+                      ( cubix_floppy.asm):00045         ;
+                      ( cubix_floppy.asm):00046         ; Specify Command:
+                      ( cubix_floppy.asm):00047         ; +-----+-----+-----+-----+-----+-----+-----+-----+-----+
+                      ( cubix_floppy.asm):00048         ; |Byte |  7  |  6  |  5  |  4  |  3  |  2  |  1  |  0  |
+                      ( cubix_floppy.asm):00049         ; +-----+-----+-----+-----+-----+-----+-----+-----+-----+
+                      ( cubix_floppy.asm):00050         ; |  0  |  0  |  0  |  0  |  0  |  0  |  0  |  1  |  1  |
+                      ( cubix_floppy.asm):00051         ; |  1  | ----- STEP RATE ----- | -- HEAD UNLOAD TIME - |
+                      ( cubix_floppy.asm):00052         ; |  2  | ------------ HEAD LOAD TIME ----------- | NDM |
+                      ( cubix_floppy.asm):00053         ; +-----+-----+-----+-----+-----+-----+-----+-----+-----+
+                      ( cubix_floppy.asm):00054         ;
+                      ( cubix_floppy.asm):00055         ;
+                      ( cubix_floppy.asm):00056         ; Step Rate (milliseconds):              Head Unload Time (milliseconds):       Head Load Time (milliseconds):
+                      ( cubix_floppy.asm):00057         ; +------+------+------+------+------+   +------+------+------+------+------+   +------+------+------+------+------+
+                      ( cubix_floppy.asm):00058         ; |      |         BITRATE           |   |      |         BITRATE           |   |      |         BITRATE           |
+                      ( cubix_floppy.asm):00059         ; |  VAL | 1.0M | 500K | 300K | 250K |   |  VAL | 1.0M | 500K | 300K | 250K |   |  VAL | 1.0M | 500K | 300K | 250K |
+                      ( cubix_floppy.asm):00060         ; +------+------+------+------+------+   +------+------+------+------+------+   +------+------+------+------+------+
+                      ( cubix_floppy.asm):00061         ; |    0 |  8.0 | 16.0 | 26.7 | 32.0 |   |    0 |  128 |  256 |  426 |  512 |   |    0 |  128 |  256 |  426 |  512 |
+                      ( cubix_floppy.asm):00062         ; |    1 |  7.5 | 15.0 | 25.0 | 30.0 |   |    1 |    8 |   16 | 26.7 |   32 |   |    1 |    1 |    2 |  3.3 |    4 |
+                      ( cubix_floppy.asm):00063         ; |    2 |  7.0 | 14.0 | 23.3 | 28.0 |   |    2 |   16 |   32 | 53.3 |   64 |   |    2 |    2 |    4 |  6.7 |    8 |
+                      ( cubix_floppy.asm):00064         ; |  ... |  ... |  ... |  ... |  ... |   |  ... |  ... |  ... |  ... |  ... |   |  ... |  ... |  ... |  ... |  ... |
+                      ( cubix_floppy.asm):00065         ; |   14 |  1.0 |  2.0 |  3.3 |  4.0 |   |   14 |  112 |  224 |  373 |  448 |   |  126 |  126 |  252 |  420 |  504 |
+                      ( cubix_floppy.asm):00066         ; |   15 |  0.5 |  1.0 |  1.7 |  2.0 |   |   15 |  120 |  240 |  400 |  480 |   |  127 |  127 |  254 |  423 |  508 |
+                      ( cubix_floppy.asm):00067         ; +------+------+------+------+------+   +------+------+------+------+------+   +------+------+------+------+------+
+                      ( cubix_floppy.asm):00068         ;
+                      ( cubix_floppy.asm):00069         ; IBM PS/2 CALLS FOR:
+                      ( cubix_floppy.asm):00070         ;   STEP RATE: 3ms (6ms FOR ALL 41mm OR 720K DRIVES)
+                      ( cubix_floppy.asm):00071         ;   HEAD LOAD TIME: 15ms
+                      ( cubix_floppy.asm):00072         
+     000C             ( cubix_floppy.asm):00073         DOR_INIT        = %00001100                       ; SOFT RESET INACTIVE, DMA ENABLED
+     000C             ( cubix_floppy.asm):00074         DOR_BR250       = DOR_INIT
+     000C             ( cubix_floppy.asm):00075         DOR_BR500       = DOR_INIT
+                      ( cubix_floppy.asm):00076         
+                      ( cubix_floppy.asm):00077         
+                      ( cubix_floppy.asm):00078         
+     0006             ( cubix_floppy.asm):00079         FLOPPY_RETRIES  = 6                               ; HOW ABOUT SIX RETIRES?
+     0002             ( cubix_floppy.asm):00080         FLOPPY_RETRIES1 = 2                               ; TWO ITERATIONS OF RECAL?
+                      ( cubix_floppy.asm):00081         
+                      ( cubix_floppy.asm):00082         ;__FL_SETUP______________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00083         ;
+                      ( cubix_floppy.asm):00084         ;       SETUP FLOPPY DRIVE SETTINGS
+                      ( cubix_floppy.asm):00085         ;________________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00086         ;
+8E56                  ( cubix_floppy.asm):00087         FL_SETUP:
+8E56 8E91F2           ( cubix_floppy.asm):00088                 LDX     #FMESSAGE1
+8E59 BD922A           ( cubix_floppy.asm):00089                 JSR     WRSTR                             ; DO PROMPT
+                      ( cubix_floppy.asm):00090         ;
+8E5C 8E9200           ( cubix_floppy.asm):00091                 LDX     #FMESSAGE2
+8E5F BD922A           ( cubix_floppy.asm):00092                 JSR     WRSTR                             ; DO PROMPT
+8E62 CC0530           ( cubix_floppy.asm):00093                 LDD     #FDC_MSR                          ; GET BASE PORT
+8E65 BD9237           ( cubix_floppy.asm):00094                 JSR     WRHEXW                            ; PRINT BASE PORT
+8E68 BD9189           ( cubix_floppy.asm):00095                 JSR     FD_DETECT                         ; CHECK FOR FDC
+8E6B 8100             ( cubix_floppy.asm):00096                 CMPA    #$00
+8E6D 270C             ( cubix_floppy.asm):00097                 BEQ     >                                 ; CONTINUE IF FOUND
+8E6F 8E9208           ( cubix_floppy.asm):00098                 LDX     #FMESSAGE3
+8E72 BD922A           ( cubix_floppy.asm):00099                 JSR     WRSTR                             ; DO PROMPT
+8E75 BD9221           ( cubix_floppy.asm):00100                 JSR     LFCR                              ; AND CRLF
+8E78 86FF             ( cubix_floppy.asm):00101                 LDA     #$FF
+8E7A 39               ( cubix_floppy.asm):00102                 RTS                                       ; BAIL OUT
+                      ( cubix_floppy.asm):00103         !
+8E7B 8E9216           ( cubix_floppy.asm):00104                 LDX     #FMESSAGE4
+8E7E BD922A           ( cubix_floppy.asm):00105                 JSR     WRSTR                             ; DO PROMPT
+8E81 BD9221           ( cubix_floppy.asm):00106                 JSR     LFCR                              ; AND CRLF
+8E84 860C             ( cubix_floppy.asm):00107                 LDA     #DOR_INIT                         ; RESET SETTINGS
+8E86 B70536           ( cubix_floppy.asm):00108                 STA     FDC_DOR
+                      ( cubix_floppy.asm):00109         
+8E89 BD911A           ( cubix_floppy.asm):00110                 JSR     CHECKINT                          ;
+8E8C 8603             ( cubix_floppy.asm):00111                 LDA     #CFD_SPECIFY                      ; SPECIFY COMMAND
+8E8E BD90C6           ( cubix_floppy.asm):00112                 JSR     PFDATA                            ; OUTPUT TO FDC
+8E91 867F             ( cubix_floppy.asm):00113                 LDA     #$7F                              ; 6 MS STEP, 480 MS HEAD UNLOAD
+8E93 BD90C6           ( cubix_floppy.asm):00114                 JSR     PFDATA                            ; OUTPUT TO FDC
+8E96 8605             ( cubix_floppy.asm):00115                 LDA     #$05                              ; 508 MS HEAD LOAD, NON-DMA MODE
+8E98 BD90C6           ( cubix_floppy.asm):00116                 JSR     PFDATA                            ; OUTPUT TO FDC
+                      ( cubix_floppy.asm):00117         
+8E9B BD911A           ( cubix_floppy.asm):00118                 JSR     CHECKINT                          ; SEND SEVERAL INTERRUPTS TO ENSURE PROPER STATE
+8E9E BD911A           ( cubix_floppy.asm):00119                 JSR     CHECKINT                          ;
+8EA1 BD911A           ( cubix_floppy.asm):00120                 JSR     CHECKINT                          ;
+8EA4 BD911A           ( cubix_floppy.asm):00121                 JSR     CHECKINT                          ;
+8EA7 BD911A           ( cubix_floppy.asm):00122                 JSR     CHECKINT                          ;
+8EAA BD911A           ( cubix_floppy.asm):00123                 JSR     CHECKINT                          ;
+                      ( cubix_floppy.asm):00124         
+8EAD 8600             ( cubix_floppy.asm):00125                 LDA     #$00
+8EAF B701FB           ( cubix_floppy.asm):00126                 STA     CURRENTDEVICE
+8EB2 8610             ( cubix_floppy.asm):00127                 LDA     #%00010000
+8EB4 B701E6           ( cubix_floppy.asm):00128                 STA     DSKUNIT
+8EB7 BD909C           ( cubix_floppy.asm):00129                 JSR     RECAL                             ;
+8EBA 8627             ( cubix_floppy.asm):00130                 LDA     #39                               ;
+8EBC B701F9           ( cubix_floppy.asm):00131                 STA     CURRENTCYL                        ;
+8EBF BD907F           ( cubix_floppy.asm):00132                 JSR     SETTRK1
+8EC2 BD909C           ( cubix_floppy.asm):00133                 JSR     RECAL                             ;
+                      ( cubix_floppy.asm):00134         
+8EC5 8601             ( cubix_floppy.asm):00135                 LDA     #$01
+8EC7 B701FB           ( cubix_floppy.asm):00136                 STA     CURRENTDEVICE
+8ECA 8621             ( cubix_floppy.asm):00137                 LDA     #%00100001
+8ECC B701E6           ( cubix_floppy.asm):00138                 STA     DSKUNIT
+8ECF BD909C           ( cubix_floppy.asm):00139                 JSR     RECAL                             ;
+8ED2 8627             ( cubix_floppy.asm):00140                 LDA     #39                               ;
+8ED4 B701F9           ( cubix_floppy.asm):00141                 STA     CURRENTCYL                        ;
+8ED7 BD907F           ( cubix_floppy.asm):00142                 JSR     SETTRK1
+8EDA BD909C           ( cubix_floppy.asm):00143                 JSR     RECAL                             ;
+8EDD 860C             ( cubix_floppy.asm):00144                 LDA     #DOR_INIT                         ; RESET SETTINGS
+8EDF B70536           ( cubix_floppy.asm):00145                 STA     FDC_DOR
+8EE2 39               ( cubix_floppy.asm):00146                 RTS
+                      ( cubix_floppy.asm):00147         
+                      ( cubix_floppy.asm):00148         
+                      ( cubix_floppy.asm):00149         ;__FL_READ_SECTOR________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00150         ;
+                      ( cubix_floppy.asm):00151         ;       READ A FLOPPY SECTOR
+                      ( cubix_floppy.asm):00152         ;________________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00153         ;
+                      ( cubix_floppy.asm):00154         ;
+8EE3                  ( cubix_floppy.asm):00155         FL_READ_SECTOR:
+8EE3 B601E7           ( cubix_floppy.asm):00156                 LDA     FLOPPY_DETCT
+8EE6 8100             ( cubix_floppy.asm):00157                 CMPA    #$00
+8EE8 2701             ( cubix_floppy.asm):00158                 BEQ     >
+8EEA 39               ( cubix_floppy.asm):00159                 RTS
+                      ( cubix_floppy.asm):00160         !
+8EEB B601FB           ( cubix_floppy.asm):00161                 LDA     CURRENTDEVICE
+8EEE 8401             ( cubix_floppy.asm):00162                 ANDA    #$01
+8EF0 8A10             ( cubix_floppy.asm):00163                 ORA     #%00010000
+8EF2 B701E6           ( cubix_floppy.asm):00164                 STA     DSKUNIT                           ;
+8EF5 8600             ( cubix_floppy.asm):00165                 LDA     #$00
+8EF7 B701E8           ( cubix_floppy.asm):00166                 STA     FLRETRY                           ; BLANK RETRIES
+8EFA B701E9           ( cubix_floppy.asm):00167                 STA     FLRETRY1
+8EFD 860C             ( cubix_floppy.asm):00168                 LDA     #DOR_INIT
+8EFF BA01E6           ( cubix_floppy.asm):00169                 ORA     DSKUNIT                           ;
+8F02 B70536           ( cubix_floppy.asm):00170                 STA     FDC_DOR                           ; OUTPUT TO CONTROLLER
+                      ( cubix_floppy.asm):00171         
+8F05                  ( cubix_floppy.asm):00172         READFL1:
+8F05 8646             ( cubix_floppy.asm):00173                 LDA     #CFD_READ|CFD_MFM                 ; BIT 6 SETS MFM, 06H IS READ COMMAND
+8F07 B701E4           ( cubix_floppy.asm):00174                 STA     FCMD                              ; SET COMMAND
+8F0A BD8F81           ( cubix_floppy.asm):00175                 JSR     DSKOP                             ; DO DISK OPERATION
+                      ( cubix_floppy.asm):00176         
+8F0D 8100             ( cubix_floppy.asm):00177                 CMPA    #$00
+8F0F 2722             ( cubix_floppy.asm):00178                 BEQ     READFLDONE                        ; OPERATION SUCCESSFUL
+8F11 7C01E8           ( cubix_floppy.asm):00179                 INC     FLRETRY                           ; LET'S RETRY
+8F14 B601E8           ( cubix_floppy.asm):00180                 LDA     FLRETRY
+8F17 8106             ( cubix_floppy.asm):00181                 CMPA    #FLOPPY_RETRIES
+8F19 26EA             ( cubix_floppy.asm):00182                 BNE     READFL1
+8F1B BD909C           ( cubix_floppy.asm):00183                 JSR     RECAL                             ; AFTER X RETRIES, LET'S RECAL THE HEAD
+8F1E BD906D           ( cubix_floppy.asm):00184                 JSR     SETTRACK                          ;
+8F21 8600             ( cubix_floppy.asm):00185                 LDA     #$00                              ;
+8F23 B701E8           ( cubix_floppy.asm):00186                 STA     FLRETRY                           ; MORE RETRIES!
+8F26 7C01E9           ( cubix_floppy.asm):00187                 INC     FLRETRY1
+8F29 B601E9           ( cubix_floppy.asm):00188                 LDA     FLRETRY1
+8F2C 8102             ( cubix_floppy.asm):00189                 CMPA    #FLOPPY_RETRIES1
+8F2E 26D5             ( cubix_floppy.asm):00190                 BNE     READFL1
+8F30 86FF             ( cubix_floppy.asm):00191                 LDA     #$FF                              ; A = 0 ON RETURN = OPERATION OK
+8F32 39               ( cubix_floppy.asm):00192                 RTS                                       ; A = $FF ON RETURN = OPERATION ERROR
+8F33                  ( cubix_floppy.asm):00193         READFLDONE:
+8F33 8600             ( cubix_floppy.asm):00194                 LDA     #$00                              ; A = 0 ON RETURN = OPERATION OK
+8F35 39               ( cubix_floppy.asm):00195                 RTS
+                      ( cubix_floppy.asm):00196         
+                      ( cubix_floppy.asm):00197         ;__FL_WRITE_SECTOR_______________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00198         ;
+                      ( cubix_floppy.asm):00199         ;       WRITE A FLOPPY SECTOR
+                      ( cubix_floppy.asm):00200         ;________________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00201         ;
+8F36                  ( cubix_floppy.asm):00202         FL_WRITE_SECTOR:
+8F36 B601E7           ( cubix_floppy.asm):00203                 LDA     FLOPPY_DETCT
+8F39 8100             ( cubix_floppy.asm):00204                 CMPA    #$00
+8F3B 2701             ( cubix_floppy.asm):00205                 BEQ     >
+8F3D 39               ( cubix_floppy.asm):00206                 RTS
+                      ( cubix_floppy.asm):00207         !
+8F3E B601FB           ( cubix_floppy.asm):00208                 LDA     CURRENTDEVICE
+8F41 8401             ( cubix_floppy.asm):00209                 ANDA    #$01
+8F43 8A10             ( cubix_floppy.asm):00210                 ORA     #%00010000
+8F45 B701E6           ( cubix_floppy.asm):00211                 STA     DSKUNIT                           ;
+8F48 8600             ( cubix_floppy.asm):00212                 LDA     #$00
+8F4A B701E8           ( cubix_floppy.asm):00213                 STA     FLRETRY                           ; BLANK RETRIES
+8F4D B701E9           ( cubix_floppy.asm):00214                 STA     FLRETRY1
+                      ( cubix_floppy.asm):00215         
+8F50                  ( cubix_floppy.asm):00216         WRITEFL1:
+8F50 8645             ( cubix_floppy.asm):00217                 LDA     #CFD_WRITE|CFD_MFM                ; BIT 6 SETS MFM, 05H IS WRITE COMMAND
+8F52 B701E4           ( cubix_floppy.asm):00218                 STA     FCMD
+8F55 BD8F81           ( cubix_floppy.asm):00219                 JSR     DSKOP
+                      ( cubix_floppy.asm):00220         
+8F58 8100             ( cubix_floppy.asm):00221                 CMPA    #$00
+8F5A 2722             ( cubix_floppy.asm):00222                 BEQ     WRITEFLDONE
+8F5C 7C01E8           ( cubix_floppy.asm):00223                 INC     FLRETRY
+8F5F B601E8           ( cubix_floppy.asm):00224                 LDA     FLRETRY
+8F62 8106             ( cubix_floppy.asm):00225                 CMPA    #FLOPPY_RETRIES
+8F64 26EA             ( cubix_floppy.asm):00226                 BNE     WRITEFL1
+8F66 BD909C           ( cubix_floppy.asm):00227                 JSR     RECAL
+8F69 BD906D           ( cubix_floppy.asm):00228                 JSR     SETTRACK
+8F6C 8600             ( cubix_floppy.asm):00229                 LDA     #$00
+8F6E B701E8           ( cubix_floppy.asm):00230                 STA     FLRETRY
+8F71 7C01E9           ( cubix_floppy.asm):00231                 INC     FLRETRY1
+8F74 B601E9           ( cubix_floppy.asm):00232                 LDA     FLRETRY1
+8F77 8102             ( cubix_floppy.asm):00233                 CMPA    #FLOPPY_RETRIES1
+8F79 26D5             ( cubix_floppy.asm):00234                 BNE     WRITEFL1
+8F7B 86FF             ( cubix_floppy.asm):00235                 LDA     #$FF                              ; INVALIDATE CACHE
+8F7D 39               ( cubix_floppy.asm):00236                 RTS                                       ; A = $FF ON RETURN = OPERATION ERROR
+8F7E                  ( cubix_floppy.asm):00237         WRITEFLDONE:
+8F7E 8600             ( cubix_floppy.asm):00238                 LDA     #$00                              ; A = 0 ON RETURN = OPERATION OK
+8F80 39               ( cubix_floppy.asm):00239                 RTS
+                      ( cubix_floppy.asm):00240         
+                      ( cubix_floppy.asm):00241         
+                      ( cubix_floppy.asm):00242         ;__DSKOP__________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00243         ;
+                      ( cubix_floppy.asm):00244         ;       PERFORM A DISK OPERATION
+                      ( cubix_floppy.asm):00245         ;________________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00246         ;
+8F81                  ( cubix_floppy.asm):00247         DSKOP:
+8F81 1A10             ( cubix_floppy.asm):00248                 SEI
+8F83 BD911A           ( cubix_floppy.asm):00249                 JSR     CHECKINT                          ; CHECK INTERRUPT STATUS, MAKE SURE IT IS CLEAR
+8F86 81FF             ( cubix_floppy.asm):00250                 CMPA    #$FF                              ; DID IT RETURN WITH ERROR CODE?
+8F88 2710             ( cubix_floppy.asm):00251                 BEQ     DSKEXIT                           ; IF YES, EXIT WITH ERROR CODE
+                      ( cubix_floppy.asm):00252         ;
+8F8A BD906D           ( cubix_floppy.asm):00253                 JSR     SETTRACK                          ; PERFORM SEEK TO TRACK
+                      ( cubix_floppy.asm):00254         ;
+8F8D B601E4           ( cubix_floppy.asm):00255                 LDA     FCMD                              ; WHAT COMMAND IS PENDING?
+8F90 8146             ( cubix_floppy.asm):00256                 CMPA    #CFD_READ|CFD_MFM                 ; IS IT A READ COMMAND?
+8F92 2603             ( cubix_floppy.asm):00257                 BNE     GWRR_POLL                         ;
+8F94 7E8FF1           ( cubix_floppy.asm):00258                 JMP     RDD_POLL                          ;
+8F97                  ( cubix_floppy.asm):00259         GWRR_POLL:
+8F97 7E903F           ( cubix_floppy.asm):00260                 JMP     WRR_POLL                          ;
+8F9A                  ( cubix_floppy.asm):00261         DSKEXIT:
+8F9A 8600             ( cubix_floppy.asm):00262                 LDA     #0                                ; SET MOTOR OFF
+8F9C B70536           ( cubix_floppy.asm):00263                 STA     FDC_DOR                           ; OUTPUT TO CONTROLLER
+8F9F 86FF             ( cubix_floppy.asm):00264                 LDA     #$FF                              ; SET IF ERROR
+8FA1 1CEF             ( cubix_floppy.asm):00265                 CLI
+8FA3 39               ( cubix_floppy.asm):00266                 RTS
+                      ( cubix_floppy.asm):00267         
+8FA4                  ( cubix_floppy.asm):00268         SNDFDWR:
+8FA4 1CFE             ( cubix_floppy.asm):00269                 CLC
+8FA6 B601E6           ( cubix_floppy.asm):00270                 LDA     DSKUNIT                           ; GET DISK UNIT NUMBER
+8FA9 8401             ( cubix_floppy.asm):00271                 ANDA    #$01                              ; MASK FOR TWO DRIVES.
+8FAB B791F1           ( cubix_floppy.asm):00272                 STA     TMPSTORAGE                        ; PARK IT IN TEMP
+8FAE B601F8           ( cubix_floppy.asm):00273                 LDA     CURRENTHEAD                       ; GET HEAD SELECTION
+8FB1 8401             ( cubix_floppy.asm):00274                 ANDA    #$01                              ; INSURE SINGLE BIT
+8FB3 48               ( cubix_floppy.asm):00275                 ASLA                                      ;
+8FB4 48               ( cubix_floppy.asm):00276                 ASLA                                      ; MOVE HEAD TO BIT 2 POSITION
+8FB5 BA91F1           ( cubix_floppy.asm):00277                 ORA     TMPSTORAGE                        ; OR HEAD TO UNIT BYTE IN COMMAND BLOCK
+8FB8 B791F1           ( cubix_floppy.asm):00278                 STA     TMPSTORAGE                        ; STORE IN UNIT
+8FBB B601E4           ( cubix_floppy.asm):00279                 LDA     FCMD                              ;
+8FBE BD90C6           ( cubix_floppy.asm):00280                 JSR     PFDATA                            ; PUSH COMMAND TO I8272
+8FC1 B691F1           ( cubix_floppy.asm):00281                 LDA     TMPSTORAGE                        ;
+8FC4 BD90C6           ( cubix_floppy.asm):00282                 JSR     PFDATA                            ;
+8FC7 B601F9           ( cubix_floppy.asm):00283                 LDA     CURRENTCYL                        ;
+8FCA BD90C6           ( cubix_floppy.asm):00284                 JSR     PFDATA                            ;
+8FCD B601F8           ( cubix_floppy.asm):00285                 LDA     CURRENTHEAD                       ;
+8FD0 BD90C6           ( cubix_floppy.asm):00286                 JSR     PFDATA                            ;
+8FD3 1CFE             ( cubix_floppy.asm):00287                 CLC                                       ;
+8FD5 B601FA           ( cubix_floppy.asm):00288                 LDA     CURRENTSEC                        ;
+8FD8 4C               ( cubix_floppy.asm):00289                 INCA                                      ;
+8FD9 BD90C6           ( cubix_floppy.asm):00290                 JSR     PFDATA                            ;
+8FDC 8602             ( cubix_floppy.asm):00291                 LDA     #$02                              ;
+8FDE BD90C6           ( cubix_floppy.asm):00292                 JSR     PFDATA                            ; WHAT DENSITY
+8FE1 8609             ( cubix_floppy.asm):00293                 LDA     #$09                              ;
+8FE3 BD90C6           ( cubix_floppy.asm):00294                 JSR     PFDATA                            ; ASSUME SC (SECTOR COUNT)  EOT
+8FE6 861B             ( cubix_floppy.asm):00295                 LDA     #$1B                              ;
+8FE8 BD90C6           ( cubix_floppy.asm):00296                 JSR     PFDATA                            ; WHAT GAP IS NEEDED
+8FEB 86FF             ( cubix_floppy.asm):00297                 LDA     #$FF                              ; DTL, IS THE LAST COMMAND BYTE TO I8272
+8FED BD90FB           ( cubix_floppy.asm):00298                 JSR     PFDATAS
+8FF0 39               ( cubix_floppy.asm):00299                 RTS
+                      ( cubix_floppy.asm):00300         
+                      ( cubix_floppy.asm):00301         
+                      ( cubix_floppy.asm):00302         ; PERFORM READ
+                      ( cubix_floppy.asm):00303         ; FROM READ TO READ MUST NOT EXCEED 25US WORST CASE MIN. (AT 2MHZ IS 2,000,000 CYCLES PER SECOND == 50 CYCLE BUDGET.)
+                      ( cubix_floppy.asm):00304         ;
+8FF1                  ( cubix_floppy.asm):00305         RDD_POLL:
+8FF1 8E0000           ( cubix_floppy.asm):00306                 LDX     #$00
+8FF4 108E0000         ( cubix_floppy.asm):00307                 LDY     #$00
+8FF8 BD8FA4           ( cubix_floppy.asm):00308                 JSR     SNDFDWR                           ;
+8FFB                  ( cubix_floppy.asm):00309         RDS1:
+8FFB B60530           ( cubix_floppy.asm):00310                 LDA     FDC_MSR                           ; GET STATUS  (4 CYCLES)
+8FFE 2AFB             ( cubix_floppy.asm):00311                 BPL     RDS1                              ; FDC IS NOT READY, WAIT FOR IT (UP TO 4 CYCLES)
+9000 8420             ( cubix_floppy.asm):00312                 ANDA    #%00100000                        ; EXECUTION MODE? (2 CYCLES)
+9002 2722             ( cubix_floppy.asm):00313                 BEQ     DSKOPEND                          ; NO, ERROR
+9004                  ( cubix_floppy.asm):00314         RDS1A:
+9004 B60531           ( cubix_floppy.asm):00315                 LDA     FDC_DATA                          ; GET DATA (4 CYCLES)
+9007 A7A90300         ( cubix_floppy.asm):00316                 STA     HSTBUF,Y                          ; WRITE IT (5 CYCLES)
+900B 3121             ( cubix_floppy.asm):00317                 INY                                       ; (2 CYCLES)
+900D 26EC             ( cubix_floppy.asm):00318                 BNE     RDS1                              ; KEEP GOING (UP TO 4 CYCLES)   TOTAL =
+900F 8E0000           ( cubix_floppy.asm):00319                 LDX     #$00
+9012                  ( cubix_floppy.asm):00320         RDS2:
+9012 B60530           ( cubix_floppy.asm):00321                 LDA     FDC_MSR                           ; GET STATUS
+9015 2AFB             ( cubix_floppy.asm):00322                 BPL     RDS2                              ; FDC IS NOT READY, WAIT FOR IT (UP TO 4 CYCLES)
+9017 8420             ( cubix_floppy.asm):00323                 ANDA    #%00100000                        ; EXECUTION MODE?
+9019 270B             ( cubix_floppy.asm):00324                 BEQ     DSKOPEND                          ; NO, ERROR
+901B                  ( cubix_floppy.asm):00325         RDS2A:
+901B B60531           ( cubix_floppy.asm):00326                 LDA     FDC_DATA                          ; GET DATA
+901E A7A90400         ( cubix_floppy.asm):00327                 STA     HSTBUF+256,Y                      ; WRITE IT
+9022 3121             ( cubix_floppy.asm):00328                 INY
+9024 26EC             ( cubix_floppy.asm):00329                 BNE     RDS2                              ; KEEP GOING
+9026                  ( cubix_floppy.asm):00330         DSKOPEND:
+9026 B60537           ( cubix_floppy.asm):00331                 LDA     FDC_TC
+9029 BD91D8           ( cubix_floppy.asm):00332                 JSR     FDDELAY
+                      ( cubix_floppy.asm):00333         ;
+902C BD9169           ( cubix_floppy.asm):00334                 JSR     GFDATA                            ;GET ERROR TYPE
+902F B701E5           ( cubix_floppy.asm):00335                 STA     FLERR
+                      ( cubix_floppy.asm):00336         ;* CLEAR OUT ANY REMAINING DATA
+9032                  ( cubix_floppy.asm):00337         RESUL3:
+9032 BD9169           ( cubix_floppy.asm):00338                 JSR     GFDATA                            ;READ BYTE FROM FDC
+9035 8100             ( cubix_floppy.asm):00339                 CMPA    #$00
+9037 26F9             ( cubix_floppy.asm):00340                 BNE     RESUL3                            ;CLEAR THEM ALL
+9039 B601E5           ( cubix_floppy.asm):00341                 LDA     FLERR                             ;
+903C 84C0             ( cubix_floppy.asm):00342                 ANDA    #%11000000                        ;
+903E 39               ( cubix_floppy.asm):00343                 RTS
+                      ( cubix_floppy.asm):00344         
+                      ( cubix_floppy.asm):00345         
+903F                  ( cubix_floppy.asm):00346         WRR_POLL:
+903F BD8FA4           ( cubix_floppy.asm):00347                 JSR     SNDFDWR                           ;
+9042                  ( cubix_floppy.asm):00348         WRS1:   ;
+9042 B60530           ( cubix_floppy.asm):00349                 LDA     FDC_MSR                           ; GET STATUS
+9045 2AFB             ( cubix_floppy.asm):00350                 BPL     WRS1                              ; NOT READY
+9047 8420             ( cubix_floppy.asm):00351                 ANDA    #%00100000                        ; EXECUTION MODE?
+9049 271F             ( cubix_floppy.asm):00352                 BEQ     WRS3                              ; NO, ERROR
+904B A6A90300         ( cubix_floppy.asm):00353                 LDA     HSTBUF,Y                          ; WRITE IT
+904F B70531           ( cubix_floppy.asm):00354                 STA     FDC_DATA                          ; WRITE TO FDC
+9052 3121             ( cubix_floppy.asm):00355                 INY
+9054 26EC             ( cubix_floppy.asm):00356                 BNE     WRS1                              ; DO NEXT
+9056                  ( cubix_floppy.asm):00357         WRS2:   ;
+9056 B60530           ( cubix_floppy.asm):00358                 LDA     FDC_MSR                           ; GET STATUS
+9059 2AFB             ( cubix_floppy.asm):00359                 BPL     WRS2                              ; NOT READY
+905B 8420             ( cubix_floppy.asm):00360                 ANDA    #%00100000                        ; EXECUTION MODE?
+905D 270B             ( cubix_floppy.asm):00361                 BEQ     WRS3                              ; NO, ERROR
+905F A6A90400         ( cubix_floppy.asm):00362                 LDA     HSTBUF+256,Y                      ; WRITE IT
+9063 B70531           ( cubix_floppy.asm):00363                 STA     FDC_DATA                          ; WRITE TO FDC
+9066 3121             ( cubix_floppy.asm):00364                 INY
+9068 26EC             ( cubix_floppy.asm):00365                 BNE     WRS2                              ; DO NEXT
+906A                  ( cubix_floppy.asm):00366         WRS3:
+906A 7E9026           ( cubix_floppy.asm):00367                 JMP     DSKOPEND                          ;
+                      ( cubix_floppy.asm):00368         
+                      ( cubix_floppy.asm):00369         
+                      ( cubix_floppy.asm):00370         ;__SETTRACK__________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00371         ;
+                      ( cubix_floppy.asm):00372         ;       SEEK TO A TRACK ON GIVEN UNIT
+                      ( cubix_floppy.asm):00373         ;       A: TRACK #
+                      ( cubix_floppy.asm):00374         ;________________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00375         ;
+906D                  ( cubix_floppy.asm):00376         SETTRACK:
+906D 860C             ( cubix_floppy.asm):00377                 LDA     #DOR_INIT
+906F BA01E6           ( cubix_floppy.asm):00378                 ORA     DSKUNIT                           ; SET MOTOR ON
+9072 B70536           ( cubix_floppy.asm):00379                 STA     FDC_DOR                           ; OUTPUT TO CONTROLLER
+                      ( cubix_floppy.asm):00380         
+                      ( cubix_floppy.asm):00381         ; ANY INTERUPT PENDING
+                      ( cubix_floppy.asm):00382         ; IF YES FIND OUT WHY/CLEAR
+9075 BD911A           ( cubix_floppy.asm):00383                 JSR     CHECKINT                          ; CHECK INTERRUPT STATUS, MAKE SURE IT IS CLEAR
+9078 81FF             ( cubix_floppy.asm):00384                 CMPA    #$FF                              ; DID IT RTSURN WITH ERROR CODE?
+907A 2603             ( cubix_floppy.asm):00385                 BNE     SETTRK1
+907C 7E90C5           ( cubix_floppy.asm):00386                 JMP     SETTRKEXIT                        ;
+                      ( cubix_floppy.asm):00387         
+                      ( cubix_floppy.asm):00388         ;
+907F                  ( cubix_floppy.asm):00389         SETTRK1:
+907F B601F9           ( cubix_floppy.asm):00390                 LDA     CURRENTCYL                        ; GET TRACK
+9082 8100             ( cubix_floppy.asm):00391                 CMPA    #$00                              ;
+9084 2716             ( cubix_floppy.asm):00392                 BEQ     RECAL                             ; IF 0 PERFORM RECAL INSTEAD OF SEEK
+9086 860F             ( cubix_floppy.asm):00393                 LDA     #CFD_SEEK                         ; SEEK COMMAND
+9088 BD90C6           ( cubix_floppy.asm):00394                 JSR     PFDATA                            ; PUSH COMMAND
+908B B601E6           ( cubix_floppy.asm):00395                 LDA     DSKUNIT                           ; SAY WHICH UNIT
+908E 8401             ( cubix_floppy.asm):00396                 ANDA    #$01
+9090 BD90C6           ( cubix_floppy.asm):00397                 JSR     PFDATA                            ; SEND THAT
+9093 B601F9           ( cubix_floppy.asm):00398                 LDA     CURRENTCYL                        ; TO WHAT TRACK
+9096 BD90C6           ( cubix_floppy.asm):00399                 JSR     PFDATA                            ; SEND THAT TOO
+9099 7E90B1           ( cubix_floppy.asm):00400                 JMP     WAINT                             ; WAIT FOR INTERRUPT SAYING DONE
+909C                  ( cubix_floppy.asm):00401         RECAL:
+909C 860C             ( cubix_floppy.asm):00402                 LDA     #DOR_INIT
+909E BA01E6           ( cubix_floppy.asm):00403                 ORA     DSKUNIT                           ; SET MOTOR ON
+90A1 B70536           ( cubix_floppy.asm):00404                 STA     FDC_DOR                           ; OUTPUT TO CONTROLLER
+90A4 8607             ( cubix_floppy.asm):00405                 LDA     #CFD_RECAL                        ; RECAL TO TRACK 0
+90A6 BD90C6           ( cubix_floppy.asm):00406                 JSR     PFDATA                            ; SEND IT
+90A9 B601E6           ( cubix_floppy.asm):00407                 LDA     DSKUNIT                           ; SAY WHICH UNIT
+90AC 8401             ( cubix_floppy.asm):00408                 ANDA    #$01
+90AE BD90C6           ( cubix_floppy.asm):00409                 JSR     PFDATA                            ; SEND THAT TOO
+                      ( cubix_floppy.asm):00410         ;
+90B1                  ( cubix_floppy.asm):00411         WAINT:
+90B1 3412             ( cubix_floppy.asm):00412                 PSHS    A,X
+90B3 8E0064           ( cubix_floppy.asm):00413                 LDX     #100
+90B6 BD91E1           ( cubix_floppy.asm):00414                 JSR     FDVDELAY
+90B9 3512             ( cubix_floppy.asm):00415                 PULS    A,X
+                      ( cubix_floppy.asm):00416         !
+90BB BD911A           ( cubix_floppy.asm):00417                 JSR     CHECKINT
+90BE B60530           ( cubix_floppy.asm):00418                 LDA     FDC_MSR                           ; READ SEEK STATUS
+90C1 840F             ( cubix_floppy.asm):00419                 ANDA    #%00001111                        ; ANY DRIVES SEEKING?
+90C3 26F6             ( cubix_floppy.asm):00420                 BNE     <                                 ; YES, WAIT FOR THEM
+                      ( cubix_floppy.asm):00421         ;
+90C5                  ( cubix_floppy.asm):00422         SETTRKEXIT:
+90C5 39               ( cubix_floppy.asm):00423                 RTS
+                      ( cubix_floppy.asm):00424         
+                      ( cubix_floppy.asm):00425         ;__PFDATA__________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00426         ;
+                      ( cubix_floppy.asm):00427         ; WRITE A COMMAND OR PARAMETER SEQUENCE
+                      ( cubix_floppy.asm):00428         ;
+                      ( cubix_floppy.asm):00429         ; TRANSFERS ARE SYNCHONIZED BY MSR D7 <RQM> AND D6 <DIO>
+                      ( cubix_floppy.asm):00430         ;       RQM  DIO
+                      ( cubix_floppy.asm):00431         ;       0       0       BUSY
+                      ( cubix_floppy.asm):00432         ;       1       0       WRITE TO DATA REGISTER PERMITTED
+                      ( cubix_floppy.asm):00433         ;       1       1       BYTE FOR READ BY HOST PENDING
+                      ( cubix_floppy.asm):00434         ;       0       1       BUSY
+                      ( cubix_floppy.asm):00435         ;
+                      ( cubix_floppy.asm):00436         ;________________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00437         ;
+90C6                  ( cubix_floppy.asm):00438         PFDATA:
+90C6 3402             ( cubix_floppy.asm):00439                 PSHS    A                                 ; SAVE DATA BYTE
+90C8 108E0000         ( cubix_floppy.asm):00440                 LDY     #$00
+90CC                  ( cubix_floppy.asm):00441         WRF1:
+90CC B60530           ( cubix_floppy.asm):00442                 LDA     FDC_MSR                           ; READ FDC STATUS
+90CF B791F1           ( cubix_floppy.asm):00443                 STA     TMPSTORAGE
+90D2 8480             ( cubix_floppy.asm):00444                 ANDA    #$80                              ;
+90D4 2609             ( cubix_floppy.asm):00445                 BNE     >
+90D6 3121             ( cubix_floppy.asm):00446                 INY
+90D8 26F2             ( cubix_floppy.asm):00447                 BNE     WRF1                              ; FDC IS NOT READY, WAIT FOR IT
+90DA 3502             ( cubix_floppy.asm):00448                 PULS    A
+90DC 86FF             ( cubix_floppy.asm):00449                 LDA     #$FF
+90DE 39               ( cubix_floppy.asm):00450                 RTS
+                      ( cubix_floppy.asm):00451         !
+90DF B691F1           ( cubix_floppy.asm):00452                 LDA     TMPSTORAGE
+90E2 8440             ( cubix_floppy.asm):00453                 ANDA    #$40                              ; TEST DIO BIT
+90E4 260F             ( cubix_floppy.asm):00454                 BNE     WRF2                              ; FDC IS OUT OF SYNC
+90E6 3502             ( cubix_floppy.asm):00455                 PULS    A                                 ; RESTORE DATA
+90E8 B70531           ( cubix_floppy.asm):00456                 STA     FDC_DATA                          ; WRITE TO FDC
+90EB BD91D8           ( cubix_floppy.asm):00457                 JSR     FDDELAY
+90EE BD91D8           ( cubix_floppy.asm):00458                 JSR     FDDELAY
+90F1 BD91D8           ( cubix_floppy.asm):00459                 JSR     FDDELAY
+90F4 39               ( cubix_floppy.asm):00460                 RTS
+                      ( cubix_floppy.asm):00461         ; FDC IS OUT OF SYNC CLEAR IT OUT AND RE-TRY
+90F5                  ( cubix_floppy.asm):00462         WRF2:
+90F5 B60531           ( cubix_floppy.asm):00463                 LDA     FDC_DATA                          ; READ DATA REGISTER
+90F8 7E90CC           ( cubix_floppy.asm):00464                 JMP     WRF1                              ; AND CONTINUE
+                      ( cubix_floppy.asm):00465         
+                      ( cubix_floppy.asm):00466         ;__PFDATAS_________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00467         ;
+                      ( cubix_floppy.asm):00468         ; WRITE A COMMAND OR PARAMETER SEQUENCE (NO PAUSE)
+                      ( cubix_floppy.asm):00469         ;
+                      ( cubix_floppy.asm):00470         ; TRANSFERS ARE SYNCHONIZED BY MSR D7 <RQM> AND D6 <DIO>
+                      ( cubix_floppy.asm):00471         ;       RQM  DIO
+                      ( cubix_floppy.asm):00472         ;       0       0       BUSY
+                      ( cubix_floppy.asm):00473         ;       1       0       WRITE TO DATA REGISTER PERMITTED
+                      ( cubix_floppy.asm):00474         ;       1       1       BYTE FOR READ BY HOST PENDING
+                      ( cubix_floppy.asm):00475         ;       0       1       BUSY
+                      ( cubix_floppy.asm):00476         ;
+                      ( cubix_floppy.asm):00477         ;________________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00478         ;
+90FB                  ( cubix_floppy.asm):00479         PFDATAS:
+90FB 3402             ( cubix_floppy.asm):00480                 PSHS    A                                 ; SAVE DATA BYTE
+90FD                  ( cubix_floppy.asm):00481         WRF1S:
+90FD B60530           ( cubix_floppy.asm):00482                 LDA     FDC_MSR                           ; READ FDC STATUS
+9100 B791F1           ( cubix_floppy.asm):00483                 STA     TMPSTORAGE
+9103 8480             ( cubix_floppy.asm):00484                 ANDA    #$80                              ;
+9105 27F6             ( cubix_floppy.asm):00485                 BEQ     WRF1S                             ; FDC IS NOT READY, WAIT FOR IT
+9107 B691F1           ( cubix_floppy.asm):00486                 LDA     TMPSTORAGE
+910A 8440             ( cubix_floppy.asm):00487                 ANDA    #$40                              ; TEST DIO BIT
+910C 2606             ( cubix_floppy.asm):00488                 BNE     WRF2S                             ; FDC IS OUT OF SYNC
+910E 3502             ( cubix_floppy.asm):00489                 PULS    A                                 ; RESTORE DATA
+9110 B70531           ( cubix_floppy.asm):00490                 STA     FDC_DATA                          ; WRITE TO FDC
+9113 39               ( cubix_floppy.asm):00491                 RTS
+                      ( cubix_floppy.asm):00492         ; FDC IS OUT OF SYNC CLEAR IT OUT AND RE-TRY
+9114                  ( cubix_floppy.asm):00493         WRF2S:
+9114 B60531           ( cubix_floppy.asm):00494                 LDA     FDC_DATA                          ; READ DATA REGISTER
+9117 7E90FD           ( cubix_floppy.asm):00495                 JMP     WRF1S                             ; AND CONTINUE
+                      ( cubix_floppy.asm):00496         
+                      ( cubix_floppy.asm):00497         
+                      ( cubix_floppy.asm):00498         
+                      ( cubix_floppy.asm):00499         ;__CHECKINT__________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00500         ;
+                      ( cubix_floppy.asm):00501         ; CHECK FOR ACTIVE FDC INTERRUPTS BEFORE GIVING I8272 COMMANDS
+                      ( cubix_floppy.asm):00502         ; POLL RQM FOR WHEN NOT BUSY AND THEN SEND FDC
+                      ( cubix_floppy.asm):00503         ; SENSE INTERRUPT COMMAND.  IF IT RTSURNS WITH NON ZERO
+                      ( cubix_floppy.asm):00504         ; ERROR CODE, PASS BACK TO JSRING ROUTINE FOR HANDLING
+                      ( cubix_floppy.asm):00505         ;________________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00506         ;
+911A                  ( cubix_floppy.asm):00507         CHECKINT:
+911A 108E0000         ( cubix_floppy.asm):00508                 LDY     #$00
+                      ( cubix_floppy.asm):00509         !
+911E B60530           ( cubix_floppy.asm):00510                 LDA     FDC_MSR                           ; READING OR WRITING IS KEYS TO D7 RQM
+9121 8480             ( cubix_floppy.asm):00511                 ANDA    #$80
+9123 260A             ( cubix_floppy.asm):00512                 BNE     >                                 ; WAIT FOR RQM TO BE TRUE. WAIT UNTIL DONE
+9125 BD91D8           ( cubix_floppy.asm):00513                 JSR     FDDELAY
+9128 3121             ( cubix_floppy.asm):00514                 INY
+912A 26F2             ( cubix_floppy.asm):00515                 BNE     <
+912C 7E9137           ( cubix_floppy.asm):00516                 JMP     ERRCLR
+                      ( cubix_floppy.asm):00517         
+                      ( cubix_floppy.asm):00518         !
+912F B60530           ( cubix_floppy.asm):00519                 LDA     FDC_MSR                           ; READING OR WRITING IS KEYS TO D7 RQM
+9132 8440             ( cubix_floppy.asm):00520                 ANDA    #$40                              ; WAITING FOR INPUT?
+9134 2719             ( cubix_floppy.asm):00521                 BEQ     SENDINT
+9136 39               ( cubix_floppy.asm):00522                 RTS
+                      ( cubix_floppy.asm):00523         
+9137                  ( cubix_floppy.asm):00524         ERRCLR:
+9137 108E0000         ( cubix_floppy.asm):00525                 LDY     #$00
+                      ( cubix_floppy.asm):00526         !
+913B B60531           ( cubix_floppy.asm):00527                 LDA     FDC_DATA                          ; CLEAR THE JUNK OUT OF DATA REGISTER
+913E B60530           ( cubix_floppy.asm):00528                 LDA     FDC_MSR                           ; CHECK WITH RQM
+9141 8480             ( cubix_floppy.asm):00529                 ANDA    #$80                              ; IF STILL NOT READY, READ OUT MORE JUNK
+9143 2607             ( cubix_floppy.asm):00530                 BNE     >                                 ;
+9145 BD91D8           ( cubix_floppy.asm):00531                 JSR     FDDELAY
+9148 3121             ( cubix_floppy.asm):00532                 INY
+914A 26EF             ( cubix_floppy.asm):00533                 BNE     <
+                      ( cubix_floppy.asm):00534         !
+914C 86FF             ( cubix_floppy.asm):00535                 LDA     #$FF                              ; RETURN ERROR CODE -1
+                      ( cubix_floppy.asm):00536         ;
+914E 39               ( cubix_floppy.asm):00537                 RTS
+                      ( cubix_floppy.asm):00538         
+                      ( cubix_floppy.asm):00539         ;__SENDINT__________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00540         ;
+                      ( cubix_floppy.asm):00541         ; SENSE INTERRUPT COMMAND
+                      ( cubix_floppy.asm):00542         ;________________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00543         ;
+914F                  ( cubix_floppy.asm):00544         SENDINT:
+914F 8608             ( cubix_floppy.asm):00545                 LDA     #CFD_SENSEINT                     ; SENSE INTERRUPT COMMAND
+9151 BD90C6           ( cubix_floppy.asm):00546                 JSR     PFDATA                            ; SEND IT
+9154 BD9169           ( cubix_floppy.asm):00547                 JSR     GFDATA                            ; GET RESULTS
+9157 B701E3           ( cubix_floppy.asm):00548                 STA     ST0                               ; STORE THAT
+915A 84C0             ( cubix_floppy.asm):00549                 ANDA    #$C0                              ; MASK OFF INTERRUPT STATUS BITS
+915C 8180             ( cubix_floppy.asm):00550                 CMPA    #$80                              ; CHECK IF INVALID COMMAND
+915E 2708             ( cubix_floppy.asm):00551                 BEQ     ENDSENDINT                        ; YES, EXIT
+9160 BD9169           ( cubix_floppy.asm):00552                 JSR     GFDATA                            ; GET ANOTHER (STATUS CODE 1)
+9163 B601E3           ( cubix_floppy.asm):00553                 LDA     ST0                               ; GET FIRST ONE
+9166 84C0             ( cubix_floppy.asm):00554                 ANDA    #$C0                              ; MASK OFF ALL BUT INTERRUPT CODE 00 IS NORMAL
+9168                  ( cubix_floppy.asm):00555         ENDSENDINT:
+9168 39               ( cubix_floppy.asm):00556                 RTS                                       ; ANYTHING ELSE IS AN ERROR
+                      ( cubix_floppy.asm):00557         
+                      ( cubix_floppy.asm):00558         
+                      ( cubix_floppy.asm):00559         ;__GFDATA__________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00560         ;
+                      ( cubix_floppy.asm):00561         ; GET DATA FROM FLOPPY CONTROLLER
+                      ( cubix_floppy.asm):00562         ;
+                      ( cubix_floppy.asm):00563         ; TRANSFERS ARE SYNCHONIZED BYT MSR D7 <RQM> AND D6 <DIO>
+                      ( cubix_floppy.asm):00564         ;       RQM  DIO
+                      ( cubix_floppy.asm):00565         ;       0       0       BUSY
+                      ( cubix_floppy.asm):00566         ;       1       0       WRITE TO DATA REGISTER PERMITTED
+                      ( cubix_floppy.asm):00567         ;       1       1       BYTE FOR READ BY HOST PENDING
+                      ( cubix_floppy.asm):00568         ;       0       1       BUSY
+                      ( cubix_floppy.asm):00569         ;
+                      ( cubix_floppy.asm):00570         ;________________________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00571         ;
+9169                  ( cubix_floppy.asm):00572         GFDATA:
+9169 108E0000         ( cubix_floppy.asm):00573                 LDY     #$00
+                      ( cubix_floppy.asm):00574         !
+916D B60530           ( cubix_floppy.asm):00575                 LDA     FDC_MSR                           ; GET STATUS
+9170 B791F1           ( cubix_floppy.asm):00576                 STA     TMPSTORAGE                        ;
+9173 8480             ( cubix_floppy.asm):00577                 ANDA    #%10000000                        ; NOT READY, WAIT
+9175 2607             ( cubix_floppy.asm):00578                 BNE     >                                 ;
+9177 3121             ( cubix_floppy.asm):00579                 INY
+9179 26F2             ( cubix_floppy.asm):00580                 BNE     <
+917B 8600             ( cubix_floppy.asm):00581                 LDA     #$00
+917D 39               ( cubix_floppy.asm):00582                 RTS
+                      ( cubix_floppy.asm):00583         !
+917E B691F1           ( cubix_floppy.asm):00584                 LDA     TMPSTORAGE
+9181 8440             ( cubix_floppy.asm):00585                 ANDA    #%01000000                        ; ANY DATA FOR US?
+9183 2703             ( cubix_floppy.asm):00586                 BEQ     GFDATA1                           ; NO, SKIP IT
+9185 B60531           ( cubix_floppy.asm):00587                 LDA     FDC_DATA                          ; GET FDC DATA
+9188                  ( cubix_floppy.asm):00588         GFDATA1:
+9188 39               ( cubix_floppy.asm):00589                 RTS
+                      ( cubix_floppy.asm):00590         
+                      ( cubix_floppy.asm):00591         ;__FD_DETECT______________________________________________________________________________________________________________________
+                      ( cubix_floppy.asm):00592         ;
+                      ( cubix_floppy.asm):00593         ;       DETECT FLOPPY HARDWARE
+                      ( cubix_floppy.asm):00594         ;________________________________________________________________________________________________________________________________
+9189                  ( cubix_floppy.asm):00595         FD_DETECT:
+                      ( cubix_floppy.asm):00596         ; BLINDLY RESET FDC (WHICH MAY OR MAY NOT EXIST)
+9189 BD91B8           ( cubix_floppy.asm):00597                 JSR     FC_RESETFDC                       ; RESET FDC
+                      ( cubix_floppy.asm):00598         
+918C B60530           ( cubix_floppy.asm):00599                 LDA     FDC_MSR                           ; READ MSR
+918F 8180             ( cubix_floppy.asm):00600                 CMPA    #$80
+9191 270A             ( cubix_floppy.asm):00601                 BEQ     FD_DETECT1                        ; $80 IS OK
+9193 81D0             ( cubix_floppy.asm):00602                 CMPA    #$D0
+9195 2706             ( cubix_floppy.asm):00603                 BEQ     FD_DETECT1                        ; $D0 IS OK
+9197 86FF             ( cubix_floppy.asm):00604                 LDA     #$FF                              ; NOT OK
+9199 B701E7           ( cubix_floppy.asm):00605                 STA     FLOPPY_DETCT
+919C 39               ( cubix_floppy.asm):00606                 RTS
+                      ( cubix_floppy.asm):00607         ;
+919D                  ( cubix_floppy.asm):00608         FD_DETECT1:
+919D 8E0064           ( cubix_floppy.asm):00609                 LDX     #100
+91A0 BD91E1           ( cubix_floppy.asm):00610                 JSR     FDVDELAY                          ; WAIT A BIT FOR FDC
+91A3 B60530           ( cubix_floppy.asm):00611                 LDA     FDC_MSR                           ; READ MSR AGAIN
+91A6 8180             ( cubix_floppy.asm):00612                 CMPA    #$80
+91A8 2708             ( cubix_floppy.asm):00613                 BEQ     >                                 ; $80 IS OK
+91AA 81D0             ( cubix_floppy.asm):00614                 CMPA    #$D0
+91AC 86FF             ( cubix_floppy.asm):00615                 LDA     #$FF                              ; NOT OK
+91AE B701E7           ( cubix_floppy.asm):00616                 STA     FLOPPY_DETCT
+91B1 39               ( cubix_floppy.asm):00617                 RTS
+                      ( cubix_floppy.asm):00618         !
+91B2 8600             ( cubix_floppy.asm):00619                 LDA     #$00                              ; OK
+91B4 B701E7           ( cubix_floppy.asm):00620                 STA     FLOPPY_DETCT
+91B7 39               ( cubix_floppy.asm):00621                 RTS
+                      ( cubix_floppy.asm):00622         
+91B8                  ( cubix_floppy.asm):00623         FC_RESETFDC:
+91B8 B60533           ( cubix_floppy.asm):00624                 LDA     FDC_RESET
+91BB B60533           ( cubix_floppy.asm):00625                 LDA     FDC_RESET
+91BE 8E0096           ( cubix_floppy.asm):00626                 LDX     #150
+91C1 BD91E1           ( cubix_floppy.asm):00627                 JSR     FDVDELAY                          ; WAIT A BIT FOR FDC
+                      ( cubix_floppy.asm):00628         
+91C4 8600             ( cubix_floppy.asm):00629                 LDA     #$00
+91C6 B70536           ( cubix_floppy.asm):00630                 STA     FDC_DOR
+91C9 BD91D8           ( cubix_floppy.asm):00631                 JSR     FDDELAY
+91CC 860C             ( cubix_floppy.asm):00632                 LDA     #DOR_INIT
+91CE B70536           ( cubix_floppy.asm):00633                 STA     FDC_DOR
+91D1 8E0096           ( cubix_floppy.asm):00634                 LDX     #150                              ;
+91D4 BD91E1           ( cubix_floppy.asm):00635                 JSR     FDVDELAY
+91D7 39               ( cubix_floppy.asm):00636                 RTS
+                      ( cubix_floppy.asm):00637         
+                      ( cubix_floppy.asm):00638         
+91D8                  ( cubix_floppy.asm):00639         FDDELAY:
+91D8 3402             ( cubix_floppy.asm):00640                 PSHS    A
+91DA 3502             ( cubix_floppy.asm):00641                 PULS    A
+91DC 3402             ( cubix_floppy.asm):00642                 PSHS    A
+91DE 3502             ( cubix_floppy.asm):00643                 PULS    A
+91E0 39               ( cubix_floppy.asm):00644                 RTS
+91E1                  ( cubix_floppy.asm):00645         FDVDELAY:
+91E1 3402             ( cubix_floppy.asm):00646                 PSHS    A
+91E3 3502             ( cubix_floppy.asm):00647                 PULS    A
+91E5 3402             ( cubix_floppy.asm):00648                 PSHS    A
+91E7 3502             ( cubix_floppy.asm):00649                 PULS    A
+91E9 301F             ( cubix_floppy.asm):00650                 DEX
+91EB 8C0000           ( cubix_floppy.asm):00651                 CPX     #$00
+91EE 26F1             ( cubix_floppy.asm):00652                 BNE     FDVDELAY
+91F0 39               ( cubix_floppy.asm):00653                 RTS
+                      ( cubix_floppy.asm):00654         
+                      ( cubix_floppy.asm):00655         
+91F1                  ( cubix_floppy.asm):00656         TMPSTORAGE:
+91F1 00               ( cubix_floppy.asm):00657                 FCB     00
+91F2                  ( cubix_floppy.asm):00658         FMESSAGE1:
+91F2 46443A204D4F4445 ( cubix_floppy.asm):00659                 FCC     "FD: MODE=MBC$"
+     3D4D424324
+91FF 00               ( cubix_floppy.asm):00660                 FCB     00
+9200                  ( cubix_floppy.asm):00661         FMESSAGE2:
+9200 20494F3D307824   ( cubix_floppy.asm):00662                 FCC     " IO=0x$"
+9207 00               ( cubix_floppy.asm):00663                 FCB     00
+9208                  ( cubix_floppy.asm):00664         FMESSAGE3:
+9208 204E4F5420505245 ( cubix_floppy.asm):00665                 FCC     " NOT PRESENT$"
+     53454E5424
+9215 00               ( cubix_floppy.asm):00666                 FCB     00
+9216                  ( cubix_floppy.asm):00667         FMESSAGE4:
+9216 2050524553454E54 ( cubix_floppy.asm):00668                 FCC     " PRESENT$"
+     24
+921F 00               ( cubix_floppy.asm):00669                 FCB     00
                       (     cubixdrv.asm):00098         ;        INCLUDE cubix_esp32.asm
                       (     cubixdrv.asm):00099         
                       (     cubixdrv.asm):00100         
                       (     cubixdrv.asm):00101         
                       (     cubixdrv.asm):00102         
-8E56                  (     cubixdrv.asm):00103         drv_noop:
-8E56 39               (     cubixdrv.asm):00104                 RTS
+9220                  (     cubixdrv.asm):00103         drv_noop:
+9220 39               (     cubixdrv.asm):00104                 RTS
                       (     cubixdrv.asm):00105         
                       (     cubixdrv.asm):00106         ;*
                       (     cubixdrv.asm):00107         ;* OUTPUT LFCR TO CONSOLE
                       (     cubixdrv.asm):00108         ;*
-8E57                  (     cubixdrv.asm):00109         LFCR:
-8E57 860A             (     cubixdrv.asm):00110                 LDA     #10
-8E59 8D35             (     cubixdrv.asm):00111                 BSR     PUTCHR
-8E5B 860D             (     cubixdrv.asm):00112                 LDA     #13
-8E5D 8D31             (     cubixdrv.asm):00113                 BSR     PUTCHR
-8E5F 39               (     cubixdrv.asm):00114                 RTS
+9221                  (     cubixdrv.asm):00109         LFCR:
+9221 860A             (     cubixdrv.asm):00110                 LDA     #10
+9223 8D35             (     cubixdrv.asm):00111                 BSR     PUTCHR
+9225 860D             (     cubixdrv.asm):00112                 LDA     #13
+9227 8D31             (     cubixdrv.asm):00113                 BSR     PUTCHR
+9229 39               (     cubixdrv.asm):00114                 RTS
                       (     cubixdrv.asm):00115         ;*
                       (     cubixdrv.asm):00116         ;* WRITE STRING(X) TO CONSOLE
                       (     cubixdrv.asm):00117         ;*
-8E60                  (     cubixdrv.asm):00118         WRSTR:
-8E60 3406             (     cubixdrv.asm):00119                 PSHS    A,B                               ;SAVE A
-8E62                  (     cubixdrv.asm):00120         WRST1:
-8E62 A680             (     cubixdrv.asm):00121                 LDA     ,X+                               ;GET CHAR
-8E64 2704             (     cubixdrv.asm):00122                 BEQ     WRST2                             ;END, QUIT
-8E66 8D28             (     cubixdrv.asm):00123                 BSR     PUTCHR
-8E68 20F8             (     cubixdrv.asm):00124                 BRA     WRST1                             ;CONTINUE
-8E6A                  (     cubixdrv.asm):00125         WRST2:
-8E6A 3506             (     cubixdrv.asm):00126                 PULS    A,B
-8E6C 39               (     cubixdrv.asm):00127                 RTS
+922A                  (     cubixdrv.asm):00118         WRSTR:
+922A 3406             (     cubixdrv.asm):00119                 PSHS    A,B                               ;SAVE A
+922C                  (     cubixdrv.asm):00120         WRST1:
+922C A680             (     cubixdrv.asm):00121                 LDA     ,X+                               ;GET CHAR
+922E 2704             (     cubixdrv.asm):00122                 BEQ     WRST2                             ;END, QUIT
+9230 8D28             (     cubixdrv.asm):00123                 BSR     PUTCHR
+9232 20F8             (     cubixdrv.asm):00124                 BRA     WRST1                             ;CONTINUE
+9234                  (     cubixdrv.asm):00125         WRST2:
+9234 3506             (     cubixdrv.asm):00126                 PULS    A,B
+9236 39               (     cubixdrv.asm):00127                 RTS
                       (     cubixdrv.asm):00128         ;*
                       (     cubixdrv.asm):00129         ;* OUTPUT NUMBER IN 'D' TO CONSOLE IN HEX
                       (     cubixdrv.asm):00130         ;*
-8E6D                  (     cubixdrv.asm):00131         WRHEXW
-8E6D 8D07             (     cubixdrv.asm):00132                 BSR     WRHEX                             ;OUTPUT
-8E6F 1E89             (     cubixdrv.asm):00133                 EXG     A,B                               ;SWAP
-8E71 8D03             (     cubixdrv.asm):00134                 BSR     WRHEX                             ;OUTPUT
-8E73 1E89             (     cubixdrv.asm):00135                 EXG     A,B                               ;BACK
-8E75 39               (     cubixdrv.asm):00136                 RTS
+9237                  (     cubixdrv.asm):00131         WRHEXW
+9237 8D07             (     cubixdrv.asm):00132                 BSR     WRHEX                             ;OUTPUT
+9239 1E89             (     cubixdrv.asm):00133                 EXG     A,B                               ;SWAP
+923B 8D03             (     cubixdrv.asm):00134                 BSR     WRHEX                             ;OUTPUT
+923D 1E89             (     cubixdrv.asm):00135                 EXG     A,B                               ;BACK
+923F 39               (     cubixdrv.asm):00136                 RTS
                       (     cubixdrv.asm):00137         ;*
                       (     cubixdrv.asm):00138         ;* OUTPUT 'A' NUMBER TO CONSOLE IN HEX
                       (     cubixdrv.asm):00139         ;*
-8E76                  (     cubixdrv.asm):00140         WRHEX
-8E76 3402             (     cubixdrv.asm):00141                 PSHS    A                                 ;SAVE IT
-8E78 44               (     cubixdrv.asm):00142                 LSRA                                      ;SHIFT
-8E79 44               (     cubixdrv.asm):00143                 LSRA                                      ;HIGH NIBBLE
-8E7A 44               (     cubixdrv.asm):00144                 LSRA                                      ;INTO
-8E7B 44               (     cubixdrv.asm):00145                 LSRA                                      ;LOW NIBBLE
-8E7C 8D06             (     cubixdrv.asm):00146                 BSR     HOUT                              ;HIGH
-8E7E A6E4             (     cubixdrv.asm):00147                 LDA     ,S                                ;GET LOW
-8E80 8D02             (     cubixdrv.asm):00148                 BSR     HOUT                              ;OUTPUT
-8E82 3582             (     cubixdrv.asm):00149                 PULS    A,PC                              ;RESTORE IT
+9240                  (     cubixdrv.asm):00140         WRHEX
+9240 3402             (     cubixdrv.asm):00141                 PSHS    A                                 ;SAVE IT
+9242 44               (     cubixdrv.asm):00142                 LSRA                                      ;SHIFT
+9243 44               (     cubixdrv.asm):00143                 LSRA                                      ;HIGH NIBBLE
+9244 44               (     cubixdrv.asm):00144                 LSRA                                      ;INTO
+9245 44               (     cubixdrv.asm):00145                 LSRA                                      ;LOW NIBBLE
+9246 8D06             (     cubixdrv.asm):00146                 BSR     HOUT                              ;HIGH
+9248 A6E4             (     cubixdrv.asm):00147                 LDA     ,S                                ;GET LOW
+924A 8D02             (     cubixdrv.asm):00148                 BSR     HOUT                              ;OUTPUT
+924C 3582             (     cubixdrv.asm):00149                 PULS    A,PC                              ;RESTORE IT
                       (     cubixdrv.asm):00150         ;* OUTPUT NIBBLE IN HEX
-8E84                  (     cubixdrv.asm):00151         HOUT
-8E84 840F             (     cubixdrv.asm):00152                 ANDA    #%00001111                        ;REMOVE HIGH
-8E86 8B30             (     cubixdrv.asm):00153                 ADDA    #'0'                              ;CONVERT
-8E88 8139             (     cubixdrv.asm):00154                 CMPA    #'9'                              ;OK?
-8E8A 2304             (     cubixdrv.asm):00155                 BLS     PUTCHR                            ;OK, OUTPUT
-8E8C 8B07             (     cubixdrv.asm):00156                 ADDA    #7                                ;CONVERT TO 'A'-'F'
-8E8E 2000             (     cubixdrv.asm):00157                 BRA     PUTCHR                            ;OUTPUT
-8E90                  (     cubixdrv.asm):00158         PUTCHR:
-8E90 7E885E           (     cubixdrv.asm):00159                 JMP     WRSER1
-8E93 3404             (     cubixdrv.asm):00160                 PSHS    B
-8E95 3402             (     cubixdrv.asm):00161                 PSHS    A
-8E97 58               (     cubixdrv.asm):00162                 ASLB                                      ; DOUBLE NUMBER FOR TABLE LOOKUP
-8E98 8600             (     cubixdrv.asm):00163                 LDA     #$00
-8E9A F60100           (     cubixdrv.asm):00164                 LDB     CONSOLEDEVICE
-8E9D 1F01             (     cubixdrv.asm):00165                 TFR     D,X
-8E9F EC898813         (     cubixdrv.asm):00166                 LDD     DISPATCHTABLE,X
-8EA3 FD01FE           (     cubixdrv.asm):00167                 STD     farpointer
-8EA6 3502             (     cubixdrv.asm):00168                 PULS    A
-8EA8 AD9F01FE         (     cubixdrv.asm):00169                 JSR     [farpointer]
-8EAC 3504             (     cubixdrv.asm):00170                 PULS    B
-8EAE 39               (     cubixdrv.asm):00171                 RTS
+924E                  (     cubixdrv.asm):00151         HOUT
+924E 840F             (     cubixdrv.asm):00152                 ANDA    #%00001111                        ;REMOVE HIGH
+9250 8B30             (     cubixdrv.asm):00153                 ADDA    #'0'                              ;CONVERT
+9252 8139             (     cubixdrv.asm):00154                 CMPA    #'9'                              ;OK?
+9254 2304             (     cubixdrv.asm):00155                 BLS     PUTCHR                            ;OK, OUTPUT
+9256 8B07             (     cubixdrv.asm):00156                 ADDA    #7                                ;CONVERT TO 'A'-'F'
+9258 2000             (     cubixdrv.asm):00157                 BRA     PUTCHR                            ;OUTPUT
+925A                  (     cubixdrv.asm):00158         PUTCHR:
+925A 7E885E           (     cubixdrv.asm):00159                 JMP     WRSER1
+925D 3404             (     cubixdrv.asm):00160                 PSHS    B
+925F 3402             (     cubixdrv.asm):00161                 PSHS    A
+9261 58               (     cubixdrv.asm):00162                 ASLB                                      ; DOUBLE NUMBER FOR TABLE LOOKUP
+9262 8600             (     cubixdrv.asm):00163                 LDA     #$00
+9264 F60100           (     cubixdrv.asm):00164                 LDB     CONSOLEDEVICE
+9267 1F01             (     cubixdrv.asm):00165                 TFR     D,X
+9269 EC898813         (     cubixdrv.asm):00166                 LDD     DISPATCHTABLE,X
+926D FD01FE           (     cubixdrv.asm):00167                 STD     farpointer
+9270 3502             (     cubixdrv.asm):00168                 PULS    A
+9272 AD9F01FE         (     cubixdrv.asm):00169                 JSR     [farpointer]
+9276 3504             (     cubixdrv.asm):00170                 PULS    B
+9278 39               (     cubixdrv.asm):00171                 RTS
                       (     cubixdrv.asm):00172         
                       (     cubixdrv.asm):00173                 END
 
 Symbol Table:
 [ G] BANKED_DRIVER_DISPATCHER         8800
+[ G] CFD_DRVSTAT                      0004
+[ G] CFD_FMTTRK                       000D
+[ G] CFD_MFM                          0040
+[ G] CFD_READ                         0006
+[ G] CFD_READDEL                      000C
+[ G] CFD_READID                       000A
+[ G] CFD_READTRK                      0002
+[ G] CFD_RECAL                        0007
+[ G] CFD_SCANEQ                       0011
+[ G] CFD_SCANHIEQ                     001D
+[ G] CFD_SCANLOEQ                     0019
+[ G] CFD_SEEK                         000F
+[ G] CFD_SENSEINT                     0008
+[ G] CFD_SPECIFY                      0003
+[ G] CFD_VERSION                      0010
+[ G] CFD_WRITE                        0005
+[ G] CFD_WRITEDEL                     0009
+[ G] CHECKINT                         911A
 [ G] CONSOLEDEVICE                    0100
 [ G] CURRENTCYL                       01F9
 [ G] CURRENTDEVICE                    01FB
@@ -1545,7 +2242,14 @@ Symbol Table:
 [ G] CURRENTSLICE                     01FC
 [ G] DISKERROR                        01F7
 [ G] DISPATCHTABLE                    8813
-[ G] drv_noop                         8E56
+[ G] DOR_BR250                        000C
+[ G] DOR_BR500                        000C
+[ G] DOR_INIT                         000C
+[ G] drv_noop                         9220
+[ G] DSKEXIT                          8F9A
+[ G] DSKOP                            8F81
+[ G] DSKOPEND                         9026
+[ G] DSKUNIT                          01E6
 [ G] DSKY_ABORT                       8BFC
 [ G] DSKY_BEEP                        8DA8
 [ G] DSKY_BEEP1                       8DBB
@@ -1614,9 +2318,39 @@ Symbol Table:
 [ G] DSKYMESSAGE2                     8E39
 [ G] DSKYMESSAGE3                     8E40
 [ G] DSKYMESSAGE4                     8E49
+[ G] ENDSENDINT                       9168
+[ G] ERRCLR                           9137
 [ G] farpointer                       01FE
+[ G] FC_RESETFDC                      91B8
+[ G] FCMD                             01E4
+[ G] FD_DETECT                        9189
+[ G] FD_DETECT1                       919D
+[ G] FDC_DATA                         0531
+[ G] FDC_DCR                          0535
+[ G] FDC_DOR                          0536
+[ G] FDC_MSR                          0530
+[ G] FDC_RESET                        0533
+[ G] FDC_TC                           0537
+[ G] FDDELAY                          91D8
+[ G] FDVDELAY                         91E1
+[ G] FL_READ_SECTOR                   8EE3
+[ G] FL_SETUP                         8E56
+[ G] FL_WRITE_SECTOR                  8F36
+[ G] FLERR                            01E5
+[ G] FLOPPY_DETCT                     01E7
+[ G] FLOPPY_RETRIES                   0006
+[ G] FLOPPY_RETRIES1                  0002
+[ G] FLRETRY                          01E8
+[ G] FLRETRY1                         01E9
+[ G] FMESSAGE1                        91F2
+[ G] FMESSAGE2                        9200
+[ G] FMESSAGE3                        9208
+[ G] FMESSAGE4                        9216
 [ G] FUNCTION_DISPATCHER              8800
-[ G] HOUT                             8E84
+[ G] GFDATA                           9169
+[ G] GFDATA1                          9188
+[ G] GWRR_POLL                        8F97
+[ G] HOUT                             924E
 [ G] HSTBUF                           0300
 [ G] IDE_ABORT                        88B2
 [ G] IDE_INITA                        88D4
@@ -1675,7 +2409,7 @@ Symbol Table:
 [ G] KY_F4                            0018
 [ G] KY_FW                            0010
 [ G] KY_GO                            0016
-[ G] LFCR                             8E57
+[ G] LFCR                             9221
 [ G] MD_PAGERA                        0200
 [ G] MESSAGE1                         8AE5
 [ G] MESSAGE2                         8AED
@@ -1689,6 +2423,8 @@ Symbol Table:
 [ G] PAGER_U                          02F6
 [ G] PAGER_X                          02FA
 [ G] PAGER_Y                          02FC
+[ G] PFDATA                           90C6
+[ G] PFDATAS                          90FB
 [ G] PPIDE_A0_LINE                    0001
 [ G] PPIDE_A1_LINE                    0002
 [ G] PPIDE_A2_LINE                    0004
@@ -1730,12 +2466,28 @@ Symbol Table:
 [ G] PPIDETIMEOUT                     8885
 [ G] PPRD_IDE_8255                    0092
 [ G] PPWR_IDE_8255                    0080
-[ G] PUTCHR                           8E90
+[ G] PUTCHR                           925A
+[ G] RDD_POLL                         8FF1
+[ G] RDS1                             8FFB
+[ G] RDS1A                            9004
+[ G] RDS2                             9012
+[ G] RDS2A                            901B
 [ G] RDSER1                           886B
+[ G] READFL1                          8F05
+[ G] READFLDONE                       8F33
+[ G] RECAL                            909C
+[ G] RESUL3                           9032
 [ G] RST_DLY                          89E0
+[ G] SENDINT                          914F
 [ G] SERIALINIT                       885D
 [ G] SET_PPI_RD                       8AC9
 [ G] SET_PPI_WR                       8AD7
+[ G] SETTRACK                         906D
+[ G] SETTRK1                          907F
+[ G] SETTRKEXIT                       90C5
+[ G] SNDFDWR                          8FA4
+[ G] ST0                              01E3
+[ G] TMPSTORAGE                       91F1
 [ G] UART0                            0568
 [ G] UART1                            0569
 [ G] UART2                            056A
@@ -1744,9 +2496,20 @@ Symbol Table:
 [ G] UART5                            056D
 [ G] UART6                            056E
 [ G] UART7                            056F
-[ G] WRHEX                            8E76
-[ G] WRHEXW                           8E6D
+[ G] WAINT                            90B1
+[ G] WRF1                             90CC
+[ G] WRF1S                            90FD
+[ G] WRF2                             90F5
+[ G] WRF2S                            9114
+[ G] WRHEX                            9240
+[ G] WRHEXW                           9237
+[ G] WRITEFL1                         8F50
+[ G] WRITEFLDONE                      8F7E
+[ G] WRR_POLL                         903F
+[ G] WRS1                             9042
+[ G] WRS2                             9056
+[ G] WRS3                             906A
 [ G] WRSER1                           885E
-[ G] WRST1                            8E62
-[ G] WRST2                            8E6A
-[ G] WRSTR                            8E60
+[ G] WRST1                            922C
+[ G] WRST2                            9234
+[ G] WRSTR                            922A
