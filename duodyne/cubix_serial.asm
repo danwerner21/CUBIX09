@@ -1,6 +1,6 @@
 ;__SERIAL DRIVERS________________________________________________________________________________________________________________
 ;
-; 	CUBIX serial drivers for Duodyne 6809 on-board UART card
+; 	CUBIX serial drivers for 6809 IO card
 ;
 ;	Entry points:
 ;		SERIALINIT  - called during OS init
@@ -12,14 +12,14 @@
 ;*        HARDWARE I/O ADDRESSES
 ;*
 ; UART 16C550 SERIAL
-UART0           EQU $0568                         ; DATA IN/OUT
-UART1           EQU $0569                         ; CHECK RX
-UART2           EQU $056A                         ; INTERRUPTS
-UART3           EQU $056B                         ; LINE CONTROL
-UART4           EQU $056C                         ; MODEM CONTROL
-UART5           EQU $056D                         ; LINE STATUS
-UART6           EQU $056E                         ; MODEM STATUS
-UART7           EQU $056F                         ; SCRATCH REG.
+UART0           EQU $DF58                         ; DATA IN/OUT
+UART1           EQU $DF59                         ; CHECK RX
+UART2           EQU $DF5A                         ; INTERRUPTS
+UART3           EQU $DF5B                         ; LINE CONTROL
+UART4           EQU $DF5C                         ; MODEM CONTROL
+UART5           EQU $DF5D                         ; LINE STATUS
+UART6           EQU $DF5E                         ; MODEM STATUS
+UART7           EQU $DF5F                         ; SCRATCH REG.
 
 
 ;__SERIALINIT____________________________________________________________________________________________________________________
@@ -28,7 +28,7 @@ UART7           EQU $056F                         ; SCRATCH REG.
 ;________________________________________________________________________________________________________________________________
 ;
 SERIALINIT:
-; these are all set by CP/M prior to activating the 6809 card. If 6809 is the primary CPU, these need to be set
+; these are all set by Bios prior to activating the 6809 card.
 ;	LDA		#$80		;
 ;	STA		UART3		; SET DLAB FLAG
 ;	LDA		#12			; SET TO 12 = 9600 BAUD
@@ -37,7 +37,6 @@ SERIALINIT:
 ;	STA		UART1		;
 ;	LDA		#03			;
 ;	STA		UART3		; SET 8 BIT DATA, 1 STOPBIT
-;	STA		UART4		;
         RTS
 
 
@@ -48,6 +47,8 @@ SERIALINIT:
 ;________________________________________________________________________________________________________________________________
 ;
 WRSER1
+        LDA     #$05
+        STA     $DF54
 !
         LDB     UART5                             ; READ LINE STATUS REGISTER
         ANDB    #$20                              ; TEST IF UART IS READY TO SEND (BIT 5)
@@ -62,6 +63,9 @@ WRSER1
 ;________________________________________________________________________________________________________________________________
 ;
 RDSER1
+        LDA     #$06
+        STA     $DF54
+
         LDA     UART5                             ; READ LINE STATUS REGISTER
         ANDA    #$01                              ; TEST IF DATA IN RECEIVE BUFFER
         CMPA    #$00

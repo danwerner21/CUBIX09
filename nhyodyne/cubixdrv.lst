@@ -10,7 +10,7 @@
                       (     cubixdrv.asm):00010                 INCLUDE cubix_values.asm
                       ( cubix_values.asm):00001         ;________________________________________________________________________________________________________________________________
                       ( cubix_values.asm):00002         ;
-                      ( cubix_values.asm):00003         ;       Nhyodyne Cubix System storage locations
+                      ( cubix_values.asm):00003         ;       Duodyne Cubix System storage locations
                       ( cubix_values.asm):00004         ;
                       ( cubix_values.asm):00005         ;  DWERNER 10/15/2023   Initial
                       ( cubix_values.asm):00006         ;________________________________________________________________________________________________________________________________
@@ -127,7 +127,7 @@
                       (     cubixdrv.asm):00093                 INCLUDE cubix_serial.asm
                       ( cubix_serial.asm):00001         ;__SERIAL DRIVERS________________________________________________________________________________________________________________
                       ( cubix_serial.asm):00002         ;
-                      ( cubix_serial.asm):00003         ;       CUBIX serial drivers for 6809 IO card
+                      ( cubix_serial.asm):00003         ;       CUBIX serial drivers for Duodyne 6809 on-board UART card
                       ( cubix_serial.asm):00004         ;
                       ( cubix_serial.asm):00005         ;       Entry points:
                       ( cubix_serial.asm):00006         ;               SERIALINIT  - called during OS init

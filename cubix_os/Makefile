@@ -1,15 +1,25 @@
-all:  	cubix.com
+all:  	nhy_cubix.com duo_cubix.com
 
 
-cubix.com: cubix.asm command.os comfile.os filesys.os ../nhyodyne/loader.bin ../nhyodyne/cubix_values.asm ../nhyodyne/drivers.asm
-	lwasm --define=nhyodyne --define=dist --6809  --6800compat cubix.asm -s --list=cubix.lst --map=cubix.map --output=cubix.s --format=srec
-	srec_cat  cubix.s -exclude 0x0000 0xE000 -offset -0x8000 -o  cubix.hex  -intel -address-length=2
-	srec_cat  cubix.s -exclude 0x0000 0xE000 -offset -0xE000 -o  cubix.s1  -binary
-	cat ../nhyodyne/loader.bin cubix.s1 >cubix.com
-	@rm cubix.s
-	@rm cubix.s1
-	@cp cubix.com ../bin/nhyodyne
+nhy_cubix.com: cubix.asm command.os comfile.os filesys.os ../nhyodyne/loader.bin ../nhyodyne/cubix_values.asm ../nhyodyne/drivers.asm
+	lwasm --define=nhyodyne --define=dist --6809  --6800compat cubix.asm -s --list=nhy_cubix.lst --map=nhy_cubix.map --output=nhy_cubix.s --format=srec
+	srec_cat  nhy_cubix.s -exclude 0x0000 0xE000 -offset -0x8000 -o  nhy_cubix.hex  -intel -address-length=2
+	srec_cat  nhy_cubix.s -exclude 0x0000 0xE000 -offset -0xE000 -o  nhy_cubix.s1  -binary
+	srec_cat  nhy_cubix.s -exclude 0x0000 0xE000 -o  nhy_cubix.s19 -Data_Only
+	cat ../nhyodyne/loader.bin nhy_cubix.s1 >nhy_cubix.com
+	@rm nhy_cubix.s
+	@rm nhy_cubix.s1
+	@cp nhy_cubix.com ../bin/nhyodyne/cubix.com
 
+duo_cubix.com: cubix.asm command.os comfile.os filesys.os ../duodyne/loader.bin ../duodyne/cubix_values.asm ../duodyne/drivers.asm
+	lwasm --define=duodyne --define=dist --6809  --6800compat cubix.asm -s --list=duo_cubix.lst --map=duo_cubix.map --output=duo_cubix.s --format=srec
+	srec_cat  duo_cubix.s -exclude 0x0000 0xE000 -offset -0x8000 -o  duo_cubix.hex  -intel -address-length=2
+	srec_cat  duo_cubix.s -exclude 0x0000 0xE000 -offset -0xE000 -o  duo_cubix.s1  -binary
+	srec_cat  duo_cubix.s -exclude 0x0000 0xE000 -o  duo_cubix.s19 -Data_Only
+	cat ../duodyne/loader.bin duo_cubix.s1 >duo_cubix.com
+	@rm duo_cubix.s
+	@rm duo_cubix.s1
+	@cp duo_cubix.com ../bin/duodyne/cubix.com
 
 pretty:
 	cp *.asm ./backup
