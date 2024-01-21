@@ -43,6 +43,7 @@ PAGEUART4       EQU $DF5C                         ; INT and Bank CONTROL
 ;  INIT -- Copy code into $0200-$02FF for controling banking
 ;____________________________________________________________________________________________________
 PAGER_INIT:
+
         LDX     #$0000
 !
         LDA     md_pagecode,X
@@ -62,23 +63,19 @@ md_pagecode:
         STU     >PAGER_U                          ; SAVE 'U'
         STS     >PAGER_S                          ; SAVE STACK
         LDS     #PAGER_STACK                      ; SET TEMP STACK
+
         LDA     #$84
         STA     BANK40
         LDA     #$85
         STA     BANK80
-        LDA     #$03
-        STA     BANKC0
-        STA     MPCL_RAM
-        NOP
-        NOP
+
         JSR     BANKED_DRIVER_DISPATCHER
+
         LDA     #$81
         STA     BANK40
         LDA     #$82
         STA     BANK80
-        LDA     #$83
-        STA     BANKC0
-        STA     MPCL_RAM
+
         LDS     >PAGER_S                          ; RESTORE STACK
         LDX     >PAGER_X                          ; RESTORE 'X'
         LDY     >PAGER_Y                          ; RESTORE 'Y'

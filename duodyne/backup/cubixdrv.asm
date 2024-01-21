@@ -52,35 +52,35 @@ DISPATCHTABLE:
         .WORD   drv_noop                          ; FUNCTION 16 - read a sector from drive
         .WORD   drv_noop                          ; FUNCTION 17 - write a sector to drive
 ;
-        .WORD   drv_noop ; FL_SETUP                          ; FUNCTION 18 - init floppy device
-        .WORD   drv_noop ; FL_READ_SECTOR                    ; FUNCTION 19 - read a sector from floppy device
-        .WORD    drv_noop ; FL_WRITE_SECTOR                   ; FUNCTION 20 - write a sector to floppy device
+        .WORD   drv_noop                          ; FL_SETUP                          ; FUNCTION 18 - init floppy device
+        .WORD   drv_noop                          ; FL_READ_SECTOR                    ; FUNCTION 19 - read a sector from floppy device
+        .WORD   drv_noop                          ; FL_WRITE_SECTOR                   ; FUNCTION 20 - write a sector to floppy device
 ;
-        .WORD    drv_noop ; PPIDE_INIT                        ; FUNCTION 21 - init PPIDE device
-        .WORD    drv_noop ; IDE_READ_SECTOR                   ; FUNCTION 22 - read a sector from PPIDE device
-        .WORD    drv_noop ; IDE_WRITE_SECTOR                  ; FUNCTION 23 - write a sector to PPIDE device
+        .WORD   PPIDE_INIT                        ; FUNCTION 21 - init PPIDE device
+        .WORD   IDE_READ_SECTOR                   ; FUNCTION 22 - read a sector from PPIDE device
+        .WORD   IDE_WRITE_SECTOR                  ; FUNCTION 23 - write a sector to PPIDE device
 ;
         .WORD   drv_noop                          ; FUNCTION 24 -
         .WORD   drv_noop                          ; FUNCTION 25 -
         .WORD   drv_noop                          ; FUNCTION 26 -
 ;
-        .WORD    drv_noop ; DSKY_INIT                         ; FUNCTION 27 -
-        .WORD    drv_noop ; DSKY_SHOW                         ; FUNCTION 28 -
-        .WORD    drv_noop ; DSKY_BIN2SEG                      ; FUNCTION 29 -
-        .WORD    drv_noop ; DSKY_RESET                        ; FUNCTION 30 -
-        .WORD    drv_noop ; DSKY_STAT                         ; FUNCTION 31 -
-        .WORD    drv_noop ; DSKY_GETKEY                       ; FUNCTION 32 -
-        .WORD    drv_noop ; DSKY_BEEP                         ; FUNCTION 33 -
-        .WORD    drv_noop ; DSKY_DSPL                         ; FUNCTION 34 -
-        .WORD    drv_noop ; DSKY_PUTLED                       ; FUNCTION 35 -
-        .WORD    drv_noop ; DSKY_BLANK                        ; FUNCTION 36 -
+        .WORD   drv_noop                          ; DSKY_INIT                         ; FUNCTION 27 -
+        .WORD   drv_noop                          ; DSKY_SHOW                         ; FUNCTION 28 -
+        .WORD   drv_noop                          ; DSKY_BIN2SEG                      ; FUNCTION 29 -
+        .WORD   drv_noop                          ; DSKY_RESET                        ; FUNCTION 30 -
+        .WORD   drv_noop                          ; DSKY_STAT                         ; FUNCTION 31 -
+        .WORD   drv_noop                          ; DSKY_GETKEY                       ; FUNCTION 32 -
+        .WORD   drv_noop                          ; DSKY_BEEP                         ; FUNCTION 33 -
+        .WORD   drv_noop                          ; DSKY_DSPL                         ; FUNCTION 34 -
+        .WORD   drv_noop                          ; DSKY_PUTLED                       ; FUNCTION 35 -
+        .WORD   drv_noop                          ; DSKY_BLANK                        ; FUNCTION 36 -
 ;
 
 
 ;__DRIVERS___________________________________________________________________________________________
 ;
         INCLUDE cubix_serial.asm
-;        INCLUDE cubix_ide.asm
+        INCLUDE cubix_ide.asm
 ;        INCLUDE cubix_dskyng.asm
 ;        INCLUDE cubix_dsky.asm
 ;        INCLUDE cubix_floppy.asm

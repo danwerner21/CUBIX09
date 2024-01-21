@@ -489,7 +489,7 @@
                       (    cubix_ide.asm):00297         
                       (    cubix_ide.asm):00298         ; IF A DSKYNG IS ACTIVE AND IS ON THE SAME PPI PORT AS THE PPISDa:a BEING
                       (    cubix_ide.asm):00299         ; RESET, THEN THE DSKYNG WILL ALSO BE RESET.  SO, THE DSKY IS ALSO INITIALIZED.
-                      (    cubix_ide.asm):00300               ;;;;;;;;;;;;;;;;;;;;;;;;;  JSR     DSKY_REINIT
+                      (    cubix_ide.asm):00300         ;;;;;;;;;;;;;;;;;;;;;;;;;  JSR     DSKY_REINIT
                       (    cubix_ide.asm):00301         
 89ED 39               (    cubix_ide.asm):00302                 RTS
                       (    cubix_ide.asm):00303         
@@ -742,8 +742,8 @@
 8B74 C601             (    cubix_ide.asm):00547                 LDB     #$01
 8B76 BD8AA7           (    cubix_ide.asm):00548                 JSR     IDE_WRITE
                       (    cubix_ide.asm):00549         
-                      (    cubix_ide.asm):00550              ;   JSR     DSKY_BIN2SEG
-                      (    cubix_ide.asm):00551              ;   JSR     DSKY_SHOW
+                      (    cubix_ide.asm):00550         ;   JSR     DSKY_BIN2SEG
+                      (    cubix_ide.asm):00551         ;   JSR     DSKY_SHOW
 8B79 3586             (    cubix_ide.asm):00552                 PULS    D,PC
                       (     cubixdrv.asm):00084         ;        INCLUDE cubix_dskyng.asm
                       (     cubixdrv.asm):00085         ;        INCLUDE cubix_dsky.asm

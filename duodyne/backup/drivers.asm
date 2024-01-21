@@ -191,7 +191,7 @@ DECODEDRIVE:
         STB     CURRENTSLICE
         PULS    y,pc
 
-        INCLUDE ../nhyodyne/cubix_pager.asm
+        INCLUDE ../duodyne/cubix_pager.asm
 
         ORG     $FF00
 ;

@@ -1,6 +1,6 @@
 ;__IDE DRIVERS___________________________________________________________________________________________________________________
 ;
-; 	CUBIX IDE disk drivers for direct attached disk-io card
+; 	CUBIX IDE disk drivers for Duodyne Disk IO
 ;
 ;	Entry points:
 ;		PPIDE_INIT   	- CALLED DURING OS INIT
@@ -8,7 +8,7 @@
 ;		IDE_WRITE_SECTOR - write a sector to drive   ('U' POINTS TO DCB, X TO MEMORY)
 ;________________________________________________________________________________________________________________________________
 ;
-PPIDE_PPI       = $0560                           ; PORT A
+PPIDE_PPI       = $DF88                           ; PORT A
 ;
 PPIDELO         = PPIDE_PPI+0                     ; LSB
 PPIDEHI         = PPIDE_PPI+1                     ; MSB
@@ -297,7 +297,7 @@ RST_DLY:
 
 ; IF A DSKYNG IS ACTIVE AND IS ON THE SAME PPI PORT AS THE PPISDa:a BEING
 ; RESET, THEN THE DSKYNG WILL ALSO BE RESET.  SO, THE DSKY IS ALSO INITIALIZED.
-        JSR     DSKY_REINIT
+;;;;;;;;;;;;;;;;;;;;;;;;;  JSR     DSKY_REINIT
 
         RTS
 
@@ -547,6 +547,6 @@ IDE_SETUP_LBA:
         LDB     #$01
         JSR     IDE_WRITE
 
-        JSR     DSKY_BIN2SEG
-        JSR     DSKY_SHOW
+;   JSR     DSKY_BIN2SEG
+;   JSR     DSKY_SHOW
         PULS    D,PC

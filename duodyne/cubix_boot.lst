@@ -11,68 +11,55 @@
                       (   cubix_boot.asm):00011         ;
      DF5C             (   cubix_boot.asm):00012         PAGEUART4       EQU $DF5C                         ; INT and Bank CONTROL
                       (   cubix_boot.asm):00013         
-                      (   cubix_boot.asm):00014                 ORG     $100
+                      (   cubix_boot.asm):00014                 ORG     $1000
                       (   cubix_boot.asm):00015         ;* Setup Memory Banks  (page out ROM)
-0100 8680             (   cubix_boot.asm):00016                 LDA     #$80
-0102 B7DF50           (   cubix_boot.asm):00017                 STA     BANK00
-0105 8681             (   cubix_boot.asm):00018                 LDA     #$81
-0107 B7DF51           (   cubix_boot.asm):00019                 STA     BANK40
-010A 8682             (   cubix_boot.asm):00020                 LDA     #$82
-010C B7DF52           (   cubix_boot.asm):00021                 STA     BANK80
-010F 8683             (   cubix_boot.asm):00022                 LDA     #$83
-0111 B7DF53           (   cubix_boot.asm):00023                 STA     BANKC0
-                      (   cubix_boot.asm):00024         
-0114 860B             (   cubix_boot.asm):00025                 LDA     #$0B
-0116 B7DF5C           (   cubix_boot.asm):00026                 STA     PAGEUART4                         ; Int disabled, banks enabled
-                      (   cubix_boot.asm):00027         
-                      (   cubix_boot.asm):00028         ; copy Cubix to proper bank
-0119 8E0200           (   cubix_boot.asm):00029                 LDX     #$0200
-011C 108EE000         (   cubix_boot.asm):00030                 LDY     #$E000
-0120                  (   cubix_boot.asm):00031         LOOP:
-0120 A680             (   cubix_boot.asm):00032                 LDA     ,X+                               ;MOVE IT
-0122 A7A0             (   cubix_boot.asm):00033                 STA     ,Y+                               ;MOVE IT
-0124 108C0000         (   cubix_boot.asm):00034                 CMPY    #$0000                            ;AT END?
-0128 26F6             (   cubix_boot.asm):00035                 BNE     LOOP                              ;CONTINUE
-                      (   cubix_boot.asm):00036         
-                      (   cubix_boot.asm):00037         ; copy Drivers to proper bank
-012A 8685             (   cubix_boot.asm):00038                 LDA     #$85
-012C B7DF52           (   cubix_boot.asm):00039                 STA     BANK80
-012F 8E2300           (   cubix_boot.asm):00040                 LDX     #$2300
-0132 108E8800         (   cubix_boot.asm):00041                 LDY     #$8800
-0136                  (   cubix_boot.asm):00042         LOOP1:
-0136 A680             (   cubix_boot.asm):00043                 LDA     ,X+                               ;MOVE IT
-0138 A7A0             (   cubix_boot.asm):00044                 STA     ,Y+                               ;MOVE IT
-013A 108CBF00         (   cubix_boot.asm):00045                 CMPY    #$BF00                            ;AT END?
-013E 26F6             (   cubix_boot.asm):00046                 BNE     LOOP1                             ;CONTINUE
-                      (   cubix_boot.asm):00047         
-                      (   cubix_boot.asm):00048         
-0140 8603             (   cubix_boot.asm):00049                 LDA     #$03
-0142 B7DF53           (   cubix_boot.asm):00050                 STA     BANKC0
-0145 7EE000           (   cubix_boot.asm):00051                 JMP     $e000
-                      (   cubix_boot.asm):00052         
-                      (   cubix_boot.asm):00053         ;* Setup Memory Banks  (page out ROM)
-0148 8680             (   cubix_boot.asm):00054                 LDA     #$80
-014A B7DF50           (   cubix_boot.asm):00055                 STA     BANK00
-014D 8681             (   cubix_boot.asm):00056                 LDA     #$81
-014F B7DF51           (   cubix_boot.asm):00057                 STA     BANK40
-0152 8682             (   cubix_boot.asm):00058                 LDA     #$82
-0154 B7DF52           (   cubix_boot.asm):00059                 STA     BANK80
-0157 8683             (   cubix_boot.asm):00060                 LDA     #$83
-0159 B7DF53           (   cubix_boot.asm):00061                 STA     BANKC0
-                      (   cubix_boot.asm):00062         
-                      (   cubix_boot.asm):00063         
-                      (   cubix_boot.asm):00064         ; Boot
-015C 7EE108           (   cubix_boot.asm):00065                 JMP     $E108
-                      (   cubix_boot.asm):00066         
-                      (   cubix_boot.asm):00067         
-015F                  (   cubix_boot.asm):00068         .END
+1000 8681             (   cubix_boot.asm):00016                 LDA     #$81
+1002 B7DF51           (   cubix_boot.asm):00017                 STA     BANK40
+1005 8682             (   cubix_boot.asm):00018                 LDA     #$82
+1007 B7DF52           (   cubix_boot.asm):00019                 STA     BANK80
+100A 8683             (   cubix_boot.asm):00020                 LDA     #$83
+100C B7DF53           (   cubix_boot.asm):00021                 STA     BANKC0
+                      (   cubix_boot.asm):00022         
+                      (   cubix_boot.asm):00023         ; copy Cubix to proper bank
+100F 8E1200           (   cubix_boot.asm):00024                 LDX     #$1200
+1012 108EE000         (   cubix_boot.asm):00025                 LDY     #$E000
+1016                  (   cubix_boot.asm):00026         LOOP:
+1016 A680             (   cubix_boot.asm):00027                 LDA     ,X+                               ;MOVE IT
+1018 A7A0             (   cubix_boot.asm):00028                 STA     ,Y+                               ;MOVE IT
+101A 108C0000         (   cubix_boot.asm):00029                 CMPY    #$0000                            ;AT END?
+101E 26F6             (   cubix_boot.asm):00030                 BNE     LOOP                              ;CONTINUE
+                      (   cubix_boot.asm):00031         
+                      (   cubix_boot.asm):00032         ; copy Drivers to proper bank
+1020 8685             (   cubix_boot.asm):00033                 LDA     #$85
+1022 B7DF52           (   cubix_boot.asm):00034                 STA     BANK80
+1025 8E3300           (   cubix_boot.asm):00035                 LDX     #$3300
+1028 108E8800         (   cubix_boot.asm):00036                 LDY     #$8800
+102C                  (   cubix_boot.asm):00037         LOOP1:
+102C A680             (   cubix_boot.asm):00038                 LDA     ,X+                               ;MOVE IT
+102E A7A0             (   cubix_boot.asm):00039                 STA     ,Y+                               ;MOVE IT
+1030 108CBF00         (   cubix_boot.asm):00040                 CMPY    #$BF00                            ;AT END?
+1034 26F6             (   cubix_boot.asm):00041                 BNE     LOOP1                             ;CONTINUE
+                      (   cubix_boot.asm):00042         
+                      (   cubix_boot.asm):00043         ;* Setup Memory Banks  (page out ROM)
+1036 8681             (   cubix_boot.asm):00044                 LDA     #$81
+1038 B7DF51           (   cubix_boot.asm):00045                 STA     BANK40
+103B 8682             (   cubix_boot.asm):00046                 LDA     #$82
+103D B7DF52           (   cubix_boot.asm):00047                 STA     BANK80
+1040 8683             (   cubix_boot.asm):00048                 LDA     #$83
+1042 B7DF53           (   cubix_boot.asm):00049                 STA     BANKC0
+                      (   cubix_boot.asm):00050         
+                      (   cubix_boot.asm):00051         ; Boot
+1045 7EE108           (   cubix_boot.asm):00052                 JMP     $E108
+                      (   cubix_boot.asm):00053         
+                      (   cubix_boot.asm):00054         
+1048                  (   cubix_boot.asm):00055         .END
 
 Symbol Table:
-[ G] .END                             015F
+[ G] .END                             1048
 [ G] BANK00                           DF50
 [ G] BANK40                           DF51
 [ G] BANK80                           DF52
 [ G] BANKC0                           DF53
-[ G] LOOP                             0120
-[ G] LOOP1                            0136
+[ G] LOOP                             1016
+[ G] LOOP1                            102C
 [ G] PAGEUART4                        DF5C

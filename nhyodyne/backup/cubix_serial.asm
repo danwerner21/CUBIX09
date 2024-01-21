@@ -1,6 +1,6 @@
 ;__SERIAL DRIVERS________________________________________________________________________________________________________________
 ;
-; 	CUBIX serial drivers for 6809 IO card
+; 	CUBIX serial drivers for Duodyne 6809 on-board UART card
 ;
 ;	Entry points:
 ;		SERIALINIT  - called during OS init

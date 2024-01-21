@@ -297,7 +297,7 @@ RST_DLY:
 
 ; IF A DSKYNG IS ACTIVE AND IS ON THE SAME PPI PORT AS THE PPISDa:a BEING
 ; RESET, THEN THE DSKYNG WILL ALSO BE RESET.  SO, THE DSKY IS ALSO INITIALIZED.
-      ;;;;;;;;;;;;;;;;;;;;;;;;;  JSR     DSKY_REINIT
+;;;;;;;;;;;;;;;;;;;;;;;;;  JSR     DSKY_REINIT
 
         RTS
 
@@ -547,6 +547,6 @@ IDE_SETUP_LBA:
         LDB     #$01
         JSR     IDE_WRITE
 
-     ;   JSR     DSKY_BIN2SEG
-     ;   JSR     DSKY_SHOW
+;   JSR     DSKY_BIN2SEG
+;   JSR     DSKY_SHOW
         PULS    D,PC

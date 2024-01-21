@@ -5,23 +5,22 @@
 ;* Copyright 1983-2005 Dave Dunfield
 ;* All rights reserved.
 ;*
-;* asmode=dist OR demo
-
-        IFDEF   dist
-;* MEMORY LOCATIONS FOR DISTRIBUTION (NON-PORTED) ROM
+        IFDEF   duodyne
+;* MEMORY LOCATIONS FOR DUODYNE
 ROM             EQU $E000                         ; OS FIRMWARE
-RAM             EQU ROM-1024                      ; OS LOCAL STORAGE (1K)
+RAM             EQU $1000                         ; OS LOCAL STORAGE (1K)
 USRRAM          EQU $2000                         ; START OF USER SUPPLIED RAM
-USREND          EQU ROM-1                         ; RAMTEST STOPS HERE
+USREND          EQU ROM-257                       ; RAMTEST STOPS HERE
         ENDIF
-        IFDEF   demo
-;* MEMORY LOCATIONS FOR THE DEMO SYSTEM USING EXAMPLE DRIVERS
+
+        IFDEF   nhyodyne
+;* MEMORY LOCATIONS FOR NHYODYNE
 ROM             EQU $E000                         ; OS FORMWARE
 RAM             EQU ROM-1024                      ; OS LOCAL STORAGE
 USRRAM          EQU $2000                         ; START OF USER SUPPLIED RAM
 USREND          EQU ROM-1                         ; RAMTEST STOPS HERE
-dr_file         SET sample.sys
         ENDIF
+
 ;* MISC CONSTANTS
 NDEV            EQU 8                             ; NUMBER OF SERIAL DEVICES SUPPORTED
 NDSK            EQU 4                             ; # OF DISK DRIVES SUPPORTED
@@ -335,6 +334,7 @@ DMPREG1
 ;* ZERO WORK RAM & INIT HARDWARE DEVICES
 ;*
 BEGIN
+
         LDS     #STACK                            ;SET UP SYSTEM STACK
         LDX     #RAM                              ;POINT TO START OF RAM
 BEG1
@@ -344,6 +344,7 @@ BEG1
         JSR     DOINIT                            ;INITIALIZE HARDWARE
         JSR     PURGE1                            ;INITIALIZE WORK SECTOR
         CLR     >ERRCNT                           ;INDICATE NO ERRORS
+
 ;        IFNDEF  test
 ;;* PERFORM CHECKSUM TEST OF ROM
 ;        JSR     WRLIN                             ;OUTPUT MESSAGE
@@ -1527,6 +1528,10 @@ NUMSSR          EQU (*-SSRTAB)/2                  ;# SSR'S IMPLEMENTED
         IFDEF   nhyodyne
         INCLUDE ../nhyodyne/drivers.asm
         ENDIF
+        IFDEF   duodyne
+        INCLUDE ../duodyne/drivers.asm
+        ENDIF
+
 ;*
 ;* INTERRUPT VECTORS
 ;*

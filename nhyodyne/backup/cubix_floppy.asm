@@ -282,11 +282,11 @@ SNDFDWR:
         JSR     PFDATA                            ;
         LDA     CURRENTCYL                        ;
         JSR     PFDATA                            ;
-        LDA     CURRENTHEAD                        ;
+        LDA     CURRENTHEAD                       ;
         JSR     PFDATA                            ;
         CLC                                       ;
-        LDA     CURRENTSEC                       ;
-        INCA                              ;
+        LDA     CURRENTSEC                        ;
+        INCA                                      ;
         JSR     PFDATA                            ;
         LDA     #$02                              ;
         JSR     PFDATA                            ; WHAT DENSITY
