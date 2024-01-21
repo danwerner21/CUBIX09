@@ -335,10 +335,6 @@ DMPREG1
 ;*
 BEGIN
 
-
-        LDA     #$ff
-        STA     $DF54
-
         LDS     #STACK                            ;SET UP SYSTEM STACK
         LDX     #RAM                              ;POINT TO START OF RAM
 BEG1
@@ -348,9 +344,6 @@ BEG1
         JSR     DOINIT                            ;INITIALIZE HARDWARE
         JSR     PURGE1                            ;INITIALIZE WORK SECTOR
         CLR     >ERRCNT                           ;INDICATE NO ERRORS
-
-        LDA     #$fe
-        STA     $DF54
 
 ;        IFNDEF  test
 ;;* PERFORM CHECKSUM TEST OF ROM
@@ -426,10 +419,6 @@ BEG1
 ;        DEC     >ERRCNT                           ;INDICATE ERRORS
 ;* ISSUE HEARALD MESSAGE & START THE BALL ROLLING
 HELLO
-        LDA     #$fd
-        STA     $DF54
-
-
         JSR     WRMSG
         FCB     $0A
         FCC     'CUBIX version 1.5'
@@ -438,10 +427,6 @@ HELLO
         FCB     $0A,$0D
         FCC     'All rights reserved'
         FCB     $0A,$0D,0
-
-        LDA     #$fc
-        STA     $DF54
-
 
 ;* IF NO ERRORS, EXECUTE THE STARTUP FILE
         LDA     >ERRCNT                           ;GET ERROR FLAG

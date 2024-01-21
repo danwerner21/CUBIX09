@@ -60,9 +60,6 @@ LOOP1:
         LDA     #$83
         STA     BANKC0
 
-        LDA     #$01
-        STA     $DF54
-
 
 ; Boot
         JMP     $E108

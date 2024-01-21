@@ -60,18 +60,15 @@
 0157 8683             (   cubix_boot.asm):00060                 LDA     #$83
 0159 B7DF53           (   cubix_boot.asm):00061                 STA     BANKC0
                       (   cubix_boot.asm):00062         
-015C 8601             (   cubix_boot.asm):00063                 LDA     #$01
-015E B7DF54           (   cubix_boot.asm):00064                 STA     $DF54
-                      (   cubix_boot.asm):00065         
+                      (   cubix_boot.asm):00063         
+                      (   cubix_boot.asm):00064         ; Boot
+015C 7EE108           (   cubix_boot.asm):00065                 JMP     $E108
                       (   cubix_boot.asm):00066         
-                      (   cubix_boot.asm):00067         ; Boot
-0161 7EE108           (   cubix_boot.asm):00068                 JMP     $E108
-                      (   cubix_boot.asm):00069         
-                      (   cubix_boot.asm):00070         
-0164                  (   cubix_boot.asm):00071         .END
+                      (   cubix_boot.asm):00067         
+015F                  (   cubix_boot.asm):00068         .END
 
 Symbol Table:
-[ G] .END                             0164
+[ G] .END                             015F
 [ G] BANK00                           DF50
 [ G] BANK40                           DF51
 [ G] BANK80                           DF52

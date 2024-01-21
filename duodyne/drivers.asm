@@ -24,9 +24,6 @@
 ;*
 ;* INITIALIZE CUBIX SYSTEM TABLE
 HWINIT
-        LDA     #$F0
-        STA     $DF54
-
         LDX     #RITAB                            ;POINT TO OUR TABLE
         LDB     #RISIZ                            ;SIZE OF TABLE
 HWIN1
@@ -35,16 +32,8 @@ HWIN1
         DECB                                      ;REDUCE COUNT
         BNE     HWIN1                             ;MOVE ENTIRE TABLE
 
-        LDA     #$F1
-        STA     $DF54
-
-
         LDA     #00
         STA     CONSOLEDEVICE                     ; set console device for driver output
-
-        LDA     #$F2
-        STA     $DF54
-
 
         JSR     PAGER_INIT                        ;INIT PAGER
 ;
@@ -249,10 +238,10 @@ RITAB           EQU *
         FCC     'SYSTEM'                          ;SYSTEM DIRECTORY
         FCB     0,0                               ;(FILLER)
 ; DRIVE MAPPING TABLE
-        FCB     $00,$00                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
-        FCB     $00,$00                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE
-        FCB     $00,$01                           ;     LOW NIBBLE IS DEVICE ADDRESS
-        FCB     $00,$02                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
+        FCB     $21,$00                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
+        FCB     $21,$00                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE
+        FCB     $21,$01                           ;     LOW NIBBLE IS DEVICE ADDRESS
+        FCB     $21,$02                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
                                                   ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
 
 RISIZ           EQU *-RITAB                       ;SIZE OF INITILAIZED RAM

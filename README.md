@@ -3,7 +3,7 @@
 This is a port of the excellent CUBIX operating system by Dave Dunfield for various homebrew SBCs.
 
 Supported SBCs include:
-* Andrew Lynch's   Nhyodyne and Duodyne(todo) systems
+* Andrew Lynch's   Nhyodyne and Duodyne systems
 * Retrobrewcomputers.org's   6x0x system (todo)
 
 ---
@@ -104,6 +104,32 @@ Nhyodyne Map:
             $0600-$1FFF - FREE WORKING RAM
             $2000-$DBFF - Application Random Access Memory.     
             $DC00-$DFFF - OS LOCAL STORAGE   
+            $E000-$F944 - CUBIX Operating System 
+            $F945-$FEFF - CUBIX Low Memory Device Drivers
+            $FF00-$FFF1 - OS VECTORS AND CONFIG TABLES
+            $FFF2-$FFFF - HARDWARE VECTORS
+
+Duodyne Map:
+            $0000-$00FF - FREE WORKING RAM
+            $0100       - CONSOLEDEVICE
+            $0101-$01E9 - FREE WORKING RAM
+            $01EA-$01F2 - DSKY_BUF
+            $01F3-$01F6 - DSKY_HEXBUF
+            $01F7       - DISKERROR       
+            $01F8       - CURRENTHEAD     
+            $01F9       - CURRENTCYL      
+            $01FA       - CURRENTSEC      
+            $01FB       - CURRENTDEVICE   
+            $01FC       - CURRENTSLICE    
+            $01FE       - farpointer      
+            $0200-$02FF - PAGER CODE
+            $0300-$04FF - DISK BUFFER
+            $0500-$0FFF - FREE WORKING RAM
+            $1000-$13FF - OS LOCAL STORAGE   
+            $1400-$1FFF - FREE WORKING RAM
+            $2000-$DBFF - Application Random Access Memory.     
+            $DC00-$DEFF - OS LOCAL STORAGE   
+            $DF00-$DFFF - Memory Mapped IO
             $E000-$F944 - CUBIX Operating System 
             $F945-$FEFF - CUBIX Low Memory Device Drivers
             $FF00-$FFF1 - OS VECTORS AND CONFIG TABLES

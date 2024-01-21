@@ -56,9 +56,9 @@ DISPATCHTABLE:
         .WORD   drv_noop                          ; FL_READ_SECTOR                    ; FUNCTION 19 - read a sector from floppy device
         .WORD   drv_noop                          ; FL_WRITE_SECTOR                   ; FUNCTION 20 - write a sector to floppy device
 ;
-        .WORD   drv_noop                          ; PPIDE_INIT                        ; FUNCTION 21 - init PPIDE device
-        .WORD   drv_noop                          ; IDE_READ_SECTOR                   ; FUNCTION 22 - read a sector from PPIDE device
-        .WORD   drv_noop                          ; IDE_WRITE_SECTOR                  ; FUNCTION 23 - write a sector to PPIDE device
+        .WORD   PPIDE_INIT                        ; FUNCTION 21 - init PPIDE device
+        .WORD   IDE_READ_SECTOR                   ; FUNCTION 22 - read a sector from PPIDE device
+        .WORD   IDE_WRITE_SECTOR                  ; FUNCTION 23 - write a sector to PPIDE device
 ;
         .WORD   drv_noop                          ; FUNCTION 24 -
         .WORD   drv_noop                          ; FUNCTION 25 -
@@ -80,7 +80,7 @@ DISPATCHTABLE:
 ;__DRIVERS___________________________________________________________________________________________
 ;
         INCLUDE cubix_serial.asm
-;        INCLUDE cubix_ide.asm
+        INCLUDE cubix_ide.asm
 ;        INCLUDE cubix_dskyng.asm
 ;        INCLUDE cubix_dsky.asm
 ;        INCLUDE cubix_floppy.asm

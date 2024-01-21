@@ -44,10 +44,6 @@ PAGEUART4       EQU $DF5C                         ; INT and Bank CONTROL
 ;____________________________________________________________________________________________________
 PAGER_INIT:
 
-        LDA     #$02
-        STA     $DF54
-
-
         LDX     #$0000
 !
         LDA     md_pagecode,X

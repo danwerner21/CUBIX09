@@ -1,4 +1,4 @@
-Symbol: .END (cubix_boot.s) = 0164
+Symbol: .END (cubix_boot.s) = 015F
 Symbol: BANK00 (cubix_boot.s) = DF50
 Symbol: BANK40 (cubix_boot.s) = DF51
 Symbol: BANK80 (cubix_boot.s) = DF52
