@@ -47,8 +47,6 @@ SERIALINIT:
 ;________________________________________________________________________________________________________________________________
 ;
 WRSER1
-        LDA     #$05
-        STA     $DF54
 !
         LDB     UART5                             ; READ LINE STATUS REGISTER
         ANDB    #$20                              ; TEST IF UART IS READY TO SEND (BIT 5)
@@ -63,9 +61,6 @@ WRSER1
 ;________________________________________________________________________________________________________________________________
 ;
 RDSER1
-        LDA     #$06
-        STA     $DF54
-
         LDA     UART5                             ; READ LINE STATUS REGISTER
         ANDA    #$01                              ; TEST IF DATA IN RECEIVE BUFFER
         CMPA    #$00

@@ -63,51 +63,51 @@
                       (     cubixdrv.asm):00029         
 8813                  (     cubixdrv.asm):00030         DISPATCHTABLE:
 8813 885E             (     cubixdrv.asm):00031                 .WORD   WRSER1                            ; FUNCTION 00 - WRITE SERIAL PORT
-8815 8870             (     cubixdrv.asm):00032                 .WORD   RDSER1                            ; FUNCTION 01 - READ SERIAL PORT
+8815 886B             (     cubixdrv.asm):00032                 .WORD   RDSER1                            ; FUNCTION 01 - READ SERIAL PORT
 8817 885D             (     cubixdrv.asm):00033                 .WORD   SERIALINIT                        ; FUNCTION 02 - SERIAL PORT INIT
                       (     cubixdrv.asm):00034         
-8819 888D             (     cubixdrv.asm):00035                 .WORD   drv_noop                          ; FUNCTION 03 - WRITE VIDEO
-881B 888D             (     cubixdrv.asm):00036                 .WORD   drv_noop                          ; FUNCTION 04 - READ KEYBOARD
-881D 888D             (     cubixdrv.asm):00037                 .WORD   drv_noop                          ; FUNCTION 05 - INIT INTERFACE
+8819 8883             (     cubixdrv.asm):00035                 .WORD   drv_noop                          ; FUNCTION 03 - WRITE VIDEO
+881B 8883             (     cubixdrv.asm):00036                 .WORD   drv_noop                          ; FUNCTION 04 - READ KEYBOARD
+881D 8883             (     cubixdrv.asm):00037                 .WORD   drv_noop                          ; FUNCTION 05 - INIT INTERFACE
                       (     cubixdrv.asm):00038         
-881F 888D             (     cubixdrv.asm):00039                 .WORD   drv_noop                          ; FUNCTION 06
-8821 888D             (     cubixdrv.asm):00040                 .WORD   drv_noop                          ; FUNCTION 07
-8823 888D             (     cubixdrv.asm):00041                 .WORD   drv_noop                          ; FUNCTION 08
+881F 8883             (     cubixdrv.asm):00039                 .WORD   drv_noop                          ; FUNCTION 06
+8821 8883             (     cubixdrv.asm):00040                 .WORD   drv_noop                          ; FUNCTION 07
+8823 8883             (     cubixdrv.asm):00041                 .WORD   drv_noop                          ; FUNCTION 08
                       (     cubixdrv.asm):00042         
-8825 888D             (     cubixdrv.asm):00043                 .WORD   drv_noop                          ; FUNCTION 09
-8827 888D             (     cubixdrv.asm):00044                 .WORD   drv_noop                          ; FUNCTION 10
-8829 888D             (     cubixdrv.asm):00045                 .WORD   drv_noop                          ; FUNCTION 11
+8825 8883             (     cubixdrv.asm):00043                 .WORD   drv_noop                          ; FUNCTION 09
+8827 8883             (     cubixdrv.asm):00044                 .WORD   drv_noop                          ; FUNCTION 10
+8829 8883             (     cubixdrv.asm):00045                 .WORD   drv_noop                          ; FUNCTION 11
                       (     cubixdrv.asm):00046         
-882B 888D             (     cubixdrv.asm):00047                 .WORD   drv_noop                          ; FUNCTION 12
-882D 888D             (     cubixdrv.asm):00048                 .WORD   drv_noop                          ; FUNCTION 13
-882F 888D             (     cubixdrv.asm):00049                 .WORD   drv_noop                          ; FUNCTION 14
+882B 8883             (     cubixdrv.asm):00047                 .WORD   drv_noop                          ; FUNCTION 12
+882D 8883             (     cubixdrv.asm):00048                 .WORD   drv_noop                          ; FUNCTION 13
+882F 8883             (     cubixdrv.asm):00049                 .WORD   drv_noop                          ; FUNCTION 14
                       (     cubixdrv.asm):00050         
-8831 888D             (     cubixdrv.asm):00051                 .WORD   drv_noop                          ; FUNCTION 15 - called during OS init
-8833 888D             (     cubixdrv.asm):00052                 .WORD   drv_noop                          ; FUNCTION 16 - read a sector from drive
-8835 888D             (     cubixdrv.asm):00053                 .WORD   drv_noop                          ; FUNCTION 17 - write a sector to drive
+8831 8883             (     cubixdrv.asm):00051                 .WORD   drv_noop                          ; FUNCTION 15 - called during OS init
+8833 8883             (     cubixdrv.asm):00052                 .WORD   drv_noop                          ; FUNCTION 16 - read a sector from drive
+8835 8883             (     cubixdrv.asm):00053                 .WORD   drv_noop                          ; FUNCTION 17 - write a sector to drive
                       (     cubixdrv.asm):00054         ;
-8837 888D             (     cubixdrv.asm):00055                 .WORD   drv_noop                          ; FL_SETUP                          ; FUNCTION 18 - init floppy device
-8839 888D             (     cubixdrv.asm):00056                 .WORD   drv_noop                          ; FL_READ_SECTOR                    ; FUNCTION 19 - read a sector from floppy device
-883B 888D             (     cubixdrv.asm):00057                 .WORD   drv_noop                          ; FL_WRITE_SECTOR                   ; FUNCTION 20 - write a sector to floppy device
+8837 8883             (     cubixdrv.asm):00055                 .WORD   drv_noop                          ; FL_SETUP                          ; FUNCTION 18 - init floppy device
+8839 8883             (     cubixdrv.asm):00056                 .WORD   drv_noop                          ; FL_READ_SECTOR                    ; FUNCTION 19 - read a sector from floppy device
+883B 8883             (     cubixdrv.asm):00057                 .WORD   drv_noop                          ; FL_WRITE_SECTOR                   ; FUNCTION 20 - write a sector to floppy device
                       (     cubixdrv.asm):00058         ;
-883D 888D             (     cubixdrv.asm):00059                 .WORD   drv_noop                          ; PPIDE_INIT                        ; FUNCTION 21 - init PPIDE device
-883F 888D             (     cubixdrv.asm):00060                 .WORD   drv_noop                          ; IDE_READ_SECTOR                   ; FUNCTION 22 - read a sector from PPIDE device
-8841 888D             (     cubixdrv.asm):00061                 .WORD   drv_noop                          ; IDE_WRITE_SECTOR                  ; FUNCTION 23 - write a sector to PPIDE device
+883D 8883             (     cubixdrv.asm):00059                 .WORD   drv_noop                          ; PPIDE_INIT                        ; FUNCTION 21 - init PPIDE device
+883F 8883             (     cubixdrv.asm):00060                 .WORD   drv_noop                          ; IDE_READ_SECTOR                   ; FUNCTION 22 - read a sector from PPIDE device
+8841 8883             (     cubixdrv.asm):00061                 .WORD   drv_noop                          ; IDE_WRITE_SECTOR                  ; FUNCTION 23 - write a sector to PPIDE device
                       (     cubixdrv.asm):00062         ;
-8843 888D             (     cubixdrv.asm):00063                 .WORD   drv_noop                          ; FUNCTION 24 -
-8845 888D             (     cubixdrv.asm):00064                 .WORD   drv_noop                          ; FUNCTION 25 -
-8847 888D             (     cubixdrv.asm):00065                 .WORD   drv_noop                          ; FUNCTION 26 -
+8843 8883             (     cubixdrv.asm):00063                 .WORD   drv_noop                          ; FUNCTION 24 -
+8845 8883             (     cubixdrv.asm):00064                 .WORD   drv_noop                          ; FUNCTION 25 -
+8847 8883             (     cubixdrv.asm):00065                 .WORD   drv_noop                          ; FUNCTION 26 -
                       (     cubixdrv.asm):00066         ;
-8849 888D             (     cubixdrv.asm):00067                 .WORD   drv_noop                          ; DSKY_INIT                         ; FUNCTION 27 -
-884B 888D             (     cubixdrv.asm):00068                 .WORD   drv_noop                          ; DSKY_SHOW                         ; FUNCTION 28 -
-884D 888D             (     cubixdrv.asm):00069                 .WORD   drv_noop                          ; DSKY_BIN2SEG                      ; FUNCTION 29 -
-884F 888D             (     cubixdrv.asm):00070                 .WORD   drv_noop                          ; DSKY_RESET                        ; FUNCTION 30 -
-8851 888D             (     cubixdrv.asm):00071                 .WORD   drv_noop                          ; DSKY_STAT                         ; FUNCTION 31 -
-8853 888D             (     cubixdrv.asm):00072                 .WORD   drv_noop                          ; DSKY_GETKEY                       ; FUNCTION 32 -
-8855 888D             (     cubixdrv.asm):00073                 .WORD   drv_noop                          ; DSKY_BEEP                         ; FUNCTION 33 -
-8857 888D             (     cubixdrv.asm):00074                 .WORD   drv_noop                          ; DSKY_DSPL                         ; FUNCTION 34 -
-8859 888D             (     cubixdrv.asm):00075                 .WORD   drv_noop                          ; DSKY_PUTLED                       ; FUNCTION 35 -
-885B 888D             (     cubixdrv.asm):00076                 .WORD   drv_noop                          ; DSKY_BLANK                        ; FUNCTION 36 -
+8849 8883             (     cubixdrv.asm):00067                 .WORD   drv_noop                          ; DSKY_INIT                         ; FUNCTION 27 -
+884B 8883             (     cubixdrv.asm):00068                 .WORD   drv_noop                          ; DSKY_SHOW                         ; FUNCTION 28 -
+884D 8883             (     cubixdrv.asm):00069                 .WORD   drv_noop                          ; DSKY_BIN2SEG                      ; FUNCTION 29 -
+884F 8883             (     cubixdrv.asm):00070                 .WORD   drv_noop                          ; DSKY_RESET                        ; FUNCTION 30 -
+8851 8883             (     cubixdrv.asm):00071                 .WORD   drv_noop                          ; DSKY_STAT                         ; FUNCTION 31 -
+8853 8883             (     cubixdrv.asm):00072                 .WORD   drv_noop                          ; DSKY_GETKEY                       ; FUNCTION 32 -
+8855 8883             (     cubixdrv.asm):00073                 .WORD   drv_noop                          ; DSKY_BEEP                         ; FUNCTION 33 -
+8857 8883             (     cubixdrv.asm):00074                 .WORD   drv_noop                          ; DSKY_DSPL                         ; FUNCTION 34 -
+8859 8883             (     cubixdrv.asm):00075                 .WORD   drv_noop                          ; DSKY_PUTLED                       ; FUNCTION 35 -
+885B 8883             (     cubixdrv.asm):00076                 .WORD   drv_noop                          ; DSKY_BLANK                        ; FUNCTION 36 -
                       (     cubixdrv.asm):00077         ;
                       (     cubixdrv.asm):00078         
                       (     cubixdrv.asm):00079         
@@ -163,37 +163,32 @@
                       ( cubix_serial.asm):00047         ;________________________________________________________________________________________________________________________________
                       ( cubix_serial.asm):00048         ;
 885E                  ( cubix_serial.asm):00049         WRSER1
-885E 8605             ( cubix_serial.asm):00050                 LDA     #$05
-8860 B7DF54           ( cubix_serial.asm):00051                 STA     $DF54
-                      ( cubix_serial.asm):00052         !
-8863 F6DF5D           ( cubix_serial.asm):00053                 LDB     UART5                             ; READ LINE STATUS REGISTER
-8866 C420             ( cubix_serial.asm):00054                 ANDB    #$20                              ; TEST IF UART IS READY TO SEND (BIT 5)
-8868 C100             ( cubix_serial.asm):00055                 CMPB    #$00
-886A 27F7             ( cubix_serial.asm):00056                 BEQ     <                                 ; IF NOT REPEAT
-886C B7DF58           ( cubix_serial.asm):00057                 STA     UART0                             ; THEN WRITE THE CHAR TO UART
-886F 39               ( cubix_serial.asm):00058                 RTS
-                      ( cubix_serial.asm):00059         
-                      ( cubix_serial.asm):00060         ;__RDSER1________________________________________________________________________________________________________________________
-                      ( cubix_serial.asm):00061         ;
-                      ( cubix_serial.asm):00062         ;       READ CHARACTER FROM UART TO (A)
-                      ( cubix_serial.asm):00063         ;________________________________________________________________________________________________________________________________
-                      ( cubix_serial.asm):00064         ;
-8870                  ( cubix_serial.asm):00065         RDSER1
-8870 8606             ( cubix_serial.asm):00066                 LDA     #$06
-8872 B7DF54           ( cubix_serial.asm):00067                 STA     $DF54
-                      ( cubix_serial.asm):00068         
-8875 B6DF5D           ( cubix_serial.asm):00069                 LDA     UART5                             ; READ LINE STATUS REGISTER
-8878 8401             ( cubix_serial.asm):00070                 ANDA    #$01                              ; TEST IF DATA IN RECEIVE BUFFER
-887A 8100             ( cubix_serial.asm):00071                 CMPA    #$00
-887C 2709             ( cubix_serial.asm):00072                 BEQ     >                                 ; NO DATA
-887E B6DF58           ( cubix_serial.asm):00073                 LDA     UART0                             ; THEN READ THE CHAR FROM THE UART
-8881 B702F8           ( cubix_serial.asm):00074                 STA     >PAGER_D                          ; SAVE 'D'
-8884 1A04             ( cubix_serial.asm):00075                 ORCC    #%00000100                        ; SET 'Z'
-8886 39               ( cubix_serial.asm):00076                 RTS
-                      ( cubix_serial.asm):00077         !
-8887 86FF             ( cubix_serial.asm):00078                 LDA     #$FF                              ;
-8889 B702F8           ( cubix_serial.asm):00079                 STA     >PAGER_D                          ; SAVE 'D'
-888C 39               ( cubix_serial.asm):00080                 RTS                                       ;
+                      ( cubix_serial.asm):00050         !
+885E F6DF5D           ( cubix_serial.asm):00051                 LDB     UART5                             ; READ LINE STATUS REGISTER
+8861 C420             ( cubix_serial.asm):00052                 ANDB    #$20                              ; TEST IF UART IS READY TO SEND (BIT 5)
+8863 C100             ( cubix_serial.asm):00053                 CMPB    #$00
+8865 27F7             ( cubix_serial.asm):00054                 BEQ     <                                 ; IF NOT REPEAT
+8867 B7DF58           ( cubix_serial.asm):00055                 STA     UART0                             ; THEN WRITE THE CHAR TO UART
+886A 39               ( cubix_serial.asm):00056                 RTS
+                      ( cubix_serial.asm):00057         
+                      ( cubix_serial.asm):00058         ;__RDSER1________________________________________________________________________________________________________________________
+                      ( cubix_serial.asm):00059         ;
+                      ( cubix_serial.asm):00060         ;       READ CHARACTER FROM UART TO (A)
+                      ( cubix_serial.asm):00061         ;________________________________________________________________________________________________________________________________
+                      ( cubix_serial.asm):00062         ;
+886B                  ( cubix_serial.asm):00063         RDSER1
+886B B6DF5D           ( cubix_serial.asm):00064                 LDA     UART5                             ; READ LINE STATUS REGISTER
+886E 8401             ( cubix_serial.asm):00065                 ANDA    #$01                              ; TEST IF DATA IN RECEIVE BUFFER
+8870 8100             ( cubix_serial.asm):00066                 CMPA    #$00
+8872 2709             ( cubix_serial.asm):00067                 BEQ     >                                 ; NO DATA
+8874 B6DF58           ( cubix_serial.asm):00068                 LDA     UART0                             ; THEN READ THE CHAR FROM THE UART
+8877 B702F8           ( cubix_serial.asm):00069                 STA     >PAGER_D                          ; SAVE 'D'
+887A 1A04             ( cubix_serial.asm):00070                 ORCC    #%00000100                        ; SET 'Z'
+887C 39               ( cubix_serial.asm):00071                 RTS
+                      ( cubix_serial.asm):00072         !
+887D 86FF             ( cubix_serial.asm):00073                 LDA     #$FF                              ;
+887F B702F8           ( cubix_serial.asm):00074                 STA     >PAGER_D                          ; SAVE 'D'
+8882 39               ( cubix_serial.asm):00075                 RTS                                       ;
                       (     cubixdrv.asm):00083         ;        INCLUDE cubix_ide.asm
                       (     cubixdrv.asm):00084         ;        INCLUDE cubix_dskyng.asm
                       (     cubixdrv.asm):00085         ;        INCLUDE cubix_dsky.asm
@@ -203,75 +198,75 @@
                       (     cubixdrv.asm):00089         
                       (     cubixdrv.asm):00090         
                       (     cubixdrv.asm):00091         
-888D                  (     cubixdrv.asm):00092         drv_noop:
-888D 39               (     cubixdrv.asm):00093                 RTS
+8883                  (     cubixdrv.asm):00092         drv_noop:
+8883 39               (     cubixdrv.asm):00093                 RTS
                       (     cubixdrv.asm):00094         
                       (     cubixdrv.asm):00095         ;*
                       (     cubixdrv.asm):00096         ;* OUTPUT LFCR TO CONSOLE
                       (     cubixdrv.asm):00097         ;*
-888E                  (     cubixdrv.asm):00098         LFCR:
-888E 860A             (     cubixdrv.asm):00099                 LDA     #10
-8890 8D35             (     cubixdrv.asm):00100                 BSR     PUTCHR
-8892 860D             (     cubixdrv.asm):00101                 LDA     #13
-8894 8D31             (     cubixdrv.asm):00102                 BSR     PUTCHR
-8896 39               (     cubixdrv.asm):00103                 RTS
+8884                  (     cubixdrv.asm):00098         LFCR:
+8884 860A             (     cubixdrv.asm):00099                 LDA     #10
+8886 8D35             (     cubixdrv.asm):00100                 BSR     PUTCHR
+8888 860D             (     cubixdrv.asm):00101                 LDA     #13
+888A 8D31             (     cubixdrv.asm):00102                 BSR     PUTCHR
+888C 39               (     cubixdrv.asm):00103                 RTS
                       (     cubixdrv.asm):00104         ;*
                       (     cubixdrv.asm):00105         ;* WRITE STRING(X) TO CONSOLE
                       (     cubixdrv.asm):00106         ;*
-8897                  (     cubixdrv.asm):00107         WRSTR:
-8897 3406             (     cubixdrv.asm):00108                 PSHS    A,B                               ;SAVE A
-8899                  (     cubixdrv.asm):00109         WRST1:
-8899 A680             (     cubixdrv.asm):00110                 LDA     ,X+                               ;GET CHAR
-889B 2704             (     cubixdrv.asm):00111                 BEQ     WRST2                             ;END, QUIT
-889D 8D28             (     cubixdrv.asm):00112                 BSR     PUTCHR
-889F 20F8             (     cubixdrv.asm):00113                 BRA     WRST1                             ;CONTINUE
-88A1                  (     cubixdrv.asm):00114         WRST2:
-88A1 3506             (     cubixdrv.asm):00115                 PULS    A,B
-88A3 39               (     cubixdrv.asm):00116                 RTS
+888D                  (     cubixdrv.asm):00107         WRSTR:
+888D 3406             (     cubixdrv.asm):00108                 PSHS    A,B                               ;SAVE A
+888F                  (     cubixdrv.asm):00109         WRST1:
+888F A680             (     cubixdrv.asm):00110                 LDA     ,X+                               ;GET CHAR
+8891 2704             (     cubixdrv.asm):00111                 BEQ     WRST2                             ;END, QUIT
+8893 8D28             (     cubixdrv.asm):00112                 BSR     PUTCHR
+8895 20F8             (     cubixdrv.asm):00113                 BRA     WRST1                             ;CONTINUE
+8897                  (     cubixdrv.asm):00114         WRST2:
+8897 3506             (     cubixdrv.asm):00115                 PULS    A,B
+8899 39               (     cubixdrv.asm):00116                 RTS
                       (     cubixdrv.asm):00117         ;*
                       (     cubixdrv.asm):00118         ;* OUTPUT NUMBER IN 'D' TO CONSOLE IN HEX
                       (     cubixdrv.asm):00119         ;*
-88A4                  (     cubixdrv.asm):00120         WRHEXW
-88A4 8D07             (     cubixdrv.asm):00121                 BSR     WRHEX                             ;OUTPUT
-88A6 1E89             (     cubixdrv.asm):00122                 EXG     A,B                               ;SWAP
-88A8 8D03             (     cubixdrv.asm):00123                 BSR     WRHEX                             ;OUTPUT
-88AA 1E89             (     cubixdrv.asm):00124                 EXG     A,B                               ;BACK
-88AC 39               (     cubixdrv.asm):00125                 RTS
+889A                  (     cubixdrv.asm):00120         WRHEXW
+889A 8D07             (     cubixdrv.asm):00121                 BSR     WRHEX                             ;OUTPUT
+889C 1E89             (     cubixdrv.asm):00122                 EXG     A,B                               ;SWAP
+889E 8D03             (     cubixdrv.asm):00123                 BSR     WRHEX                             ;OUTPUT
+88A0 1E89             (     cubixdrv.asm):00124                 EXG     A,B                               ;BACK
+88A2 39               (     cubixdrv.asm):00125                 RTS
                       (     cubixdrv.asm):00126         ;*
                       (     cubixdrv.asm):00127         ;* OUTPUT 'A' NUMBER TO CONSOLE IN HEX
                       (     cubixdrv.asm):00128         ;*
-88AD                  (     cubixdrv.asm):00129         WRHEX
-88AD 3402             (     cubixdrv.asm):00130                 PSHS    A                                 ;SAVE IT
-88AF 44               (     cubixdrv.asm):00131                 LSRA                                      ;SHIFT
-88B0 44               (     cubixdrv.asm):00132                 LSRA                                      ;HIGH NIBBLE
-88B1 44               (     cubixdrv.asm):00133                 LSRA                                      ;INTO
-88B2 44               (     cubixdrv.asm):00134                 LSRA                                      ;LOW NIBBLE
-88B3 8D06             (     cubixdrv.asm):00135                 BSR     HOUT                              ;HIGH
-88B5 A6E4             (     cubixdrv.asm):00136                 LDA     ,S                                ;GET LOW
-88B7 8D02             (     cubixdrv.asm):00137                 BSR     HOUT                              ;OUTPUT
-88B9 3582             (     cubixdrv.asm):00138                 PULS    A,PC                              ;RESTORE IT
+88A3                  (     cubixdrv.asm):00129         WRHEX
+88A3 3402             (     cubixdrv.asm):00130                 PSHS    A                                 ;SAVE IT
+88A5 44               (     cubixdrv.asm):00131                 LSRA                                      ;SHIFT
+88A6 44               (     cubixdrv.asm):00132                 LSRA                                      ;HIGH NIBBLE
+88A7 44               (     cubixdrv.asm):00133                 LSRA                                      ;INTO
+88A8 44               (     cubixdrv.asm):00134                 LSRA                                      ;LOW NIBBLE
+88A9 8D06             (     cubixdrv.asm):00135                 BSR     HOUT                              ;HIGH
+88AB A6E4             (     cubixdrv.asm):00136                 LDA     ,S                                ;GET LOW
+88AD 8D02             (     cubixdrv.asm):00137                 BSR     HOUT                              ;OUTPUT
+88AF 3582             (     cubixdrv.asm):00138                 PULS    A,PC                              ;RESTORE IT
                       (     cubixdrv.asm):00139         ;* OUTPUT NIBBLE IN HEX
-88BB                  (     cubixdrv.asm):00140         HOUT
-88BB 840F             (     cubixdrv.asm):00141                 ANDA    #%00001111                        ;REMOVE HIGH
-88BD 8B30             (     cubixdrv.asm):00142                 ADDA    #'0'                              ;CONVERT
-88BF 8139             (     cubixdrv.asm):00143                 CMPA    #'9'                              ;OK?
-88C1 2304             (     cubixdrv.asm):00144                 BLS     PUTCHR                            ;OK, OUTPUT
-88C3 8B07             (     cubixdrv.asm):00145                 ADDA    #7                                ;CONVERT TO 'A'-'F'
-88C5 2000             (     cubixdrv.asm):00146                 BRA     PUTCHR                            ;OUTPUT
-88C7                  (     cubixdrv.asm):00147         PUTCHR:
-88C7 7E885E           (     cubixdrv.asm):00148                 JMP     WRSER1
-88CA 3404             (     cubixdrv.asm):00149                 PSHS    B
-88CC 3402             (     cubixdrv.asm):00150                 PSHS    A
-88CE 58               (     cubixdrv.asm):00151                 ASLB                                      ; DOUBLE NUMBER FOR TABLE LOOKUP
-88CF 8600             (     cubixdrv.asm):00152                 LDA     #$00
-88D1 F60100           (     cubixdrv.asm):00153                 LDB     CONSOLEDEVICE
-88D4 1F01             (     cubixdrv.asm):00154                 TFR     D,X
-88D6 EC898813         (     cubixdrv.asm):00155                 LDD     DISPATCHTABLE,X
-88DA FD01FE           (     cubixdrv.asm):00156                 STD     farpointer
-88DD 3502             (     cubixdrv.asm):00157                 PULS    A
-88DF AD9F01FE         (     cubixdrv.asm):00158                 JSR     [farpointer]
-88E3 3504             (     cubixdrv.asm):00159                 PULS    B
-88E5 39               (     cubixdrv.asm):00160                 RTS
+88B1                  (     cubixdrv.asm):00140         HOUT
+88B1 840F             (     cubixdrv.asm):00141                 ANDA    #%00001111                        ;REMOVE HIGH
+88B3 8B30             (     cubixdrv.asm):00142                 ADDA    #'0'                              ;CONVERT
+88B5 8139             (     cubixdrv.asm):00143                 CMPA    #'9'                              ;OK?
+88B7 2304             (     cubixdrv.asm):00144                 BLS     PUTCHR                            ;OK, OUTPUT
+88B9 8B07             (     cubixdrv.asm):00145                 ADDA    #7                                ;CONVERT TO 'A'-'F'
+88BB 2000             (     cubixdrv.asm):00146                 BRA     PUTCHR                            ;OUTPUT
+88BD                  (     cubixdrv.asm):00147         PUTCHR:
+88BD 7E885E           (     cubixdrv.asm):00148                 JMP     WRSER1
+88C0 3404             (     cubixdrv.asm):00149                 PSHS    B
+88C2 3402             (     cubixdrv.asm):00150                 PSHS    A
+88C4 58               (     cubixdrv.asm):00151                 ASLB                                      ; DOUBLE NUMBER FOR TABLE LOOKUP
+88C5 8600             (     cubixdrv.asm):00152                 LDA     #$00
+88C7 F60100           (     cubixdrv.asm):00153                 LDB     CONSOLEDEVICE
+88CA 1F01             (     cubixdrv.asm):00154                 TFR     D,X
+88CC EC898813         (     cubixdrv.asm):00155                 LDD     DISPATCHTABLE,X
+88D0 FD01FE           (     cubixdrv.asm):00156                 STD     farpointer
+88D3 3502             (     cubixdrv.asm):00157                 PULS    A
+88D5 AD9F01FE         (     cubixdrv.asm):00158                 JSR     [farpointer]
+88D9 3504             (     cubixdrv.asm):00159                 PULS    B
+88DB 39               (     cubixdrv.asm):00160                 RTS
                       (     cubixdrv.asm):00161         
                       (     cubixdrv.asm):00162                 END
 
@@ -285,7 +280,7 @@ Symbol Table:
 [ G] CURRENTSLICE                     01FC
 [ G] DISKERROR                        01F7
 [ G] DISPATCHTABLE                    8813
-[ G] drv_noop                         888D
+[ G] drv_noop                         8883
 [ G] DSKUNIT                          01E6
 [ G] DSKY_BUF                         01EA
 [ G] DSKY_HEXBUF                      01F3
@@ -296,9 +291,9 @@ Symbol Table:
 [ G] FLRETRY                          01E8
 [ G] FLRETRY1                         01E9
 [ G] FUNCTION_DISPATCHER              8800
-[ G] HOUT                             88BB
+[ G] HOUT                             88B1
 [ G] HSTBUF                           0300
-[ G] LFCR                             888E
+[ G] LFCR                             8884
 [ G] MD_PAGERA                        0200
 [ G] PAGER_D                          02F8
 [ G] PAGER_S                          02FE
@@ -306,8 +301,8 @@ Symbol Table:
 [ G] PAGER_U                          02F6
 [ G] PAGER_X                          02FA
 [ G] PAGER_Y                          02FC
-[ G] PUTCHR                           88C7
-[ G] RDSER1                           8870
+[ G] PUTCHR                           88BD
+[ G] RDSER1                           886B
 [ G] SERIALINIT                       885D
 [ G] ST0                              01E3
 [ G] UART0                            DF58
@@ -318,9 +313,9 @@ Symbol Table:
 [ G] UART5                            DF5D
 [ G] UART6                            DF5E
 [ G] UART7                            DF5F
-[ G] WRHEX                            88AD
-[ G] WRHEXW                           88A4
+[ G] WRHEX                            88A3
+[ G] WRHEXW                           889A
 [ G] WRSER1                           885E
-[ G] WRST1                            8899
-[ G] WRST2                            88A1
-[ G] WRSTR                            8897
+[ G] WRST1                            888F
+[ G] WRST2                            8897
+[ G] WRSTR                            888D

@@ -38,7 +38,7 @@ LOOP:
         LDA     #$85
         STA     BANK80
         LDX     #$2300
-        LDY     #$8000
+        LDY     #$8800
 LOOP1:
         LDA     ,X+                               ;MOVE IT
         STA     ,Y+                               ;MOVE IT

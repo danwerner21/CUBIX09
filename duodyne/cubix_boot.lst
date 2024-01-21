@@ -38,7 +38,7 @@
 012A 8685             (   cubix_boot.asm):00038                 LDA     #$85
 012C B7DF52           (   cubix_boot.asm):00039                 STA     BANK80
 012F 8E2300           (   cubix_boot.asm):00040                 LDX     #$2300
-0132 108E8000         (   cubix_boot.asm):00041                 LDY     #$8000
+0132 108E8800         (   cubix_boot.asm):00041                 LDY     #$8800
 0136                  (   cubix_boot.asm):00042         LOOP1:
 0136 A680             (   cubix_boot.asm):00043                 LDA     ,X+                               ;MOVE IT
 0138 A7A0             (   cubix_boot.asm):00044                 STA     ,Y+                               ;MOVE IT

@@ -68,24 +68,17 @@ md_pagecode:
         STS     >PAGER_S                          ; SAVE STACK
         LDS     #PAGER_STACK                      ; SET TEMP STACK
 
-        LDA     #$03
-        STA     $DF54
-
         LDA     #$84
         STA     BANK40
         LDA     #$85
         STA     BANK80
-        STA     MPCL_RAM
-        NOP
-        NOP
+
         JSR     BANKED_DRIVER_DISPATCHER
+
         LDA     #$81
         STA     BANK40
         LDA     #$82
         STA     BANK80
-
-        LDA     #$04
-        STA     $DF54
 
         LDS     >PAGER_S                          ; RESTORE STACK
         LDX     >PAGER_X                          ; RESTORE 'X'
