@@ -1,4 +1,4 @@
-all:  	cubixdrv.sys cubix.s19 loader.bin
+all:  	cubixdrv.sys cubix.s19 duocubix.com
 
 cubixdrv.sys: cubixdrv.asm cubix_serial.asm cubix_ide.asm cubix_dskyng.asm cubix_dsky.asm cubix_values.asm
 	lwasm --6809   --6800compat cubixdrv.asm -s --list=cubixdrv.lst --map=cubixdrv.map --output=cubixdrv.s --format=srec
@@ -7,7 +7,7 @@ cubixdrv.sys: cubixdrv.asm cubix_serial.asm cubix_ide.asm cubix_dskyng.asm cubix
 	srec_cat  cubixdrv.s -exclude 0x0000 0x8800 -o cubixdrv.s19
 	@rm cubixdrv.s
 
-loader.bin: loader.asm cubix.s19 cubixdrv.sys
+duocubix.com: loader.asm cubix.s19 cubixdrv.sys
 	z80asm -b -l -m loader.asm  2> loader.err
 	srec_cat  loader_addr0100.bin -binary -offset 0x0100 -o  cubix_loader.1  -Data_Only
 	srec_cat  cubix.s19 -offset -0x0100 -o  cubix_loader.2  -Data_Only

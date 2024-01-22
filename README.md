@@ -49,18 +49,19 @@ New SSRs
 
 ---
 To Do List for this port:
-* ADD FLOPPY DRIVE SUPPORT
+* Add DSKY NG to Duodyne
+* ADD FLOPPY DRIVE SUPPORT (Duodyne/Nhyodyne)
 * Fix XMODEM CRC problem
 * convert Xmodem EXEs to S19s
-* DSKY V1 support
+* DSKY V1 support (Duodyne/Nhyodyne)
 * DSKY functions should abort if no DSKY is there.
-* ESP32 support
-* TMS VDP support
-* color VDU support
-* RTC and NVRAM support
+* ESP32 support  (Duodyne/Nhyodyne)
+* TMS VDP support  (Duodyne/Nhyodyne)
+* color VDU support  (Duodyne/Nhyodyne)
+* RTC and NVRAM support  (Duodyne/Nhyodyne)
 * Microsoft Basic
-* Advanced MONITOR
-
+* Pull MONITOR code from Duodyne repo into this one
+* 6x0x Version
 ---
 
 ```
@@ -136,3 +137,33 @@ Duodyne Map:
             $FFF2-$FFFF - HARDWARE VECTORS
 
 ```
+
+---
+## Setting up a new filesystem
+
+Cubix supports four concurrent drives A,B,C and D.
+
+Default drive configuration for Cubix can be found at the bottom of the respective drivers.asm file and is in the following format:
+
+```
+; DRIVE MAPPING TABLE
+        FCB     $21,$00                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
+        FCB     $21,$01                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE
+        FCB     $21,$02                           ;     LOW NIBBLE IS DEVICE ADDRESS
+        FCB     $00,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
+                                                  ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
+```
+
+The ASSIGN.EXE program can be used to remap drives in real time.
+
+A disk image (DISK.IMG) is provided in this repo that can be written to a device to bootstrap the system. It conformes to the default drive mapping table above.   Cubix HDDs are configured as 32mb drives, therfore at least a 32mb drive is required without altering the disk geometry.
+
+It is expected that you set Cubix's system directory to the SYSTEM folder on drive B:
+```
+SET SYSTEM A:[SYSTEM]
+```
+more information on Cubix drives and directories can be found in the Cubix user documentation in this repo.
+
+
+
+

@@ -208,7 +208,7 @@ RESTAB
 ;*
 RITAB           EQU *
 ;* DEFAULT DRIVE CHARACTISTICS
-        FCB     0,80,2,9,0,0,0                    ;ADR 0, 80 CYL, 2 HEAD, 9 SEC/TRK
+        FCB     0,255,1,255,0,0,0                 ;ADR 1, 255 CYL, 1 HEAD, 255 SEC/TRK
         FCB     1,255,1,255,0,0,0                 ;ADR 1, 255 CYL, 1 HEAD, 255 SEC/TRK
         FCB     2,255,1,255,0,0,0                 ;ADR 2, 255 CYL, 1 HEAD, 255 SEC/TRK
         FCB     3,255,1,255,0,0,0                 ;ADR 4, 255 CYL, 1 HEAD, 255 SEC/TRK
@@ -239,9 +239,9 @@ RITAB           EQU *
         FCB     0,0                               ;(FILLER)
 ; DRIVE MAPPING TABLE
         FCB     $21,$00                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
-        FCB     $21,$00                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE
-        FCB     $21,$01                           ;     LOW NIBBLE IS DEVICE ADDRESS
-        FCB     $21,$02                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
+        FCB     $21,$01                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE
+        FCB     $21,$02                           ;     LOW NIBBLE IS DEVICE ADDRESS
+        FCB     $00,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
                                                   ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
 
 RISIZ           EQU *-RITAB                       ;SIZE OF INITILAIZED RAM
