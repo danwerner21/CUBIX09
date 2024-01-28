@@ -49,7 +49,6 @@ New SSRs
 
 ---
 To Do List for this port:
-* Add DSKY NG to Duodyne
 * ADD FLOPPY DRIVE SUPPORT (Duodyne/Nhyodyne)
 * Fix XMODEM CRC problem
 * convert Xmodem EXEs to S19s

@@ -64,16 +64,16 @@ DISPATCHTABLE:
         .WORD   drv_noop                          ; FUNCTION 25 -
         .WORD   drv_noop                          ; FUNCTION 26 -
 ;
-        .WORD   drv_noop                          ; DSKY_INIT                         ; FUNCTION 27 -
-        .WORD   drv_noop                          ; DSKY_SHOW                         ; FUNCTION 28 -
-        .WORD   drv_noop                          ; DSKY_BIN2SEG                      ; FUNCTION 29 -
-        .WORD   drv_noop                          ; DSKY_RESET                        ; FUNCTION 30 -
-        .WORD   drv_noop                          ; DSKY_STAT                         ; FUNCTION 31 -
-        .WORD   drv_noop                          ; DSKY_GETKEY                       ; FUNCTION 32 -
-        .WORD   drv_noop                          ; DSKY_BEEP                         ; FUNCTION 33 -
-        .WORD   drv_noop                          ; DSKY_DSPL                         ; FUNCTION 34 -
-        .WORD   drv_noop                          ; DSKY_PUTLED                       ; FUNCTION 35 -
-        .WORD   drv_noop                          ; DSKY_BLANK                        ; FUNCTION 36 -
+        .WORD   DSKY_INIT                         ; FUNCTION 27 -
+        .WORD   DSKY_SHOW                         ; FUNCTION 28 -
+        .WORD   DSKY_BIN2SEG                      ; FUNCTION 29 -
+        .WORD   DSKY_RESET                        ; FUNCTION 30 -
+        .WORD   DSKY_STAT                         ; FUNCTION 31 -
+        .WORD   DSKY_GETKEY                       ; FUNCTION 32 -
+        .WORD   DSKY_BEEP                         ; FUNCTION 33 -
+        .WORD   DSKY_DSPL                         ; FUNCTION 34 -
+        .WORD   DSKY_PUTLED                       ; FUNCTION 35 -
+        .WORD   DSKY_BLANK                        ; FUNCTION 36 -
 ;
 
 
@@ -81,7 +81,7 @@ DISPATCHTABLE:
 ;
         INCLUDE cubix_serial.asm
         INCLUDE cubix_ide.asm
-;        INCLUDE cubix_dskyng.asm
+        INCLUDE cubix_dskyng.asm
 ;        INCLUDE cubix_dsky.asm
 ;        INCLUDE cubix_floppy.asm
 ;        INCLUDE cubix_esp32.asm

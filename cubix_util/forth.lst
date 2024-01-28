@@ -1,0 +1,1728 @@
+                      (        forth.asm):00001         ;       title   MICRO FORTH 1.0
+                      (        forth.asm):00002         ;*
+                      (        forth.asm):00003         ;* MICRO FORTH 1.0
+                      (        forth.asm):00004         ;*
+                      (        forth.asm):00005         ;*    This is a small fast implementation of a forth language for
+                      (        forth.asm):00006         ;* the Motorola 6809 microprocessor. It is unique in that there is
+                      (        forth.asm):00007         ;* no interpreter, all words are directly executable.
+                      (        forth.asm):00008         ;*
+                      (        forth.asm):00009         ;* Copyright 1984-2005 Dave Dunfield
+                      (        forth.asm):00010         ;* All rights reserved.
+                      (        forth.asm):00011         ;*
+                      (        forth.asm):00012         ;* SYSTEM equATES
+                      (        forth.asm):00013         ;*
+     2000             (        forth.asm):00014         OSRAM           = $2000                           ;APPLICATION RAM AREA
+     DBFF             (        forth.asm):00015         OSEND           = $DBFF                           ;END OF GENERAL RAM
+     D000             (        forth.asm):00016         OSUTIL          = $D000                           ;UTILITY ADDRESS SPACE
+     0041             (        forth.asm):00017         WIDTH           = 65                              ;TERMINAL SCREEN WIDTH MARGIN
+     2000             (        forth.asm):00018         LSTLOK          = OSRAM                           ;POINTER TO LAST WORD PROCESSED FROM INPUT BUFFER
+     2002             (        forth.asm):00019         TEMP            = LSTLOK+2                        ;TEMPORARY STORAGE
+     2004             (        forth.asm):00020         INPBUF          = TEMP+2                          ;INPUT BUFFER
+     2100             (        forth.asm):00021         RSTACK          = LSTLOK+256                      ;RETURN STACK
+     2200             (        forth.asm):00022         DSTACK          = RSTACK+256                      ;DATA STACK
+                      (        forth.asm):00023         ;*
+                      (        forth.asm):00024                 ORG     DSTACK                            ;BEGINNING OF FORTH CODE
+                      (        forth.asm):00025         ;* INITIALIZATIONS, START UP FORTH
+2200 10CE2100         (        forth.asm):00026                 LDS     #RSTACK                           ;SET UP RETURN STACK
+2204 CE2200           (        forth.asm):00027                 LDU     #DSTACK                           ;SET UP DATA STACK
+                      (        forth.asm):00028         ;* IF DESIRED, YOU CAN IMPLEMENT A STARTUP MESSAAGE HERE
+                      (        forth.asm):00029         ;* INSERT THE MESSAGE AT THE VERY END OF THIS FILE.
+                      (        forth.asm):00030         ;*      LDX     #USRSPC  ;POINT TO STARTUP MESSAGE
+                      (        forth.asm):00031         ;*      LBSR    PMSG1  ;DISPLAY IT
+2207 AD9F2B61         (        forth.asm):00032                 JSR     [BOOT+3]                          ;EXECUTE PRESET ROUTINE (USUALLY 'QUIT')
+220B 16058A           (        forth.asm):00033                 LBRA    BYE                               ;EXIT FORTH
+                      (        forth.asm):00034         ;* SUBROUTINE TO OBTAIN VARIABLES ADDRESS ON STACK.
+                      (        forth.asm):00035         ;* USED BY 'VARIABLE' TYPE WORDS
+220E                  (        forth.asm):00036         VARIAB
+220E AEE1             (        forth.asm):00037                 LDX     ,S++                              ;GET FOLLOWING ADDRESS
+2210 3610             (        forth.asm):00038                 PSHU    X                                 ;SAVE
+2212 39               (        forth.asm):00039                 RTS                                       ;     RETURN TO CALLER
+                      (        forth.asm):00040         ;* MESSAGES
+2213                  (        forth.asm):00041         PROMPT
+2213 0A0D             (        forth.asm):00042                 FCB     $0A,$0D                           ;NEW LINE
+2215 4F6B3E00         (        forth.asm):00043                 FCN     'Ok>'                             ;PROMPT
+2219                  (        forth.asm):00044         ERMSG1
+2219 4572726F723A20   (        forth.asm):00045                 FCC     'Error: '                         ;ERROR PREFIX
+2220 2700             (        forth.asm):00046                 FCB     $27,$00
+2222                  (        forth.asm):00047         ERMSG2
+2222 272000           (        forth.asm):00048                 FCB     $27,$20,$00                       ;ERROR SUFFIX
+2225                  (        forth.asm):00049         REDMSG
+2225 52656465663A2000 (        forth.asm):00050                 FCN     'Redef: '                         ;RE-DEFINITION INDICATOR
+222D                  (        forth.asm):00051         DELMSG
+222D 08200800         (        forth.asm):00052                 FCB     8,' ',8,0                         ;MESSAGE FOR CHARACTER DELETE
+                      (        forth.asm):00053         ;*
+                      (        forth.asm):00054         ;* START        OF USER DICTIONARY
+                      (        forth.asm):00055         ;* DICTIONARY FORMAT:
+                      (        forth.asm):00056         ;*   1) - WORD DESCRIPTOR BYTE, FORMAT:
+                      (        forth.asm):00057         ;*      BIT 7       - ALWAYS SET, INDICATES THIS IS DESCRIPTOR BYTE
+                      (        forth.asm):00058         ;*      BITS 7-3    - CURRENTLY NOT USED
+                      (        forth.asm):00059         ;*      BIT 2       - NO-COMPILE BIT, WORD CANNOT BE USED IN COMPILES
+                      (        forth.asm):00060         ;*      BIT 1       - NO-INTERACTIVE BIT, WORD CANNOT BE USED INTERACTIVELY
+                      (        forth.asm):00061         ;*      BIT 0       - EXECUTE ON COMPILE BIT, COMPILER EXECUTES WORD IMMEDIATLY
+                      (        forth.asm):00062         ;*  ;      INSTEAD OF COMPILING INTO DEFINITION
+                      (        forth.asm):00063         ;*   2) - WORD NAME, VARIABLE LENGTH, STORED BACKWARDS
+                      (        forth.asm):00064         ;*   3) - ADDRESS OF PREVIOUS WORD IN DICTIONARY, ADDRESS MUST POINT TO FIRST
+                      (        forth.asm):00065         ;*        BYTE OF CODE WHICH IMMEDIATLY FOLLOWS THIS FIELD IN THE WORD
+                      (        forth.asm):00066         ;*
+                      (        forth.asm):00067         ;*
+                      (        forth.asm):00068         ;* 'DROPN' - DROPS A NUMBER OF WORDS FROM THE STACK
+2231 80               (        forth.asm):00069                 FCB     $80
+2232 4E504F5244       (        forth.asm):00070                 FCC     'NPORD'
+2237 0000             (        forth.asm):00071                 FDB     0                                 ;** END OF DICTIONARY **
+2239                  (        forth.asm):00072         DROPN
+2239 ECC1             (        forth.asm):00073                 LDD     ,U++                              ;GET OPERAND
+223B 58               (        forth.asm):00074                 ASLB                                      ;     MULTIPLY BY
+223C 49               (        forth.asm):00075                 ROLA                                      ;     TWO FOR WORD STACK ENTRIES
+223D 33CB             (        forth.asm):00076                 LEAU    D,U                               ;MOVE USER STACK
+223F 39               (        forth.asm):00077                 RTS
+                      (        forth.asm):00078         ;* 'DROP' - DROP ONE WORD FROM THE STACK
+2240 80               (        forth.asm):00079                 FCB     $80
+2241 504F5244         (        forth.asm):00080                 FCC     'PORD'
+2245 2239             (        forth.asm):00081                 FDB     DROPN
+2247                  (        forth.asm):00082         DROP
+2247 3342             (        forth.asm):00083                 LEAU    2,U                               ;MOVE STACK POINTER
+2249 39               (        forth.asm):00084                 RTS
+                      (        forth.asm):00085         ;* 'DUP' - DUPLICATE TOP OF STACK
+224A 80               (        forth.asm):00086                 FCB     $80
+224B 505544           (        forth.asm):00087                 FCC     'PUD'
+224E 2247             (        forth.asm):00088                 FDB     DROP
+2250                  (        forth.asm):00089         DUP
+2250 ECC4             (        forth.asm):00090                 LDD     ,U                                ;GET TOP OF USER STACK
+2252 EDC3             (        forth.asm):00091                 STD     ,--U                              ;DUPLICATE
+2254 39               (        forth.asm):00092                 RTS
+                      (        forth.asm):00093         ;* 'OVER' DUPLICATE ONE DOWN FROM TOP OF STACK
+2255 80               (        forth.asm):00094                 FCB     $80
+2256 5245564F         (        forth.asm):00095                 FCC     'REVO'
+225A 2250             (        forth.asm):00096                 FDB     DUP
+225C                  (        forth.asm):00097         OVER
+225C EC42             (        forth.asm):00098                 LDD     2,U                               ;GET ELEMENT
+225E EDC3             (        forth.asm):00099                 STD     ,--U                              ;DUPLICATE
+2260 39               (        forth.asm):00100                 RTS
+                      (        forth.asm):00101         ;* 'ROT' - ROTATE TOP THREE ELEMENTS ON STACK
+2261 80               (        forth.asm):00102                 FCB     $80
+2262 544F52           (        forth.asm):00103                 FCC     'TOR'
+2265 225C             (        forth.asm):00104                 FDB     OVER
+2267                  (        forth.asm):00105         ROT
+2267 EC44             (        forth.asm):00106                 LDD     4,U                               ;GET BOTTOM
+2269 AE42             (        forth.asm):00107                 LDX     2,U                               ;GET MIDDLE
+226B AF44             (        forth.asm):00108                 STX     4,U                               ;PUT ON BOTTOM
+226D 2009             (        forth.asm):00109                 BRA     SWAP1                             ;DO REST
+                      (        forth.asm):00110         ;* 'SWAP' - SWAP TOP TWO ELEMENTS ON STACK
+226F 80               (        forth.asm):00111                 FCB     $80
+2270 50415753         (        forth.asm):00112                 FCC     'PAWS'
+2274 2267             (        forth.asm):00113                 FDB     ROT
+2276                  (        forth.asm):00114         SWAP
+2276 EC42             (        forth.asm):00115                 LDD     2,U                               ;GET LOWER ONE
+2278                  (        forth.asm):00116         SWAP1
+2278 AEC4             (        forth.asm):00117                 LDX     ,U                                ;GET TOP
+227A AF42             (        forth.asm):00118                 STX     2,U                               ;PLACE TOP AT LOWER
+227C EDC4             (        forth.asm):00119                 STD     ,U                                ;PLACE LOWER AT TOP
+227E 39               (        forth.asm):00120                 RTS
+                      (        forth.asm):00121         ;* '0=' - TEST FOR TOS EQUAL TO ZERO
+227F 80               (        forth.asm):00122                 FCB     $80
+2280 3D30             (        forth.asm):00123                 FCC     '=0'
+2282 2276             (        forth.asm):00124                 FDB     SWAP
+2284                  (        forth.asm):00125         ZEQU
+2284 ECC4             (        forth.asm):00126                 LDD     ,U                                ;GET TOP OF STACK
+2286 2743             (        forth.asm):00127                 BEQ     RET1                              ;=AL TO ZERO?
+2288 2051             (        forth.asm):00128                 BRA     RET0                              ;NO, RETURN ONE
+                      (        forth.asm):00129         ;* '=' - TEST FOR EQUALITY
+228A 80               (        forth.asm):00130                 FCB     $80
+228B 3D               (        forth.asm):00131                 FCC     '='
+228C 2284             (        forth.asm):00132                 FDB     ZEQU
+228E                  (        forth.asm):00133         EQUALS
+228E ECC1             (        forth.asm):00134                 LDD     ,U++                              ;GET TOP OF STACK
+2290 10A3C4           (        forth.asm):00135                 CMPD    ,U                                ;COMPARE WITH NEXT
+2293 2736             (        forth.asm):00136                 BEQ     RET1                              ;SAME, RETURN 1
+2295 2044             (        forth.asm):00137                 BRA     RET0                              ;NO, RETURN ZERO
+                      (        forth.asm):00138         ;* '<>' - TEST FOR NOT EQUAL
+2297 80               (        forth.asm):00139                 FCB     $80
+2298 3E3C             (        forth.asm):00140                 FCC     '><'
+229A 228E             (        forth.asm):00141                 FDB     EQUALS
+229C                  (        forth.asm):00142         NOTEQU
+229C ECC1             (        forth.asm):00143                 LDD     ,U++                              ;GET TOS
+229E 10A3C4           (        forth.asm):00144                 CMPD    ,U                                ;COMPARE WITH NEXT
+22A1 2738             (        forth.asm):00145                 BEQ     RET0                              ;NOT SAME, RETURN 1
+22A3 2026             (        forth.asm):00146                 BRA     RET1                              ;NO, RETURN 0
+                      (        forth.asm):00147         ;* '>' - TEST FOR GREATER
+22A5 80               (        forth.asm):00148                 FCB     $80
+22A6 3E               (        forth.asm):00149                 FCC     '>'
+22A7 229C             (        forth.asm):00150                 FDB     NOTEQU
+22A9                  (        forth.asm):00151         GRTR
+22A9 EC42             (        forth.asm):00152                 LDD     2,U                               ;GET LOWER ELEMENT
+22AB 10A3C1           (        forth.asm):00153                 CMPD    ,U++                              ;COMPARE WITH TOS
+22AE 2E1B             (        forth.asm):00154                 BGT     RET1                              ;GREATER, RETURN 1
+22B0 2029             (        forth.asm):00155                 BRA     RET0                              ;NO, RETURN FALSE
+                      (        forth.asm):00156         ;* '<' - TEST FOR LESS
+22B2 80               (        forth.asm):00157                 FCB     $80
+22B3 3C               (        forth.asm):00158                 FCC     '<'
+22B4 22A9             (        forth.asm):00159                 FDB     GRTR
+22B6                  (        forth.asm):00160         LESS
+22B6 EC42             (        forth.asm):00161                 LDD     2,U                               ;GET LOWER ELEMENT
+22B8 10A3C1           (        forth.asm):00162                 CMPD    ,U++                              ;COMPARE WITH TOS
+22BB 2D0E             (        forth.asm):00163                 BLT     RET1                              ;LOWER, RETURN 1
+22BD 201C             (        forth.asm):00164                 BRA     RET0                              ;NO, RETURN FALSE
+                      (        forth.asm):00165         ;* '>=' - TEST FOR GREATER OR EQUAL TO
+22BF 80               (        forth.asm):00166                 FCB     $80
+22C0 3D3E             (        forth.asm):00167                 FCC     '=>'
+22C2 22B6             (        forth.asm):00168                 FDB     LESS
+22C4                  (        forth.asm):00169         GREQU
+22C4 EC42             (        forth.asm):00170                 LDD     2,U                               ;GET LOWER
+22C6 10A3C1           (        forth.asm):00171                 CMPD    ,U++                              ;COMPARE WITH TOS
+22C9 2D10             (        forth.asm):00172                 BLT     RET0                              ;LESS, RETURN FALSE
+22CB                  (        forth.asm):00173         RET1
+22CB C601             (        forth.asm):00174                 LDB     #1                                ;GET ONE
+22CD 200D             (        forth.asm):00175                 BRA     RETS                              ;RETURN IT
+                      (        forth.asm):00176         ;* '<=' - TEST FOR LESS OR EQUAL TO
+22CF 80               (        forth.asm):00177                 FCB     $80
+22D0 3D3C             (        forth.asm):00178                 FCC     '=<'
+22D2 22C4             (        forth.asm):00179                 FDB     GREQU
+22D4                  (        forth.asm):00180         LESEQU
+22D4 EC42             (        forth.asm):00181                 LDD     2,U                               ;GET LOWER
+22D6 10A3C1           (        forth.asm):00182                 CMPD    ,U++                              ;COMPARE WITH TOS
+22D9 2FF0             (        forth.asm):00183                 BLE     RET1                              ;LOWER OR EQUAL, RETURN ONE
+22DB                  (        forth.asm):00184         RET0
+22DB 5F               (        forth.asm):00185                 CLRB                                      ;     GET ZERO RESULT
+22DC                  (        forth.asm):00186         RETS
+22DC 4F               (        forth.asm):00187                 CLRA                                      ;     ZERO HIGH BYTE
+22DD EDC4             (        forth.asm):00188                 STD     ,U                                ;SAVE ON STACK
+22DF 39               (        forth.asm):00189                 RTS
+                      (        forth.asm):00190         ;* '$OUT' - OUTPUT CHARACTER TO TERMINAL
+22E0 80               (        forth.asm):00191                 FCB     $80
+22E1 54554F24         (        forth.asm):00192                 FCC     'TUO$'
+22E5 22D4             (        forth.asm):00193                 FDB     LESEQU
+22E7                  (        forth.asm):00194         DOLOUT
+22E7 ECC1             (        forth.asm):00195                 LDD     ,U++                              ;GET CHAR FROM STACK
+22E9 1F98             (        forth.asm):00196                 TFR     B,A                               ;PUT IN RIGHT REGISTER
+22EB 3F               (        forth.asm):00197                 SWI
+22EC 21               (        forth.asm):00198                 FCB     33                                ;GET CHAR FROM SYSTEM
+22ED 39               (        forth.asm):00199                 RTS
+                      (        forth.asm):00200         ;* ' $IN' - INPUT CHARACTER FROM TERMINAL
+22EE 80               (        forth.asm):00201                 FCB     $80
+22EF 4E4924           (        forth.asm):00202                 FCC     'NI$'
+22F2 22E7             (        forth.asm):00203                 FDB     DOLOUT
+22F4                  (        forth.asm):00204         DOLIN
+22F4 3F               (        forth.asm):00205                 SWI
+22F5 22               (        forth.asm):00206                 FCB     34                                ;GET CHAR FROM SYSTEM
+22F6 1F89             (        forth.asm):00207                 TFR     A,B                               ;GET IN RIGHT REGISTER
+22F8 4F               (        forth.asm):00208                 CLRA                                      ;     ZERO HIGH BYTE
+22F9 EDC3             (        forth.asm):00209                 STD     ,--U                              ;SAVE ON STACK
+22FB 39               (        forth.asm):00210                 RTS
+                      (        forth.asm):00211         ;* 'EMIT' - OUTPUT CHARACTER TO GENERAL OUTPUT
+22FC 80               (        forth.asm):00212                 FCB     $80
+22FD 54494D45         (        forth.asm):00213                 FCC     'TIME'
+2301 22F4             (        forth.asm):00214                 FDB     DOLIN
+2303                  (        forth.asm):00215         EMIT
+2303 6E9F2B49         (        forth.asm):00216                 JMP     [DISP+3]                          ;EXECUTE OUTPUT ROUTINE IN '(OUT)' VARIABLE
+                      (        forth.asm):00217         ;* 'KEY' - GET CHARACTER FROM GENERAL INPUT
+2307 80               (        forth.asm):00218                 FCB     $80
+2308 59454B           (        forth.asm):00219                 FCC     'YEK'
+230B 2303             (        forth.asm):00220                 FDB     EMIT
+230D                  (        forth.asm):00221         KEY
+230D 6E9F2B55         (        forth.asm):00222                 JMP     [INPT+3]                          ;EXECUTE INPUT ROUTINE IN '(IN)' VARIABLE
+                      (        forth.asm):00223         ;* 'U.' - OUTPUT UNSIGNED NUMBER IN CURRENT BASE
+2311 80               (        forth.asm):00224                 FCB     $80
+2312 2E55             (        forth.asm):00225                 FCC     '.U'
+2314 230D             (        forth.asm):00226                 FDB     KEY
+2316                  (        forth.asm):00227         UDOT
+2316 2012             (        forth.asm):00228                 BRA     DOT01                             ;EXECUTE NUMBER OUTPUT ROUTINE
+                      (        forth.asm):00229         ;* '.' - OUTPUT SIGNED NUMBER IN CURRENT BASE
+2318 80               (        forth.asm):00230                 FCB     $80
+2319 2E               (        forth.asm):00231                 FCC     '.'
+231A 2316             (        forth.asm):00232                 FDB     UDOT
+231C                  (        forth.asm):00233         DOT
+231C ECC4             (        forth.asm):00234                 LDD     ,U                                ;GET NUMBER FROM STACK
+231E 2A0A             (        forth.asm):00235                 BPL     DOT01                             ;IS POSITIVE, ITS OK
+2320 C62D             (        forth.asm):00236                 LDB     #'-'                              ;GET MINUS SIGN
+2322 3606             (        forth.asm):00237                 PSHU    A,B                               ;SAVE ON STACK
+2324 BD2303           (        forth.asm):00238                 JSR     EMIT                              ;OUTPUT MINUS SIGN
+2327 BD2524           (        forth.asm):00239                 JSR     NEG                               ;NEGATE NUMBER
+232A                  (        forth.asm):00240         DOT01
+232A 86FF             (        forth.asm):00241                 LDA     #$FF                              ;END IF STREAM INDICATOR
+232C 3402             (        forth.asm):00242                 PSHS    A                                 ;SAVE MARKER ON RETURN STACK
+232E                  (        forth.asm):00243         DOT1
+232E FC2B78           (        forth.asm):00244                 LDD     BASE+3                            ;GET NUMBER BASE FROM 'BASE' VARIABLE
+2331 3606             (        forth.asm):00245                 PSHU    A,B                               ;SAVE BASE
+2333 BD2479           (        forth.asm):00246                 JSR     USMOD                             ;PERFORM DIVISION
+2336 3706             (        forth.asm):00247                 PULU    A,B                               ;GET REMAINDER
+2338 3404             (        forth.asm):00248                 PSHS    B                                 ;SAVE FOR LATER
+233A ECC4             (        forth.asm):00249                 LDD     ,U                                ;GET RESULT
+233C 26F0             (        forth.asm):00250                 BNE     DOT1                              ;IF MORE, KEEP GOING
+233E 3342             (        forth.asm):00251                 LEAU    2,U                               ;SKIP LAST RESULT ON STACK
+2340                  (        forth.asm):00252         DOT2
+2340 E6E0             (        forth.asm):00253                 LDB     ,S+                               ;GET CHARACTER FROM STACK
+2342 102B02E8         (        forth.asm):00254                 LBMI    SPACE                             ;END OF DIGITS, OUTPUT SPACE AND EXIT
+2346 CB30             (        forth.asm):00255                 ADDB    #$30                              ;CONVERT TO DECIMAL NUMBER
+2348 C139             (        forth.asm):00256                 CMPB    #$39                              ;IN RANGE?
+234A 2302             (        forth.asm):00257                 BLS     DOT3                              ;YES, ITS OK
+234C CB07             (        forth.asm):00258                 ADDB    #7                                ;CONVERT TO ALPHA
+234E                  (        forth.asm):00259         DOT3
+234E 3606             (        forth.asm):00260                 PSHU    A,B                               ;SAVE ON STACK
+2350 8DB1             (        forth.asm):00261                 BSR     EMIT                              ;OUTPUT CHARACTER
+2352 20EC             (        forth.asm):00262                 BRA     DOT2                              ;KEEP OUTPUTING
+                      (        forth.asm):00263         ;* '-!' - SUBTRACT FROM SELF AND REASSIGN
+2354 80               (        forth.asm):00264                 FCB     $80
+2355 212D             (        forth.asm):00265                 FCC     '!-'
+2357 231C             (        forth.asm):00266                 FDB     DOT
+2359                  (        forth.asm):00267         MSTOR
+2359 AEC1             (        forth.asm):00268                 LDX     ,U++                              ;GET ADDRESS
+235B EC84             (        forth.asm):00269                 LDD     ,X                                ;GET CONTENTS
+235D A3C1             (        forth.asm):00270                 SUBD    ,U++                              ;SUBTRACT TOS
+235F ED84             (        forth.asm):00271                 STD     ,X                                ;RESAVE CONTENTS
+2361 39               (        forth.asm):00272                 RTS
+                      (        forth.asm):00273         ;* '+!' - ADD TO SELF AND REASSIGN
+2362 80               (        forth.asm):00274                 FCB     $80
+2363 212B             (        forth.asm):00275                 FCC     '!+'
+2365 2359             (        forth.asm):00276                 FDB     MSTOR
+2367                  (        forth.asm):00277         PSTOR
+2367 AEC1             (        forth.asm):00278                 LDX     ,U++                              ;GET ADDRESS
+2369 EC84             (        forth.asm):00279                 LDD     ,X                                ;GET CONTENTS
+236B E3C1             (        forth.asm):00280                 ADDD    ,U++                              ;ADD IS TOS
+236D ED84             (        forth.asm):00281                 STD     ,X                                ;RESAVE CONTENTS
+236F 39               (        forth.asm):00282                 RTS
+                      (        forth.asm):00283         ;* 'C!' - CHARACTER (BYTE) STORE OPERATION
+2370 80               (        forth.asm):00284                 FCB     $80
+2371 2143             (        forth.asm):00285                 FCC     '!C'
+2373 2367             (        forth.asm):00286                 FDB     PSTOR
+2375                  (        forth.asm):00287         VSTORC
+2375 AEC1             (        forth.asm):00288                 LDX     ,U++                              ;GET ADDRESS
+2377 ECC1             (        forth.asm):00289                 LDD     ,U++                              ;GET DATA FROM STACK
+2379 E784             (        forth.asm):00290                 STB     ,X                                ;SAVE IN VARIABLE
+237B 39               (        forth.asm):00291                 RTS
+                      (        forth.asm):00292         ;* '!' - WORD STORE OPERATION
+237C 80               (        forth.asm):00293                 FCB     $80
+237D 21               (        forth.asm):00294                 FCC     '!'
+237E 2375             (        forth.asm):00295                 FDB     VSTORC
+2380                  (        forth.asm):00296         VSTOR
+2380 AEC1             (        forth.asm):00297                 LDX     ,U++                              ;GET ADDRESS
+2382 ECC1             (        forth.asm):00298                 LDD     ,U++                              ;GET DATA
+2384 ED84             (        forth.asm):00299                 STD     ,X                                ;PERFORM STORE
+2386 39               (        forth.asm):00300                 RTS
+                      (        forth.asm):00301         ;* 'C@' - CHARACTER READ OPERATION
+2387 80               (        forth.asm):00302                 FCB     $80
+2388 4043             (        forth.asm):00303                 FCC     '@C'
+238A 2380             (        forth.asm):00304                 FDB     VSTOR
+238C                  (        forth.asm):00305         VREADC
+238C E6D4             (        forth.asm):00306                 LDB     [,U]                              ;GET CHARACTER FROM ADDRESS
+238E 4F               (        forth.asm):00307                 CLRA                                      ;     ZERO HIGH BYTE
+238F 202E             (        forth.asm):00308                 BRA     SAVSD                             ;MOVE TO STACK
+                      (        forth.asm):00309         ;* '@' - WORD READ OPERATION
+2391 80               (        forth.asm):00310                 FCB     $80
+2392 40               (        forth.asm):00311                 FCC     '@'
+2393 238C             (        forth.asm):00312                 FDB     VREADC
+2395                  (        forth.asm):00313         VREAD
+2395 ECD4             (        forth.asm):00314                 LDD     [,U]                              ;GET WORD FROM ADDRESS
+2397 2026             (        forth.asm):00315                 BRA     SAVSD                             ;PLACE ON STACK
+                      (        forth.asm):00316         ;* '2/' - DIVIDE BY TWO
+2399 80               (        forth.asm):00317                 FCB     $80
+239A 2F32             (        forth.asm):00318                 FCC     '/2'
+239C 2395             (        forth.asm):00319                 FDB     VREAD
+239E                  (        forth.asm):00320         SHR
+239E 64C4             (        forth.asm):00321                 LSR     ,U                                ;SHIFT HIGH
+23A0 6641             (        forth.asm):00322                 ROR     1,U                               ;SHIFT LOW
+23A2 39               (        forth.asm):00323                 RTS
+                      (        forth.asm):00324         ;* '2;*' - MULTIPLY BY TWO
+23A3 80               (        forth.asm):00325                 FCB     $80
+23A4 2A32             (        forth.asm):00326                 FCC     '*2'
+23A6 239E             (        forth.asm):00327                 FDB     SHR
+23A8                  (        forth.asm):00328         SHL
+23A8 6841             (        forth.asm):00329                 LSL     1,U                               ;SHIFT LOW
+23AA 69C4             (        forth.asm):00330                 ROL     ,U                                ;SHIFT HIGH
+23AC 39               (        forth.asm):00331                 RTS
+                      (        forth.asm):00332         ;* '+' - ADD OPERATOR
+23AD 80               (        forth.asm):00333                 FCB     $80
+23AE 2B               (        forth.asm):00334                 FCC     '+'
+23AF 23A8             (        forth.asm):00335                 FDB     SHL
+23B1                  (        forth.asm):00336         ADD
+23B1 ECC1             (        forth.asm):00337                 LDD     ,U++                              ;GET TOS
+23B3 E3C4             (        forth.asm):00338                 ADDD    ,U                                ;ADD IN NEXT
+23B5 2008             (        forth.asm):00339                 BRA     SAVSD                             ;PLACE RESULT ON STACK
+                      (        forth.asm):00340         ;* '-' - SUBTRACT OPERATOR
+23B7 80               (        forth.asm):00341                 FCB     $80
+23B8 2D               (        forth.asm):00342                 FCC     '-'
+23B9 23B1             (        forth.asm):00343                 FDB     ADD
+23BB                  (        forth.asm):00344         SUB
+23BB EC42             (        forth.asm):00345                 LDD     2,U                               ;GET LOWER OPERAND
+23BD A3C1             (        forth.asm):00346                 SUBD    ,U++                              ;SUBTRACT TOS
+23BF                  (        forth.asm):00347         SAVSD
+23BF EDC4             (        forth.asm):00348                 STD     ,U                                ;PLACE RESULT ON STACK
+23C1 39               (        forth.asm):00349                 RTS
+                      (        forth.asm):00350         ;* 'D-' DOUBLE PRECISION SUBTRACTION
+23C2 80               (        forth.asm):00351                 FCB     $80
+23C3 2D44             (        forth.asm):00352                 FCC     '-D'
+23C5 23BB             (        forth.asm):00353                 FDB     SUB
+23C7                  (        forth.asm):00354         DMINUS
+23C7 EC46             (        forth.asm):00355                 LDD     6,U                               ;GET LOW WORD OF LOWER OPERAND
+23C9 A342             (        forth.asm):00356                 SUBD    2,U                               ;SUBTRACT LOW WORD OFF HIGHER OPERAND
+23CB ED46             (        forth.asm):00357                 STD     6,U                               ;RESAVE LOWER WORD OF OPERAND
+23CD EC44             (        forth.asm):00358                 LDD     4,U                               ;GET HIGH WORD OF LOWER OPERAND
+23CF E241             (        forth.asm):00359                 SBCB    1,U                               ;SUBTRACT TOP OF STACK
+23D1 E2C4             (        forth.asm):00360                 SBCB    ,U                                ;WITH BORROW FROM PREVIOUS
+23D3 3344             (        forth.asm):00361                 LEAU    4,U                               ;FIX UP STACK
+23D5 EDC4             (        forth.asm):00362                 STD     ,U                                ;PLACE HIGH WORD OF RESULT ON STACK
+23D7 39               (        forth.asm):00363                 RTS
+                      (        forth.asm):00364         ;* 'D+' - DOUBLE PRECISION ADDITION
+23D8 80               (        forth.asm):00365                 FCB     $80
+23D9 2B44             (        forth.asm):00366                 FCC     '+D'
+23DB 23C7             (        forth.asm):00367                 FDB     DMINUS
+23DD                  (        forth.asm):00368         DPLUS
+23DD EC42             (        forth.asm):00369                 LDD     2,U                               ;GET LOW WORD OF FIRST OPERAND
+23DF E346             (        forth.asm):00370                 ADDD    6,U                               ;ADD LOW WORD OF SECOND OPERAND
+23E1 ED46             (        forth.asm):00371                 STD     6,U                               ;RESAVE
+23E3 ECC4             (        forth.asm):00372                 LDD     ,U                                ;GET HIGH WORD OF FIRST
+23E5 E945             (        forth.asm):00373                 ADCB    5,U                               ;ADD IN HIGH WORD OF
+23E7 A944             (        forth.asm):00374                 ADCA    4,U                               ;SECOND WITH CARRY
+23E9 3344             (        forth.asm):00375                 LEAU    4,U                               ;FIX UP STACK
+23EB EDC4             (        forth.asm):00376                 STD     ,U                                ;RESAVE
+23ED 39               (        forth.asm):00377                 RTS
+                      (        forth.asm):00378         ;* 'U;*' - UNSIGNED MULTIPLY
+23EE 80               (        forth.asm):00379                 FCB     $80
+23EF 2A55             (        forth.asm):00380                 FCC     '*U'
+23F1 23DD             (        forth.asm):00381                 FDB     DPLUS
+23F3                  (        forth.asm):00382         UMULT
+23F3 A641             (        forth.asm):00383                 LDA     1,U
+23F5 E643             (        forth.asm):00384                 LDB     3,U
+23F7 3D               (        forth.asm):00385                 MUL
+23F8 3406             (        forth.asm):00386                 PSHS    A,B
+23FA A6C4             (        forth.asm):00387                 LDA     ,U
+23FC E642             (        forth.asm):00388                 LDB     2,U
+23FE 3D               (        forth.asm):00389                 MUL
+23FF 3406             (        forth.asm):00390                 PSHS    A,B
+2401 A641             (        forth.asm):00391                 LDA     1,U
+2403 E642             (        forth.asm):00392                 LDB     2,U
+2405 3D               (        forth.asm):00393                 MUL
+2406 E361             (        forth.asm):00394                 ADDD    1,S
+2408 2402             (        forth.asm):00395                 BCC     UMUL1
+240A 6CE4             (        forth.asm):00396                 INC     ,S
+240C                  (        forth.asm):00397         UMUL1
+240C ED61             (        forth.asm):00398                 STD     1,S
+240E A6C4             (        forth.asm):00399                 LDA     ,U
+2410 E643             (        forth.asm):00400                 LDB     3,U
+2412 3D               (        forth.asm):00401                 MUL
+2413 E361             (        forth.asm):00402                 ADDD    1,S
+2415 2402             (        forth.asm):00403                 BCC     UMUL2
+2417 6CE4             (        forth.asm):00404                 INC     ,S
+2419                  (        forth.asm):00405         UMUL2
+2419 ED61             (        forth.asm):00406                 STD     1,S
+241B 3516             (        forth.asm):00407                 PULS    D,X
+241D EDC4             (        forth.asm):00408                 STD     ,U
+241F AF42             (        forth.asm):00409                 STX     2,U
+2421 39               (        forth.asm):00410                 RTS
+                      (        forth.asm):00411         ;* '*' - SIGNED MULTIPLY
+2422 80               (        forth.asm):00412                 FCB     $80
+2423 2A               (        forth.asm):00413                 FCC     '*'
+2424 23F3             (        forth.asm):00414                 FDB     UMULT
+2426                  (        forth.asm):00415         MULT
+2426 A641             (        forth.asm):00416                 LDA     1,U
+2428 E643             (        forth.asm):00417                 LDB     3,U
+242A 3D               (        forth.asm):00418                 MUL
+242B 3406             (        forth.asm):00419                 PSHS    A,B
+242D A6C4             (        forth.asm):00420                 LDA     ,U
+242F E643             (        forth.asm):00421                 LDB     3,U
+2431 3D               (        forth.asm):00422                 MUL
+2432 EBE4             (        forth.asm):00423                 ADDB    ,S
+2434 E7E4             (        forth.asm):00424                 STB     ,S
+2436 A641             (        forth.asm):00425                 LDA     1,U
+2438 E642             (        forth.asm):00426                 LDB     2,U
+243A 3D               (        forth.asm):00427                 MUL
+243B EBE4             (        forth.asm):00428                 ADDB    ,S
+243D E7E4             (        forth.asm):00429                 STB     ,S
+243F 3506             (        forth.asm):00430                 PULS    D
+2441 3342             (        forth.asm):00431                 LEAU    2,U
+2443 EDC4             (        forth.asm):00432                 STD     ,U
+2445 39               (        forth.asm):00433                 RTS
+                      (        forth.asm):00434         ;* 'M/MOD' - DIVISION WITH REMAINDER
+2446 80               (        forth.asm):00435                 FCB     $80
+2447 444F4D2F4D       (        forth.asm):00436                 FCC     'DOM/M'
+244C 2426             (        forth.asm):00437                 FDB     MULT
+244E                  (        forth.asm):00438         MSMOD
+244E 4F               (        forth.asm):00439                 CLRA
+244F 5F               (        forth.asm):00440                 CLRB
+2450 8E0021           (        forth.asm):00441                 LDX     #33
+2453                  (        forth.asm):00442         MSMODL
+2453 1CFE             (        forth.asm):00443                 ANDCC   #$FE
+2455                  (        forth.asm):00444         MSMODM
+2455 6945             (        forth.asm):00445                 ROL     5,U
+2457 6944             (        forth.asm):00446                 ROL     4,U
+2459 6943             (        forth.asm):00447                 ROL     3,U
+245B 6942             (        forth.asm):00448                 ROL     2,U
+245D 301F             (        forth.asm):00449                 LEAX    -1,X
+245F 270D             (        forth.asm):00450                 BEQ     MSMODD
+2461 59               (        forth.asm):00451                 ROLB
+2462 49               (        forth.asm):00452                 ROLA
+2463 10A3C4           (        forth.asm):00453                 CMPD    ,U
+2466 25EB             (        forth.asm):00454                 BLO     MSMODL
+2468 A3C4             (        forth.asm):00455                 SUBD    ,U
+246A 1A01             (        forth.asm):00456                 ORCC    #1
+246C 20E7             (        forth.asm):00457                 BRA     MSMODM
+246E                  (        forth.asm):00458         MSMODD
+246E EDC4             (        forth.asm):00459                 STD     ,U
+2470 39               (        forth.asm):00460                 RTS
+                      (        forth.asm):00461         ;* 'U/MOD' - UNSIGNED DIVISION WITH REMAINDER
+2471 80               (        forth.asm):00462                 FCB     $80
+2472 444F4D2F55       (        forth.asm):00463                 FCC     'DOM/U'
+2477 244E             (        forth.asm):00464                 FDB     MSMOD
+2479                  (        forth.asm):00465         USMOD
+2479 ECC1             (        forth.asm):00466                 LDD     ,U++
+247B 6FC2             (        forth.asm):00467                 CLR     ,-U
+247D 6FC2             (        forth.asm):00468                 CLR     ,-U
+247F EDC3             (        forth.asm):00469                 STD     ,--U
+2481 BD244E           (        forth.asm):00470                 JSR     MSMOD
+2484 ECC1             (        forth.asm):00471                 LDD     ,U++
+2486 EDC4             (        forth.asm):00472                 STD     ,U
+2488 39               (        forth.asm):00473                 RTS
+                      (        forth.asm):00474         ;* '/MOD' - DIVISION GIVING REMAINDER
+2489 80               (        forth.asm):00475                 FCB     $80
+248A 444F4D2F         (        forth.asm):00476                 FCC     'DOM/'
+248E 2479             (        forth.asm):00477                 FDB     USMOD
+2490                  (        forth.asm):00478         SLMOD
+2490 A642             (        forth.asm):00479                 LDA     2,U
+2492 3402             (        forth.asm):00480                 PSHS    A
+2494 2A08             (        forth.asm):00481                 BPL     SLMOD2
+2496 4F               (        forth.asm):00482                 CLRA
+2497 5F               (        forth.asm):00483                 CLRB
+2498 A342             (        forth.asm):00484                 SUBD    2,U
+249A ED42             (        forth.asm):00485                 STD     2,U
+249C A6E4             (        forth.asm):00486                 LDA     ,S
+249E                  (        forth.asm):00487         SLMOD2
+249E A8C4             (        forth.asm):00488                 EORA    ,U
+24A0 3402             (        forth.asm):00489                 PSHS    A
+24A2 ECC4             (        forth.asm):00490                 LDD     ,U
+24A4 273A             (        forth.asm):00491                 BEQ     SLMODR
+24A6 2A07             (        forth.asm):00492                 BPL     SLMOD1
+24A8 43               (        forth.asm):00493                 COMA
+24A9 53               (        forth.asm):00494                 COMB
+24AA C30001           (        forth.asm):00495                 ADDD    #1
+24AD EDC4             (        forth.asm):00496                 STD     ,U
+24AF                  (        forth.asm):00497         SLMOD1
+24AF 4F               (        forth.asm):00498                 CLRA
+24B0 5F               (        forth.asm):00499                 CLRB
+24B1 8E0011           (        forth.asm):00500                 LDX     #17
+24B4                  (        forth.asm):00501         SLMODL
+24B4 1CFE             (        forth.asm):00502                 ANDCC   #$FE
+24B6                  (        forth.asm):00503         SLMODM
+24B6 6943             (        forth.asm):00504                 ROL     3,U
+24B8 6942             (        forth.asm):00505                 ROL     2,U
+24BA 301F             (        forth.asm):00506                 LEAX    -1,X
+24BC 270D             (        forth.asm):00507                 BEQ     SLMODD
+24BE 59               (        forth.asm):00508                 ROLB
+24BF 49               (        forth.asm):00509                 ROLA
+24C0 10A3C4           (        forth.asm):00510                 CMPD    ,U
+24C3 25EF             (        forth.asm):00511                 BLO     SLMODL
+24C5 A3C4             (        forth.asm):00512                 SUBD    ,U
+24C7 1A01             (        forth.asm):00513                 ORCC    #1
+24C9 20EB             (        forth.asm):00514                 BRA     SLMODM
+24CB                  (        forth.asm):00515         SLMODD
+24CB 6D61             (        forth.asm):00516                 TST     1,S
+24CD 2A05             (        forth.asm):00517                 BPL     SLMOD3
+24CF 43               (        forth.asm):00518                 COMA
+24D0 53               (        forth.asm):00519                 COMB
+24D1 C30001           (        forth.asm):00520                 ADDD    #1
+24D4                  (        forth.asm):00521         SLMOD3
+24D4 EDC4             (        forth.asm):00522                 STD     ,U
+24D6 6DE1             (        forth.asm):00523                 TST     ,S++
+24D8 2A06             (        forth.asm):00524                 BPL     SLMODR
+24DA 4F               (        forth.asm):00525                 CLRA
+24DB 5F               (        forth.asm):00526                 CLRB
+24DC A342             (        forth.asm):00527                 SUBD    2,U
+24DE ED42             (        forth.asm):00528                 STD     2,U
+24E0                  (        forth.asm):00529         SLMODR
+24E0 39               (        forth.asm):00530                 RTS
+                      (        forth.asm):00531         ;* '/' - DIVISION
+24E1 80               (        forth.asm):00532                 FCB     $80
+24E2 2F               (        forth.asm):00533                 FCC     '/'
+24E3 2490             (        forth.asm):00534                 FDB     SLMOD
+24E5                  (        forth.asm):00535         SLASH
+24E5 8DA9             (        forth.asm):00536                 BSR     SLMOD
+24E7 3342             (        forth.asm):00537                 LEAU    2,U
+24E9 39               (        forth.asm):00538                 RTS
+                      (        forth.asm):00539         ;* 'AND' - LOGICAL AND
+24EA 80               (        forth.asm):00540                 FCB     $80
+24EB 444E41           (        forth.asm):00541                 FCC     'DNA'
+24EE 24E5             (        forth.asm):00542                 FDB     SLASH
+24F0                  (        forth.asm):00543         AND
+24F0 ECC1             (        forth.asm):00544                 LDD     ,U++                              ;GET TOP OF STACK
+24F2 A4C4             (        forth.asm):00545                 ANDA    ,U                                ;AND HIGH BYTE
+24F4 E441             (        forth.asm):00546                 ANDB    1,U                               ;AND LOW BYTE
+24F6 2045             (        forth.asm):00547                 BRA     SAVDS                             ;SAVE RESULT AND EXIT
+                      (        forth.asm):00548         ;* 'OR' - LOGICAL OR
+24F8 80               (        forth.asm):00549                 FCB     $80
+24F9 524F             (        forth.asm):00550                 FCC     'RO'
+24FB 24F0             (        forth.asm):00551                 FDB     AND
+24FD                  (        forth.asm):00552         OR
+24FD ECC1             (        forth.asm):00553                 LDD     ,U++                              ;GET TOP OF STACK
+24FF AAC4             (        forth.asm):00554                 ORA     ,U                                ;OR HIGH BYTE
+2501 EA41             (        forth.asm):00555                 ORB     1,U                               ;OR LOW BYTE
+2503 2038             (        forth.asm):00556                 BRA     SAVDS                             ;SAVE RESULT AND EXIT
+                      (        forth.asm):00557         ;* 'XOR' - LOGCAL EXCLUSIVE OR
+2505 80               (        forth.asm):00558                 FCB     $80
+2506 524F58           (        forth.asm):00559                 FCC     'ROX'
+2509 24FD             (        forth.asm):00560                 FDB     OR
+250B                  (        forth.asm):00561         XOR
+250B ECC1             (        forth.asm):00562                 LDD     ,U++                              ;GET TOP OF STACK
+250D A8C4             (        forth.asm):00563                 EORA    ,U                                ;XOR HIGH BYTE
+250F E841             (        forth.asm):00564                 EORB    1,U                               ;XOR LOW BYTE
+2511 202A             (        forth.asm):00565                 BRA     SAVDS                             ;SAVE RESULT AND EXIT
+                      (        forth.asm):00566         ;* 'COM' - COMPLEMENT OPERAND
+2513 80               (        forth.asm):00567                 FCB     $80
+2514 4D4F43           (        forth.asm):00568                 FCC     'MOC'
+2517 250B             (        forth.asm):00569                 FDB     XOR
+2519                  (        forth.asm):00570         COM
+2519 63C4             (        forth.asm):00571                 COM     ,U                                ;COMPLEMENT HIGH BYTE
+251B 6341             (        forth.asm):00572                 COM     1,U                               ;COMPLEMENT LOW BYTE
+251D 39               (        forth.asm):00573                 RTS
+                      (        forth.asm):00574         ;* 'NEG' - NEGATE OPERAND
+251E 80               (        forth.asm):00575                 FCB     $80
+251F 47454E           (        forth.asm):00576                 FCC     'GEN'
+2522 2519             (        forth.asm):00577                 FDB     COM
+2524                  (        forth.asm):00578         NEG
+2524 8DF3             (        forth.asm):00579                 BSR     COM                               ;COMPLEMENT OPERAND
+2526 2035             (        forth.asm):00580                 BRA     ONEP                              ;INCREMENT (TWO'S COMPLEMENT)
+                      (        forth.asm):00581         ;* 'ABS' - GIVE ABSOLUTE VALUE OF OPERAND
+2528 80               (        forth.asm):00582                 FCB     $80
+2529 534241           (        forth.asm):00583                 FCC     'SBA'
+252C 2524             (        forth.asm):00584                 FDB     NEG
+252E                  (        forth.asm):00585         ABS
+252E ECC4             (        forth.asm):00586                 LDD     ,U                                ;GET VALUE FROM STACK
+2530 2BF2             (        forth.asm):00587                 BMI     NEG                               ;NEGATIVE, CONVERT
+2532 39               (        forth.asm):00588                 RTS
+                      (        forth.asm):00589         ;* '2-' - DECREMENT BY TWO
+2533 80               (        forth.asm):00590                 FCB     $80
+2534 2D32             (        forth.asm):00591                 FCC     '-2'
+2536 252E             (        forth.asm):00592                 FDB     ABS
+2538                  (        forth.asm):00593         TWOM
+2538 ECC4             (        forth.asm):00594                 LDD     ,U                                ;GET TOP OF STACK
+253A 830002           (        forth.asm):00595                 SUBD    #2                                ;DECREMENT BY TWO
+253D                  (        forth.asm):00596         SAVDS
+253D EDC4             (        forth.asm):00597                 STD     ,U                                ;RESAVE TOP OF STACK
+253F 39               (        forth.asm):00598                 RTS
+                      (        forth.asm):00599         ;* '2+' - INCREMENT BY TWO
+2540 80               (        forth.asm):00600                 FCB     $80
+2541 2B32             (        forth.asm):00601                 FCC     '+2'
+2543 2538             (        forth.asm):00602                 FDB     TWOM
+2545                  (        forth.asm):00603         TWOP
+2545 ECC4             (        forth.asm):00604                 LDD     ,U                                ;GET TOP OF STACK
+2547 C30002           (        forth.asm):00605                 ADDD    #2                                ;INCREMENT BY TWO
+254A 20F1             (        forth.asm):00606                 BRA     SAVDS                             ;RESAVE TOP OF STACK
+                      (        forth.asm):00607         ;* '1-' - DECREMENT BY ONE
+254C 80               (        forth.asm):00608                 FCB     $80
+254D 2D31             (        forth.asm):00609                 FCC     '-1'
+254F 2545             (        forth.asm):00610                 FDB     TWOP
+2551                  (        forth.asm):00611         ONEM
+2551 ECC4             (        forth.asm):00612                 LDD     ,U                                ;GET TOP OF STACK
+2553 830001           (        forth.asm):00613                 SUBD    #1                                ;DECREMENT BY ONE
+2556 20E5             (        forth.asm):00614                 BRA     SAVDS                             ;RESAVE TOP OF STACK
+                      (        forth.asm):00615         ;* '1+' - INCREMENT BY ONE
+2558 80               (        forth.asm):00616                 FCB     $80
+2559 2B31             (        forth.asm):00617                 FCC     '+1'
+255B 2551             (        forth.asm):00618                 FDB     ONEM
+255D                  (        forth.asm):00619         ONEP
+255D ECC4             (        forth.asm):00620                 LDD     ,U                                ;GET TOP OF STACK
+255F C30001           (        forth.asm):00621                 ADDD    #1                                ;INCREMENT BY ONE
+2562 20D9             (        forth.asm):00622                 BRA     SAVDS                             ;RESAVE TOP OF STACK
+                      (        forth.asm):00623         ;* 'SKIP' - ADVANCE INPUT POINTER TO NON-BLANK
+2564 80               (        forth.asm):00624                 FCB     $80
+2565 50494B53         (        forth.asm):00625                 FCC     'PIKS'
+2569 255D             (        forth.asm):00626                 FDB     ONEP
+256B                  (        forth.asm):00627         QSKIP
+256B 10BE2B6C         (        forth.asm):00628                 LDY     INPTR+3                           ;GET CURRENT POSITION IN INPUT BUFFER
+256F                  (        forth.asm):00629         QSKI1
+256F A6A0             (        forth.asm):00630                 LDA     ,Y+                               ;GET CHARACTER FROM INPUT BUFFER
+2571 8120             (        forth.asm):00631                 CMPA    #' '                              ;IS IT A SPACE
+2573 27FA             (        forth.asm):00632                 BEQ     QSKI1                             ;YES, KEEP GOING
+2575 313F             (        forth.asm):00633                 LEAY    -1,Y                              ;BACKUP TO IT
+2577 10BF2B6C         (        forth.asm):00634                 STY     INPTR+3                           ;RESAVE INPUT POINTER
+257B 4D               (        forth.asm):00635                 TSTA                                      ;     TEST FOR END OF LINE
+257C 39               (        forth.asm):00636                 RTS
+                      (        forth.asm):00637         ;*
+                      (        forth.asm):00638         ;* SUBROUTINE TO LOOKUP WORDS IN DICTIONARY FROM INPUT LINE
+                      (        forth.asm):00639         ;* ON EXIT: 'Z' IS SET IF WORD NOT FOUND
+                      (        forth.asm):00640         ;*      IF WORD IS FOUND ('Z'=0), ITS ADDRESS IS STACKED ON THE
+                      (        forth.asm):00641         ;*      DATA STACK, AND THE WORD DESCRIPTOR BYTE IS RETURNED IN
+                      (        forth.asm):00642         ;*      THE 'A' ACCUMULATOR
+                      (        forth.asm):00643         ;*
+257D                  (        forth.asm):00644         LOOKUP
+257D 3430             (        forth.asm):00645                 PSHS    X,Y                               ;SAVE REGISTERS
+257F 8DEA             (        forth.asm):00646                 BSR     QSKIP                             ;ADVANCE TO WORD
+2581 10BF2000         (        forth.asm):00647                 STY     LSTLOK                            ;SAVE INCASE ERROR
+2585 BE2B90           (        forth.asm):00648                 LDX     HERE+3                            ;GET START OF DICTIONARY
+                      (        forth.asm):00649         ;* SCAN DICTIONARY, LOOKING FOR WORD
+2588                  (        forth.asm):00650         LOK1
+2588 3410             (        forth.asm):00651                 PSHS    X                                 ;SAVE CURRENT ADDRESS
+258A 301E             (        forth.asm):00652                 LEAX    -2,X                              ;BACKUP PAST PRECEDING ADDRESS
+258C                  (        forth.asm):00653         LOK2
+258C A682             (        forth.asm):00654                 LDA     ,-X                               ;GET CHARACTER FROM NAME
+258E 2B10             (        forth.asm):00655                 BMI     LOK3                              ;DECREIPTOR BYTE, START OF WORD
+2590 A1A0             (        forth.asm):00656                 CMPA    ,Y+                               ;DOES IT MATCH INPUT BUFFER?
+2592 27F8             (        forth.asm):00657                 BEQ     LOK2                              ;YES, KEEP MATCHING TILL END OF WORD
+2594                  (        forth.asm):00658         LOK5
+2594 3510             (        forth.asm):00659                 PULS    X                                 ;RESTORE POINTER
+2596 AE83             (        forth.asm):00660                 LDX     ,--X                              ;GET ADDRESS OF PREVIOUS WORD
+2598 2716             (        forth.asm):00661                 BEQ     LOK4                              ;END OF DICTIONARY, QUIT
+259A 10BE2B6C         (        forth.asm):00662                 LDY     INPTR+3                           ;RESTORE INPUT POINTER
+259E 20E8             (        forth.asm):00663                 BRA     LOK1                              ;TRY FOR THIS WORD
+25A0                  (        forth.asm):00664         LOK3
+25A0 E6A4             (        forth.asm):00665                 LDB     ,Y                                ;GET NET CHAR FROM INPUT STREAM
+25A2 8D0E             (        forth.asm):00666                 BSR     TSTERM                            ;IS IT A TERMINATOR?
+25A4 26EE             (        forth.asm):00667                 BNE     LOK5                              ;NO, WORD DOES NOT MATCH
+25A6 3506             (        forth.asm):00668                 PULS    A,B                               ;RESTORE ADDRESS OF WORD
+25A8 EDC3             (        forth.asm):00669                 STD     ,--U                              ;SAVE ON STACK
+25AA 8DC3             (        forth.asm):00670                 BSR     QSKI1                             ;SKIP TO NEXT NON-BLANK
+25AC A684             (        forth.asm):00671                 LDA     ,X                                ;GET DESCRIPTOR BYTE
+25AE 1CFB             (        forth.asm):00672                 ANDCC   #$FB                              ;CLEAR 'Z' FLAG
+25B0                  (        forth.asm):00673         LOK4
+25B0 35B0             (        forth.asm):00674                 PULS    X,Y,PC
+                      (        forth.asm):00675         ;* ROUTINE TO TEST FOR TERMINATOR CHARACTER
+25B2                  (        forth.asm):00676         TSTERM
+25B2 C120             (        forth.asm):00677                 CMPB    #' '                              ;IS IT A SPACE?
+25B4 2701             (        forth.asm):00678                 BEQ     TSTER1                            ;YES, ITS OK
+25B6 5D               (        forth.asm):00679                 TSTB                                      ;     IS IT NULL (END OF LINE)?
+25B7                  (        forth.asm):00680         TSTER1
+25B7 39               (        forth.asm):00681                 RTS
+                      (        forth.asm):00682         ;* ''' - TICK: RETURN ADDRESS OF A WORD
+25B8 8127             (        forth.asm):00683                 FCB     $81,$27
+25BA 256B             (        forth.asm):00684                 FDB     QSKIP
+25BC                  (        forth.asm):00685         TICK
+25BC 8DBF             (        forth.asm):00686                 BSR     LOOKUP                            ;LOOK UP WORD
+25BE 26F7             (        forth.asm):00687                 BNE     TSTER1                            ;FOUND, RETURN
+25C0 160148           (        forth.asm):00688                 LBRA    LOKERR                            ;WORD NOT FOUND, CAUSE ERROR
+                      (        forth.asm):00689         ;* 'EXEC' - EXECUTE AT ADDRESS
+25C3 80               (        forth.asm):00690                 FCB     $80
+25C4 43455845         (        forth.asm):00691                 FCC     'CEXE'
+25C8 25BC             (        forth.asm):00692                 FDB     TICK
+25CA                  (        forth.asm):00693         EXEC
+25CA 6ED1             (        forth.asm):00694                 JMP     [,U++]                            ;EXECUTE AT ADDRESS ON [TOS]
+                      (        forth.asm):00695         ;* 'NUMBER' - GET NUMBER FROM INPUT STREAM IN CURRENT BASE
+25CC 0080             (        forth.asm):00696                 FDB     $80
+25CE 5245424D554E     (        forth.asm):00697                 FCC     'REBMUN'
+25D4 25CA             (        forth.asm):00698                 FDB     EXEC
+25D6                  (        forth.asm):00699         NUMBER
+25D6 3430             (        forth.asm):00700                 PSHS    X,Y                               ;SAVE REGS
+25D8 17FF90           (        forth.asm):00701                 LBSR    QSKIP                             ;ADVANCE TO NEXT WORD IN INPUT STREAM
+25DB 812D             (        forth.asm):00702                 CMPA    #'-'                              ;IS IT A NEGATIVE NUMBER?
+25DD 3401             (        forth.asm):00703                 PSHS    CC                                ;SAVE FLAGS FO LATER TEST
+25DF 2602             (        forth.asm):00704                 BNE     NUM4                              ;NO, NOT NEGATIVE
+25E1 3121             (        forth.asm):00705                 LEAY    1,Y                               ;SKIP '-' SIGN
+25E3                  (        forth.asm):00706         NUM4
+25E3 4F               (        forth.asm):00707                 CLRA                                      ;     START OFF
+25E4 5F               (        forth.asm):00708                 CLRB                                      ;     WITH A ZERO RESULT
+25E5 3606             (        forth.asm):00709                 PSHU    A,B                               ;SAVE ON STACK
+25E7                  (        forth.asm):00710         NUM2
+25E7 E6A0             (        forth.asm):00711                 LDB     ,Y+                               ;GET CHAR FROM SOUCE
+25E9 C030             (        forth.asm):00712                 SUBB    #'0'                              ;CONVERT TO BINARY
+25EB C109             (        forth.asm):00713                 CMPB    #9                                ;IS IT NUMERIC DIGIT?
+25ED 2306             (        forth.asm):00714                 BLS     NUM1                              ;YES, ITS OK
+25EF C007             (        forth.asm):00715                 SUBB    #7                                ;CONVERT FROM ALPHA
+25F1 C10A             (        forth.asm):00716                 CMPB    #$0A                              ;IS IT A VALID NUMBER?
+25F3 252C             (        forth.asm):00717                 BLO     NUM3                              ;NO, CAUSE ERROR
+25F5                  (        forth.asm):00718         NUM1
+25F5 4F               (        forth.asm):00719                 CLRA                                      ;     ZERO HIGH BYTE
+25F6 10B32B78         (        forth.asm):00720                 CMPD    BASE+3                            ;ARE WE WITHIN RANGE OF CURRENT BASE
+25FA 2425             (        forth.asm):00721                 BHS     NUM3                              ;NO, CAUSE ERROR
+25FC 3406             (        forth.asm):00722                 PSHS    A,B                               ;SAVE NUMBER
+25FE FC2B78           (        forth.asm):00723                 LDD     BASE+3                            ;GET BASE
+2601 3606             (        forth.asm):00724                 PSHU    A,B                               ;STACK
+2603 BD2426           (        forth.asm):00725                 JSR     MULT                              ;PERFORM MULTIPLY (OLD VALUE ALREADY ON DATA STACK)
+2606 3506             (        forth.asm):00726                 PULS    A,B                               ;GET NEW DIGIT BACK
+2608 E3C4             (        forth.asm):00727                 ADDD    ,U                                ;ADD TO OLD VALUE
+260A EDC4             (        forth.asm):00728                 STD     ,U                                ;RESAVE OLD VALUE
+260C E6A4             (        forth.asm):00729                 LDB     ,Y                                ;GET NEXT CHARACTER FROM NUMBER
+260E 17FFA1           (        forth.asm):00730                 LBSR    TSTERM                            ;IS IT A TERMINATOR
+2611 26D4             (        forth.asm):00731                 BNE     NUM2                              ;NO, KEEP EVALUATING NUMBER
+2613 10BF2B6C         (        forth.asm):00732                 STY     INPTR+3                           ;RESAVE INPUT POINTER
+2617 3531             (        forth.asm):00733                 PULS    CC,X,Y                            ;RESTORE REGISTERS
+2619 2603             (        forth.asm):00734                 BNE     NUM5                              ;NO NEGATIVE, DON'T NEGATE
+261B BD2524           (        forth.asm):00735                 JSR     NEG                               ;NEGATE VALUE
+261E                  (        forth.asm):00736         NUM5
+261E 160517           (        forth.asm):00737                 LBRA    ONE                               ;RETURN TRUE (SUCCESS)
+2621                  (        forth.asm):00738         NUM3
+2621 3531             (        forth.asm):00739                 PULS    CC,X,Y                            ;CLEAN UP STACK
+2623 160509           (        forth.asm):00740                 LBRA    ZERO                              ;RETURN FALSE (FAILURE)
+                      (        forth.asm):00741         ;* 'SPACE' - DISPLAY A SPACE ON GENERAL OUTPUT
+2626 80               (        forth.asm):00742                 FCB     $80
+2627 4543415053       (        forth.asm):00743                 FCC     'ECAPS'
+262C 25D6             (        forth.asm):00744                 FDB     NUMBER
+262E                  (        forth.asm):00745         SPACE
+262E C620             (        forth.asm):00746                 LDB     #' '                              ;GET A SPACE
+2630 3606             (        forth.asm):00747                 PSHU    A,B                               ;PLACEON DATA STACK
+2632 7E2303           (        forth.asm):00748                 JMP     EMIT                              ;OUTPUT
+                      (        forth.asm):00749         ;* 'CR' - DISPLAY CARRIAGE-RETURN, LINE-FEED ON GENERAL OUTPUT
+2635 80               (        forth.asm):00750                 FCB     $80
+2636 5243             (        forth.asm):00751                 FCC     'RC'
+2638 262E             (        forth.asm):00752                 FDB     SPACE
+263A                  (        forth.asm):00753         CR
+263A CC000D           (        forth.asm):00754                 LDD     #$0D                              ;GET CARRIAGE RETURN
+263D 3606             (        forth.asm):00755                 PSHU    A,B                               ;PLACE ON STACK
+263F BD2303           (        forth.asm):00756                 JSR     EMIT                              ;OUTPUT TO GENERAL OUTPUT
+2642 C60A             (        forth.asm):00757                 LDB     #$0A                              ;GET LINE-FEED
+2644 3606             (        forth.asm):00758                 PSHU    A,B                               ;PLACE ON STACK
+2646 7E2303           (        forth.asm):00759                 JMP     EMIT                              ;OUTPUT TO GENERAL OUTPUT
+                      (        forth.asm):00760         ;* 'READ' - READ A LINE FROM INPUT DEVICE
+2649 80               (        forth.asm):00761                 FCB     $80
+264A 44414552         (        forth.asm):00762                 FCC     'DAER'
+264E 263A             (        forth.asm):00763                 FDB     CR
+2650                  (        forth.asm):00764         READ
+2650 8DE8             (        forth.asm):00765                 BSR     CR                                ;NEW LINE
+2652                  (        forth.asm):00766         READNC
+2652 108E2004         (        forth.asm):00767                 LDY     #INPBUF                           ;POINT TO INPUT BUFFER
+2656                  (        forth.asm):00768         READ1
+2656 BD230D           (        forth.asm):00769                 JSR     KEY                               ;GET A KEY
+2659 C10D             (        forth.asm):00770                 CMPB    #$0D                              ;IS IT CARRIAGE RETURN
+265B 271C             (        forth.asm):00771                 BEQ     READ2                             ;YES, EXIT
+265D C17F             (        forth.asm):00772                 CMPB    #$7F                              ;IS IT DELETE?
+265F 2611             (        forth.asm):00773                 BNE     READ3                             ;NO, NORMAL CHARACTER
+                      (        forth.asm):00774         ;* DELETE KEY, DELETE PREVIOUS CHARACTER
+2661 3342             (        forth.asm):00775                 LEAU    2,U                               ;REMOVE KEYCODE FROM STACK
+2663 313F             (        forth.asm):00776                 LEAY    -1,Y                              ;BACKUP UP INPUT BUFFER POINTER
+2665 108C2004         (        forth.asm):00777                 CMPY    #INPBUF                           ;PAST BEGINNING?
+2669 25E5             (        forth.asm):00778                 BLO     READ                              ;IF SO, RE-INITIATE READ
+266B 8E222D           (        forth.asm):00779                 LDX     #DELMSG                           ;POINT TO DELETE MESSAGE
+266E 8D1F             (        forth.asm):00780                 BSR     PMSG1                             ;DISPLAY
+2670 20E4             (        forth.asm):00781                 BRA     READ1                             ;GO BACK FOR NEXT KEY
+                      (        forth.asm):00782         ;* NORMAL KEY
+2672                  (        forth.asm):00783         READ3
+2672 E7A0             (        forth.asm):00784                 STB     ,Y+                               ;SAVE KEY IN BUFFER
+2674 BD2303           (        forth.asm):00785                 JSR     EMIT                              ;ECHO KEY
+2677 20DD             (        forth.asm):00786                 BRA     READ1                             ;GO BACK FOR ANOTHER
+                      (        forth.asm):00787         ;* CARRIAGE RETURN, TERMINATE INPUT
+2679                  (        forth.asm):00788         READ2
+2679 3342             (        forth.asm):00789                 LEAU    2,U                               ;REMOVE KEYCODE FROM STACK
+267B 6FA4             (        forth.asm):00790                 CLR     ,Y                                ;INDICATE END OF INPUT LINE
+267D 108E2004         (        forth.asm):00791                 LDY     #INPBUF                           ;POINT TO INPUT BUFFER
+2681 10BF2B6C         (        forth.asm):00792                 STY     INPTR+3                           ;SET UP INPUT BUFFER POINTER
+2685                  (        forth.asm):00793         PMSG2
+2685 39               (        forth.asm):00794                 RTS
+                      (        forth.asm):00795         ;* '.MSG' - DISPLAY MESSAGE, ADDRESS ON STACK
+2686 80               (        forth.asm):00796                 FCB     $80
+2687 47534D2E         (        forth.asm):00797                 FCC     'GSM.'
+268B 2650             (        forth.asm):00798                 FDB     READ
+268D                  (        forth.asm):00799         PMSG
+268D AEC1             (        forth.asm):00800                 LDX     ,U++                              ;GET ADDRESS
+268F                  (        forth.asm):00801         PMSG1
+268F E680             (        forth.asm):00802                 LDB     ,X+                               ;GET CHARACTER FROM MESSAGE
+2691 27F2             (        forth.asm):00803                 BEQ     PMSG2                             ;END OF MESSAGE, EXIT
+2693 3606             (        forth.asm):00804                 PSHU    A,B                               ;SAVE ON STACK
+2695 BD2303           (        forth.asm):00805                 JSR     EMIT                              ;OUTPUT TO GENERAL OUTPUT
+2698 20F5             (        forth.asm):00806                 BRA     PMSG1                             ;GET NEXT CHARACTER
+                      (        forth.asm):00807         ;* '.WRD' - DISPLAY A WORD ON GENERAL OUTPUT (STRING)
+269A 80               (        forth.asm):00808                 FCB     $80
+269B 4452572E         (        forth.asm):00809                 FCC     'DRW.'
+269F 268D             (        forth.asm):00810                 FDB     PMSG
+26A1                  (        forth.asm):00811         PWRD
+26A1 AEC1             (        forth.asm):00812                 LDX     ,U++                              ;GET ADDRESS OF WORD
+26A3                  (        forth.asm):00813         PWRD1
+26A3 E680             (        forth.asm):00814                 LDB     ,X+                               ;GET CHARACTER FROM WORD
+26A5 17FF0A           (        forth.asm):00815                 LBSR    TSTERM                            ;IS IT A TERMINATOR?
+26A8 27DB             (        forth.asm):00816                 BEQ     PMSG2                             ;YES, QUIT
+26AA 3606             (        forth.asm):00817                 PSHU    A,B                               ;SAVE DATA ON STACK
+26AC BD2303           (        forth.asm):00818                 JSR     EMIT                              ;OUTPUT TO GENERAL OUTPUT
+26AF 20F2             (        forth.asm):00819                 BRA     PWRD1                             ;GET NEXT WORD
+                      (        forth.asm):00820         ;* 'QUIT - GENERAL COMMAND INTERPRETER, USED TO TERMINATE WORDS
+26B1 80               (        forth.asm):00821                 FCB     $80
+26B2 54495551         (        forth.asm):00822                 FCC     'TIUQ'
+26B6 26A1             (        forth.asm):00823                 FDB     PWRD
+26B8                  (        forth.asm):00824         QUIT
+26B8 BD2748           (        forth.asm):00825                 JSR     RPFIX                             ;RESET RETURN STACK
+26BB 8E2213           (        forth.asm):00826                 LDX     #PROMPT                           ;POINT TO PROMPT
+26BE 8DCF             (        forth.asm):00827                 BSR     PMSG1                             ;DISPLAY PROMPT
+26C0 17FF8F           (        forth.asm):00828                 LBSR    READNC                            ;READ A LINE OF INPUT
+26C3 BD262E           (        forth.asm):00829                 JSR     SPACE                             ;SEPERATE BY A SPACE
+26C6                  (        forth.asm):00830         QUI1
+26C6 BD256B           (        forth.asm):00831                 JSR     QSKIP                             ;ADANCE TO NON-BLANK
+26C9 27ED             (        forth.asm):00832                 BEQ     QUIT                              ;NULL LINE, DO NOTHING
+26CB BD257D           (        forth.asm):00833                 JSR     LOOKUP                            ;LOOK UP WORD
+26CE 271A             (        forth.asm):00834                 BEQ     QUI2                              ;NOT FOUND, TRY NUMBER
+26D0 8502             (        forth.asm):00835                 BITA    #$02                              ;OK TO EXECUTE INTERACTIVLY?
+26D2 2643             (        forth.asm):00836                 BNE     CONERR                            ;NO, FORCE ERROR
+26D4 ADD1             (        forth.asm):00837                 JSR     [,U++]                            ;EXECUTE WORD
+26D6 11832200         (        forth.asm):00838                 CMPU    #DSTACK                           ;DID STACK UNDERFLOW?
+26DA 23EA             (        forth.asm):00839                 BLS     QUI1                              ;NO, KEEP INTERPRETING
+26DC 8D15             (        forth.asm):00840                 BSR     ERROR                             ;GENERATE ERROR MESSAGE
+26DE 537461636B20656D (        forth.asm):00841                 FCN     'Stack empty'
+     70747900
+                      (        forth.asm):00842         ;* NOT A WORD, TRY FOR NUMBER
+26EA                  (        forth.asm):00843         QUI2
+26EA BD25D6           (        forth.asm):00844                 JSR     NUMBER                            ;TRY FOR NUMBER
+26ED ECC1             (        forth.asm):00845                 LDD     ,U++                              ;GET FLAG BYTE
+26EF 271A             (        forth.asm):00846                 BEQ     LOKERR                            ;NOT A NUMBER. INDICATE NOT FOUND
+26F1 20D3             (        forth.asm):00847                 BRA     QUI1                              ;KEEP INTERPRETING
+                      (        forth.asm):00848         ;* SUBROUTINE TO GENERATE ERROR MESSAGE, FIRST DISPLAYS 'ERROR:' MESSAGE,
+                      (        forth.asm):00849         ;* THEN NAME OF LAST WORD PROCESSED, THEN ERROR MESSAGE TEXT
+26F3                  (        forth.asm):00850         ERROR
+26F3 8E2219           (        forth.asm):00851                 LDX     #ERMSG1                           ;GET POINTER TO ERROR MESSAGE PREFIX
+26F6 8D97             (        forth.asm):00852                 BSR     PMSG1                             ;DISPLAY PREFIX
+26F8 BE2000           (        forth.asm):00853                 LDX     LSTLOK                            ;GET ADDRESS OF LAST WORD FROM INPUT BUFFER
+26FB 8DA6             (        forth.asm):00854                 BSR     PWRD1                             ;DISPLAY WORD
+26FD 8E2222           (        forth.asm):00855                 LDX     #ERMSG2                           ;POINT TO ERROR MESSAGE SUFFIX
+2700 8D8D             (        forth.asm):00856                 BSR     PMSG1                             ;DISPLAY SUFFIX
+2702 AEE1             (        forth.asm):00857                 LDX     ,S++                              ;GET ADDRESS OF ERROR MESSAGE
+2704 8D89             (        forth.asm):00858                 BSR     PMSG1                             ;DISPLAY MESSAGE
+2706 BD2756           (        forth.asm):00859                 JSR     SPFIX                             ;RESET DATA STACK
+2709 20AD             (        forth.asm):00860                 BRA     QUIT                              ;AND ENTER COMMAND INTREPRETER
+                      (        forth.asm):00861         ;* WORD WAS NOT FOUND IN THE DICTIONARY
+270B                  (        forth.asm):00862         LOKERR
+270B 8DE6             (        forth.asm):00863                 BSR     ERROR                             ;GENERATE ERROR MESSAGE
+270D 4E6F7420666F756E (        forth.asm):00864                 FCN     'Not found'
+     6400
+                      (        forth.asm):00865         ;* WORD CAN NOT BE EXECUTED INTERACTIVELY
+2717                  (        forth.asm):00866         CONERR
+2717 8DDA             (        forth.asm):00867                 BSR     ERROR                             ;GENERATE ERROR MESSAGE
+2719 43616E6E6F742065 (        forth.asm):00868                 FCN     'Cannot execute'
+     78656375746500
+                      (        forth.asm):00869         ;* '>R' - MOVE WORD FROM DATA TO RETURN STACK
+2728 80               (        forth.asm):00870                 FCB     $80
+2729 523E             (        forth.asm):00871                 FCC     'R>'
+272B 26B8             (        forth.asm):00872                 FDB     QUIT
+272D                  (        forth.asm):00873         TOR
+272D AEE4             (        forth.asm):00874                 LDX     ,S                                ;GET RETURN ADDRESS
+272F ECC1             (        forth.asm):00875                 LDD     ,U++                              ;GET DATA FROM DATA STACK
+2731 EDE4             (        forth.asm):00876                 STD     ,S                                ;PLACE ON RETURN STACK
+2733 1F15             (        forth.asm):00877                 TFR     X,PC                              ;RETURN TO CALLER
+                      (        forth.asm):00878         ;* '<R' - MOVE WORD FROM RETURN STACK TO DATA STACK
+2735 80               (        forth.asm):00879                 FCB     $80
+2736 523C             (        forth.asm):00880                 FCC     'R<'
+2738 272D             (        forth.asm):00881                 FDB     TOR
+273A                  (        forth.asm):00882         FROMR
+273A AEE1             (        forth.asm):00883                 LDX     ,S++                              ;GET RETURN ADDRESS
+273C ECE1             (        forth.asm):00884                 LDD     ,S++                              ;GET DATA FROM RETURN STACK
+273E EDC3             (        forth.asm):00885                 STD     ,--U                              ;PLACE ON DATA STACK
+2740 1F15             (        forth.asm):00886                 TFR     X,PC                              ;RETURN TO CALLER
+                      (        forth.asm):00887         ;* 'RP!' - RESET RETURN STACK
+2742 80               (        forth.asm):00888                 FCB     $80
+2743 215052           (        forth.asm):00889                 FCC     '!PR'
+2746 273A             (        forth.asm):00890                 FDB     FROMR
+2748                  (        forth.asm):00891         RPFIX
+2748 3506             (        forth.asm):00892                 PULS    A,B                               ;GET RETURN ADDRESS
+274A 10CE2100         (        forth.asm):00893                 LDS     #RSTACK                           ;RESET RETURN STACK
+274E 1F05             (        forth.asm):00894                 TFR     D,PC                              ;RETURN TO CALLER
+                      (        forth.asm):00895         ;* 'SP!' - RESET DATA STACK
+2750 80               (        forth.asm):00896                 FCB     $80
+2751 215053           (        forth.asm):00897                 FCC     '!PS'
+2754 2748             (        forth.asm):00898                 FDB     RPFIX
+2756                  (        forth.asm):00899         SPFIX
+2756 CE2200           (        forth.asm):00900                 LDU     #DSTACK                           ;RESET DATA STACK
+2759                  (        forth.asm):00901         VOC9
+2759 39               (        forth.asm):00902                 RTS
+                      (        forth.asm):00903         ;* ''S' - OBTAIN STACK ADDRESS
+275A 80               (        forth.asm):00904                 FCB     $80
+275B 5327             (        forth.asm):00905                 FCB     $53,$27
+275D 2756             (        forth.asm):00906                 FDB     SPFIX
+275F                  (        forth.asm):00907         TICS
+275F EFC3             (        forth.asm):00908                 STU     ,--U                              ;SAVE DATA STACK POINTER
+2761 39               (        forth.asm):00909                 RTS
+                      (        forth.asm):00910         ;* 'VLIST' - DISPLAY WORDS IN DICTIONARY
+2762 80               (        forth.asm):00911                 FCB     $80
+2763 5453494C56       (        forth.asm):00912                 FCC     'TSILV'
+2768 275F             (        forth.asm):00913                 FDB     TICS
+276A                  (        forth.asm):00914         VOC
+276A BE2B90           (        forth.asm):00915                 LDX     HERE+3                            ;GET ADDRESS OF START OF DICTIONARY
+276D                  (        forth.asm):00916         VOC1
+276D BD263A           (        forth.asm):00917                 JSR     CR                                ;NEW LINE
+2770 4F               (        forth.asm):00918                 CLRA                                      ;     ZERO CHARACTER COUNT
+2771                  (        forth.asm):00919         VOC2
+2771 3412             (        forth.asm):00920                 PSHS    A,X                               ;SAVE COUNT, CURRENT POSITION
+2773 301E             (        forth.asm):00921                 LEAX    -2,X                              ;BACKUP TO WORD NAME
+2775                  (        forth.asm):00922         VOC3
+2775 E682             (        forth.asm):00923                 LDB     ,-X                               ;GET CHARACTER FROM WORD NAME
+2777 2B09             (        forth.asm):00924                 BMI     VOC4                              ;DESCRIPTOR BYTE, END OF NAME
+2779 3606             (        forth.asm):00925                 PSHU    A,B                               ;SAVE ON DATA STACK
+277B BD2303           (        forth.asm):00926                 JSR     EMIT                              ;OUTPUT TO GENERAL OUTPUT
+277E 6CE4             (        forth.asm):00927                 INC     ,S                                ;INCREMENT CHARACTER COUNT
+2780 20F3             (        forth.asm):00928                 BRA     VOC3                              ;KEEP OUTPUTING
+2782                  (        forth.asm):00929         VOC4
+2782 BD262E           (        forth.asm):00930                 JSR     SPACE                             ;SEPERATE WITH A SPACE
+2785 3512             (        forth.asm):00931                 PULS    A,X                               ;RESTORE CHARACTER COUNT, POSITION IN DICTIONARY
+2787 4C               (        forth.asm):00932                 INCA                                      ;     ADVANCE CHARACTER COUNT FOR SPACE
+2788 AE83             (        forth.asm):00933                 LDX     ,--X                              ;GET ADDRESS OF NEXT WORD
+278A 27CD             (        forth.asm):00934                 BEQ     VOC9                              ;END OF DICTIONARY, EXIT
+278C 8141             (        forth.asm):00935                 CMPA    #WIDTH                            ;ARE WE BEYOND TERMINAL WIDTH?
+278E 25E1             (        forth.asm):00936                 BLO     VOC2                              ;NO, ITS OK
+2790 20DB             (        forth.asm):00937                 BRA     VOC1                              ;CONTINUE ON NEW LINE
+                      (        forth.asm):00938         ;* 'BYE' - EXIT FORTH
+2792 80               (        forth.asm):00939                 FCB     $80
+2793 455942           (        forth.asm):00940                 FCC     'EYB'
+2796 276A             (        forth.asm):00941                 FDB     VOC
+2798                  (        forth.asm):00942         BYE
+2798 3F               (        forth.asm):00943                 SWI
+2799 16               (        forth.asm):00944                 FCB     22                                ;NEW LINE
+279A 3F               (        forth.asm):00945                 SWI
+279B 00               (        forth.asm):00946                 FCB     0                                 ;EXIT TO SYSTEM
+                      (        forth.asm):00947         ;* 'FORGET' - REMOVE ONE OR MORE WORDS FROM DICTIONARY
+279C 80               (        forth.asm):00948                 FCB     $80
+279D 544547524F46     (        forth.asm):00949                 FCC     'TEGROF'
+27A3 2798             (        forth.asm):00950                 FDB     BYE
+27A5                  (        forth.asm):00951         FORGET
+27A5 BD25BC           (        forth.asm):00952                 JSR     TICK                              ;LOCATE WORDS ADDRESS
+27A8 3710             (        forth.asm):00953                 PULU    X                                 ;GET ADDRESS
+27AA 8C2B92           (        forth.asm):00954                 CMPX    #USRSPC                           ;IS IT IN KERNAL DICTIONARY?
+27AD 250D             (        forth.asm):00955                 BLO     PROERR                            ;IF SO, CAN'T BE FORGOTTON
+27AF EC83             (        forth.asm):00956                 LDD     ,--X                              ;GET ADDRESS OF PREVIOUS WORD
+27B1 FD2B90           (        forth.asm):00957                 STD     HERE+3                            ;NEW DICTIONARY START
+27B4                  (        forth.asm):00958         FORG1
+27B4 A682             (        forth.asm):00959                 LDA     ,-X                               ;GET CHARACTER FROM NAME
+27B6 2AFC             (        forth.asm):00960                 BPL     FORG1                             ;KEEP GOING TILL WE FIND DESCRIPTOR BYTE
+27B8 BF2B84           (        forth.asm):00961                 STX     FREE+3                            ;NEW FREE SPACE FOR DICTIONARY
+27BB 39               (        forth.asm):00962                 RTS
+                      (        forth.asm):00963         ;* WORD IS PROTECTED, CAN'T 'FORGET' IT
+27BC                  (        forth.asm):00964         PROERR
+27BC 17FF34           (        forth.asm):00965                 LBSR    ERROR                             ;GENERATE ERROR MESSAGE
+27BF 50726F7465637465 (        forth.asm):00966                 FCN     'Protected'
+     6400
+                      (        forth.asm):00967         ;* 'CREATE' - CREATE NEW WORD IN DICTIONARY
+27C9 0080             (        forth.asm):00968                 FDB     $80
+27CB 455441455243     (        forth.asm):00969                 FCC     'ETAERC'
+27D1 27A5             (        forth.asm):00970                 FDB     FORGET
+27D3                  (        forth.asm):00971         CREATE
+27D3 10BE2B6C         (        forth.asm):00972                 LDY     INPTR+3                           ;GET INPUT BUFFER POSITION
+27D7 17FDA3           (        forth.asm):00973                 LBSR    LOOKUP                            ;SEE IF IT ALREADY EXISTS
+27DA 270D             (        forth.asm):00974                 BEQ     CRE1                              ;NO, ITS OK
+27DC 3342             (        forth.asm):00975                 LEAU    2,U                               ;REMOVE ADDRESS OF EXISTING WORD
+27DE 8E2225           (        forth.asm):00976                 LDX     #REDMSG                           ;POINT TO REDEFINITION MESSAGE
+27E1 17FEAB           (        forth.asm):00977                 LBSR    PMSG1                             ;OUTPUT MESSAGE
+27E4 1F21             (        forth.asm):00978                 TFR     Y,X                               ;POINT TO WORD WE ARE RE-DEFINING
+27E6 17FEBA           (        forth.asm):00979                 LBSR    PWRD1                             ;OUTPUT WORD TO GENERAL OUTPUT
+27E9                  (        forth.asm):00980         CRE1
+27E9 17FD83           (        forth.asm):00981                 LBSR    QSKI1                             ;ADVANCE TO NEXT NON-BLANK, SAVE POINTER
+27EC 86FF             (        forth.asm):00982                 LDA     #$FF                              ;START WITH COUNT OF -1
+27EE                  (        forth.asm):00983         CRE3
+27EE E6A0             (        forth.asm):00984                 LDB     ,Y+                               ;GET CHARACTER FROM WORD
+27F0 4C               (        forth.asm):00985                 INCA                                      ;     ADVANCE WORD SIZE COUNT
+27F1 17FDBE           (        forth.asm):00986                 LBSR    TSTERM                            ;TERMINATOR CHARACTER
+27F4 26F8             (        forth.asm):00987                 BNE     CRE3                              ;LOOK TILL WE FIND END
+27F6 313F             (        forth.asm):00988                 LEAY    -1,Y                              ;BACKUP TO LAST CHAR
+27F8 10BF2B6C         (        forth.asm):00989                 STY     INPTR+3                           ;SAVE NEW BUFFER POSITION
+27FC BE2B84           (        forth.asm):00990                 LDX     FREE+3                            ;GET ADDRESS OF FREE DICTIONARY SPACE
+27FF C680             (        forth.asm):00991                 LDB     #$80                              ;GET DEFAULT DESCRIPTOR BYTE
+2801 E780             (        forth.asm):00992                 STB     ,X+                               ;SAVE IN DICTIONARY
+2803                  (        forth.asm):00993         CRE2
+2803 E6A2             (        forth.asm):00994                 LDB     ,-Y                               ;GET CHARACTER FROM NAME
+2805 E780             (        forth.asm):00995                 STB     ,X+                               ;SAVE IN DICTIONARY
+2807 4A               (        forth.asm):00996                 DECA                                      ;     REDUCE COUNT OF NAME LENGTH
+2808 26F9             (        forth.asm):00997                 BNE     CRE2                              ;MOVE ALL OF NAME INTO DICTIONARY
+280A FC2B90           (        forth.asm):00998                 LDD     HERE+3                            ;GET ADDRESS OF PREVIOUS ENTRY
+280D ED81             (        forth.asm):00999                 STD     ,X++                              ;SAVE IN DICTIONARY
+280F BF2B90           (        forth.asm):01000                 STX     HERE+3                            ;SAVE NEW STARTING ADDRESS
+2812 BF2B84           (        forth.asm):01001                 STX     FREE+3                            ;SAVE NEW FREE SPACE ADDRESS
+2815 39               (        forth.asm):01002                 RTS
+                      (        forth.asm):01003         ;* 'ALLOT' - ALLOCATE SOME SPACE IN THE DICTIONARY
+2816 80               (        forth.asm):01004                 FCB     $80
+2817 544F4C4C41       (        forth.asm):01005                 FCC     'TOLLA'
+281C 27D3             (        forth.asm):01006                 FDB     CREATE
+281E                  (        forth.asm):01007         ALLOT
+281E FC2B84           (        forth.asm):01008                 LDD     FREE+3                            ;GET ADDRESS OF FREE DICTIOANRY SPACE
+2821 E3C1             (        forth.asm):01009                 ADDD    ,U++                              ;OFFSET BY NUMBER OF BYTES R=ESTED
+2823 FD2B84           (        forth.asm):01010                 STD     FREE+3                            ;RESAVE NEW FREE POINTER
+2826 39               (        forth.asm):01011                 RTS
+                      (        forth.asm):01012         ;* 'VARIABLE' - CREATE A VARIABLE
+2827 80               (        forth.asm):01013                 FCB     $80
+2828 454C424149524156 (        forth.asm):01014                 FCC     'ELBAIRAV'
+2830 281E             (        forth.asm):01015                 FDB     ALLOT
+2832                  (        forth.asm):01016         VAR
+2832 8D9F             (        forth.asm):01017                 BSR     CREATE                            ;CREATE THE VARIABLE NAME
+2834 86BD             (        forth.asm):01018                 LDA     #$BD                              ;GET A 'JSR' EXTENDED INSTRUCTION
+2836 A780             (        forth.asm):01019                 STA     ,X+                               ;INSERT INTO DICTIONARY
+2838 CC220E           (        forth.asm):01020                 LDD     #VARIAB                           ;GET ADDRESS OF VARIABLE SUBROUTINE
+283B ED81             (        forth.asm):01021                 STD     ,X++                              ;INSERT INTO DICTIONARY
+283D ECC1             (        forth.asm):01022                 LDD     ,U++                              ;GET DEFAULT VARIABLE VALUE
+283F ED81             (        forth.asm):01023                 STD     ,X++                              ;SAVE INTO DICTIONARY
+2841 BF2B84           (        forth.asm):01024                 STX     FREE+3                            ;SET NEW FREE POINTER
+2844 39               (        forth.asm):01025                 RTS
+                      (        forth.asm):01026         ;* ';' - END A COLON DEFINITION, TERMINATE COMPILING
+2845 83               (        forth.asm):01027                 FCB     $83
+2846 3B               (        forth.asm):01028                 FCC     ';'
+2847 2832             (        forth.asm):01029                 FDB     VAR
+2849                  (        forth.asm):01030         SEMI
+2849 EC1E             (        forth.asm):01031                 LDD     -2,X                              ;GET LAST INSTRUCTION COMPLIED
+284B 10833606         (        forth.asm):01032                 CMPD    #$3606                            ;IS IT 'PSHU A,B'?
+284F 270C             (        forth.asm):01033                 BEQ     SEMI1                             ;IF SO, ITS OK
+2851 A61D             (        forth.asm):01034                 LDA     -3,X                              ;GET INSTRUCTION FROM DICTIONARY
+2853 81BD             (        forth.asm):01035                 CMPA    #$BD                              ;IS IT 'JSR >'?
+2855 2606             (        forth.asm):01036                 BNE     SEMI1                             ;NO, ITS OK
+                      (        forth.asm):01037         ;* CONVERT 'JSR' FOLLOWED BY 'RTS' TO SIMPLE 'JMP'
+2857 867E             (        forth.asm):01038                 LDA     #$7E                              ;GET 'JMP >' INSTRUCTION
+2859 A71D             (        forth.asm):01039                 STA     -3,X                              ;SAVE IN DICTIONARY
+285B 2004             (        forth.asm):01040                 BRA     SEMI2                             ;TERMINATE COMPILING
+285D                  (        forth.asm):01041         SEMI1
+285D 8639             (        forth.asm):01042                 LDA     #$39                              ;GET 'RTS' INSTRUCTION
+285F A780             (        forth.asm):01043                 STA     ,X+                               ;SAVE IN DICTIONARY
+2861                  (        forth.asm):01044         SEMI2
+2861 BF2B84           (        forth.asm):01045                 STX     FREE+3                            ;RESAVE FREE POINTER
+2864 7E26B8           (        forth.asm):01046                 JMP     QUIT                              ;RE-ENTER COMMAND INTERPRETER
+                      (        forth.asm):01047         ;* ':' - COLON DEFINITION, BEGIN COMPLIING
+2867 84               (        forth.asm):01048                 FCB     $84
+2868 3A               (        forth.asm):01049                 FCC     ':'
+2869 2849             (        forth.asm):01050                 FDB     SEMI
+286B                  (        forth.asm):01051         COLON
+286B BD27D3           (        forth.asm):01052                 JSR     CREATE                            ;CREATE NEW WORD
+286E                  (        forth.asm):01053         COL1
+286E BD256B           (        forth.asm):01054                 JSR     QSKIP                             ;ADVANCE TO NON-BLANK
+2871 2605             (        forth.asm):01055                 BNE     COL11                             ;NOT END OF LINE, ITS OK
+2873 BD2650           (        forth.asm):01056                 JSR     READ                              ;READ ANOTHER LINE (NO SEMICOLON YET)
+2876 20F6             (        forth.asm):01057                 BRA     COL1                              ;AND CONTINUE SCANNING
+                      (        forth.asm):01058         ;*WE HAVE A WORD, COMPILE INTO PRESENT DEFINITION
+2878                  (        forth.asm):01059         COL11
+2878 17FD02           (        forth.asm):01060                 LBSR    LOOKUP                            ;LOOKUP WORD
+287B 260D             (        forth.asm):01061                 BNE     COL2                              ;FOUND, WE HAVE IT
+287D BD25D6           (        forth.asm):01062                 JSR     NUMBER                            ;TRY IT AS A NUMBER
+2880 ECC1             (        forth.asm):01063                 LDD     ,U++                              ;GET FLAG
+2882 1027FE85         (        forth.asm):01064                 LBEQ    LOKERR                            ;NUMBER FAILED, ITS AN ERROR
+                      (        forth.asm):01065         ;* NUMBER TO BE COMPILED INTO DICTIONARY
+2886                  (        forth.asm):01066         COL12
+2886 8D45             (        forth.asm):01067                 BSR     BRCL                              ;COMPILE LITERAL VALUE
+2888 20E4             (        forth.asm):01068                 BRA     COL1                              ;AND KEEP SCANNING
+                      (        forth.asm):01069         ;* WORD TO BE COMPILED INTO DICTIONARY
+288A                  (        forth.asm):01070         COL2
+288A 8504             (        forth.asm):01071                 BITA    #$04                              ;IS IT OK TO COMPILE?
+288C 2618             (        forth.asm):01072                 BNE     INTERR                            ;NO, FORCE ERROR
+288E 8501             (        forth.asm):01073                 BITA    #1                                ;DOES IT EXECUTE ON COMPILATION?
+2890 2710             (        forth.asm):01074                 BEQ     COL3                              ;NO, NORMAL WORD
+2892 FF2002           (        forth.asm):01075                 STU     TEMP                              ;SAVE STACK POINTER
+2895 BE2B84           (        forth.asm):01076                 LDX     FREE+3                            ;GET FREE ADRESS FOR EC FUNCTIONS
+2898 ADD1             (        forth.asm):01077                 JSR     [,U++]                            ;EXECUTE WORD
+289A 11B32002         (        forth.asm):01078                 CMPU    TEMP                              ;DID IT LEAVE EXACTLY ONE WORD ON THE STACK?
+289E 26CE             (        forth.asm):01079                 BNE     COL1                              ;NO, CONTINUE SCANNING
+28A0 20E4             (        forth.asm):01080                 BRA     COL12                             ;SPECIAL CASE, COMPILE WORD AS LITERAL
+                      (        forth.asm):01081         ;* NORMAL WORD, COMPILE AS WORD CALL
+28A2                  (        forth.asm):01082         COL3
+28A2 8D6F             (        forth.asm):01083                 BSR     COMP1                             ;COMPILE CALL TO WORD
+28A4 20C8             (        forth.asm):01084                 BRA     COL1                              ;AND KEEP SCANNING
+                      (        forth.asm):01085         ;* NON-COMPILE WORD ENCOUNTERED
+28A6                  (        forth.asm):01086         INTERR
+28A6 17FE4A           (        forth.asm):01087                 LBSR    ERROR                             ;GENERATE ERROR MESAGE
+28A9 43616E6E6F742043 (        forth.asm):01088                 FCN     'Cannot Compile'
+     6F6D70696C6500
+                      (        forth.asm):01089         ;* '[CR]' - COMPILE A RETURN INSTRUCTION
+28B8 82               (        forth.asm):01090                 FCB     $82
+28B9 5D52435B         (        forth.asm):01091                 FCC     ']RC['
+28BD 286B             (        forth.asm):01092                 FDB     COLON
+28BF                  (        forth.asm):01093         BRCR
+28BF BE2B84           (        forth.asm):01094                 LDX     FREE+3                            ;GET FREE ADDRESS
+28C2 C639             (        forth.asm):01095                 LDB     #$39                              ;GET 'RTS' INSTRUCTION
+28C4 203B             (        forth.asm):01096                 BRA     BRC11                             ;PLACE INTO DICTIONATY
+                      (        forth.asm):01097         ;* '[CL]' - COMPILE A LITERAL VALUE
+28C6 82               (        forth.asm):01098                 FCB     $82
+28C7 5D4C435B         (        forth.asm):01099                 FCC     ']LC['
+28CB 28BF             (        forth.asm):01100                 FDB     BRCR
+28CD                  (        forth.asm):01101         BRCL
+28CD BE2B84           (        forth.asm):01102                 LDX     FREE+3                            ;GET FREE ADDRES
+28D0 86CC             (        forth.asm):01103                 LDA     #$CC                              ;GET 'LDD #' INSTRUCTION
+28D2 A780             (        forth.asm):01104                 STA     ,X+                               ;PLACE IN DICTIONARY
+28D4 ECC1             (        forth.asm):01105                 LDD     ,U++                              ;GET DATA VALUE
+28D6 ED81             (        forth.asm):01106                 STD     ,X++                              ;PLACE IN DICTIONAT
+28D8 CC3606           (        forth.asm):01107                 LDD     #$3606                            ;GET 'PSHU A,B' INSTRUCTION
+28DB 203C             (        forth.asm):01108                 BRA     COMP3                             ;PLACE IN DICTIONARY
+                      (        forth.asm):01109         ;* '[CW]' - COMPILE CALL TO A WORD INTO THE DICTIONARY
+28DD 82               (        forth.asm):01110                 FCB     $82
+28DE 5D57435B         (        forth.asm):01111                 FCC     ']WC['
+28E2 28CD             (        forth.asm):01112                 FDB     BRCL
+28E4                  (        forth.asm):01113         BRCW
+28E4 BE2B84           (        forth.asm):01114                 LDX     FREE+3                            ;GET FREE ADDRESS
+28E7 202A             (        forth.asm):01115                 BRA     COMP1                             ;COMPILE INTO DICTIONRY
+                      (        forth.asm):01116         ;* '[C2]' - COMPILE A TWO BYTE (WORD) VALUE INTO THE DICTIONARY
+28E9 82               (        forth.asm):01117                 FCB     $82
+28EA 5D32435B         (        forth.asm):01118                 FCC     ']2C['
+28EE 28E4             (        forth.asm):01119                 FDB     BRCW
+28F0                  (        forth.asm):01120         BRC2
+28F0 BE2B84           (        forth.asm):01121                 LDX     FREE+3                            ;GET FREE ADDRESS
+28F3 2024             (        forth.asm):01122                 BRA     COMP3                             ;COMPILE TWO BYTE VALUE
+                      (        forth.asm):01123         ;* '[C1]' - COMPILE A SINGLE BYTE VALUE INTO THE DICTIONARY
+28F5 82               (        forth.asm):01124                 FCB     $82
+28F6 5D31435B         (        forth.asm):01125                 FCC     ']1C['
+28FA 28F0             (        forth.asm):01126                 FDB     BRC2
+28FC                  (        forth.asm):01127         BRC1
+28FC BE2B84           (        forth.asm):01128                 LDX     FREE+3                            ;GET FREE ADDRESS
+28FF ECC1             (        forth.asm):01129                 LDD     ,U++                              ;GET VALUE TO COMPILE
+2901                  (        forth.asm):01130         BRC11
+2901 E780             (        forth.asm):01131                 STB     ,X+                               ;PLACE IN DICTIONARY
+2903 2016             (        forth.asm):01132                 BRA     COMP4                             ;RESAVE FREE POINTER
+                      (        forth.asm):01133         ;* '[FC]' - FORCE COMPILATION OF NEXT WORD, EVEN IF NORMALY AUTO-EXEC
+2905 83               (        forth.asm):01134                 FCB     $83
+2906 5D43465B         (        forth.asm):01135                 FCC     ']CF['
+290A 28FC             (        forth.asm):01136                 FDB     BRC1
+290C                  (        forth.asm):01137         BRCF
+290C BD25BC           (        forth.asm):01138                 JSR     TICK                              ;LOOKUP WORD ADDRESS
+290F 8504             (        forth.asm):01139                 BITA    #$04                              ;CAN IT BE COMPILED?
+2911 2693             (        forth.asm):01140                 BNE     INTERR                            ;NO, GET UPSET
+                      (        forth.asm):01141         ;* COMPILE CALL TO A WORD INTO DICTIONARY
+2913                  (        forth.asm):01142         COMP1
+2913 86BD             (        forth.asm):01143                 LDA     #$BD                              ;GET 'JSR >' INSTRUCTION
+2915 A780             (        forth.asm):01144                 STA     ,X+                               ;WRITE TO DICTIONARY
+2917                  (        forth.asm):01145         COMP2
+2917 ECC1             (        forth.asm):01146                 LDD     ,U++                              ;GET VALUE FROM DATE STACK
+2919                  (        forth.asm):01147         COMP3
+2919 ED81             (        forth.asm):01148                 STD     ,X++                              ;WRITE TO DICTIONARY
+291B                  (        forth.asm):01149         COMP4
+291B BF2B84           (        forth.asm):01150                 STX     FREE+3                            ;RESAVE FREE POINTER
+291E 39               (        forth.asm):01151                 RTS
+                      (        forth.asm):01152         ;* '[NI]' - CAUSE LAST (OR CURRENTLY) COMPILED WORD TO BE NON-INTERACTIVE
+291F 81               (        forth.asm):01153                 FCB     $81
+2920 5D494E5B         (        forth.asm):01154                 FCC     ']IN['
+2924 290C             (        forth.asm):01155                 FDB     BRCF
+2926                  (        forth.asm):01156         BRNI
+2926 C602             (        forth.asm):01157                 LDB     #2                                ;GET [NI] BIT
+2928 2014             (        forth.asm):01158                 BRA     SETBIT                            ;SET BIT IN DESCRIPTOR BYTE
+                      (        forth.asm):01159         ;* '[NC]' - CAUSE LAST (OR CURRENTLY) COMPILED WORD TO BE NON-COMPILING
+292A 81               (        forth.asm):01160                 FCB     $81
+292B 5D434E5B         (        forth.asm):01161                 FCC     ']CN['
+292F 2926             (        forth.asm):01162                 FDB     BRNI
+2931                  (        forth.asm):01163         BRNC
+2931 C604             (        forth.asm):01164                 LDB     #4                                ;GET [NC] BIT
+2933 2009             (        forth.asm):01165                 BRA     SETBIT                            ;SET BIT IN DESCRIPTOR BYTE
+                      (        forth.asm):01166         ;* '[EC]' - CAUSE LAST (OR CURRENTLY) COMPILED WORD TO EXECUTE WHEN COMPILED
+2935 81               (        forth.asm):01167                 FCB     $81
+2936 5D43455B         (        forth.asm):01168                 FCC     ']CE['
+293A 2931             (        forth.asm):01169                 FDB     BRNC
+293C                  (        forth.asm):01170         BREC
+293C C601             (        forth.asm):01171                 LDB     #1                                ;GET [EC] BIT
+                      (        forth.asm):01172         ;* SET A BIT IN THE DESCRIPTOR BYTE FOR LAST WORD IN DICTIONARY
+293E                  (        forth.asm):01173         SETBIT
+293E 10BE2B90         (        forth.asm):01174                 LDY     HERE+3                            ;GET ADDRESS OF LAST WORD IN DICTIONARY
+2942 313E             (        forth.asm):01175                 LEAY    -2,Y                              ;BACKUP TO NAME
+2944                  (        forth.asm):01176         SETB1
+2944 A6A2             (        forth.asm):01177                 LDA     ,-Y                               ;GET CHAR FROM NAME
+2946 2AFC             (        forth.asm):01178                 BPL     SETB1                             ;KEEP READING TILL WE GET DESCRIPTOR BYTE
+2948 3404             (        forth.asm):01179                 PSHS    B                                 ;SAVE BIT TO ADD
+294A AAE0             (        forth.asm):01180                 ORA     ,S+                               ;INCLUDE BIT IN DESCRIPTOR BYTE
+294C A7A4             (        forth.asm):01181                 STA     ,Y                                ;RESAVE NEW DESCRIPTOR
+294E 39               (        forth.asm):01182                 RTS
+                      (        forth.asm):01183         ;* 'EXEC>' - COMPILE JUMP TO REMAINDER OF THIS WORD INTO NEW WORD
+294F 82               (        forth.asm):01184                 FCB     $82
+2950 3E43455845       (        forth.asm):01185                 FCC     '>CEXE'
+2955 293C             (        forth.asm):01186                 FDB     BREC
+2957                  (        forth.asm):01187         DOES
+2957 BE2B84           (        forth.asm):01188                 LDX     FREE+3                            ;GET ADDRESS OF FREE DICTIONARY
+295A 867E             (        forth.asm):01189                 LDA     #$7E                              ;GET 'JMP >' INSTRUCTION
+295C A780             (        forth.asm):01190                 STA     ,X+                               ;SAVE IN DICTIONARY
+295E 3506             (        forth.asm):01191                 PULS    A,B                               ;GET ADDRESS OF REMAINDER OF THIS WORD
+2960 20B7             (        forth.asm):01192                 BRA     COMP3                             ;COMPILE INTO DICTIONARY
+                      (        forth.asm):01193         ;* '(' - BRACE, START OF COMMENT
+2962 81               (        forth.asm):01194                 FCB     $81
+2963 28               (        forth.asm):01195                 FCC     '('
+2964 2957             (        forth.asm):01196                 FDB     DOES
+2966                  (        forth.asm):01197         BRACE
+2966 10BE2B6C         (        forth.asm):01198                 LDY     INPTR+3                           ;GET INPUT POINTER
+296A                  (        forth.asm):01199         BRAC1
+296A A6A0             (        forth.asm):01200                 LDA     ,Y+                               ;GET DATA FROM BUFFER
+296C 270C             (        forth.asm):01201                 BEQ     BRAC3                             ;END OF LINE
+296E 8129             (        forth.asm):01202                 CMPA    #')'                              ;IS IT CLOSING BRACE?
+2970 270D             (        forth.asm):01203                 BEQ     BRAC2                             ;YES, EXIT
+2972 8128             (        forth.asm):01204                 CMPA    #'('                              ;IS IT NESTED OPENING BRACE?
+2974 26F4             (        forth.asm):01205                 BNE     BRAC1                             ;NO, ITS OK
+2976 8DF2             (        forth.asm):01206                 BSR     BRAC1                             ;RECURSE
+2978 20F0             (        forth.asm):01207                 BRA     BRAC1                             ;AND KEEP LOOKING
+                      (        forth.asm):01208         ;* END OF LINE, WITH NO CLOSING COMMENT
+297A                  (        forth.asm):01209         BRAC3
+297A BD2650           (        forth.asm):01210                 JSR     READ                              ;READ ANOTHER LINE
+297D 20E7             (        forth.asm):01211                 BRA     BRACE                             ;AND KEEP LOOKING
+297F                  (        forth.asm):01212         BRAC2
+297F 10BF2B6C         (        forth.asm):01213                 STY     INPTR+3                           ;RESAVE INPUT POINTER
+2983 39               (        forth.asm):01214                 RTS
+                      (        forth.asm):01215         ;* 'LEAVE' - EXIT INNERMOST DO LOOP
+2984 82               (        forth.asm):01216                 FCB     $82
+2985 455641454C       (        forth.asm):01217                 FCC     'EVAEL'
+298A 2966             (        forth.asm):01218                 FDB     BRACE
+298C                  (        forth.asm):01219         LEAVE
+298C EC64             (        forth.asm):01220                 LDD     4,S                               ;GET LOOP LIMIT
+298E ED62             (        forth.asm):01221                 STD     2,S                               ;SET INDEX TO SAME VALUE
+2990 39               (        forth.asm):01222                 RTS
+                      (        forth.asm):01223         ;* '+LOOP' - LOOP WITH VALUE TO ADD
+2991 83               (        forth.asm):01224                 FCB     $83
+2992 504F4F4C2B       (        forth.asm):01225                 FCC     'POOL+'
+2997 298C             (        forth.asm):01226                 FDB     LEAVE
+2999                  (        forth.asm):01227         PLOOP
+2999 3702             (        forth.asm):01228                 PULU    A                                 ;GET STRUCTURE TYPE
+299B 8181             (        forth.asm):01229                 CMPA    #$81                              ;IS IT DO LOOP?
+299D 265E             (        forth.asm):01230                 BNE     NSTERR                            ;NO, NESTING ERROR
+299F CCEC62           (        forth.asm):01231                 LDD     #$EC62                            ;'LDD 2,S'
+29A2 ED81             (        forth.asm):01232                 STD     ,X++                              ;COMPILE INTO DICTIONARY
+29A4 CCE3C1           (        forth.asm):01233                 LDD     #$E3C1                            ;'ADDD ,U++'
+29A7 ED81             (        forth.asm):01234                 STD     ,X++                              ;COMPILE
+29A9 86ED             (        forth.asm):01235                 LDA     #$ED                              ;'STD 2,S'
+29AB A780             (        forth.asm):01236                 STA     ,X+                               ;COMPILE
+29AD 201C             (        forth.asm):01237                 BRA     LOOP1                             ;END TERMINATE NORMALLY
+                      (        forth.asm):01238         ;* 'LOOP' - NORMAL DO LOOP
+29AF 83               (        forth.asm):01239                 FCB     $83
+29B0 504F4F4C         (        forth.asm):01240                 FCC     'POOL'
+29B4 2999             (        forth.asm):01241                 FDB     PLOOP
+29B6                  (        forth.asm):01242         LOOP
+29B6 3702             (        forth.asm):01243                 PULU    A                                 ;GET STRUCTURE TYPE
+29B8 8181             (        forth.asm):01244                 CMPA    #$81                              ;IS IT DO LOOP?
+29BA 2641             (        forth.asm):01245                 BNE     NSTERR                            ;NO, NESTING ERROR
+29BC CCEC62           (        forth.asm):01246                 LDD     #$EC62                            ;'LDD 2,S'
+29BF ED81             (        forth.asm):01247                 STD     ,X++                              ;PLACE IN DICTIONARY
+29C1 CCC300           (        forth.asm):01248                 LDD     #$C300                            ;'ADDD #1'
+29C4 ED81             (        forth.asm):01249                 STD     ,X++                              ;PLACE IN DICTIONARY
+29C6 CC01ED           (        forth.asm):01250                 LDD     #$01ED                            ;'STD 2,S'
+29C9 ED81             (        forth.asm):01251                 STD     ,X++                              ;PLACE IN DICTIONARY
+29CB                  (        forth.asm):01252         LOOP1
+29CB CC6210           (        forth.asm):01253                 LDD     #$6210                            ;< CATCHUP > (POSTBYTE FOR STD, PREFIX FOR CMPD)
+29CE ED81             (        forth.asm):01254                 STD     ,X++                              ;SAVE IN DICTIONARY
+29D0 CCA3E4           (        forth.asm):01255                 LDD     #$A3E4                            ;'CMPD ,S'
+29D3 ED81             (        forth.asm):01256                 STD     ,X++                              ;COMPILE
+29D5 CC1025           (        forth.asm):01257                 LDD     #$1025                            ;'LBLO'
+29D8 170080           (        forth.asm):01258                 LBSR    UNT1                              ;CALCULATE OFFSET VALUE AND COMPILE
+29DB CC3264           (        forth.asm):01259                 LDD     #$3264                            ;'LEAS 4,S'
+29DE ED81             (        forth.asm):01260                 STD     ,X++                              ;COMPILE
+29E0                  (        forth.asm):01261         COMRET
+29E0 BF2B84           (        forth.asm):01262                 STX     FREE+3                            ;SAVE NEW FREE POINTER
+29E3 39               (        forth.asm):01263                 RTS
+                      (        forth.asm):01264         ;* 'K' - THIRD INDEX VALUE FOR DO LOOP
+29E4 80               (        forth.asm):01265                 FCB     $80
+29E5 4B               (        forth.asm):01266                 FCC     'K'
+29E6 29B6             (        forth.asm):01267                 FDB     LOOP
+29E8                  (        forth.asm):01268         K
+29E8 EC6C             (        forth.asm):01269                 LDD     12,S                              ;GET INDEX VALUE
+29EA 200E             (        forth.asm):01270                 BRA     IJK                               ;SAVE IT
+                      (        forth.asm):01271         ;* 'J' - SECOND INDEV VALUE FOR DO LOOP
+29EC 80               (        forth.asm):01272                 FCB     $80
+29ED 4A               (        forth.asm):01273                 FCC     'J'
+29EE 29E8             (        forth.asm):01274                 FDB     K
+29F0                  (        forth.asm):01275         J
+29F0 EC68             (        forth.asm):01276                 LDD     8,S                               ;GET INDEX VALUE
+29F2 2006             (        forth.asm):01277                 BRA     IJK                               ;SAVE IT
+                      (        forth.asm):01278         ;* 'I' FIRST INDEX VALUE FOR DO LOOP
+29F4 80               (        forth.asm):01279                 FCB     $80
+29F5 49               (        forth.asm):01280                 FCC     'I'
+29F6 29F0             (        forth.asm):01281                 FDB     J
+29F8                  (        forth.asm):01282         I
+29F8 EC64             (        forth.asm):01283                 LDD     4,S                               ;GET INDEX VALUE
+29FA                  (        forth.asm):01284         IJK
+29FA EDC3             (        forth.asm):01285                 STD     ,--U                              ;SAVE ON STACK
+29FC 39               (        forth.asm):01286                 RTS
+                      (        forth.asm):01287         ;* STRUCTURE IS NESTED IMPROPERLY
+29FD                  (        forth.asm):01288         NSTERR
+29FD 17FCF3           (        forth.asm):01289                 LBSR    ERROR                             ;GENERATE ERROR MESSAGE
+2A00 496D70726F706572 (        forth.asm):01290                 FCN     'Improper nesting'
+     206E657374696E67
+     00
+                      (        forth.asm):01291         ;* 'DO' - START OF DO LOOP CONSTRUCT
+2A11 83               (        forth.asm):01292                 FCB     $83
+2A12 4F44             (        forth.asm):01293                 FCC     'OD'
+2A14 29F8             (        forth.asm):01294                 FDB     I
+2A16                  (        forth.asm):01295         DO
+2A16 86BD             (        forth.asm):01296                 LDA     #$BD                              ;GET 'JSR >' INSTRUCTION
+2A18 A780             (        forth.asm):01297                 STA     ,X+                               ;COMPILE INTO DICTIONARY
+2A1A 108E272D         (        forth.asm):01298                 LDY     #TOR                              ;ADDRESS OF '>R' WORD
+2A1E 10AF81           (        forth.asm):01299                 STY     ,X++                              ;COMPILE INTO DICT
+2A21 A780             (        forth.asm):01300                 STA     ,X+                               ;AND ANOTHER 'JSR >'
+2A23 10AF81           (        forth.asm):01301                 STY     ,X++                              ;FOR ANOTHER '>R'
+2A26 8681             (        forth.asm):01302                 LDA     #$81                              ;INDICATE DO LOOP
+2A28 3612             (        forth.asm):01303                 PSHU    A,X                               ;SAVE PGM COUNTER ETC
+2A2A 20B4             (        forth.asm):01304                 BRA     COMRET                            ;RESAVE FREE POINTER
+                      (        forth.asm):01305         ;* 'FOREVER' - BEGIN LOOP FOREVER
+2A2C 83               (        forth.asm):01306                 FCB     $83
+2A2D 52455645524F46   (        forth.asm):01307                 FCC     'REVEROF'
+2A34 2A16             (        forth.asm):01308                 FDB     DO
+2A36                  (        forth.asm):01309         FOREVE
+2A36 3722             (        forth.asm):01310                 PULU    A,Y                               ;GET LOOP CONSTRUCT IDENTIFIER
+2A38 8180             (        forth.asm):01311                 CMPA    #$80                              ;WAS IT A BEGIN LOOP?
+2A3A 26C1             (        forth.asm):01312                 BNE     NSTERR                            ;NO, IMPROPER NESTING
+2A3C 867E             (        forth.asm):01313                 LDA     #$7E                              ;'JMP >' INSTRUCTION
+2A3E A780             (        forth.asm):01314                 STA     ,X+                               ;PLACE IN DICTIONARY
+2A40 10AF81           (        forth.asm):01315                 STY     ,X++                              ;INCLUDE ADDRESS TO LOOP TO
+2A43 209B             (        forth.asm):01316                 BRA     COMRET                            ;RESAVE FREE POINTER
+                      (        forth.asm):01317         ;* 'UNTIL' - CONDITIONAL BEGIN LOOP
+2A45 83               (        forth.asm):01318                 FCB     $83
+2A46 4C49544E55       (        forth.asm):01319                 FCC     'LITNU'
+2A4B 2A36             (        forth.asm):01320                 FDB     FOREVE
+2A4D                  (        forth.asm):01321         UNTIL
+2A4D 3702             (        forth.asm):01322                 PULU    A                                 ;GET STRUCTURE IDENTIFIER
+2A4F 8180             (        forth.asm):01323                 CMPA    #$80                              ;IS IT A BEGIN LOOP?
+2A51 26AA             (        forth.asm):01324                 BNE     NSTERR                            ;NO, BAD NESTING
+2A53 CCECC1           (        forth.asm):01325                 LDD     #$ECC1                            ;'LDD ,U++'
+2A56 ED81             (        forth.asm):01326                 STD     ,X++                              ;SAVE IN DICTIONARY
+2A58 CC1027           (        forth.asm):01327                 LDD     #$1027                            ;'LBEQ'
+                      (        forth.asm):01328         ;* COMPILE LONG BRANCH, AND CALCULATE OFFSET FROM ADDRESS ON STACK
+2A5B                  (        forth.asm):01329         UNT1
+2A5B ED81             (        forth.asm):01330                 STD     ,X++                              ;SAVE IN DICTIONARY
+2A5D 3002             (        forth.asm):01331                 LEAX    2,X                               ;GET CURRENT ADDRESS
+2A5F 3410             (        forth.asm):01332                 PSHS    X                                 ;SAVE ON STACK
+2A61 3706             (        forth.asm):01333                 PULU    A,B                               ;GET ADDRESS TO JUMP TO
+2A63 A3E1             (        forth.asm):01334                 SUBD    ,S++                              ;CALCULATE OFFSET
+2A65 ED1E             (        forth.asm):01335                 STD     -2,X                              ;COMPILE INTO DICTIONARY
+2A67                  (        forth.asm):01336         COMR1
+2A67 16FF76           (        forth.asm):01337                 LBRA    COMRET                            ;RESAVE FREE POINTER
+                      (        forth.asm):01338         ;* 'WHILE' - CONDITIONAL BEGIN LOOP
+2A6A 83               (        forth.asm):01339                 FCB     $83
+2A6B 454C494857       (        forth.asm):01340                 FCC     'ELIHW'
+2A70 2A4D             (        forth.asm):01341                 FDB     UNTIL
+2A72                  (        forth.asm):01342         WHILE
+2A72 3702             (        forth.asm):01343                 PULU    A                                 ;GET STRUCTURE IDENTIFIER
+2A74 8180             (        forth.asm):01344                 CMPA    #$80                              ;IS IT A BEGIN LOOP?
+2A76 2685             (        forth.asm):01345                 BNE     NSTERR                            ;NO, IMPROPER NESTING
+2A78 CCECC1           (        forth.asm):01346                 LDD     #$ECC1                            ;'LDD ,U++'
+2A7B ED81             (        forth.asm):01347                 STD     ,X++                              ;COMPILE INTO DICTIONARY
+2A7D CC1026           (        forth.asm):01348                 LDD     #$1026                            ;'LBNE'
+2A80 20D9             (        forth.asm):01349                 BRA     UNT1                              ;COMPILE INTO DICT WITH OFFSET
+                      (        forth.asm):01350         ;* 'BEGIN' - START A BEGIN LOOP
+2A82 83               (        forth.asm):01351                 FCB     $83
+2A83 4E49474542       (        forth.asm):01352                 FCC     'NIGEB'
+2A88 2A72             (        forth.asm):01353                 FDB     WHILE
+2A8A                  (        forth.asm):01354         BEGIN
+2A8A 8680             (        forth.asm):01355                 LDA     #$80                              ;BEGIN LOOP IDENTIFIER
+2A8C 3612             (        forth.asm):01356                 PSHU    A,X                               ;SAVE IT AND CURRENT POSITION
+2A8E 39               (        forth.asm):01357                 RTS
+                      (        forth.asm):01358         ;* 'ENDIF' - END AN IF STATEMENT
+2A8F 83               (        forth.asm):01359                 FCB     $83
+2A90 4649444E45       (        forth.asm):01360                 FCC     'FIDNE'
+2A95 2A8A             (        forth.asm):01361                 FDB     BEGIN
+2A97                  (        forth.asm):01362         ENDIF
+2A97 3702             (        forth.asm):01363                 PULU    A                                 ;GET STRUCTURE IDENTIFIER
+2A99 8182             (        forth.asm):01364                 CMPA    #$82                              ;IS IT 'IF'?
+2A9B 1026FF5E         (        forth.asm):01365                 LBNE    NSTERR                            ;NO, BAD NESTING
+2A9F 10AEC4           (        forth.asm):01366                 LDY     ,U                                ;GET ADDRESS
+2AA2 1F10             (        forth.asm):01367                 TFR     X,D                               ;GET CURRENT FREE ADDRESS
+2AA4 A3C1             (        forth.asm):01368                 SUBD    ,U++                              ;CALCULATE OFFSET
+2AA6 ED3E             (        forth.asm):01369                 STD     -2,Y                              ;SAVE IN BRANCH OPERAND
+2AA8 39               (        forth.asm):01370                 RTS
+                      (        forth.asm):01371         ;* 'ELSE' - ELSE CLAUSE TO AN IF STATEMENT
+2AA9 83               (        forth.asm):01372                 FCB     $83
+2AAA 45534C45         (        forth.asm):01373                 FCC     'ESLE'
+2AAE 2A97             (        forth.asm):01374                 FDB     ENDIF
+2AB0                  (        forth.asm):01375         ELSE
+2AB0 8616             (        forth.asm):01376                 LDA     #$16                              ;'LBRA'
+2AB2 A780             (        forth.asm):01377                 STA     ,X+                               ;COMPILE INTO DICTIONARY
+2AB4 3002             (        forth.asm):01378                 LEAX    2,X                               ;SKIP TO NEXT FREE
+2AB6 3410             (        forth.asm):01379                 PSHS    X                                 ;SAVE ADDRESS
+2AB8 8DDD             (        forth.asm):01380                 BSR     ENDIF                             ;COMPILE IN BRANCH
+2ABA 3510             (        forth.asm):01381                 PULS    X                                 ;RESTORE ADDRESS
+2ABC 2011             (        forth.asm):01382                 BRA     IF1                               ;SET UP NEW IF JUMPS
+                      (        forth.asm):01383         ;* 'IF' - IF CONDITION
+2ABE 83               (        forth.asm):01384                 FCB     $83
+2ABF 4649             (        forth.asm):01385                 FCC     'FI'
+2AC1 2AB0             (        forth.asm):01386                 FDB     ELSE
+2AC3                  (        forth.asm):01387         IF
+2AC3 CCECC1           (        forth.asm):01388                 LDD     #$ECC1                            ;'LDD ,U++'
+2AC6 ED81             (        forth.asm):01389                 STD     ,X++                              ;COMPILE
+2AC8 CC1027           (        forth.asm):01390                 LDD     #$1027                            ;'LBEQ'
+2ACB ED81             (        forth.asm):01391                 STD     ,X++                              ;COMPILE
+2ACD 3002             (        forth.asm):01392                 LEAX    2,X                               ;ADVANCE TO FREE
+2ACF                  (        forth.asm):01393         IF1
+2ACF 8682             (        forth.asm):01394                 LDA     #$82                              ;INDICATE IF STRUCTURE
+2AD1 3612             (        forth.asm):01395                 PSHU    A,X                               ;SAVE WITH ADDRESS ON STACK
+2AD3                  (        forth.asm):01396         COMR2
+2AD3 16FF0A           (        forth.asm):01397                 LBRA    COMRET                            ;RESAVE FREE POINTER
+                      (        forth.asm):01398         ;* '.' DISPLAY MESSAGE ON TERMINAL
+2AD6 8322             (        forth.asm):01399                 FCB     $83,$22
+2AD8 2E               (        forth.asm):01400                 FCC     '.'
+2AD9 2AC3             (        forth.asm):01401                 FDB     IF
+2ADB                  (        forth.asm):01402         DOTQ
+2ADB 8D0F             (        forth.asm):01403                 BSR     QUOTE                             ;COMPILE STRING
+2ADD 86BD             (        forth.asm):01404                 LDA     #$BD                              ;'JSR >'
+2ADF A780             (        forth.asm):01405                 STA     ,X+                               ;COMPILE INTO DICT
+2AE1 CC268D           (        forth.asm):01406                 LDD     #PMSG                             ;DISPLAY MESSAGE
+2AE4 ED81             (        forth.asm):01407                 STD     ,X++                              ;COMPILE INTO DICT
+2AE6 20EB             (        forth.asm):01408                 BRA     COMR2                             ;RESAVE FREE POINTER
+                      (        forth.asm):01409         ;* '"' - COMPILE STRING INTO DICTIONARY
+2AE8 83222ADB         (        forth.asm):01410                 FCB     $83,$22,$2A,DOTQ
+2AEC                  (        forth.asm):01411         QUOTE
+2AEC 868D             (        forth.asm):01412                 LDA     #$8D                              ;'BSR' INSTRUCTION
+2AEE A781             (        forth.asm):01413                 STA     ,X++                              ;COMPILE INTO DICT
+2AF0 BD256B           (        forth.asm):01414                 JSR     QSKIP                             ;ADVANCE TO NON-BLANK
+2AF3 3410             (        forth.asm):01415                 PSHS    X                                 ;SAVE POINTER
+2AF5                  (        forth.asm):01416         QUO1
+2AF5 A6A0             (        forth.asm):01417                 LDA     ,Y+                               ;GET DATA FROM INPUT BUFFER
+2AF7 2722             (        forth.asm):01418                 BEQ     UNTERR                            ;END OF LINE, ERROR
+2AF9 8122             (        forth.asm):01419                 CMPA    #$22                              ;IS IT CLOSING QUOTE?
+2AFB 2704             (        forth.asm):01420                 BEQ     QUO2                              ;YES, EXIT
+2AFD A780             (        forth.asm):01421                 STA     ,X+                               ;SAVE IN STRING
+2AFF 20F4             (        forth.asm):01422                 BRA     QUO1                              ;AND KEEP PROCESSING
+2B01                  (        forth.asm):01423         QUO2
+2B01 10BF2B6C         (        forth.asm):01424                 STY     INPTR+3                           ;SAVE NEW INPUT BUFFER POINTER
+2B05 6F80             (        forth.asm):01425                 CLR     ,X+                               ;INDICATE END OF STRING
+2B07 10AEE4           (        forth.asm):01426                 LDY     ,S                                ;GET ADDRESS OF BSR OPERAND
+2B0A 1F10             (        forth.asm):01427                 TFR     X,D                               ;GET CURRENT ADDRESS
+2B0C A3E1             (        forth.asm):01428                 SUBD    ,S++                              ;CALCULATE OFFSET FOR BSR
+2B0E E73F             (        forth.asm):01429                 STB     -1,Y                              ;SAVE IN OPERAND
+2B10 86BD             (        forth.asm):01430                 LDA     #$BD                              ;'JSR >'
+2B12 A780             (        forth.asm):01431                 STA     ,X+                               ;COMPILE INTO DICT
+2B14 CC273A           (        forth.asm):01432                 LDD     #FROMR                            ;GET '>R' ADDRESS
+2B17 ED81             (        forth.asm):01433                 STD     ,X++                              ;COMPILE
+2B19 20B8             (        forth.asm):01434                 BRA     COMR2                             ;RESAVE FREE POINTER
+                      (        forth.asm):01435         ;* UNTERMINATED STRING
+2B1B                  (        forth.asm):01436         UNTERR
+2B1B 17FBD5           (        forth.asm):01437                 LBSR    ERROR                             ;GENERATE ERROR MESSAGE
+2B1E 556E7465726D696E (        forth.asm):01438                 FCN     'Unterminated'
+     6174656400
+                      (        forth.asm):01439         ;* '0' - QUICKER ZERO
+2B2B 80               (        forth.asm):01440                 FCB     $80
+2B2C 30               (        forth.asm):01441                 FCC     '0'
+2B2D 2AEC             (        forth.asm):01442                 FDB     QUOTE
+2B2F                  (        forth.asm):01443         ZERO
+2B2F 4F               (        forth.asm):01444                 CLRA                                      ;     ZERO HIGH BYTE
+2B30 5F               (        forth.asm):01445                 CLRB                                      ;     ZERO LOW BYTE
+2B31 EDC3             (        forth.asm):01446                 STD     ,--U                              ;SAVE ON DATA STACK
+2B33 39               (        forth.asm):01447                 RTS
+                      (        forth.asm):01448         ;* '1' - QUICKER ONE
+2B34 80               (        forth.asm):01449                 FCB     $80
+2B35 31               (        forth.asm):01450                 FCC     '1'
+2B36 2B2F             (        forth.asm):01451                 FDB     ZERO
+2B38                  (        forth.asm):01452         ONE
+2B38 CC0001           (        forth.asm):01453                 LDD     #1                                ;GET A VALUE OF ONE
+2B3B EDC3             (        forth.asm):01454                 STD     ,--U                              ;SAVE ON STACK
+2B3D 39               (        forth.asm):01455                 RTS
+                      (        forth.asm):01456         ;*
+                      (        forth.asm):01457         ;* VARIABLES
+                      (        forth.asm):01458         ;*
+                      (        forth.asm):01459         ;* '(OUT)' - ADDRESS OF GENERAL OUTPUT DRIVER
+2B3E 80               (        forth.asm):01460                 FCB     $80
+2B3F 2954554F28       (        forth.asm):01461                 FCC     ')TUO('
+2B44 2B38             (        forth.asm):01462                 FDB     ONE
+2B46                  (        forth.asm):01463         DISP
+2B46 BD220E           (        forth.asm):01464                 JSR     VARIAB                            ;VARIABLE SUBROUTINE
+2B49 22E7             (        forth.asm):01465                 FDB     DOLOUT                            ;DEFAULT IS '$OUT'
+                      (        forth.asm):01466         ;* '(IN)' - ADDRESS OF GENERAL INPUT DRIVER
+2B4B 80               (        forth.asm):01467                 FCB     $80
+2B4C 294E4928         (        forth.asm):01468                 FCC     ')NI('
+2B50 2B46             (        forth.asm):01469                 FDB     DISP
+2B52                  (        forth.asm):01470         INPT
+2B52 BD220E           (        forth.asm):01471                 JSR     VARIAB                            ;VARIABLE SUBROUTINE
+2B55 22F4             (        forth.asm):01472                 FDB     DOLIN                             ;DEFAULT IS '$IN'
+                      (        forth.asm):01473         ;* '(GO)' - ADDRESS OF WORD TO EXECUTE AT STARTUP
+2B57 80               (        forth.asm):01474                 FCB     $80
+2B58 294F4728         (        forth.asm):01475                 FCC     ')OG('
+2B5C 2B52             (        forth.asm):01476                 FDB     INPT
+2B5E                  (        forth.asm):01477         BOOT
+2B5E BD220E           (        forth.asm):01478                 JSR     VARIAB                            ;VARIABLE SUBROUTINE
+2B61 26B8             (        forth.asm):01479                 FDB     QUIT                              ;DEFUALT IS 'QUIT'
+                      (        forth.asm):01480         ;* '>IN' - POINTER TO POSITION IN INPUT BUFFER
+2B63 80               (        forth.asm):01481                 FCB     $80
+2B64 4E493E           (        forth.asm):01482                 FCC     'NI>'
+2B67 2B5E             (        forth.asm):01483                 FDB     BOOT
+2B69                  (        forth.asm):01484         INPTR
+2B69 BD220E           (        forth.asm):01485                 JSR     VARIAB                            ;VARIABLE SUBROUTINE
+2B6C 2004             (        forth.asm):01486                 FDB     INPBUF                            ;DEFAULT IS START OF BUFFER
+                      (        forth.asm):01487         ;* 'BASE' - CURRENT NUMBER CONVERSION BASE
+2B6E 80               (        forth.asm):01488                 FCB     $80
+2B6F 45534142         (        forth.asm):01489                 FCC     'ESAB'
+2B73 2B69             (        forth.asm):01490                 FDB     INPTR
+2B75                  (        forth.asm):01491         BASE
+2B75 BD220E           (        forth.asm):01492                 JSR     VARIAB                            ;VARIABLE SUBROUTINE
+2B78 000A             (        forth.asm):01493                 FDB     10                                ;DEFAULT IS BASE 10
+                      (        forth.asm):01494         ;* 'FREE' - ADDRESS OF FREE MEMORY FOLLOWING DICTIONARY
+2B7A 80               (        forth.asm):01495                 FCB     $80
+2B7B 45455246         (        forth.asm):01496                 FCC     'EERF'
+2B7F 2B75             (        forth.asm):01497                 FDB     BASE
+2B81                  (        forth.asm):01498         FREE
+2B81 BD220E           (        forth.asm):01499                 JSR     VARIAB                            ;VARIABLE SUBROUTINE
+2B84 2B92             (        forth.asm):01500                 FDB     USRSPC                            ;DEFAULT IS END OF DICTIONARY
+                      (        forth.asm):01501         ;* 'HERE' - ADDRESS OF LAST WORD IN DICTIONARY
+2B86 80               (        forth.asm):01502                 FCB     $80
+2B87 45524548         (        forth.asm):01503                 FCC     'EREH'
+2B8B 2B81             (        forth.asm):01504                 FDB     FREE
+2B8D                  (        forth.asm):01505         HERE
+2B8D BD220E           (        forth.asm):01506                 JSR     VARIAB                            ;VARIABLE SUBROUTINE
+2B90 2B8D             (        forth.asm):01507                 FDB     HERE                              ;DEFUALT IS ITSELF
+                      (        forth.asm):01508         ;* DICTIONARY GROWS FROM HERE
+     2B92             (        forth.asm):01509         USRSPC          = *
+
+Symbol Table:
+[ G] ABS                              252E
+[ G] ADD                              23B1
+[ G] ALLOT                            281E
+[ G] AND                              24F0
+[ G] BASE                             2B75
+[ G] BEGIN                            2A8A
+[ G] BOOT                             2B5E
+[ G] BRAC1                            296A
+[ G] BRAC2                            297F
+[ G] BRAC3                            297A
+[ G] BRACE                            2966
+[ G] BRC1                             28FC
+[ G] BRC11                            2901
+[ G] BRC2                             28F0
+[ G] BRCF                             290C
+[ G] BRCL                             28CD
+[ G] BRCR                             28BF
+[ G] BRCW                             28E4
+[ G] BREC                             293C
+[ G] BRNC                             2931
+[ G] BRNI                             2926
+[ G] BYE                              2798
+[ G] COL1                             286E
+[ G] COL11                            2878
+[ G] COL12                            2886
+[ G] COL2                             288A
+[ G] COL3                             28A2
+[ G] COLON                            286B
+[ G] COM                              2519
+[ G] COMP1                            2913
+[ G] COMP2                            2917
+[ G] COMP3                            2919
+[ G] COMP4                            291B
+[ G] COMR1                            2A67
+[ G] COMR2                            2AD3
+[ G] COMRET                           29E0
+[ G] CONERR                           2717
+[ G] CR                               263A
+[ G] CRE1                             27E9
+[ G] CRE2                             2803
+[ G] CRE3                             27EE
+[ G] CREATE                           27D3
+[ G] DELMSG                           222D
+[ G] DISP                             2B46
+[ G] DMINUS                           23C7
+[ G] DO                               2A16
+[ G] DOES                             2957
+[ G] DOLIN                            22F4
+[ G] DOLOUT                           22E7
+[ G] DOT                              231C
+[ G] DOT01                            232A
+[ G] DOT1                             232E
+[ G] DOT2                             2340
+[ G] DOT3                             234E
+[ G] DOTQ                             2ADB
+[ G] DPLUS                            23DD
+[ G] DROP                             2247
+[ G] DROPN                            2239
+[ G] DSTACK                           2200
+[ G] DUP                              2250
+[ G] ELSE                             2AB0
+[ G] EMIT                             2303
+[ G] ENDIF                            2A97
+[ G] EQUALS                           228E
+[ G] ERMSG1                           2219
+[ G] ERMSG2                           2222
+[ G] ERROR                            26F3
+[ G] EXEC                             25CA
+[ G] FOREVE                           2A36
+[ G] FORG1                            27B4
+[ G] FORGET                           27A5
+[ G] FREE                             2B81
+[ G] FROMR                            273A
+[ G] GREQU                            22C4
+[ G] GRTR                             22A9
+[ G] HERE                             2B8D
+[ G] I                                29F8
+[ G] IF                               2AC3
+[ G] IF1                              2ACF
+[ G] IJK                              29FA
+[ G] INPBUF                           2004
+[ G] INPT                             2B52
+[ G] INPTR                            2B69
+[ G] INTERR                           28A6
+[ G] J                                29F0
+[ G] K                                29E8
+[ G] KEY                              230D
+[ G] LEAVE                            298C
+[ G] LESEQU                           22D4
+[ G] LESS                             22B6
+[ G] LOK1                             2588
+[ G] LOK2                             258C
+[ G] LOK3                             25A0
+[ G] LOK4                             25B0
+[ G] LOK5                             2594
+[ G] LOKERR                           270B
+[ G] LOOKUP                           257D
+[ G] LOOP                             29B6
+[ G] LOOP1                            29CB
+[ G] LSTLOK                           2000
+[ G] MSMOD                            244E
+[ G] MSMODD                           246E
+[ G] MSMODL                           2453
+[ G] MSMODM                           2455
+[ G] MSTOR                            2359
+[ G] MULT                             2426
+[ G] NEG                              2524
+[ G] NOTEQU                           229C
+[ G] NSTERR                           29FD
+[ G] NUM1                             25F5
+[ G] NUM2                             25E7
+[ G] NUM3                             2621
+[ G] NUM4                             25E3
+[ G] NUM5                             261E
+[ G] NUMBER                           25D6
+[ G] ONE                              2B38
+[ G] ONEM                             2551
+[ G] ONEP                             255D
+[ G] OR                               24FD
+[ G] OSEND                            DBFF
+[ G] OSRAM                            2000
+[ G] OSUTIL                           D000
+[ G] OVER                             225C
+[ G] PLOOP                            2999
+[ G] PMSG                             268D
+[ G] PMSG1                            268F
+[ G] PMSG2                            2685
+[ G] PROERR                           27BC
+[ G] PROMPT                           2213
+[ G] PSTOR                            2367
+[ G] PWRD                             26A1
+[ G] PWRD1                            26A3
+[ G] QSKI1                            256F
+[ G] QSKIP                            256B
+[ G] QUI1                             26C6
+[ G] QUI2                             26EA
+[ G] QUIT                             26B8
+[ G] QUO1                             2AF5
+[ G] QUO2                             2B01
+[ G] QUOTE                            2AEC
+[ G] READ                             2650
+[ G] READ1                            2656
+[ G] READ2                            2679
+[ G] READ3                            2672
+[ G] READNC                           2652
+[ G] REDMSG                           2225
+[ G] RET0                             22DB
+[ G] RET1                             22CB
+[ G] RETS                             22DC
+[ G] ROT                              2267
+[ G] RPFIX                            2748
+[ G] RSTACK                           2100
+[ G] SAVDS                            253D
+[ G] SAVSD                            23BF
+[ G] SEMI                             2849
+[ G] SEMI1                            285D
+[ G] SEMI2                            2861
+[ G] SETB1                            2944
+[ G] SETBIT                           293E
+[ G] SHL                              23A8
+[ G] SHR                              239E
+[ G] SLASH                            24E5
+[ G] SLMOD                            2490
+[ G] SLMOD1                           24AF
+[ G] SLMOD2                           249E
+[ G] SLMOD3                           24D4
+[ G] SLMODD                           24CB
+[ G] SLMODL                           24B4
+[ G] SLMODM                           24B6
+[ G] SLMODR                           24E0
+[ G] SPACE                            262E
+[ G] SPFIX                            2756
+[ G] SUB                              23BB
+[ G] SWAP                             2276
+[ G] SWAP1                            2278
+[ G] TEMP                             2002
+[ G] TICK                             25BC
+[ G] TICS                             275F
+[ G] TOR                              272D
+[ G] TSTER1                           25B7
+[ G] TSTERM                           25B2
+[ G] TWOM                             2538
+[ G] TWOP                             2545
+[ G] UDOT                             2316
+[ G] UMUL1                            240C
+[ G] UMUL2                            2419
+[ G] UMULT                            23F3
+[ G] UNT1                             2A5B
+[ G] UNTERR                           2B1B
+[ G] UNTIL                            2A4D
+[ G] USMOD                            2479
+[ G] USRSPC                           2B92
+[ G] VAR                              2832
+[ G] VARIAB                           220E
+[ G] VOC                              276A
+[ G] VOC1                             276D
+[ G] VOC2                             2771
+[ G] VOC3                             2775
+[ G] VOC4                             2782
+[ G] VOC9                             2759
+[ G] VREAD                            2395
+[ G] VREADC                           238C
+[ G] VSTOR                            2380
+[ G] VSTORC                           2375
+[ G] WHILE                            2A72
+[ G] WIDTH                            0041
+[ G] XOR                              250B
+[ G] ZEQU                             2284
+[ G] ZERO                             2B2F

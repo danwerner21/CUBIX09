@@ -54,7 +54,7 @@
 ;	10      10      10      10	10
 ;	20      20      20      20	20	L1	L2 	BUZZ
 ;
-DSKY_PPI        = $0560                           ; PORT
+DSKY_PPI        = $DF88                           ; PORT
 DSKY_PPIA       = DSKY_PPI+0                      ; PORT A
 DSKY_PPIB       = DSKY_PPI+1                      ; PORT B
 DSKY_PPIC       = DSKY_PPI+2                      ; PORT C
@@ -691,7 +691,7 @@ DSKY_PPIX_VAL:
 DSKY_PRESENT:
         .BYTE   0
 DSKYINITMSG:
-        .BYTE   $54,$6E,$5C,$5E,$6E,$54,$79,$40
+        .BYTE   $5E,$1C,$5C,$5E,$6E,$54,$79,$40
 
 DSKYMESSAGE1:
         FCN     "DSKY:"

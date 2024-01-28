@@ -231,10 +231,10 @@ RITAB           EQU *
         FCB     $FF                               ;ERROR MESSAGES ENABLED
         FCB     0                                 ;TRACE DISABLED
         FCB     0                                 ;DEBUG DISABLED
-        FCB     3                                 ;DEFAULT DRIVE (A)
+        FCB     0                                 ;DEFAULT DRIVE (A)
         FCC     'MAIN'                            ;DEFAULT DIRECTORY
         FCB     0,0,0,0                           ;(FILLER)
-        FCB     1                                 ;SYSTEM DRIVE (A)
+        FCB     0                                 ;SYSTEM DRIVE (A)
         FCC     'SYSTEM'                          ;SYSTEM DIRECTORY
         FCB     0,0                               ;(FILLER)
 ; DRIVE MAPPING TABLE

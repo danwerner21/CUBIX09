@@ -54,7 +54,7 @@
 ;	10      10      10      10	10
 ;	20      20      20      20	20	L1	L2 	BUZZ
 ;
-DSKY_PPI        = $0560                           ; PORT
+DSKY_PPI        = $DF88                            ; PORT
 DSKY_PPIA       = DSKY_PPI+0                      ; PORT A
 DSKY_PPIB       = DSKY_PPI+1                      ; PORT B
 DSKY_PPIC       = DSKY_PPI+2                      ; PORT C
