@@ -50,11 +50,11 @@ New SSRs
 ---
 To Do List for this port:
 * ADD FLOPPY DRIVE SUPPORT (Nhyodyne)
-* Enable Cubix FLOPPY Format Function
 * add support for front panel LED/Switches (Duodyne)
 * add support for front panel display (Duodyne)
 * add support for DiskIO SD card (Duodyne)
 * add support for front panel SD card (Duodyne)
+* Enable Cubix FLOPPY Format Function (Duodyne/Nhyodyne)
 * Fix XMODEM CRC problem
 * convert Xmodem EXEs to S19s
 * DSKY V1 support (Duodyne/Nhyodyne)
@@ -154,9 +154,10 @@ Default drive configuration for Cubix can be found at the bottom of the respecti
         FCB     $21,$00                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
         FCB     $21,$01                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE
         FCB     $21,$02                           ;     LOW NIBBLE IS DEVICE ADDRESS
-        FCB     $00,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
+        FCB     $11,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
                                                   ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
 ```
+Note that the above drive table is configured for a secondary IDE address and for floppy drive 1.
 
 The ASSIGN.EXE program can be used to remap drives in real time.
 
@@ -168,6 +169,10 @@ SET SYSTEM A:[SYSTEM]
 ```
 more information on Cubix drives and directories can be found in the Cubix user documentation in this repo.
 
+## Starting Cubix from CP/M
 
+Cubix can be started from CP/M by launching the cubix.com file located in the bin folder for each respective system.  
+
+Cubix can also be started by uploading the cubix.s19 file located in the bin folder for each respective system. Then transferring control to $E000.
 
 
