@@ -16,59 +16,59 @@ loader.asm:
     15                                  ORG     0100H
     16                          ; TODO:  RE-ENABLE THIS CODE
     17                          ; Check for cpu unit
-    18                          ;        LD      A,(DEFFCB+1)                      ; Get first char of filename
-    19                          ;
-    20                          ;        CP      '9' + 1                           ; > '9'
-    21                          ;        JR      NC,go                             ; YES, NOT 0-9, Invalid argument
-    22                          ;
-    23                          ;        SUB     '0'                               ; < '0'?
-    24                          ;        JR      C,go                              ; YES, NOT 0-9, Invalid argument
+    18  0000  3a5d00                    LD      A,(DEFFCB+1)                      ; Get first char of filename
+    19                          
+    20  0003  fe3a                      CP      '9' + 1                           ; > '9'
+    21  0005  3009                      JR      NC,go                             ; YES, NOT 0-9, Invalid argument
+    22                          
+    23  0007  d630                      SUB     '0'                               ; < '0'?
+    24  0009  3805                      JR      C,go                              ; YES, NOT 0-9, Invalid argument
     25                          
-    26                          ;        CPL                                       ; to port and save
-    27                          ;        LD      (CPUunit),A                       ; Unit 0 = FFH, 1 = FEH etc
+    26  000b  c690                      ADD     $90
+    27  000d  322700                    LD      (CPUunit),A                       ; Unit 0 = FFH, 1 = FEH etc
     28                          ;
     29                          go:
-    30  0000  0e09                      LD      C,9
-    31  0002  111800                    LD      DE,MSGFIL
-    32  0005  cd0500                    CALL    BDOS                              ; Do it
-    33  0008  f3                        DI                                        ; DISABLE INTERRUPTS
-    34  0009  3a1700                    LD      A,(CPUunit)                       ; GET CPU PORT
-    35  000c  0e95                      LD      C,$95
-    36  000e  ed78                      IN      A,(C)                             ; ENABLE 6502
+    30  0010  0e09                      LD      C,9
+    31  0012  112800                    LD      DE,MSGFIL
+    32  0015  cd0500                    CALL    BDOS                              ; Do it
+    33  0018  f3                        DI                                        ; DISABLE INTERRUPTS
+    34  0019  3a2700                    LD      A,(CPUunit)                       ; GET CPU PORT
+    35  001c  0e95                      LD      C,$95
+    36  001e  ed78                      IN      A,(C)                             ; ENABLE 6502
     37                          ; should never get here
-    38  0010  00                        NOP
-    39  0011  00                        NOP
-    40  0012  00                        NOP
-    41  0013  00                        NOP
-    42  0014  00                        NOP
-    43  0015  00                        NOP
-    44  0016  76                        HALT
+    38  0020  00                        NOP
+    39  0021  00                        NOP
+    40  0022  00                        NOP
+    41  0023  00                        NOP
+    42  0024  00                        NOP
+    43  0025  00                        NOP
+    44  0026  76                        HALT
     45                          
     46                          ;
     47                          CPUunit:
-    48  0017  95                        DB      095h                              ; Default CPU unit port
+    48  0027  95                        DB      095h                              ; Default CPU unit port
     49                          ;
     50                          
     51                          MSGFIL:
-    52  0018  0a0d                      DB      0AH,0DH
-    53  001a  4355424958204c4f          DM      "CUBIX LOADED INTO RAM, TO START CUBIX TYPE:"
+    52  0028  0a0d                      DB      0AH,0DH
+    53  002a  4355424958204c4f          DM      "CUBIX LOADED INTO RAM, TO START CUBIX TYPE:"
               4144454420494e54  
               4f2052414d2c2054  
               4f20535441525420  
               4355424958205459  
               50453a            
-    54  0045  0a0d                      DB      0AH,0DH
-    55  0047  0a0d                      DB      0AH,0DH
-    56  0049  5720444635302039          DM      "W DF50 9C"
+    54  0055  0a0d                      DB      0AH,0DH
+    55  0057  0a0d                      DB      0AH,0DH
+    56  0059  5720444635302039          DM      "W DF50 9C"
               43                
-    57  0052  0a0d                      DB      0AH,0DH
-    58  0054  472031303030              DM      "G 1000"
-    59  005a  0a0d                      DB      0AH,0DH
-    60  005c  0a0d                      DB      0AH,0DH
-    61  005e  494e544f20363830          DM      "INTO 6809 MONITOR"
+    57  0062  0a0d                      DB      0AH,0DH
+    58  0064  472031303030              DM      "G 1000"
+    59  006a  0a0d                      DB      0AH,0DH
+    60  006c  0a0d                      DB      0AH,0DH
+    61  006e  494e544f20363830          DM      "INTO 6809 MONITOR"
               39204d4f4e49544f  
               52                
-    62  006f  24                        DM      "$"
+    62  007f  24                        DM      "$"
     63                          
     64                          .END
     65                          

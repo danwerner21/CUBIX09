@@ -9,9 +9,9 @@ cubixdrv.sys: cubixdrv.asm cubix_serial.asm cubix_ide.asm cubix_dskyng.asm cubix
 
 duocubix.com: loader.asm cubix.s19 cubixdrv.sys
 	z80asm -b -l -m loader.asm  2> loader.err
-	srec_cat  loader_addr0100.bin -binary -offset 0x0100 -o  cubix_loader.1  -Data_Only
+	srec_cat  loader_addr0100.bin -binary  -o  cubix_loader.1  -Data_Only
 	srec_cat  cubix.s19 -offset -0x0100 -o  cubix_loader.2  -Data_Only
-	srec_cat  cubix_loader.1 cubix_loader.2 -o duocubix.com -binary
+	srec_cat  cubix_loader.1 cubix_loader.2 -o duocubix.com  -binary
 	@rm	cubix_loader.1
 	@rm	cubix_loader.2
 	@rm	loader_addr0100.bin

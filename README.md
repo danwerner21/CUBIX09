@@ -49,7 +49,12 @@ New SSRs
 
 ---
 To Do List for this port:
-* ADD FLOPPY DRIVE SUPPORT (Duodyne/Nhyodyne)
+* ADD FLOPPY DRIVE SUPPORT (Nhyodyne)
+* Enable Cubix FLOPPY Format Function
+* add support for front panel LED/Switches (Duodyne)
+* add support for front panel display (Duodyne)
+* add support for DiskIO SD card (Duodyne)
+* add support for front panel SD card (Duodyne)
 * Fix XMODEM CRC problem
 * convert Xmodem EXEs to S19s
 * DSKY V1 support (Duodyne/Nhyodyne)

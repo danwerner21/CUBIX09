@@ -1,6 +1,6 @@
 ;__FLOPPY DRIVERS________________________________________________________________________________________________________________
 ;
-; 	CUBIX floppy drivers for MBC FDC card
+; 	CUBIX floppy drivers for DUODYNE FDC card
 ;
 ;	Entry points:
 ;		FL_SETUP        - called during OS init
@@ -12,12 +12,12 @@
 ;*
 ;* HARDWARE I/O ADDRESSES
 ;*
-FDC_MSR         = $0530                           ; ADDRESS OF MAIN STATUS REGISTER
-FDC_DATA        = $0531                           ; FLOPPY DATA REGISTER
-FDC_RESET       = $0533                           ; FLOPPY RESET
-FDC_DCR         = $0535                           ; LOAD CONTROL REGISTER
-FDC_DOR         = $0536                           ; CONFIGURATION CONTROL REGISTER
-FDC_TC          = $0537                           ; TERMINAL COUNT
+FDC_MSR         = $DF80                           ; ADDRESS OF MAIN STATUS REGISTER
+FDC_DATA        = $DF81                           ; FLOPPY DATA REGISTER
+FDC_RESET       = $DF83                           ; FLOPPY RESET
+FDC_DCR         = $DF85                           ; LOAD CONTROL REGISTER
+FDC_DOR         = $DF86                           ; CONFIGURATION CONTROL REGISTER
+FDC_TC          = $DF87                           ; TERMINAL COUNT
 
 ;
 ; FDC COMMANDS
@@ -85,6 +85,7 @@ FLOPPY_RETRIES1 = 2                               ; TWO ITERATIONS OF RECAL?
 ;________________________________________________________________________________________________________________________________
 ;
 FL_SETUP:
+        JSR     LFCR                              ; CRLF
         LDX     #FMESSAGE1
         JSR     WRSTR                             ; DO PROMPT
 ;
@@ -122,8 +123,6 @@ FL_SETUP:
         JSR     CHECKINT                          ;
         JSR     CHECKINT                          ;
 
-        LDA     #$00
-        STA     CURRENTDEVICE
         LDA     #%00010000
         STA     DSKUNIT
         JSR     RECAL                             ;
@@ -132,8 +131,6 @@ FL_SETUP:
         JSR     SETTRK1
         JSR     RECAL                             ;
 
-        LDA     #$01
-        STA     CURRENTDEVICE
         LDA     #%00100001
         STA     DSKUNIT
         JSR     RECAL                             ;
@@ -158,16 +155,14 @@ FL_READ_SECTOR:
         BEQ     >
         RTS
 !
-        LDA     CURRENTDEVICE
-        ANDA    #$01
-        ORA     #%00010000
-        STA     DSKUNIT                           ;
+        JSR     GETDSKUNIT
+        LDA     #DOR_INIT
+        ORA     DSKUNIT                           ; SET MOTOR ON
+        STA     FDC_DOR                           ; OUTPUT TO CONTROLLER
+
         LDA     #$00
         STA     FLRETRY                           ; BLANK RETRIES
         STA     FLRETRY1
-        LDA     #DOR_INIT
-        ORA     DSKUNIT                           ;
-        STA     FDC_DOR                           ; OUTPUT TO CONTROLLER
 
 READFL1:
         LDA     #CFD_READ|CFD_MFM                 ; BIT 6 SETS MFM, 06H IS READ COMMAND
@@ -205,10 +200,11 @@ FL_WRITE_SECTOR:
         BEQ     >
         RTS
 !
-        LDA     CURRENTDEVICE
-        ANDA    #$01
-        ORA     #%00010000
-        STA     DSKUNIT                           ;
+        JSR     GETDSKUNIT
+        LDA     #DOR_INIT
+        ORA     DSKUNIT                           ; SET MOTOR ON
+        STA     FDC_DOR                           ; OUTPUT TO CONTROLLER
+
         LDA     #$00
         STA     FLRETRY                           ; BLANK RETRIES
         STA     FLRETRY1
@@ -245,7 +241,6 @@ WRITEFLDONE:
 ;________________________________________________________________________________________________________________________________
 ;
 DSKOP:
-        SEI
         JSR     CHECKINT                          ; CHECK INTERRUPT STATUS, MAKE SURE IT IS CLEAR
         CMPA    #$FF                              ; DID IT RETURN WITH ERROR CODE?
         BEQ     DSKEXIT                           ; IF YES, EXIT WITH ERROR CODE
@@ -262,10 +257,21 @@ DSKEXIT:
         LDA     #0                                ; SET MOTOR OFF
         STA     FDC_DOR                           ; OUTPUT TO CONTROLLER
         LDA     #$FF                              ; SET IF ERROR
-        CLI
         RTS
 
 SNDFDWR:
+;
+        LDA     CURRENTDEVICE
+        STA     DSKY_HEXBUF
+        LDA     CURRENTHEAD
+        STA     DSKY_HEXBUF+1
+        LDA     CURRENTCYL                        ;
+        STA     DSKY_HEXBUF+2
+        LDA     CURRENTSEC                        ;
+        STA     DSKY_HEXBUF+3
+        JSR     DSKY_BIN2SEG
+        JSR     DSKY_SHOW
+;
         CLC
         LDA     DSKUNIT                           ; GET DISK UNIT NUMBER
         ANDA    #$01                              ; MASK FOR TWO DRIVES.
@@ -303,9 +309,8 @@ SNDFDWR:
 ; FROM READ TO READ MUST NOT EXCEED 25US WORST CASE MIN. (AT 2MHZ IS 2,000,000 CYCLES PER SECOND == 50 CYCLE BUDGET.)
 ;
 RDD_POLL:
-        LDX     #$00
-        LDY     #$00
         JSR     SNDFDWR                           ;
+        LDY     #$0000
 RDS1:
         LDA     FDC_MSR                           ; GET STATUS  (4 CYCLES)
         BPL     RDS1                              ; FDC IS NOT READY, WAIT FOR IT (UP TO 4 CYCLES)
@@ -315,18 +320,8 @@ RDS1A:
         LDA     FDC_DATA                          ; GET DATA (4 CYCLES)
         STA     HSTBUF,Y                          ; WRITE IT (5 CYCLES)
         INY                                       ; (2 CYCLES)
+        CMPY    #$0200
         BNE     RDS1                              ; KEEP GOING (UP TO 4 CYCLES)   TOTAL =
-        LDX     #$00
-RDS2:
-        LDA     FDC_MSR                           ; GET STATUS
-        BPL     RDS2                              ; FDC IS NOT READY, WAIT FOR IT (UP TO 4 CYCLES)
-        ANDA    #%00100000                        ; EXECUTION MODE?
-        BEQ     DSKOPEND                          ; NO, ERROR
-RDS2A:
-        LDA     FDC_DATA                          ; GET DATA
-        STA     HSTBUF+256,Y                      ; WRITE IT
-        INY
-        BNE     RDS2                              ; KEEP GOING
 DSKOPEND:
         LDA     FDC_TC
         JSR     FDDELAY
@@ -345,7 +340,9 @@ RESUL3:
 
 WRR_POLL:
         JSR     SNDFDWR                           ;
-WRS1:   ;
+        LDY     #$0000
+WRS1:
+;
         LDA     FDC_MSR                           ; GET STATUS
         BPL     WRS1                              ; NOT READY
         ANDA    #%00100000                        ; EXECUTION MODE?
@@ -353,16 +350,8 @@ WRS1:   ;
         LDA     HSTBUF,Y                          ; WRITE IT
         STA     FDC_DATA                          ; WRITE TO FDC
         INY
+        CMPY    #$0200
         BNE     WRS1                              ; DO NEXT
-WRS2:   ;
-        LDA     FDC_MSR                           ; GET STATUS
-        BPL     WRS2                              ; NOT READY
-        ANDA    #%00100000                        ; EXECUTION MODE?
-        BEQ     WRS3                              ; NO, ERROR
-        LDA     HSTBUF+256,Y                      ; WRITE IT
-        STA     FDC_DATA                          ; WRITE TO FDC
-        INY
-        BNE     WRS2                              ; DO NEXT
 WRS3:
         JMP     DSKOPEND                          ;
 
@@ -437,13 +426,14 @@ SETTRKEXIT:
 ;
 PFDATA:
         PSHS    A                                 ; SAVE DATA BYTE
-        LDY     #$00
+        LDY     #$0000
 WRF1:
         LDA     FDC_MSR                           ; READ FDC STATUS
         STA     TMPSTORAGE
         ANDA    #$80                              ;
         BNE     >
         INY
+        CMPY    #$0100
         BNE     WRF1                              ; FDC IS NOT READY, WAIT FOR IT
         PULS    A
         LDA     #$FF
@@ -653,17 +643,31 @@ FDVDELAY:
         RTS
 
 
+GETDSKUNIT:
+        LDA     CURRENTDEVICE
+        ANDA    #$01
+        CMPA    #$00
+        BNE     >
+        LDA     #$00
+        LDA     #%00010000
+        STA     DSKUNIT
+        RTS
+!
+        LDA     #%00100001
+        STA     DSKUNIT
+        RTS
+
 TMPSTORAGE:
         FCB     00
 FMESSAGE1:
-        FCC     "FD: MODE=MBC$"
+        FCC     "FD: MODE=DUODYNE"
         FCB     00
 FMESSAGE2:
-        FCC     " IO=0x$"
+        FCC     " IO=0x"
         FCB     00
 FMESSAGE3:
-        FCC     " NOT PRESENT$"
+        FCC     " NOT PRESENT"
         FCB     00
 FMESSAGE4:
-        FCC     " PRESENT$"
+        FCC     " PRESENT"
         FCB     00

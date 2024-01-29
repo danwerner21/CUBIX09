@@ -15,16 +15,16 @@ DEFFCB:         EQU $5C                           ; Location of default FCB
         ORG     0100H
 ; TODO:  RE-ENABLE THIS CODE
 ; Check for cpu unit
-;        LD      A,(DEFFCB+1)                      ; Get first char of filename
-;
-;        CP      '9' + 1                           ; > '9'
-;        JR      NC,go                             ; YES, NOT 0-9, Invalid argument
-;
-;        SUB     '0'                               ; < '0'?
-;        JR      C,go                              ; YES, NOT 0-9, Invalid argument
+        LD      A,(DEFFCB+1)                      ; Get first char of filename
 
-;        CPL                                       ; to port and save
-;        LD      (CPUunit),A                       ; Unit 0 = FFH, 1 = FEH etc
+        CP      '9' + 1                           ; > '9'
+        JR      NC,go                             ; YES, NOT 0-9, Invalid argument
+
+        SUB     '0'                               ; < '0'?
+        JR      C,go                              ; YES, NOT 0-9, Invalid argument
+
+        ADD     $90
+        LD      (CPUunit),A                       ; Unit 0 = FFH, 1 = FEH etc
 ;
 go:
         LD      C,9

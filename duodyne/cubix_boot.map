@@ -1,8 +1,0 @@
-Symbol: .END (cubix_boot.s) = 1048
-Symbol: BANK00 (cubix_boot.s) = DF50
-Symbol: BANK40 (cubix_boot.s) = DF51
-Symbol: BANK80 (cubix_boot.s) = DF52
-Symbol: BANKC0 (cubix_boot.s) = DF53
-Symbol: LOOP (cubix_boot.s) = 1016
-Symbol: LOOP1 (cubix_boot.s) = 102C
-Symbol: PAGEUART4 (cubix_boot.s) = DF5C

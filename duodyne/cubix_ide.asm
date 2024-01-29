@@ -66,7 +66,6 @@ PPIDETIMEOUT:
 ;
 PPIDE_INIT:
         JSR     LFCR                              ; AND CRLF
-        JSR     LFCR                              ; AND CRLF
         LDX     #MESSAGE1
         JSR     WRSTR                             ; DO PROMPT
         JSR     LFCR                              ; AND CRLF

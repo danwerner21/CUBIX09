@@ -52,9 +52,9 @@ DISPATCHTABLE:
         .WORD   drv_noop                          ; FUNCTION 16 - read a sector from drive
         .WORD   drv_noop                          ; FUNCTION 17 - write a sector to drive
 ;
-        .WORD   drv_noop                          ; FL_SETUP                          ; FUNCTION 18 - init floppy device
-        .WORD   drv_noop                          ; FL_READ_SECTOR                    ; FUNCTION 19 - read a sector from floppy device
-        .WORD   drv_noop                          ; FL_WRITE_SECTOR                   ; FUNCTION 20 - write a sector to floppy device
+        .WORD   FL_SETUP                          ; FUNCTION 18 - init floppy device
+        .WORD   FL_READ_SECTOR                    ; FUNCTION 19 - read a sector from floppy device
+        .WORD   FL_WRITE_SECTOR                   ; FUNCTION 20 - write a sector to floppy device
 ;
         .WORD   PPIDE_INIT                        ; FUNCTION 21 - init PPIDE device
         .WORD   IDE_READ_SECTOR                   ; FUNCTION 22 - read a sector from PPIDE device
@@ -64,16 +64,16 @@ DISPATCHTABLE:
         .WORD   drv_noop                          ; FUNCTION 25 -
         .WORD   drv_noop                          ; FUNCTION 26 -
 ;
-        .WORD    DSKY_INIT                         ; FUNCTION 27 -
-        .WORD    DSKY_SHOW                         ; FUNCTION 28 -
+        .WORD   DSKY_INIT                         ; FUNCTION 27 -
+        .WORD   DSKY_SHOW                         ; FUNCTION 28 -
         .WORD   DSKY_BIN2SEG                      ; FUNCTION 29 -
-        .WORD    DSKY_RESET                        ; FUNCTION 30 -
-        .WORD    DSKY_STAT                         ; FUNCTION 31 -
-        .WORD    DSKY_GETKEY                       ; FUNCTION 32 -
-        .WORD    DSKY_BEEP                         ; FUNCTION 33 -
+        .WORD   DSKY_RESET                        ; FUNCTION 30 -
+        .WORD   DSKY_STAT                         ; FUNCTION 31 -
+        .WORD   DSKY_GETKEY                       ; FUNCTION 32 -
+        .WORD   DSKY_BEEP                         ; FUNCTION 33 -
         .WORD   DSKY_DSPL                         ; FUNCTION 34 -
-        .WORD    DSKY_PUTLED                       ; FUNCTION 35 -
-        .WORD    DSKY_BLANK                        ; FUNCTION 36 -
+        .WORD   DSKY_PUTLED                       ; FUNCTION 35 -
+        .WORD   DSKY_BLANK                        ; FUNCTION 36 -
 ;
 
 
@@ -82,10 +82,9 @@ DISPATCHTABLE:
         INCLUDE cubix_serial.asm
         INCLUDE cubix_ide.asm
         INCLUDE cubix_dskyng.asm
-;        INCLUDE cubix_dsky.asm
-;        INCLUDE cubix_floppy.asm
+        INCLUDE cubix_floppy.asm
 ;        INCLUDE cubix_esp32.asm
-
+;        INCLUDE cubix_dsky.asm
 
 
 

@@ -37,6 +37,15 @@ HWIN1
 
         JSR     PAGER_INIT                        ;INIT PAGER
 ;
+        JSR     WRMSG
+        FCB     $0A
+        FCC     '______________________________________________________________________'
+        FCB     $0D,$0A
+        FCC     'Cubix -- detecting hardware'
+        FCB     $0D,$0A
+        FCC     '______________________________________________________________________'
+        FCB     $0A,$0D,0
+;
         LDB     #02                               ;INIT SERIAL PORT
         JSR     MD_PAGERA
 ;
@@ -48,6 +57,10 @@ HWIN1
 ;
         LDB     #27                               ;INIT DSKY/NG
         JSR     MD_PAGERA
+;
+        JSR     WRMSG
+        FCC     '______________________________________________________________________'
+        FCB     $0A,$0D,0
 ;
         RTS
 
@@ -88,16 +101,6 @@ DFORMAT
 ;* HOME HEAD ON DRIVE ('U' POINTS TO DCB)
 ;*
 DHOME
-;*	LDAA	DRIVE,U			; GET DRIVE
-;*	CMPA	#$01			; DRIVE A?
-;*	BNE 	NOTHDB			;
-;*	LDAA	#$00
-;*	JMP	SETTRACK		; DIRECT ATTACHED FLOPPY HOME
-;*NOTHDB:
-;        LDA     #$03                              ; HOME DISK
-;	JSR	ECB_OUTCHAR		;
-;	LDA	DRIVE,U			; GET DRIVE
-;	JSR	ECB_ENC_OUTCHAR		; SEND TO Z80
         RTS
 
 
@@ -208,10 +211,10 @@ RESTAB
 ;*
 RITAB           EQU *
 ;* DEFAULT DRIVE CHARACTISTICS
-        FCB     0,255,1,255,0,0,0                 ;ADR 1, 255 CYL, 1 HEAD, 255 SEC/TRK
+        FCB     0,255,1,255,0,0,0                 ;ADR 0, 255 CYL, 1 HEAD, 255 SEC/TRK
         FCB     1,255,1,255,0,0,0                 ;ADR 1, 255 CYL, 1 HEAD, 255 SEC/TRK
         FCB     2,255,1,255,0,0,0                 ;ADR 2, 255 CYL, 1 HEAD, 255 SEC/TRK
-        FCB     3,255,1,255,0,0,0                 ;ADR 4, 255 CYL, 1 HEAD, 255 SEC/TRK
+        FCB     3,80,2,9,0,0,0                    ;ADR 3, 80 CYL, 2 HEAD, 9 SEC/TRK
 ;* CONSOLE DEVICE ASSIGNMENTS
         FCB     1                                 ;CONSOLE INPUT DEVICE
         FCB     1                                 ;CONSOLE OUTPUT DEVICE
@@ -231,17 +234,17 @@ RITAB           EQU *
         FCB     $FF                               ;ERROR MESSAGES ENABLED
         FCB     0                                 ;TRACE DISABLED
         FCB     0                                 ;DEBUG DISABLED
-        FCB     3                                 ;DEFAULT DRIVE (A)
+        FCB     0                                 ;DEFAULT DRIVE (A)
         FCC     'MAIN'                            ;DEFAULT DIRECTORY
         FCB     0,0,0,0                           ;(FILLER)
-        FCB     1                                 ;SYSTEM DRIVE (A)
+        FCB     0                                 ;SYSTEM DRIVE (A)
         FCC     'SYSTEM'                          ;SYSTEM DIRECTORY
         FCB     0,0                               ;(FILLER)
 ; DRIVE MAPPING TABLE
         FCB     $21,$00                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
         FCB     $21,$01                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE
-        FCB     $21,$02                           ;     LOW NIBBLE IS DEVICE ADDRESS
-        FCB     $00,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
+        FCB     $21,$02                           ; LOW NIBBLE IS DEVICE ADDRESS
+        FCB     $11,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
                                                   ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
 
 RISIZ           EQU *-RITAB                       ;SIZE OF INITILAIZED RAM
