@@ -74,6 +74,9 @@ DISPATCHTABLE:
         .WORD   DSKY_DSPL                         ; FUNCTION 34 -
         .WORD   DSKY_PUTLED                       ; FUNCTION 35 -
         .WORD   DSKY_BLANK                        ; FUNCTION 36 -
+        .WORD   FP_INIT                           ; FUNCTION 37 -
+        .WORD   FP_SETLED                         ; FUNCTION 38 -
+        .WORD   FP_GETSWITCH                      ; FUNCTION 39 -
 ;
 
 
@@ -83,6 +86,7 @@ DISPATCHTABLE:
         INCLUDE cubix_ide.asm
         INCLUDE cubix_dskyng.asm
         INCLUDE cubix_floppy.asm
+        INCLUDE cubix_fp.asm
 ;        INCLUDE cubix_esp32.asm
 ;        INCLUDE cubix_dsky.asm
 
@@ -126,7 +130,7 @@ WRHEXW
 ;* OUTPUT 'A' NUMBER TO CONSOLE IN HEX
 ;*
 WRHEX
-        PSHS    A                                 ;SAVE IT
+        PSHS    A,B                               ;SAVE IT
         LSRA                                      ;SHIFT
         LSRA                                      ;HIGH NIBBLE
         LSRA                                      ;INTO
@@ -134,7 +138,7 @@ WRHEX
         BSR     HOUT                              ;HIGH
         LDA     ,S                                ;GET LOW
         BSR     HOUT                              ;OUTPUT
-        PULS    A,PC                              ;RESTORE IT
+        PULS    A,B,PC                            ;RESTORE IT
 ;* OUTPUT NIBBLE IN HEX
 HOUT
         ANDA    #%00001111                        ;REMOVE HIGH

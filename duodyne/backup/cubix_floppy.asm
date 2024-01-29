@@ -660,14 +660,17 @@ GETDSKUNIT:
 TMPSTORAGE:
         FCB     00
 FMESSAGE1:
-        FCC     "FD: MODE=DUODYNE"
+        FCC     "FD:"
+        FCB     $0D,$0A
         FCB     00
 FMESSAGE2:
         FCC     " IO=0x"
         FCB     00
 FMESSAGE3:
+        FCB     $0D,$0A
         FCC     " NOT PRESENT"
         FCB     00
 FMESSAGE4:
-        FCC     " PRESENT"
+        FCB     $0D,$0A
+        FCC     " PRESENT, MODE=DUODYNE "
         FCB     00

@@ -50,7 +50,6 @@ New SSRs
 ---
 To Do List for this port:
 * ADD FLOPPY DRIVE SUPPORT (Nhyodyne)
-* add support for front panel LED/Switches (Duodyne)
 * add support for front panel display (Duodyne)
 * add support for DiskIO SD card (Duodyne)
 * add support for front panel SD card (Duodyne)

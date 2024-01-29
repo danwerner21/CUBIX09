@@ -1,6 +1,6 @@
 ;__DSKYNG DRIVERS_________________________________________________________________________________________________________________
 ;
-; 	Nhyodyne DSKY/NG drivers
+; 	Duodyne DSKY/NG drivers
 ;
 ;	Entry points:
 ;               DSKY_INIT

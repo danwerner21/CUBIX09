@@ -40,11 +40,11 @@ HWIN1
         JSR     WRMSG
         FCB     $0A
         FCC     '______________________________________________________________________'
-        FCB     $0D,$0A
+        FCB     $0D,$0A,$0D,$0A
         FCC     'Cubix -- detecting hardware'
         FCB     $0D,$0A
         FCC     '______________________________________________________________________'
-        FCB     $0A,$0D,0
+        FCB     0
 ;
         LDB     #02                               ;INIT SERIAL PORT
         JSR     MD_PAGERA
@@ -58,9 +58,12 @@ HWIN1
         LDB     #27                               ;INIT DSKY/NG
         JSR     MD_PAGERA
 ;
+        LDB     #37                               ;INIT FRONT PANEL
+        JSR     MD_PAGERA
+;
         JSR     WRMSG
         FCC     '______________________________________________________________________'
-        FCB     $0A,$0D,0
+        FCB     0
 ;
         RTS
 

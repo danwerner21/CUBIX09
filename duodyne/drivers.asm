@@ -58,6 +58,9 @@ HWIN1
         LDB     #27                               ;INIT DSKY/NG
         JSR     MD_PAGERA
 ;
+        LDB     #37                               ;INIT FRONT PANEL
+        JSR     MD_PAGERA
+;
         JSR     WRMSG
         FCC     '______________________________________________________________________'
         FCB     0
