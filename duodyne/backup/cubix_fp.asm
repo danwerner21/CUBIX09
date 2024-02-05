@@ -26,6 +26,8 @@ FP_INIT:
         JSR     LFCR                              ; AND CRLF
         LDX     #FPMESSAGE2
         JSR     WRSTR                             ; DO PROMPT
+        LDA     #$00
+        STA     FP_PORT
 ;
 ;
         LDX     #$0008
@@ -33,8 +35,10 @@ FP_INIT:
 FP_INIT1:
         LDA     #$00
         ROLB
-        ADDA     #'0'
+        ADCA    #'0'
+        PSHS    B
         JSR     PUTCHR
+        PULS    B
         DEX
         CMPX    #$0000
         BNE     FP_INIT1

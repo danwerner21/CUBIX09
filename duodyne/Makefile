@@ -1,6 +1,6 @@
-all:  	cubixdrv.sys cubix.s19 duocubix.com
+all:  	cubixdrv.sys cubix.s19 duocubix.com testpcf.exe
 
-cubixdrv.sys: cubixdrv.asm cubix_serial.asm cubix_ide.asm cubix_dskyng.asm cubix_dsky.asm cubix_values.asm cubix_fp.asm
+cubixdrv.sys: cubixdrv.asm cubix_serial.asm cubix_ide.asm cubix_dskyng.asm cubix_dsky.asm cubix_values.asm cubix_fp.asm cubix_i2c.asm
 	lwasm --6809   --6800compat cubixdrv.asm -s --list=cubixdrv.lst --map=cubixdrv.map --output=cubixdrv.s --format=srec
 	srec_cat  cubixdrv.s -exclude 0x0000 0x8800 -o  cubixdrv.hex  -intel -address-length=2
 	srec_cat  cubixdrv.s -offset -0x8800 -o cubixdrv.sys -binary
@@ -28,6 +28,13 @@ cubix.s19: cubix_boot.asm cubixdrv.sys
 	@rm	cubix_boot.3
 	@cp cubix.s19 ../bin/duodyne
 
+testpcf.exe: testpcf.asm
+	lwasm --6809 testpcf.asm -s --list=testpcf.lst --map=testpcf.map --output=testpcf.s --format=srec
+	srec_cat testpcf.s -o testpcf.s19 -data-only
+	srec_cat testpcf.s -o testpcf.exe -binary
+	sed -i -e '$$aS9' testpcf.s19
+	@cp testpcf.s19 ../bin/duodyne
+	@cp testpcf.exe ../bin/duodyne
 
 pretty:
 	cp *.asm ./backup
@@ -40,8 +47,10 @@ pretty:
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/cubix_pager.asm cubix_pager.asm
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/cubix_boot.asm cubix_boot.asm
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/cubix_fp.asm cubix_fp.asm
+	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/cubix_i2c.asm cubix_i2c.asm
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/cubixdrv.asm cubixdrv.asm
 	pretty6502 -p2 -a0 -du -mu -c50 -l ./backup/loader.asm loader.asm
+	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/testpcf.asm testpcf.asm
 
 clean:
 	@rm -f *.o

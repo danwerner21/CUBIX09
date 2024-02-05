@@ -55,6 +55,8 @@ MSGFIL:
         DB      0AH,0DH
         DM      "W DF50 9C"
         DB      0AH,0DH
+        DM      "W DF51 9D"
+        DB      0AH,0DH
         DM      "G 1000"
         DB      0AH,0DH
         DB      0AH,0DH

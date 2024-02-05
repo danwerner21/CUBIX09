@@ -61,6 +61,9 @@ HWIN1
         LDB     #37                               ;INIT FRONT PANEL
         JSR     MD_PAGERA
 ;
+        LDB     #40                               ;INIT I2C
+        JSR     MD_PAGERA
+;
         JSR     WRMSG
         FCC     '______________________________________________________________________'
         FCB     0

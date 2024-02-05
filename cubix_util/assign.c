@@ -144,10 +144,10 @@ void prtdevice(char dev)
   {
   case 0x00:
     printf("UNKNOWN");
-     break;
+     return;
   case 0x10:
     printf("FD");
-    return;
+    break;
   case 0x20:
     printf("PPIDE");
     break;

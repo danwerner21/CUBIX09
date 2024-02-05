@@ -13,8 +13,6 @@ PAGEUART4       EQU $DF5C                         ; INT and Bank CONTROL
 
         ORG     $1000
 ;* Setup Memory Banks  (page out ROM)
-        LDA     #$81
-        STA     BANK40
         LDA     #$82
         STA     BANK80
         LDA     #$83

@@ -77,6 +77,10 @@ DISPATCHTABLE:
         .WORD   FP_INIT                           ; FUNCTION 37 -
         .WORD   FP_SETLED                         ; FUNCTION 38 -
         .WORD   FP_GETSWITCH                      ; FUNCTION 39 -
+        .WORD   PCF_INIT                          ; FUNCTION 40 -
+        .WORD   PCF_READBYTES                     ; FUNCTION 41 -
+        .WORD   PCF_SENDBYTES                     ; FUNCTION 42 -
+        .WORD   PCF_INITDEV                       ; FUNCTION 43 -
 ;
 
 
@@ -87,6 +91,7 @@ DISPATCHTABLE:
         INCLUDE cubix_dskyng.asm
         INCLUDE cubix_floppy.asm
         INCLUDE cubix_fp.asm
+        INCLUDE cubix_i2c.asm
 ;        INCLUDE cubix_esp32.asm
 ;        INCLUDE cubix_dsky.asm
 
@@ -99,11 +104,17 @@ drv_noop:
 ;* OUTPUT LFCR TO CONSOLE
 ;*
 LFCR:
+        PSHS    a,b
         LDA     #10
         BSR     PUTCHR
         LDA     #13
         BSR     PUTCHR
-        RTS
+        PULS    A,B,pc
+SPACE:
+        PSHS    a,b
+        LDA     #32
+        BSR     PUTCHR
+        PULS    A,B,pc
 ;*
 ;* WRITE STRING(X) TO CONSOLE
 ;*
@@ -115,17 +126,18 @@ WRST1:
         BSR     PUTCHR
         BRA     WRST1                             ;CONTINUE
 WRST2:
-        PULS    A,B
-        RTS
+        PULS    A,B,pc
 ;*
 ;* OUTPUT NUMBER IN 'D' TO CONSOLE IN HEX
 ;*
 WRHEXW
+        PSHS    d
         BSR     WRHEX                             ;OUTPUT
         EXG     A,B                               ;SWAP
         BSR     WRHEX                             ;OUTPUT
         EXG     A,B                               ;BACK
-        RTS
+        PULS    d,pc
+
 ;*
 ;* OUTPUT 'A' NUMBER TO CONSOLE IN HEX
 ;*
