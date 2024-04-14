@@ -1,0 +1,12 @@
+BDOS                            = $0005 ; const, local, , loader, , loader.asm:11
+DEFFCB                          = $005C ; const, local, , loader, , loader.asm:12
+go                              = $0110 ; addr, local, , loader, ADDR0100, loader.asm:29
+CPUunit                         = $0127 ; addr, local, , loader, ADDR0100, loader.asm:47
+MSGFIL                          = $0128 ; addr, local, , loader, ADDR0100, loader.asm:51
+END                             = $018B ; addr, local, , loader, ADDR0100, loader.asm:66
+__head                          = $0000 ; const, public, def, , ,
+__tail                          = $018B ; const, public, def, , ,
+__size                          = $018B ; const, public, def, , ,
+__ADDR0100_head                 = $0100 ; const, public, def, , ,
+__ADDR0100_tail                 = $018B ; const, public, def, , ,
+__ADDR0100_size                 = $008B ; const, public, def, , ,

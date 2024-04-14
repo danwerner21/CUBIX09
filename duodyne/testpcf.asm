@@ -1,8 +1,6 @@
 ;*
-;* TYPE: Display file/memory/disk on console or list device
 ;*
-;* Copyright 1983-2005 Dave Dunfield
-;* All rights reserved.
+;* D. WERNER
 ;*
 OSRAM           = $2000                           ;APPLICATION RAM AREA
 OSEND           = $DBFF                           ;END OF GENERAL RAM
@@ -21,6 +19,8 @@ CPU_CLK         = 12
 PCF_RS0         = I2C_BASE
 PCF_RS1         = PCF_RS0+1
 PCF_OWN         = $55                             ; PCF'S ADDRESS IN SLAVE MODE
+;
+HSTBUF          = $0300
 
 
 
@@ -153,25 +153,142 @@ lp5f:
         CMPA    #$00
         LBNE    lp3b                              ; all done
 
-        LDA     #$3C
+        LDX     #HSTBUF
+        STX     POINTER
         LDX     #TESTMESSAGECONTROL
         LDY     #TESTMESSAGECONTROLEND-TESTMESSAGECONTROL
-        LDB     #42
-        JSR     MD_PAGERA
-        JSR     RESULT
-
-        LDB     #43
-        JSR     MD_PAGERA
+        JSR     MOVETOHOST
 
         LDA     #$3C
-        LDX     #TESTMESSAGEDATA
-        LDY     #TESTMESSAGEDATAEND-TESTMESSAGEDATA
+        LDY     #TESTMESSAGECONTROLEND-TESTMESSAGECONTROL
+        LDX     #HSTBUF
         LDB     #42
         JSR     MD_PAGERA
         JSR     RESULT
 
         LDB     #43
         JSR     MD_PAGERA
+
+        LDX     #HSTBUF
+        STX     POINTER
+        LDX     #TESTMESSAGEDATA
+        LDY     #TESTMESSAGEDATAEND-TESTMESSAGEDATA
+        JSR     MOVETOHOST
+
+        LDA     #$3C
+        LDY     #TESTMESSAGEDATAEND-TESTMESSAGEDATA
+        LDX     #HSTBUF
+        LDB     #42
+        JSR     MD_PAGERA
+        JSR     RESULT
+
+        SWI
+        FCB     25                                ;DISPLAY MESSAGE
+        FCN     'TEST PCF . . . Getting SD Block'
+
+
+; send "I" command
+
+        LDX     #HSTBUF
+        STX     POINTER
+        LDX     #SDSEND2
+        LDY     #1
+        JSR     MOVETOHOST
+
+        LDA     #$25
+        LDY     #1
+        LDX     #HSTBUF
+        LDB     #42
+        JSR     MD_PAGERA
+        JSR     RESULT
+
+; send "R" command
+
+        LDX     #HSTBUF
+        STX     POINTER
+        LDX     #SDSEND1
+        LDY     #1
+        JSR     MOVETOHOST
+
+        LDA     #$25
+        LDY     #1
+        LDX     #HSTBUF
+        LDB     #42
+        JSR     MD_PAGERA
+        JSR     RESULT
+
+; get sector
+        LDA     #$25
+        LDY     #512
+        LDX     #HSTBUF
+        LDB     #41
+        JSR     MD_PAGERA
+        JSR     RESULT
+
+; ouput results
+        SWI
+        FCB     24                                ;DISPLAY MESSAGE
+        FCN     'SD INQUIRE:'
+        LDA     $0300
+        SWI
+        FCB     33
+        LDA     $0301
+        SWI
+        FCB     33
+        LDA     #':'
+        SWI
+        FCB     33
+        LDA     $0302
+        SWI
+        FCB     28
+        LDA     $0303
+        SWI
+        FCB     28
+        LDA     $0304
+        SWI
+        FCB     28
+        LDA     $0305
+        SWI
+        FCB     28
+        SWI
+        FCB     22
+
+; send "S" command
+        LDX     #HSTBUF
+        STX     POINTER
+        LDX     #SDSEND
+        LDY     #5
+        JSR     MOVETOHOST
+
+        LDA     #$25
+        LDY     #5
+        LDB     #42
+        LDX     #HSTBUF
+        JSR     MD_PAGERA
+        JSR     RESULT
+
+; send "R" command
+
+        LDX     #HSTBUF
+        STX     POINTER
+        LDX     #SDSEND1
+        LDY     #1
+        JSR     MOVETOHOST
+
+        LDA     #$25
+        LDY     #1
+        LDX     #HSTBUF
+        LDB     #42
+        JSR     MD_PAGERA
+        JSR     RESULT
+
+; get sector
+        LDA     #$25
+        LDY     #512
+        LDX     #HSTBUF
+        LDB     #41
+        JSR     MD_PAGERA
+        JSR     RESULT
 
         RTS
 
@@ -179,6 +296,19 @@ lp5f:
 NOBB:
         JSR     PCF_BBERR
         RTS
+
+MOVETOHOST:
+        LDA     ,X+
+        PSHS    X
+        LDX     POINTER
+        STA     ,X+
+        STX     POINTER
+        PULS    X
+        DEY
+        CMPY    #$0000
+        BNE     MOVETOHOST
+        RTS
+
 
 ;-----------------------------------------------------------------------------
 _i2c_start:
@@ -446,4 +576,16 @@ TESTMESSAGECONTROLEND:
 TESTMESSAGEDATA:
         FCB     $C0,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA
 TESTMESSAGEDATAEND:
-        FCB     $FF                               ;PAGE OUTPUT
+
+SDSEND:
+        FCB     'S',$00,$00,$00,$02
+
+SDSEND1:
+        FCB     'R'
+
+SDSEND2:
+        FCB     'I',$00
+
+
+POINTER:
+        FCB     $FF,$FF

@@ -127,8 +127,8 @@ Duodyne Map:
             $01FC       - CURRENTSLICE    
             $01FE       - farpointer      
             $0200-$02FF - PAGER CODE
-            $0300-$04FF - DISK BUFFER
-            $0500-$0FFF - FREE WORKING RAM
+            $0300-$0500 - DISK BUFFER
+            $0501-$0FFF - FREE WORKING RAM
             $1000-$13FF - OS LOCAL STORAGE   
             $1400-$1FFF - FREE WORKING RAM
             $2000-$DBFF - Application Random Access Memory.     
@@ -151,8 +151,8 @@ Default drive configuration for Cubix can be found at the bottom of the respecti
 ```
 ; DRIVE MAPPING TABLE
         FCB     $21,$00                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
-        FCB     $21,$01                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE
-        FCB     $21,$02                           ;     LOW NIBBLE IS DEVICE ADDRESS
+        FCB     $21,$01                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE, $3x=FPSD
+        FCB     $35,$00                           ; LOW NIBBLE IS DEVICE ADDRESS (Device address+$20 for FPSD)
         FCB     $11,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
                                                   ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
 ```

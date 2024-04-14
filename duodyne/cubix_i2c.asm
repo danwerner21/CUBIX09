@@ -2,7 +2,7 @@
 ;
 ; PCF8584 I2C DRIVER
 ;
-;	Entry points:
+;       Entry points:
 ;               PCF_INIT
 ;               PCF_SENDBYTES
 ;               PCF_READBYTES
@@ -38,7 +38,7 @@ PCF_IDLE_       = PCF_PIN|PCF_ES0|PCF_ACK
 ;
 ; STATUS REGISTER BITS
 ;
-;PCF_PIN  	=  %10000000
+;PCF_PIN        =  %10000000
 PCF_INI         = %01000000                       ; 1 if not initialized
 PCF_STS         = %00100000
 PCF_BER         = %00010000
@@ -103,7 +103,6 @@ PCF_INIT:
         JSR     WRHEXW                            ; PRINT BASE PORT
         JSR     SPACE
         JSR     PCF_INITDEV
-
         LDA     PCF_FAIL_FLAG
         CMPA    #$00
         BNE     >
@@ -111,15 +110,11 @@ PCF_INIT:
         JSR     WRSTR
 !
         JSR     LFCR                              ; AND CRLF
-
         RTS                                       ; DONE
-
 PCFMESSAGE1:
         FCC     "I2C PCF:"
         FCB     $0D,$0A
         FCN     " IO=0x"
-
-
 ;-----------------------------------------------------------------------------
 ;
 PCF_INITDEV:
@@ -141,9 +136,6 @@ PCF_INITDEV:
         STA     PCF_RS1                           ; NEXT BYTE IN S2
         NOP
         LDA     PCF_RS1
-        ANDA    $7F
-        CMPA    #PCF_ES1
-        LBNE    PCF_REGERR
 ;
         LDA     #PCF_CLK|PCF_TRNS                 ; LOAD CLOCK REGISTER S2
         STA     PCF_RS0
@@ -176,9 +168,8 @@ PCF_FAIL_FLAG:
 ;
 ;--------------------------------------------------------------------------------
 ;
-;	X POINTS TO DATA
-;	Y = COUNT
-;	A = Device Address/Return Status
+;       Y = COUNT
+;       A = Device Address/Return Status
 ;   RETURN FF=ERROR
 ;          00=SUCCESS
 ;
@@ -186,10 +177,10 @@ PCF_SENDBYTES:
         LDA     PCF_FAIL_FLAG
         CMPA    #$00
         BNE     PCF_WERROR
-
-        LDX     >PAGER_X                          ; RESTORE 'X'
+        LDX     >PAGER_X
         LDY     >PAGER_Y                          ; RESTORE 'Y'
         LDD     >PAGER_D                          ; RESTORE 'D'
+PCF_SENDBYTES_INTERNAL:
         PSHS    A,X,Y
         JSR     PCF_WAIT_FOR_BB                   ; DO WE HAVE THE BUS?
         CMPA    #$00
@@ -209,13 +200,14 @@ PCF_WB1:
         JSR     PCF_WAIT_FOR_PIN
         CMPA    #$00
         BNE     PCF_WERROR
-
         LDA     ,X+
         STA     PCF_RS0
         DEY
         CMPY    #$0000
         BNE     <
-
+        JSR     PCF_WAIT_FOR_PIN
+        CMPA    #$00
+        BNE     PCF_WERROR
         LDA     #PCF_STOP_                        ; end transmission
         STA     PCF_RS1
         LDA     #$00
@@ -227,13 +219,11 @@ PCF_WERROR:
         LDA     #$FF
         STA     >PAGER_D                          ; STORE 'A'
         RTS
-
 ;
 ;--------------------------------------------------------------------------------
 ;
-;	X POINTS TO DATA
-;	Y = COUNT
-;	A = Device Address/Return Status
+;       Y = COUNT
+;       A = Device Address/Return Status
 ;   RETURN FF=ERROR
 ;          00=SUCCESS
 ;
@@ -241,10 +231,10 @@ PCF_READBYTES:
         LDA     PCF_FAIL_FLAG
         CMPA    #$00
         BNE     PCF_RERROR
-
-        LDX     >PAGER_X                          ; RESTORE 'X'
+        LDX     >PAGER_X
         LDY     >PAGER_Y                          ; RESTORE 'Y'
         LDD     >PAGER_D                          ; RESTORE 'D'
+PCF_READBYTES_INTERNAL:
         ASLA
         ORA     #$01
         STA     PCF_RS0                           ; send device address
@@ -260,11 +250,12 @@ PCF_RB1:
         PULS    A,X,Y
         LDA     #PCF_START_                       ; begin rcv
         STA     PCF_RS1
+        JSR     PCF_WAIT_FOR_PIN
+        LDA     PCF_RS0
 !
         JSR     PCF_WAIT_FOR_PIN
         CMPA    #$00
         BNE     PCF_RERROR
-
         CMPY    #$0001
         BEQ     >
         LDA     PCF_RS0
@@ -302,19 +293,15 @@ PCF_RERROR:
 PCF_WAIT_FOR_PIN:
         PSHS    X
         LDX     #PCF_PINTO                        ; SET TIMEOUT VALUE
-
 PCF_WFP0:
         LDA     PCF_RS1                           ; GET BUS
         STA     PCF_STATUS                        ; STATUS
-
         DEX                                       ; HAVE WE TIMED OUT
         CMPX    #$00
         BEQ     PCF_WFP1                          ; YES WE HAVE, GO ACTION IT
-
         ANDA    #PCF_PIN                          ; IS TRANSMISSION COMPLETE?
         CMPA    #$00
         BNE     PCF_WFP0                          ; KEEP ASKING IF NOT OR
-
         LDA     PCF_STATUS                        ; WE GOT PIN SO NOW
         ANDA    #PCF_LRB                          ; CHECK WE HAVE
         CMPA    #$00                              ; CHECK WE HAVE
@@ -374,11 +361,6 @@ PCF_SETERR:
         LDX     #PCF_WRTFAIL
         BRA     PCF_PRTERR
 ;
-PCF_REGERR:
-        PSHS    X
-        LDX     #PCF_REGFAIL
-        BRA     PCF_PRTERR
-;
 PCF_CLKERR:
         PSHS    X
         LDX     #PCF_CLKFAIL
@@ -433,25 +415,37 @@ PCF_PCFOK:
         FCN     "PRESENT"
 PCF_NOPCF:
         FCN     "NOT PRESENT"
+
 PCF_WRTFAIL:
         FCN     "SETTING DEVICE ID FAILED"
-PCF_REGFAIL:
-        FCN     "CLOCK REGISTER SELECT ERROR"
+
 PCF_CLKFAIL:
         FCN     "CLOCK SET FAIL"
+
 PCF_IDLFAIL:
         FCN     "BUS IDLE FAILED"
+
 PCF_ACKFAIL:
         FCN     "FAILED TO RECEIVE ACKNOWLEDGE"
+
+
+
 PCF_RDFAIL:
         FCN     "READ FAILED"
+
 PCF_RDBFAIL:
         FCN     "READBYTES FAILED"
+
+
 PCF_TOFAIL:
         FCN     "TIMEOUT ERROR"
+
 PCF_ARBFAIL:
         FCN     "LOST ARBITRATION"
+
+
 PCF_PINFAIL:
         FCN     "PIN FAIL"
+
 PCF_BBFAIL:
         FCN     "BUS BUSY"

@@ -1,0 +1,110 @@
+                      (      showdrv.asm):00001         ;*
+                      (      showdrv.asm):00002         ;* SHOWDRV:  Show the current Drive Mapping
+                      (      showdrv.asm):00003         ;*
+                      (      showdrv.asm):00004         ;* Dan Werner 9/4/2023
+                      (      showdrv.asm):00005         ;*
+                      (      showdrv.asm):00006         
+     2000             (      showdrv.asm):00007         OSRAM           = $2000       APPLICATION RAM AREA
+     DBFF             (      showdrv.asm):00008         OSEND           = $DBFF       END OF GENERAL RAM
+     D000             (      showdrv.asm):00009         OSUTIL          = $D000       UTILITY ADDRESS SPACE
+                      (      showdrv.asm):00010         
+                      (      showdrv.asm):00011         ;*
+                      (      showdrv.asm):00012                 ORG     OSUTIL                            ;PROGRAM LOCATION
+                      (      showdrv.asm):00013         
+D000                  (      showdrv.asm):00014         SHOWDRV:
+D000 3F               (      showdrv.asm):00015                 SWI
+D001 19               (      showdrv.asm):00016                 FCB     25                                ;OUTPUT MESSAGE
+D002 4163746976652044 (      showdrv.asm):00017                 FCC     'Active Disk Drives:'
+     69736B2044726976
+     65733A
+D015 0D0A             (      showdrv.asm):00018                 FCB     $0D,$0A
+D017 2D2D2D2D2D2D2D2D (      showdrv.asm):00019                 FCN     '--------------------------'
+     2D2D2D2D2D2D2D2D
+     2D2D2D2D2D2D2D2D
+     2D2D00
+D032 3F               (      showdrv.asm):00020                 SWI
+D033 6F               (      showdrv.asm):00021                 FCB     111                               ; GET DISK TABLE IN D
+D034 1F01             (      showdrv.asm):00022                 TFR     D,X
+D036 108E0000         (      showdrv.asm):00023                 LDY     #$0000
+                      (      showdrv.asm):00024         !
+D03A 1F28             (      showdrv.asm):00025                 TFR     Y,A
+D03C 8B41             (      showdrv.asm):00026                 ADDA    #'A'
+D03E 3F               (      showdrv.asm):00027                 SWI
+D03F 21               (      showdrv.asm):00028                 FCB     33
+D040 3F               (      showdrv.asm):00029                 SWI
+D041 18               (      showdrv.asm):00030                 FCB     24
+D042 3A2020202000     (      showdrv.asm):00031                 FCN     ':    '
+D048 E680             (      showdrv.asm):00032                 LDB     ,X+
+D04A A680             (      showdrv.asm):00033                 LDA     ,X+
+D04C BDD05F           (      showdrv.asm):00034                 JSR     SHOWDRIVETYPE
+D04F BDD0AC           (      showdrv.asm):00035                 JSR     SHOWDRIVESLICE
+D052 3F               (      showdrv.asm):00036                 SWI
+D053 16               (      showdrv.asm):00037                 FCB     22
+D054 3121             (      showdrv.asm):00038                 INY
+D056 108C0004         (      showdrv.asm):00039                 CMPY    #4
+D05A 26DE             (      showdrv.asm):00040                 BNE     <
+D05C 3F               (      showdrv.asm):00041                 SWI
+D05D 16               (      showdrv.asm):00042                 FCB     22
+D05E 39               (      showdrv.asm):00043                 RTS
+                      (      showdrv.asm):00044         
+D05F                  (      showdrv.asm):00045         SHOWDRIVETYPE:
+D05F 3402             (      showdrv.asm):00046                 PSHS    A
+D061 1F98             (      showdrv.asm):00047                 TFR     B,A
+D063 C4F0             (      showdrv.asm):00048                 ANDB    #$F0
+D065 C100             (      showdrv.asm):00049                 CMPB    #$00
+D067 260B             (      showdrv.asm):00050                 BNE     >
+D069 3F               (      showdrv.asm):00051                 SWI
+D06A 18               (      showdrv.asm):00052                 FCB     24
+D06B 4E4F4E452E00     (      showdrv.asm):00053                 FCN     'NONE.'
+D071 3502             (      showdrv.asm):00054                 PULS    A
+D073 39               (      showdrv.asm):00055                 RTS
+                      (      showdrv.asm):00056         !
+D074 C110             (      showdrv.asm):00057                 CMPB    #$10
+D076 2611             (      showdrv.asm):00058                 BNE     >
+D078 3F               (      showdrv.asm):00059                 SWI
+D079 18               (      showdrv.asm):00060                 FCB     24
+D07A 464C4F5050592055 (      showdrv.asm):00061                 FCN     'FLOPPY UNIT '
+     4E49542000
+D087 2010             (      showdrv.asm):00062                 BRA     SHOWDRIVETYPE1
+                      (      showdrv.asm):00063         !
+D089 C120             (      showdrv.asm):00064                 CMPB    #$20
+D08B 2611             (      showdrv.asm):00065                 BNE     SHOWDRIVETYPE2
+D08D 3F               (      showdrv.asm):00066                 SWI
+D08E 18               (      showdrv.asm):00067                 FCB     24
+D08F 49444520554E4954 (      showdrv.asm):00068                 FCN     'IDE UNIT '
+     2000
+D099                  (      showdrv.asm):00069         SHOWDRIVETYPE1:
+D099 3F               (      showdrv.asm):00070                 SWI
+D09A 1D               (      showdrv.asm):00071                 FCB     29
+D09B 3502             (      showdrv.asm):00072                 PULS    A
+D09D 39               (      showdrv.asm):00073                 RTS
+D09E                  (      showdrv.asm):00074         SHOWDRIVETYPE2:
+D09E 3F               (      showdrv.asm):00075                 SWI
+D09F 18               (      showdrv.asm):00076                 FCB     24
+D0A0 554E4B4E4F574E2E (      showdrv.asm):00077                 FCN     'UNKNOWN.'
+     00
+D0A9 3502             (      showdrv.asm):00078                 PULS    A
+D0AB 39               (      showdrv.asm):00079                 RTS
+D0AC                  (      showdrv.asm):00080         SHOWDRIVESLICE:
+D0AC C120             (      showdrv.asm):00081                 CMPB    #$20
+D0AE 2610             (      showdrv.asm):00082                 BNE     >
+D0B0 1F89             (      showdrv.asm):00083                 TFR     A,B
+D0B2 4F               (      showdrv.asm):00084                 CLRA
+D0B3 3F               (      showdrv.asm):00085                 SWI
+D0B4 18               (      showdrv.asm):00086                 FCB     24
+D0B5 2C20534C49434520 (      showdrv.asm):00087                 FCN     ', SLICE '
+     00
+D0BE 3F               (      showdrv.asm):00088                 SWI
+D0BF 1A               (      showdrv.asm):00089                 FCB     26
+                      (      showdrv.asm):00090         !
+D0C0 39               (      showdrv.asm):00091                 RTS
+
+Symbol Table:
+[ G] OSEND                            DBFF
+[ G] OSRAM                            2000
+[ G] OSUTIL                           D000
+[ G] SHOWDRIVESLICE                   D0AC
+[ G] SHOWDRIVETYPE                    D05F
+[ G] SHOWDRIVETYPE1                   D099
+[ G] SHOWDRIVETYPE2                   D09E
+[ G] SHOWDRV                          D000

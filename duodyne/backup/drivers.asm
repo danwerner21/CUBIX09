@@ -64,6 +64,8 @@ HWIN1
         LDB     #40                               ;INIT I2C
         JSR     MD_PAGERA
 ;
+        LDB     #24                               ;INIT FP SD
+        JSR     MD_PAGERA
         JSR     WRMSG
         FCC     '______________________________________________________________________'
         FCB     0
@@ -134,6 +136,18 @@ DRDSEC
         CMPA    #$00
         RTS
 !
+        CMPA    #$30                              ; SD?
+        BNE     >                                 ;
+        PSHS    X
+        LDX     #HSTBUF
+        LDB     #25                               ;FPSD_READ_SECTOR
+        JSR     MD_PAGERA
+        PULS    X
+        BSR     CPYHOSTBUF
+        LDA     DISKERROR                         ; GET ERROR CONDITION
+        CMPA    #$00
+        RTS
+!
         RTS
 CPYHOSTBUF:
         PSHS    Y
@@ -172,11 +186,22 @@ DWRSEC
         CMPA    #$00
         RTS
 !
-        CMPA    #$20                              ; IDD?
+        CMPA    #$20                              ; IDE?
         BNE     >                                 ;
         LDB     #23                               ;IDE_WRITE_SECTOR
         JSR     MD_PAGERA
         LDA     DISKERROR                         ; GET ERROR CONDITION
+        CMPA    #$00
+        RTS
+!
+        CMPA    #$30                              ; SD?
+        BNE     >                                 ;
+        PSHS    X
+        LDX     #HSTBUF
+        LDB     #26                               ;FPSD_WRITE_SECTOR
+        JSR     MD_PAGERA
+        LDA     DISKERROR                         ; GET ERROR CONDITION
+        PULS    X
         CMPA    #$00
         RTS
 !
@@ -248,8 +273,8 @@ RITAB           EQU *
         FCB     0,0                               ;(FILLER)
 ; DRIVE MAPPING TABLE
         FCB     $21,$00                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
-        FCB     $21,$01                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE
-        FCB     $21,$02                           ; LOW NIBBLE IS DEVICE ADDRESS
+        FCB     $21,$01                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE, $3x=FPSD
+        FCB     $35,$00                           ; LOW NIBBLE IS DEVICE ADDRESS (Device address+$20 for FPSD)
         FCB     $11,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
                                                   ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
 

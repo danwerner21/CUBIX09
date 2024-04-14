@@ -60,9 +60,9 @@ DISPATCHTABLE:
         .WORD   IDE_READ_SECTOR                   ; FUNCTION 22 - read a sector from PPIDE device
         .WORD   IDE_WRITE_SECTOR                  ; FUNCTION 23 - write a sector to PPIDE device
 ;
-        .WORD   drv_noop                          ; FUNCTION 24 -
-        .WORD   drv_noop                          ; FUNCTION 25 -
-        .WORD   drv_noop                          ; FUNCTION 26 -
+        .WORD   FPSD_INIT                         ; FUNCTION 24 - init PPIDE device
+        .WORD   FPSD_READ_SECTOR                  ; FUNCTION 25 - read a sector from PPIDE device
+        .WORD   FPSD_WRITE_SECTOR                 ; FUNCTION 26 - write a sector to PPIDE device
 ;
         .WORD   DSKY_INIT                         ; FUNCTION 27 -
         .WORD   DSKY_SHOW                         ; FUNCTION 28 -

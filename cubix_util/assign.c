@@ -11,6 +11,7 @@ int dskcfgptr;
 int dparmtable;
 
 
+
 void GetDiskTable()
 {
     dskcfgptr= asm {
@@ -138,6 +139,7 @@ int parsecmd(int ac,char *parm1, char *parm2, char *token1, char *token2,char *f
   return r;
 }
 
+
 void prtdevice(char dev)
 {
   switch (dev & 0xf0)
@@ -151,12 +153,16 @@ void prtdevice(char dev)
   case 0x20:
     printf("PPIDE");
     break;
+  case 0x30:
+    printf("FPSD");
+    break;
   default:
     printf("UNKNOWN");
     return;
   }
   printf("%d", dev & 0x0f);
 }
+
 
 void prttable(char *bytes)
 {
@@ -171,6 +177,7 @@ void prttable(char *bytes)
   }
 }
 
+
 void prtusage()
 {
   printf(" Usage: \n\r");
@@ -180,7 +187,7 @@ void prtusage()
   printf("          ASSIGN C:=FD0:	(assign C: to floppy unit 0) \n\r");
   printf("          ASSIGN C:=IDE0:1	(assign C: to IDE unit0, slice 1) \n\r");
   printf("\n\r POSSIBLE DEVICES:\n\r");
-  printf("          SD0:    SD DISK\n\r");
+  printf("          FPSD5:  FRONT PANEL SD DISK (ADDR 0x25)\n\r");
   printf("          FD0:    FLOPPY DISK UNIT 0\n\r");
   printf("          FD1:    FLOPPY DISK UNIT 1\n\r");
   printf("          PPIDE0: PRIMARY PPIDE FIXED DISK\n\r");
@@ -230,9 +237,9 @@ void mapdrive(char *bytes, char *token1, char *token2, char *flags)
   printf(":%u \n\r", *(bytes + (drive * 2) + 1));
 
   toupper(token2);
-  if (!strncmp(token2, "SD0:", 4))
+  if (!strncmp(token2, "FPSD5:", 4))
     {
-    newdevice = 0x50;
+    newdevice = 0x35;
     updatedosmap(drive,hdddcb);
     }
   if (!strncmp(token2, "FD0:", 4))

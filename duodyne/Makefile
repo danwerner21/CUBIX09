@@ -29,7 +29,7 @@ cubix.s19: cubix_boot.asm cubixdrv.sys
 	@cp cubix.s19 ../bin/duodyne
 
 testpcf.exe: testpcf.asm
-	lwasm --6809 testpcf.asm -s --list=testpcf.lst --map=testpcf.map --output=testpcf.s --format=srec
+	lwasm --6809 --6800compat testpcf.asm -s --list=testpcf.lst --map=testpcf.map --output=testpcf.s --format=srec
 	srec_cat testpcf.s -o testpcf.s19 -data-only
 	srec_cat testpcf.s -o testpcf.exe -binary
 	sed -i -e '$$aS9' testpcf.s19
@@ -56,6 +56,7 @@ clean:
 	@rm -f *.o
 	@rm -f *.out
 	@rm -f *.com
+	@rm -f *.exe
 	@rm -f *.co6
 	@rm -f *.map
 	@rm -f *.lst

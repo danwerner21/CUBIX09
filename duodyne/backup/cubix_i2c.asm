@@ -176,7 +176,6 @@ PCF_FAIL_FLAG:
 ;
 ;--------------------------------------------------------------------------------
 ;
-;	X POINTS TO DATA
 ;	Y = COUNT
 ;	A = Device Address/Return Status
 ;   RETURN FF=ERROR
@@ -187,9 +186,10 @@ PCF_SENDBYTES:
         CMPA    #$00
         BNE     PCF_WERROR
 
-        LDX     >PAGER_X                          ; RESTORE 'X'
+        LDX     >PAGER_X
         LDY     >PAGER_Y                          ; RESTORE 'Y'
         LDD     >PAGER_D                          ; RESTORE 'D'
+PCF_SENDBYTES_INTERNAL:
         PSHS    A,X,Y
         JSR     PCF_WAIT_FOR_BB                   ; DO WE HAVE THE BUS?
         CMPA    #$00
@@ -216,6 +216,10 @@ PCF_WB1:
         CMPY    #$0000
         BNE     <
 
+        JSR     PCF_WAIT_FOR_PIN
+        CMPA    #$00
+        BNE     PCF_WERROR
+
         LDA     #PCF_STOP_                        ; end transmission
         STA     PCF_RS1
         LDA     #$00
@@ -231,7 +235,6 @@ PCF_WERROR:
 ;
 ;--------------------------------------------------------------------------------
 ;
-;	X POINTS TO DATA
 ;	Y = COUNT
 ;	A = Device Address/Return Status
 ;   RETURN FF=ERROR
@@ -242,9 +245,10 @@ PCF_READBYTES:
         CMPA    #$00
         BNE     PCF_RERROR
 
-        LDX     >PAGER_X                          ; RESTORE 'X'
+        LDX     >PAGER_X
         LDY     >PAGER_Y                          ; RESTORE 'Y'
         LDD     >PAGER_D                          ; RESTORE 'D'
+PCF_READBYTES_INTERNAL:
         ASLA
         ORA     #$01
         STA     PCF_RS0                           ; send device address
@@ -260,6 +264,8 @@ PCF_RB1:
         PULS    A,X,Y
         LDA     #PCF_START_                       ; begin rcv
         STA     PCF_RS1
+        JSR     PCF_WAIT_FOR_PIN
+        LDA     PCF_RS0
 !
         JSR     PCF_WAIT_FOR_PIN
         CMPA    #$00
