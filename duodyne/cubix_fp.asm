@@ -10,6 +10,7 @@
 ;
 ;
 FP_PORT         = $DF54                           ; PORT
+I2C_ADDRESS     = $25
 ;
 ;
 ;__FP_INIT___________________________________________________________________________________________
@@ -81,21 +82,21 @@ FPSD_INIT:
 
         LDX     #FPSDMESSAGE2
         JSR     WRSTR                             ; DO PROMPT
-        LDA     #$25                              ; DEFAULT ADDRESS BUG:SHOULD REALLY SCAN ALL APPLICABLE ADDRESSES
+        LDA     #I2C_ADDRESS                      ; DEFAULT ADDRESS BUG:SHOULD REALLY SCAN ALL APPLICABLE ADDRESSES
         JSR     WRHEX
         JSR     LFCR                              ; AND CRLF
 
         LDX     #FPSDSENDINFO                     ; GET SD INFO
         LDY     #1
-        LDA     #$25                              ; DEFAULT ADDRESS BUG:SHOULD REALLY SCAN ALL APPLICABLE ADDRESSES
+        LDA     #I2C_ADDRESS                      ; DEFAULT ADDRESS BUG:SHOULD REALLY SCAN ALL APPLICABLE ADDRESSES
         JSR     PCF_SENDBYTES_INTERNAL
         LDX     #FPSDSENDREAD                     ; READ BYTES
         LDY     #1
-        LDA     #$25                              ; DEFAULT ADDRESS BUG:SHOULD REALLY SCAN ALL APPLICABLE ADDRESSES
+        LDA     #I2C_ADDRESS                      ; DEFAULT ADDRESS BUG:SHOULD REALLY SCAN ALL APPLICABLE ADDRESSES
         JSR     PCF_SENDBYTES_INTERNAL
         LDX     #HSTBUF
         LDY     #5
-        LDA     #$25                              ; DEFAULT ADDRESS BUG:SHOULD REALLY SCAN ALL APPLICABLE ADDRESSES
+        LDA     #I2C_ADDRESS                      ; DEFAULT ADDRESS BUG:SHOULD REALLY SCAN ALL APPLICABLE ADDRESSES
         JSR     PCF_READBYTES_INTERNAL
 
         LDA     HSTBUF                            ; SHOULD RESPOND WITH "SD" FOLLOWED BY IMAGE SIZE

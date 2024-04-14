@@ -298,15 +298,15 @@ NOBB:
         RTS
 
 MOVETOHOST:
-        LDA    ,X+
-        PSHS   X
-        LDX    POINTER
-        STA    ,X+
-        STX    POINTER
-        PULS   X
+        LDA     ,X+
+        PSHS    X
+        LDX     POINTER
+        STA     ,X+
+        STX     POINTER
+        PULS    X
         DEY
         CMPY    #$0000
-        BNE    MOVETOHOST
+        BNE     MOVETOHOST
         RTS
 
 
@@ -578,7 +578,7 @@ TESTMESSAGEDATA:
 TESTMESSAGEDATAEND:
 
 SDSEND:
-        FCB     'S',$00,$00,$00,$00
+        FCB     'S',$00,$00,$00,$02
 
 SDSEND1:
         FCB     'R'

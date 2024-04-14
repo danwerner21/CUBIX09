@@ -240,20 +240,6 @@ FPSD_SETUP_LBA:
         STB     FPSDSENDADDRESS+4
         JSR     DSKY_BIN2SEG
         JSR     DSKY_SHOW
-
-        LDA     FPSDDEVICE
-        JSR     WRHEX
-        LDA     FPSDSENDADDRESS+1
-        JSR     WRHEX
-        LDA     FPSDSENDADDRESS+2
-        JSR     WRHEX
-        LDA     FPSDSENDADDRESS+3                 ;
-        JSR     WRHEX
-        LDA     FPSDSENDADDRESS+4                       ;
-        JSR     WRHEX
-        JSR     LFCR
-
-
         PULS    D,PC
 
 

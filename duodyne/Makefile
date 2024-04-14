@@ -22,11 +22,13 @@ cubix.s19: cubix_boot.asm cubixdrv.sys
 	srec_cat  cubix_boot.s -o  cubix_boot.1  -Data_Only
 	srec_cat  ../cubix_os/duo_cubix.s19 -offset -0xCE00 -o  cubix_boot.2  -Data_Only
 	srec_cat  cubixdrv.s19 -offset -0x5500 -o  cubix_boot.3  -Data_Only
-	srec_cat  cubix_boot.1 cubix_boot.2 cubix_boot.3 -o  cubix.s19
+	srec_cat  cubix_boot.1 cubix_boot.2 cubix_boot.3 -o  cubix.s19 -data-only
 	@rm	cubix_boot.1
 	@rm	cubix_boot.2
 	@rm	cubix_boot.3
-	@cp cubix.s19 ../bin/duodyne
+	@cp cubix.s19 duo_cubix.s19
+	sed -i -e '$$aS9' duo_cubix.s19
+	@cp duo_cubix.s19 ../bin/duodyne
 
 testpcf.exe: testpcf.asm
 	lwasm --6809 --6800compat testpcf.asm -s --list=testpcf.lst --map=testpcf.map --output=testpcf.s --format=srec

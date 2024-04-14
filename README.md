@@ -49,10 +49,9 @@ New SSRs
 
 ---
 To Do List for this port:
-* ADD FLOPPY DRIVE SUPPORT (Nhyodyne)
 * add support for front panel display (Duodyne)
 * add support for DiskIO SD card (Duodyne)
-* add support for front panel SD card (Duodyne)
+* add support to detect I2C SD card interfaces on multiple addresses other than 0x25
 * Enable Cubix FLOPPY Format Function (Duodyne/Nhyodyne)
 * Fix XMODEM CRC problem
 * convert Xmodem EXEs to S19s
@@ -62,8 +61,9 @@ To Do List for this port:
 * TMS VDP support  (Duodyne/Nhyodyne)
 * color VDU support  (Duodyne/Nhyodyne)
 * RTC and NVRAM support  (Duodyne/Nhyodyne)
+* ADD FLOPPY DRIVE SUPPORT (Nhyodyne)
 * Microsoft Basic
-* Pull MONITOR code from Duodyne repo into this one
+* Pull Dunfield MONITOR code from Duodyne repo into this one
 * 6x0x Version
 ---
 
@@ -160,7 +160,7 @@ Note that the above drive table is configured for a secondary IDE address and fo
 
 The ASSIGN.EXE program can be used to remap drives in real time.
 
-A disk image (DISK.IMG) is provided in this repo that can be written to a device to bootstrap the system. It conformes to the default drive mapping table above.   Cubix HDDs are configured as 32mb drives, therfore at least a 32mb drive is required without altering the disk geometry.
+A disk image (CUBIX_DISK.IMG) is provided in this repo that can be unzipped and written to a device to bootstrap the system. It conformes to the default drive mapping table above.   Cubix HDDs are configured as 32mb drives, therfore at least a 32mb drive is required without altering the disk geometry.
 
 It is expected that you set Cubix's system directory to the SYSTEM folder on drive B:
 ```
@@ -172,6 +172,10 @@ more information on Cubix drives and directories can be found in the Cubix user 
 
 Cubix can be started from CP/M by launching the cubix.com file located in the bin folder for each respective system.  
 
-Cubix can also be started by uploading the cubix.s19 file located in the bin folder for each respective system. Then transferring control to $E000.
+Cubix can also be started by uploading the cubix.s19 file located in the bin folder for each respective system. Then transferring control to $1000.
 
+## Using the Front Panel SD interface
+
+In order for the front panel SD interface to be used, the front panel ATTINY chip needs to be flashed with the "Duodyne SD card I2C to SD" firmware with the I2C address set to 0x25.  Note that if there is more than one Front Panel in the system (attached to different processor cards), each I2C address must be unique.   Cubix can be configured to use any front panel in the 0x20-0x2F range.
+See the instructions with the firmware for more information on how to configure the firmware and setup image files for use on the SD card.
 
