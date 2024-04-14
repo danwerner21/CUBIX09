@@ -162,10 +162,6 @@ The ASSIGN.EXE program can be used to remap drives in real time.
 
 A disk image (CUBIX_DISK.IMG) is provided in this repo that can be unzipped and written to a device to bootstrap the system. It conformes to the default drive mapping table above.   Cubix HDDs are configured as 32mb drives, therfore at least a 32mb drive is required without altering the disk geometry.
 
-It is expected that you set Cubix's system directory to the SYSTEM folder on drive B:
-```
-SET SYSTEM A:[SYSTEM]
-```
 more information on Cubix drives and directories can be found in the Cubix user documentation in this repo.
 
 ## Starting Cubix from CP/M
