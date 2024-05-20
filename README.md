@@ -51,15 +51,20 @@ New SSRs
 To Do List for this port:
 * add support for front panel display (Duodyne)
 * add support for DiskIO SD card (Duodyne)
+* add support for DiskIO flash (Duodyne)
+* add support for ROMRAM flash (Duodyne)
+* add support for MultiIO card (Duodyne) (USB/Serial/Parallel/SD/Keyboard/Mouse)
 * Enable Cubix FLOPPY Format Function (Duodyne/Nhyodyne)
 * Fix XMODEM CRC problem(R) and file length problem(S)
 * convert Xmodem EXEs to S19s
+* convert Assign EXE to S19s
 * DSKY V1 support (Duodyne/Nhyodyne)
 * DSKY functions should abort if no DSKY is there.
 * ESP32 support  (Duodyne/Nhyodyne)
 * TMS VDP support  (Duodyne/Nhyodyne)
 * color VDU support  (Duodyne/Nhyodyne)
 * RTC and NVRAM support  (Duodyne/Nhyodyne)
+* add support for DiskIO ethernet (Duodyne)
 * ADD FLOPPY DRIVE SUPPORT (Nhyodyne)
 * Microsoft Basic
 * Pull Dunfield MONITOR code from Duodyne repo into this one
