@@ -10,7 +10,6 @@
 ;
 ;
 FP_PORT         = $DF54                           ; PORT
-I2C_ADDRESS     = $25
 ;
 ;
 ;__FP_INIT___________________________________________________________________________________________
@@ -78,25 +77,41 @@ FPSD_INIT:
 
         LDA     PCF_FAIL_FLAG
         CMPA    #$00
-        BNE     FPSD_INIT_ERROR
+        LBNE    FPSD_INIT_ERROR
 
+        LDA     #$25
+        STA     I2C_ADDRESS
+        JSR     FPSD_SCAN
+        LDA     #$26
+        STA     I2C_ADDRESS
+        JSR     FPSD_SCAN
+        LDA     #$27
+        STA     I2C_ADDRESS
+        JSR     FPSD_SCAN
+
+        LDA     #$00
+        STA     FPSDFAILFLAG
+        CLC
+        RTS
+
+FPSD_SCAN:
         LDX     #FPSDMESSAGE2
         JSR     WRSTR                             ; DO PROMPT
-        LDA     #I2C_ADDRESS                      ; DEFAULT ADDRESS BUG:SHOULD REALLY SCAN ALL APPLICABLE ADDRESSES
+        LDA     I2C_ADDRESS                       ; DEFAULT ADDRESS BUG:SHOULD REALLY SCAN ALL APPLICABLE ADDRESSES
         JSR     WRHEX
-        JSR     LFCR                              ; AND CRLF
+        JSR     SPACE
 
         LDX     #FPSDSENDINFO                     ; GET SD INFO
         LDY     #1
-        LDA     #I2C_ADDRESS                      ; DEFAULT ADDRESS BUG:SHOULD REALLY SCAN ALL APPLICABLE ADDRESSES
+        LDA     I2C_ADDRESS                       ; DEFAULT ADDRESS BUG:SHOULD REALLY SCAN ALL APPLICABLE ADDRESSES
         JSR     PCF_SENDBYTES_INTERNAL
         LDX     #FPSDSENDREAD                     ; READ BYTES
         LDY     #1
-        LDA     #I2C_ADDRESS                      ; DEFAULT ADDRESS BUG:SHOULD REALLY SCAN ALL APPLICABLE ADDRESSES
+        LDA     I2C_ADDRESS                       ; DEFAULT ADDRESS BUG:SHOULD REALLY SCAN ALL APPLICABLE ADDRESSES
         JSR     PCF_SENDBYTES_INTERNAL
         LDX     #HSTBUF
         LDY     #5
-        LDA     #I2C_ADDRESS                      ; DEFAULT ADDRESS BUG:SHOULD REALLY SCAN ALL APPLICABLE ADDRESSES
+        LDA     I2C_ADDRESS                       ; DEFAULT ADDRESS BUG:SHOULD REALLY SCAN ALL APPLICABLE ADDRESSES
         JSR     PCF_READBYTES_INTERNAL
 
         LDA     HSTBUF                            ; SHOULD RESPOND WITH "SD" FOLLOWED BY IMAGE SIZE
@@ -121,6 +136,7 @@ FPSD_INIT:
         STA     FPSDFAILFLAG
         CLC
         RTS
+
 FPSD_INIT_ERROR:
         LDX     #FPSDMESSAGE3
         JSR     WRSTR                             ; DO PROMPT
@@ -129,8 +145,8 @@ FPSD_INIT_ERROR:
         STA     FPSDFAILFLAG
         RTS
 
-
-
+I2C_ADDRESS:
+        FCB     00
 
 
 ;*__FPSD_READ_SECTOR___________________________________________________________________________________

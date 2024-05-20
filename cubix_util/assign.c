@@ -187,7 +187,7 @@ void prtusage()
   printf("          ASSIGN C:=FD0:	(assign C: to floppy unit 0) \n\r");
   printf("          ASSIGN C:=IDE0:1	(assign C: to IDE unit0, slice 1) \n\r");
   printf("\n\r POSSIBLE DEVICES:\n\r");
-  printf("          FPSD5:  FRONT PANEL SD DISK (ADDR 0x25)\n\r");
+  printf("          FPSDx:  FRONT PANEL SD DISK (ADDR 0x2x)\n\r");
   printf("          FD0:    FLOPPY DISK UNIT 0\n\r");
   printf("          FD1:    FLOPPY DISK UNIT 1\n\r");
   printf("          PPIDE0: PRIMARY PPIDE FIXED DISK\n\r");
@@ -237,9 +237,19 @@ void mapdrive(char *bytes, char *token1, char *token2, char *flags)
   printf(":%u \n\r", *(bytes + (drive * 2) + 1));
 
   toupper(token2);
-  if (!strncmp(token2, "FPSD5:", 4))
+  if (!strncmp(token2, "FPSD5:", 6))
     {
     newdevice = 0x35;
+    updatedosmap(drive,hdddcb);
+    }
+  if (!strncmp(token2, "FPSD6:", 6))
+    {
+    newdevice = 0x36;
+    updatedosmap(drive,hdddcb);
+    }
+  if (!strncmp(token2, "FPSD7:", 6))
+    {
+    newdevice = 0x37;
     updatedosmap(drive,hdddcb);
     }
   if (!strncmp(token2, "FD0:", 4))

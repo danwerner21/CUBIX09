@@ -272,7 +272,7 @@ RITAB           EQU *
 ; DRIVE MAPPING TABLE
         FCB     $21,$00                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
         FCB     $21,$01                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE, $3x=FPSD
-        FCB     $35,$00                           ; LOW NIBBLE IS DEVICE ADDRESS (Device address+$20 for FPSD)
+        FCB     $37,$00                           ; LOW NIBBLE IS DEVICE ADDRESS (Device address+$20 for FPSD)
         FCB     $11,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
                                                   ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
 RISIZ           EQU *-RITAB                       ;SIZE OF INITILAIZED RAM

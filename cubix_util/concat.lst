@@ -1,0 +1,165 @@
+                      (       concat.asm):00001         ;*
+                      (       concat.asm):00002         ;* CONCAT: File concatination utility
+                      (       concat.asm):00003         ;*
+                      (       concat.asm):00004         ;* Copyright 1983-2005 Dave Dunfield
+                      (       concat.asm):00005         ;* All rights reserved.
+                      (       concat.asm):00006         ;*
+     2000             (       concat.asm):00007         OSRAM           = $2000       APPLICATION RAM AREA
+     DBFF             (       concat.asm):00008         OSEND           = $DBFF       END OF GENERAL RAM
+     D000             (       concat.asm):00009         OSUTIL          = $D000       UTILITY ADDRESS SPACE
+                      (       concat.asm):00010                 ORG     OSRAM
+                      (       concat.asm):00011         ;*
+2000                  (       concat.asm):00012         CONCAT
+2000 813F             (       concat.asm):00013                 CMPA    #'?'                              ;QUERY?
+2002 263F             (       concat.asm):00014                 BNE     QUAL                              ;NO, LOOK FOR QUALIFIERS
+2004 3F               (       concat.asm):00015                 SWI
+2005 19               (       concat.asm):00016                 FCB     25
+2006 5573653A20434F4E (       concat.asm):00017                 FCN     'Use: CONCAT[/QUIET] <destination> <source1> [<source2>] ...'
+     4341545B2F515549
+     45545D203C646573
+     74696E6174696F6E
+     3E203C736F757263
+     65313E205B3C736F
+     75726365323E5D20
+     2E2E2E00
+2042 39               (       concat.asm):00018                 RTS
+                      (       concat.asm):00019         ;* PARSE FOR COMMAND QUALIFIERS
+2043                  (       concat.asm):00020         QUAL
+2043 A6A4             (       concat.asm):00021                 LDA     ,Y                                ;GET CHAR FROM COMMAND LINE
+2045 812F             (       concat.asm):00022                 CMPA    #'/'                              ;IS IT A QUALIFIER?
+2047 2645             (       concat.asm):00023                 BNE     MAIN                              ;NO, CONTINUE WITH MAIN PROGRAM
+2049 308D00B9         (       concat.asm):00024                 LEAX    QTABLE,PCR      POINT TO QUALIFIER TABLE
+204D 3F               (       concat.asm):00025                 SWI
+204E 12               (       concat.asm):00026                 FCB     18                                ;LOOK IT UP
+204F C101             (       concat.asm):00027                 CMPB    #QMAX                             ;IS IT IN RANGE
+2051 2408             (       concat.asm):00028                 BHS     QERR                              ;IF SO, IT'S INVALID
+2053 308D00B7         (       concat.asm):00029                 LEAX    QFLAGS,PCR      POINT TO QUALIFIER FLAGS
+2057 6F85             (       concat.asm):00030                 CLR     B,X                               ;SET THE FLAG
+2059 20E8             (       concat.asm):00031                 BRA     QUAL                              ;LOOK FOR ANOTHER QUALIFIER
+205B                  (       concat.asm):00032         QERR
+205B 3F               (       concat.asm):00033                 SWI
+205C 18               (       concat.asm):00034                 FCB     24                                ;DISPLAY MESSAGE
+205D 496E76616C696420 (       concat.asm):00035                 FCN     'Invalid qualifier: '
+     7175616C69666965
+     723A2000
+2071 A6A0             (       concat.asm):00036                 LDA     ,Y+                               ;GET CHARACTER
+2073                  (       concat.asm):00037         DSQU1
+2073 3F               (       concat.asm):00038                 SWI
+2074 21               (       concat.asm):00039                 FCB     33                                ;DISPLAY
+2075 A6A0             (       concat.asm):00040                 LDA     ,Y+                               ;GET NEXT CHAR
+2077 270C             (       concat.asm):00041                 BEQ     GOABO                             ;NULL IS DELIMITER
+2079 812F             (       concat.asm):00042                 CMPA    #'/'                              ;START OF ANOTHER QUALIFIER?
+207B 2708             (       concat.asm):00043                 BEQ     GOABO                             ;IF SO, QUIT
+207D 8120             (       concat.asm):00044                 CMPA    #' '                              ;SPACE?
+207F 2704             (       concat.asm):00045                 BEQ     GOABO                             ;IF SO, QUIT
+2081 810D             (       concat.asm):00046                 CMPA    #$0D                              ;END OF LINE?
+2083 26EE             (       concat.asm):00047                 BNE     DSQU1                             ;NO, KEEP DUMPING
+2085                  (       concat.asm):00048         GOABO
+2085 3F               (       concat.asm):00049                 SWI
+2086 19               (       concat.asm):00050                 FCB     25                                ;DISPLAY MESSAGE
+2087 2700             (       concat.asm):00051                 FCB     $27,0                             ;CHARACTERS TO DISPLAY
+2089 8601             (       concat.asm):00052                 LDA     #1                                ;INVALID OPERAND RETURN CODE
+208B 160076           (       concat.asm):00053                 LBRA    ABORT
+                      (       concat.asm):00054         ;* OPEN OUTPUT FILE
+208E                  (       concat.asm):00055         MAIN
+208E 3F               (       concat.asm):00056                 SWI
+208F 0A               (       concat.asm):00057                 FCB     10                                ;GET FILENAME
+2090 2672             (       concat.asm):00058                 BNE     ABORT                             ;ERROR
+2092 CE2111           (       concat.asm):00059                 LDU     #OUTFIL                           ;PT TO FILE POINTER
+2095 3F               (       concat.asm):00060                 SWI
+2096 38               (       concat.asm):00061                 FCB     56                                ;OPEN OUTPUT FILE TO WRITE
+2097 266B             (       concat.asm):00062                 BNE     ABORT                             ;ERROR
+                      (       concat.asm):00063         ;* OPEN INPUT FILE
+2099                  (       concat.asm):00064         OPENIN
+2099 3F               (       concat.asm):00065                 SWI
+209A 0A               (       concat.asm):00066                 FCB     10
+209B 2661             (       concat.asm):00067                 BNE     ABORT1
+209D 8E231B           (       concat.asm):00068                 LDX     #RAM
+20A0 3F               (       concat.asm):00069                 SWI
+20A1 35               (       concat.asm):00070                 FCB     53
+20A2 2660             (       concat.asm):00071                 BNE     ABORT
+20A4 86FF             (       concat.asm):00072                 LDA     #$FF
+20A6 A780             (       concat.asm):00073                 STA     ,X+                               ;INCASE EXACTLY ONE BLOCK
+                      (       concat.asm):00074         ;* WRITE TO OUTPUT
+20A8 8E231B           (       concat.asm):00075                 LDX     #RAM
+20AB                  (       concat.asm):00076         WR1
+20AB A680             (       concat.asm):00077                 LDA     ,X+
+20AD 2B13             (       concat.asm):00078                 BMI     WR2
+20AF 1F89             (       concat.asm):00079                 TFR     A,B
+20B1 3F               (       concat.asm):00080                 SWI
+20B2 3D               (       concat.asm):00081                 FCB     61
+20B3 C10D             (       concat.asm):00082                 CMPB    #$0D
+20B5 26F4             (       concat.asm):00083                 BNE     WR1
+20B7 FC210F           (       concat.asm):00084                 LDD     LINECT
+20BA C30001           (       concat.asm):00085                 ADDD    #1
+20BD FD210F           (       concat.asm):00086                 STD     LINECT
+20C0 20E9             (       concat.asm):00087                 BRA     WR1
+20C2                  (       concat.asm):00088         WR2
+20C2 3F               (       concat.asm):00089                 SWI
+20C3 04               (       concat.asm):00090                 FCB     4
+20C4 26D3             (       concat.asm):00091                 BNE     OPENIN
+20C6 B6210E           (       concat.asm):00092                 LDA     QUIET
+20C9 2732             (       concat.asm):00093                 BEQ     QUI1
+20CB 3F               (       concat.asm):00094                 SWI
+20CC 18               (       concat.asm):00095                 FCB     24
+20CD 546F74616C206F66 (       concat.asm):00096                 FCN     'Total of '
+     2000
+20D7 FC210F           (       concat.asm):00097                 LDD     LINECT
+20DA 3F               (       concat.asm):00098                 SWI
+20DB 1A               (       concat.asm):00099                 FCB     26
+20DC 3F               (       concat.asm):00100                 SWI
+20DD 19               (       concat.asm):00101                 FCB     25
+20DE 206C696E65732077 (       concat.asm):00102                 FCN     ' lines written to output file.'
+     72697474656E2074
+     6F206F7574707574
+     2066696C652E00
+20FD                  (       concat.asm):00103         QUI1
+20FD 4F               (       concat.asm):00104                 CLRA
+20FE                  (       concat.asm):00105         ABORT1
+20FE 3403             (       concat.asm):00106                 PSHS    A,CC
+2100 3F               (       concat.asm):00107                 SWI
+2101 39               (       concat.asm):00108                 FCB     57
+2102 3503             (       concat.asm):00109                 PULS    A,CC
+2104                  (       concat.asm):00110         ABORT
+2104 3F               (       concat.asm):00111                 SWI
+2105 00               (       concat.asm):00112                 FCB     0
+                      (       concat.asm):00113         ;* QUALIFIER TABLE
+2106                  (       concat.asm):00114         QTABLE
+2106 82               (       concat.asm):00115                 FCB     $82
+2107 2F5155494554     (       concat.asm):00116                 FCC     '/QUIET'
+210D 80               (       concat.asm):00117                 FCB     $80                               ;END OF TABLE
+     0001             (       concat.asm):00118         QMAX            = 1
+                      (       concat.asm):00119         ;* QUALIFIER FLAGS
+     210E             (       concat.asm):00120         QFLAGS          = *
+210E                  (       concat.asm):00121         QUIET
+210E FF               (       concat.asm):00122                 FCB     $FF
+                      (       concat.asm):00123         ;* LOCAL RAM STORAGE
+210F                  (       concat.asm):00124         LINECT
+210F 0000             (       concat.asm):00125                 FDB     0
+2111                  (       concat.asm):00126         OUTFIL
+2111                  (       concat.asm):00127                 RMB     522                               ;OUTPUT BUFFER
+     231B             (       concat.asm):00128         RAM             = *
+
+Symbol Table:
+[ G] ABORT                            2104
+[ G] ABORT1                           20FE
+[ G] CONCAT                           2000
+[ G] DSQU1                            2073
+[ G] GOABO                            2085
+[ G] LINECT                           210F
+[ G] MAIN                             208E
+[ G] OPENIN                           2099
+[ G] OSEND                            DBFF
+[ G] OSRAM                            2000
+[ G] OSUTIL                           D000
+[ G] OUTFIL                           2111
+[ G] QERR                             205B
+[ G] QFLAGS                           210E
+[ G] QMAX                             0001
+[ G] QTABLE                           2106
+[ G] QUAL                             2043
+[ G] QUI1                             20FD
+[ G] QUIET                            210E
+[ G] RAM                              231B
+[ G] WR1                              20AB
+[ G] WR2                              20C2

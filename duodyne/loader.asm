@@ -32,8 +32,8 @@ go:
         CALL    BDOS                              ; Do it
         DI                                        ; DISABLE INTERRUPTS
         LD      A,(CPUunit)                       ; GET CPU PORT
-        LD      C,$95
-        IN      A,(C)                             ; ENABLE 6502
+        LD      C,$96
+        IN      A,(C)                             ; ENABLE 6809
 ; should never get here
         NOP
         NOP
@@ -45,7 +45,7 @@ go:
 
 ;
 CPUunit:
-        DB      095h                              ; Default CPU unit port
+        DB      096h                              ; Default CPU unit port
 ;
 
 MSGFIL:
@@ -62,5 +62,11 @@ MSGFIL:
         DB      0AH,0DH
         DM      "INTO 6809 MONITOR"
         DM      "$"
+ENDSEG:
+        DEFS    01F8H - ENDSEG
+        DB      01H,02H,03H
+        DM      "CUBIX"
+
+        DB      00
 
 .END

@@ -51,9 +51,8 @@ New SSRs
 To Do List for this port:
 * add support for front panel display (Duodyne)
 * add support for DiskIO SD card (Duodyne)
-* add support to detect I2C SD card interfaces on multiple addresses other than 0x25
 * Enable Cubix FLOPPY Format Function (Duodyne/Nhyodyne)
-* Fix XMODEM CRC problem
+* Fix XMODEM CRC problem(R) and file length problem(S)
 * convert Xmodem EXEs to S19s
 * DSKY V1 support (Duodyne/Nhyodyne)
 * DSKY functions should abort if no DSKY is there.
@@ -172,6 +171,6 @@ Cubix can also be started by uploading the cubix.s19 file located in the bin fol
 
 ## Using the Front Panel SD interface
 
-In order for the front panel SD interface to be used, the front panel ATTINY chip needs to be flashed with the "Duodyne SD card I2C to SD" firmware with the I2C address set to 0x25.  Note that if there is more than one Front Panel in the system (attached to different processor cards), each I2C address must be unique.   Cubix can be configured to use any front panel in the 0x20-0x2F range.
+In order for the front panel SD interface to be used, the front panel ATTINY chip needs to be flashed with the "Duodyne SD card I2C to SD" firmware with the I2C address set to 0x25.  Note that if there is more than one Front Panel in the system (attached to different processor cards), each I2C address must be unique.   Cubix can be configured to use any front panel in the 0x25-0x27 range.
 See the instructions with the firmware for more information on how to configure the firmware and setup image files for use on the SD card.
 
