@@ -595,10 +595,10 @@ TESTMESSAGECONTROLEND:
 
 TESTMESSAGEDATA:
         FCB     $40
-        FCB     $7C,$09,$09,$09,$7E     ; A
+        FCB     $7E,$09,$09,$09,$7E     ; A
         FCB     $36,$49,$49,$49,$7F     ; B
         FCB     $22,$41,$41,$41,$3E     ; C
-        FCB     $3E,$41,$41,$41,$3E     ; D
+        FCB     $3E,$41,$41,$41,$7F     ; D
         FCB     $41,$49,$49,$49,$7F     ; E
         FCB     $01,$01,$09,$09,$7F     ; F
         FCB     $38,$49,$49,$41,$3E     ; G
