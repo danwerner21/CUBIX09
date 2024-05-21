@@ -569,12 +569,73 @@ PORT:
         FCB     $00
 
 TESTMESSAGECONTROL:
-        FCB     $80,$AE,$81,$7F,$A6,$20,00,$A1,$A8,$3F,$C0,$D3,$00,$DA,$12,$D5,$80,$D9,$22,$DB,$20,$8D,$14,$A4,$AF
-        FCB     $AE,$20,00,$A4,$AF,$22,0,7,$21,0,127
+        FCB     $80     ; set command mode
+        FCB     $AE     ; set display off
+        FCB     $81,$7F ; set contrast
+        FCB     $A6     ; normal display (a7=inverse)
+        FCB     $20,00  ; horizontal addressing mode
+        FCB     $A0     ; segment remap (inverse)
+        FCB     $A8,$3F ; Multiplex ratio (64 pix)
+        FCB     $C8     ; set com scan direction
+        FCB     $D3,$00 ; set display offset
+        FCB     $DA,$12 ; pin hardware config
+        FCB     $D5,$80 ; display clock divisor
+        FCB     $D9,$22 ; set pre-charge
+        FCB     $DB,$20 ; set deselect level
+        FCB     $8D,$14 ; set charge pump
+        FCB     $A4     ; set display RAM on
+        FCB     $AF     ; set display on
+        FCB     $40     ; set start line
+        FCB     $20,00  ; horizontal addressing mode
+        FCB     $21,0,127       ; set col start/end
+        FCB     $22,0,7         ; set page start/end
+        FCB     $AF     ; set display on
 TESTMESSAGECONTROLEND:
 
+
 TESTMESSAGEDATA:
-        FCB     $C0,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA,$AA
+        FCB     $40
+        FCB     $7C,$09,$09,$09,$7E     ; A
+        FCB     $36,$49,$49,$49,$7F     ; B
+        FCB     $22,$41,$41,$41,$3E     ; C
+        FCB     $3E,$41,$41,$41,$3E     ; D
+        FCB     $41,$49,$49,$49,$7F     ; E
+        FCB     $01,$01,$09,$09,$7F     ; F
+        FCB     $38,$49,$49,$41,$3E     ; G
+        FCB     $7F,$08,$08,$08,$7F     ; H
+        FCB     $00,$41,$7F,$41,$00     ; I
+        FCB     $3F,$40,$40,$40,$30     ; J
+        FCB     $41,$22,$14,$08,$7F     ; K
+        FCB     $40,$40,$40,$40,$7F     ; L
+        FCB     $7F,$03,$04,$03,$7F     ; M
+        FCB     $7F,$08,$04,$02,$7F     ; N
+        FCB     $3E,$41,$41,$41,$3E     ; O
+        FCB     $06,$09,$09,$09,$7F     ; P
+        FCB     $7E,$61,$51,$41,$3E     ; Q
+        FCB     $06,$49,$29,$19,$7F     ; R
+        FCB     $30,$49,$49,$49,$06     ; S
+        FCB     $01,$01,$7F,$01,$01     ; T
+        FCB     $3F,$40,$40,$40,$3F     ; U
+        FCB     $1F,$30,$40,$30,$1F     ; V
+        FCB     $3F,$40,$78,$40,$3F     ; W
+        FCB     $41,$36,$08,$36,$41     ; X
+        FCB     $03,$04,$78,$04,$03     ; Y
+        FCB     $43,$45,$49,$52,$62     ; Z
+        FCB     $00,$00,$00,$00,$00     ; _
+
+        FCB     $00,$00,$00,$00,$00     ; 0
+        FCB     $00,$00,$00,$00,$00     ; 1
+        FCB     $00,$00,$00,$00,$00     ; 2
+        FCB     $00,$00,$00,$00,$00     ; 3
+        FCB     $00,$00,$00,$00,$00     ; 4
+        FCB     $00,$00,$00,$00,$00     ; 5
+        FCB     $00,$00,$00,$00,$00     ; 6
+        FCB     $00,$00,$00,$00,$00     ; 7
+        FCB     $00,$00,$00,$00,$00     ; 8
+        FCB     $00,$00,$00,$00,$00     ; 9
+        FCB     $00,$00,$00,$00,$00     ; =
+        FCB     $00,$00,$00,$00,$00     ; *
+
 TESTMESSAGEDATAEND:
 
 SDSEND:
