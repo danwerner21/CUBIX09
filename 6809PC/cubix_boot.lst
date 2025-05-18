@@ -1,0 +1,90 @@
+                      (   cubix_boot.asm):00001         ;________________________________________________________________________________________________________________________________
+                      (   cubix_boot.asm):00002         ;
+                      (   cubix_boot.asm):00003         ;       6809PC CUBIX Boot loader
+                      (   cubix_boot.asm):00004         ;
+                      (   cubix_boot.asm):00005         ; DWERNER 05/17/2025    Initial
+                      (   cubix_boot.asm):00006         ;________________________________________________________________________________________________________________________________
+                      (   cubix_boot.asm):00007         
+     E000             (   cubix_boot.asm):00008         DEFAULT_IO_BASE = $E000                           ; BIOS DEFAULT IO LOCATION
+     EFE0             (   cubix_boot.asm):00009         MMU_ACT_TASK    = $FE0+DEFAULT_IO_BASE
+     EFE1             (   cubix_boot.asm):00010         MMU_MAP_SETUP   = $FE1+DEFAULT_IO_BASE
+     EFE2             (   cubix_boot.asm):00011         MMU_ENABLE      = $FE2+DEFAULT_IO_BASE
+     EFD0             (   cubix_boot.asm):00012         MMU_TASK_EDIT   = $FD0+DEFAULT_IO_BASE
+                      (   cubix_boot.asm):00013         
+                      (   cubix_boot.asm):00014                 ORG     $2000
+                      (   cubix_boot.asm):00015         
+                      (   cubix_boot.asm):00016         ;__CUBIX BOOT________________________________________________________________________________________
+                      (   cubix_boot.asm):00017         ; PAGER_INIT
+2000 8600             (   cubix_boot.asm):00018                 LDA     #$00                              ; ENSURE MMU IS DISABLED (SHOULD BE ALREADY, BUT . . . )
+2002 B7EFE2           (   cubix_boot.asm):00019                 STA     MMU_ENABLE
+2005 8601             (   cubix_boot.asm):00020                 LDA     #$01
+2007 B7EFE1           (   cubix_boot.asm):00021                 STA     MMU_MAP_SETUP                     ; Fill TASK 1
+200A 8D1D             (   cubix_boot.asm):00022                 BSR     INITPAGE                          ; FILL TASK 1 WITH DEFAULT MAP
+200C 8612             (   cubix_boot.asm):00023                 LDA     #$12                              ; 0C: 12 RAM page 12XXX
+200E B7EFDC           (   cubix_boot.asm):00024                 STA     MMU_TASK_EDIT+$0C
+2011 8613             (   cubix_boot.asm):00025                 LDA     #$13                              ; 0D: 13 RAM page 13XXX
+2013 B7EFDD           (   cubix_boot.asm):00026                 STA     MMU_TASK_EDIT+$0D
+                      (   cubix_boot.asm):00027         
+2016 8600             (   cubix_boot.asm):00028                 LDA     #$00
+2018 B7EFE1           (   cubix_boot.asm):00029                 STA     MMU_MAP_SETUP                     ; Then do task 0
+201B 8D0C             (   cubix_boot.asm):00030                 BSR     INITPAGE                          ; FILL TASK 0 WITH DEFAULT MAP
+201D 8600             (   cubix_boot.asm):00031                 LDA     #$00
+201F B7EFE0           (   cubix_boot.asm):00032                 STA     MMU_ACT_TASK                      ; SET ACTIVE TASK TO 00
+2022 8601             (   cubix_boot.asm):00033                 LDA     #$01
+2024 B7EFE2           (   cubix_boot.asm):00034                 STA     MMU_ENABLE                        ; ENABLE MMU --- FEEEEEL THE POOOOWERRRR
+2027 201C             (   cubix_boot.asm):00035                 BRA     COPYOS
+2029                  (   cubix_boot.asm):00036         INITPAGE:
+2029 8EEFD0           (   cubix_boot.asm):00037                 LDX     #MMU_TASK_EDIT
+202C 8600             (   cubix_boot.asm):00038                 LDA     #00
+                      (   cubix_boot.asm):00039         !
+202E A780             (   cubix_boot.asm):00040                 STA     ,X+                               ; CREATE A 1:1 MAP OF BANK
+2030 4C               (   cubix_boot.asm):00041                 INCA
+2031 8110             (   cubix_boot.asm):00042                 CMPA    #$10
+2033 26F9             (   cubix_boot.asm):00043                 BNE     <
+2035 860E             (   cubix_boot.asm):00044                 LDA     #$0E                              ; BUT, 01 is IO SHADOW
+2037 B7EFD1           (   cubix_boot.asm):00045                 STA     MMU_TASK_EDIT+$01
+203A 8610             (   cubix_boot.asm):00046                 LDA     #$10                              ; 0E: 10 RAM page 10XXX
+203C B7EFDE           (   cubix_boot.asm):00047                 STA     MMU_TASK_EDIT+$0E
+203F 8611             (   cubix_boot.asm):00048                 LDA     #$11                              ;  0F: 11 RAM page 11XXX
+2041 B7EFDF           (   cubix_boot.asm):00049                 STA     MMU_TASK_EDIT+$0F
+2044 39               (   cubix_boot.asm):00050                 RTS
+                      (   cubix_boot.asm):00051         
+2045                  (   cubix_boot.asm):00052         COPYOS:
+                      (   cubix_boot.asm):00053         ; copy Cubix to proper bank
+2045 8E2200           (   cubix_boot.asm):00054                 LDX     #$2200
+2048 108EE000         (   cubix_boot.asm):00055                 LDY     #$E000
+204C                  (   cubix_boot.asm):00056         LOOP:
+204C A680             (   cubix_boot.asm):00057                 LDA     ,X+                               ;MOVE IT
+204E A7A0             (   cubix_boot.asm):00058                 STA     ,Y+                               ;MOVE IT
+2050 108C0000         (   cubix_boot.asm):00059                 CMPY    #$0000                            ;AT END?
+2054 26F6             (   cubix_boot.asm):00060                 BNE     LOOP                              ;CONTINUE
+                      (   cubix_boot.asm):00061         
+                      (   cubix_boot.asm):00062         ; copy Drivers to proper bank
+2056 8601             (   cubix_boot.asm):00063                 LDA     #$01
+2058 B7EFE0           (   cubix_boot.asm):00064                 STA     MMU_ACT_TASK                      ; SET ACTIVE TASK TO 01
+205B 8E4200           (   cubix_boot.asm):00065                 LDX     #$4200
+205E 108EC100         (   cubix_boot.asm):00066                 LDY     #$C100
+                      (   cubix_boot.asm):00067         
+2062                  (   cubix_boot.asm):00068         LOOP1:
+2062 A680             (   cubix_boot.asm):00069                 LDA     ,X+                               ;MOVE IT
+2064 A7A0             (   cubix_boot.asm):00070                 STA     ,Y+                               ;MOVE IT
+2066 108CDFFF         (   cubix_boot.asm):00071                 CMPY    #$DFFF                            ;AT END?
+206A 26F6             (   cubix_boot.asm):00072                 BNE     LOOP1                             ;CONTINUE
+                      (   cubix_boot.asm):00073         
+                      (   cubix_boot.asm):00074         ;* Setup Memory Banks  (page out ROM)
+206C 8600             (   cubix_boot.asm):00075                 LDA     #$00
+206E B7EFE0           (   cubix_boot.asm):00076                 STA     MMU_ACT_TASK                      ; SET ACTIVE TASK TO 00
+                      (   cubix_boot.asm):00077         
+                      (   cubix_boot.asm):00078         ; Boot
+2071 7EE108           (   cubix_boot.asm):00079                 JMP     $E108
+
+Symbol Table:
+[ G] COPYOS                           2045
+[ G] DEFAULT_IO_BASE                  E000
+[ G] INITPAGE                         2029
+[ G] LOOP                             204C
+[ G] LOOP1                            2062
+[ G] MMU_ACT_TASK                     EFE0
+[ G] MMU_ENABLE                       EFE2
+[ G] MMU_MAP_SETUP                    EFE1
+[ G] MMU_TASK_EDIT                    EFD0

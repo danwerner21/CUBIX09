@@ -27,6 +27,9 @@
 #define DLY_1S 12000
 #define MAXRETRANS 25
 FILE *writer;
+unsigned int Dcrc3[100];
+unsigned int Dtcrc[100];
+unsigned int dbg=0;
 
 /* CRC16 implementation acording to CCITT standards */
 unsigned char xbuff[1030]; /* 1024 for XModem 1k + 3 head chars + 2 crc + nul */
@@ -112,6 +115,13 @@ static unsigned int check(int crc2, const unsigned char *buf, int sz)
         crc3 = crc16_ccitt(buf, sz);
         if (crc3 == tcrc)
             return 1;
+
+        if(dbg<100)
+        {
+            Dcrc3[dbg]=crc3;
+            Dtcrc[dbg]=tcrc;
+        dbg++;
+        }
     }
     else
     {

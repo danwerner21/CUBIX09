@@ -81,6 +81,10 @@ DISPATCHTABLE:
         .WORD   PCF_READBYTES                     ; FUNCTION 41 -
         .WORD   PCF_SENDBYTES                     ; FUNCTION 42 -
         .WORD   PCF_INITDEV                       ; FUNCTION 43 -
+        .WORD   FPDIS_INIT                        ; FUNCTION 44 - Init Front Panel Display
+        .WORD   FPDIS_CLEAR                       ; FUNCTION 45 - Clear Front Panel Display
+        .WORD   FPDIS_SETXY                       ; FUNCTION 46 - SET XY ON Front Panel Display
+        .WORD   FPDIS_OUTCH                       ; FUNCTION 47 - Output char on Front Panel Display
 ;
 
 

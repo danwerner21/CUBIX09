@@ -1,4 +1,4 @@
-all:  	nhy_cubix.com duo_cubix.s19
+all:  	nhy_cubix.com duo_cubix.s19 pc_cubix.s19
 
 
 nhy_cubix.com: cubix.asm command.os comfile.os filesys.os ../nhyodyne/loader.bin ../nhyodyne/cubix_values.asm ../nhyodyne/drivers.asm
@@ -18,6 +18,14 @@ duo_cubix.s19: cubix.asm command.os comfile.os filesys.os  ../duodyne/cubix_valu
 	srec_cat  duo_cubix.s -exclude 0x0000 0xE000 -o  duo_cubix.s19 -Data_Only
 	@rm duo_cubix.s
 	@rm duo_cubix.s1
+
+pc_cubix.s19: cubix.asm command.os comfile.os filesys.os  ../6809PC/cubix_values.asm ../6809PC/drivers.asm
+	lwasm --define=6809PC --define=dist --6809  --6800compat cubix.asm -s --list=pc_cubix.lst --map=pc_cubix.map --output=pc_cubix.s --format=srec
+	srec_cat  pc_cubix.s -exclude 0x0000 0xE000 -offset -0x8000 -o  pc_cubix.hex  -intel -address-length=2
+	srec_cat  pc_cubix.s -exclude 0x0000 0xE000 -offset -0xE000 -o  pc_cubix.s1  -binary
+	srec_cat  pc_cubix.s -exclude 0x0000 0xE000 -o  pc_cubix.s19 -Data_Only
+	@rm pc_cubix.s
+	@rm pc_cubix.s1
 
 pretty:
 	cp *.asm ./backup

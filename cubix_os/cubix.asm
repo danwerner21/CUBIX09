@@ -5,6 +5,15 @@
 ;* Copyright 1983-2005 Dave Dunfield
 ;* All rights reserved.
 ;*
+
+        IFDEF   6809PC
+;* MEMORY LOCATIONS FOR DUODYNE
+ROM             EQU $E000                         ; OS FIRMWARE
+RAM             EQU $0400                         ; OS LOCAL STORAGE (1K)
+USRRAM          EQU $2000                         ; START OF USER SUPPLIED RAM
+USREND          EQU ROM-1                         ; RAMTEST STOPS HERE
+        ENDIF
+
         IFDEF   duodyne
 ;* MEMORY LOCATIONS FOR DUODYNE
 ROM             EQU $E000                         ; OS FIRMWARE
@@ -1530,6 +1539,9 @@ NUMSSR          EQU (*-SSRTAB)/2                  ;# SSR'S IMPLEMENTED
         ENDIF
         IFDEF   duodyne
         INCLUDE ../duodyne/drivers.asm
+        ENDIF
+        IFDEF   6809PC
+        INCLUDE ../6809PC/drivers.asm
         ENDIF
 
 ;*

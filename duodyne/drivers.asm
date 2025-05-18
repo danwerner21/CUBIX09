@@ -64,8 +64,15 @@ HWIN1
         LDB     #40                               ;INIT I2C
         JSR     MD_PAGERA
 ;
-        LDB     #24                               ;INIT FP SD
-        JSR     MD_PAGERA
+;       LDB     #24                               ;INIT FP SD
+;       JSR     MD_PAGERA
+;
+;       LDB     #44                               ;Init Front Panel Display
+;       JSR     MD_PAGERA
+;
+;       LDB     #45                               ;Clear Front Panel Display
+;       JSR     MD_PAGERA
+;
         JSR     WRMSG
         FCC     '______________________________________________________________________'
         FCB     0
@@ -272,8 +279,10 @@ RITAB           EQU *
 ; DRIVE MAPPING TABLE
         FCB     $21,$00                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
         FCB     $21,$01                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE, $3x=FPSD
-        FCB     $37,$00                           ; LOW NIBBLE IS DEVICE ADDRESS (Device address+$20 for FPSD)
-        FCB     $11,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
-                                                  ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
+;        FCB     $37,$00                           ; LOW NIBBLE IS DEVICE ADDRESS (Device address+$20 for FPSD)
+;        FCB     $11,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
+        FCB     $21,$02
+        FCB     $21,$03
+; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
 RISIZ           EQU *-RITAB                       ;SIZE OF INITILAIZED RAM
 ;

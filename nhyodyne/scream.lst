@@ -328,15 +328,18 @@ F2CC B7FE68           (       scream.asm):00327 [5]             STA     UART0   
 F2CF B7FE68           (       scream.asm):00328 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
 F2D2 B7FE68           (       scream.asm):00329 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
 F2D5 B7FE68           (       scream.asm):00330 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
-F2D8 7EF003           (       scream.asm):00331 [4]             JMP     SERIAL_OUTCH
-                      (       scream.asm):00332         
-                      (       scream.asm):00333                 ORG     $FFFE                             ; SET RESET VECTOR TO
-                      (       scream.asm):00334         
+F2D8 B7FE68           (       scream.asm):00331 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F2DB B7FE68           (       scream.asm):00332 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F2DE B7FE68           (       scream.asm):00333 [5]             STA     UART0                             ; THEN WRITE THE CHAR TO UART
+F2E1 7EF003           (       scream.asm):00334 [4]             JMP     SERIAL_OUTCH
                       (       scream.asm):00335         
-FFFE                  (       scream.asm):00336         RESETV:
-FFFE F000             (       scream.asm):00337                 FDB     $F000
+                      (       scream.asm):00336                 ORG     $FFFE                             ; SET RESET VECTOR TO
+                      (       scream.asm):00337         
                       (       scream.asm):00338         
-                      (       scream.asm):00339                 END
+FFFE                  (       scream.asm):00339         RESETV:
+FFFE F000             (       scream.asm):00340                 FDB     $F000
+                      (       scream.asm):00341         
+                      (       scream.asm):00342                 END
 
 Symbol Table:
 [ G] COLD_START                       F000

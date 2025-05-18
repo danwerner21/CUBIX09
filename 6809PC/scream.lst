@@ -1,0 +1,150 @@
+                      (       scream.asm):00001                 PRAGMA  CD
+                      (       scream.asm):00002         
+                      (       scream.asm):00003         ;__SCREAM_______________________________________________________
+                      (       scream.asm):00004         ;
+                      (       scream.asm):00005         ; This is a quick program that can be put on a ROM to test the
+                      (       scream.asm):00006         ; 6809PC board.
+                      (       scream.asm):00007         ;
+                      (       scream.asm):00008         ;_______________________________________________________________
+                      (       scream.asm):00009         
+     EF00             (       scream.asm):00010         IOSPACE         EQU $EF00
+     EF84             (       scream.asm):00011         UART1DATA       EQU IOSPACE+$84                   ; SERIAL PORT 1 (I/O Card)
+     EF85             (       scream.asm):00012         UART1STATUS     EQU IOSPACE+$85                   ; SERIAL PORT 1 (I/O Card)
+     EF86             (       scream.asm):00013         UART1COMMAND    EQU IOSPACE+$86                   ; SERIAL PORT 1 (I/O Card)
+     EF87             (       scream.asm):00014         UART1CONTROL    EQU IOSPACE+$87                   ; SERIAL PORT 1 (I/O Card)
+                      (       scream.asm):00015         
+                      (       scream.asm):00016         
+                      (       scream.asm):00017         ;Command Register
+                      (       scream.asm):00018         ;No bit is affected by a software reset, however, all bits are set to zero on a hardware reset.
+                      (       scream.asm):00019         ;Bit 7 6 5  configuration
+                      (       scream.asm):00020         ;    x x 0  no parity bit
+                      (       scream.asm):00021         ;    0 0 1  send and receive with odd parity
+                      (       scream.asm):00022         ;    0 1 1  send and receive with even parity
+                      (       scream.asm):00023         ;    1 0 1  send: parity=1; receive: parity not evaluated
+                      (       scream.asm):00024         ;    1 1 1  send: parity=0; receive: parity not evaluated
+                      (       scream.asm):00025         ;
+                      (       scream.asm):00026         ;Bit 4  0: no echo
+                      (       scream.asm):00027         ;       1: echo (received characters are being sent again,
+                      (       scream.asm):00028         ;                bits 2 and 3 must be 0 for that)
+                      (       scream.asm):00029         ;
+                      (       scream.asm):00030         ;Bit 3 2  sender interr.   RTS level   sender
+                      (       scream.asm):00031         ;    0 0  no               high        off
+                      (       scream.asm):00032         ;    0 1  yes              low         on
+                      (       scream.asm):00033         ;    1 0  no               low         on
+                      (       scream.asm):00034         ;    1 1  no               low         send BRK
+                      (       scream.asm):00035         ;
+                      (       scream.asm):00036         ;Bit 1  0: interrupt gets triggered by bit 3 in status register
+                      (       scream.asm):00037         ;       1: no interrupt
+                      (       scream.asm):00038         ;
+                      (       scream.asm):00039         ;Bit 0  0: disable transceiver and interrupts, /DTR high
+                      (       scream.asm):00040         ;       1: enable transceiver and interrupts, /DTR low
+                      (       scream.asm):00041         ;
+                      (       scream.asm):00042         ;Control Register
+                      (       scream.asm):00043         ;Bits 0 to 3 are set to zero on a software reset, and all bits are set to zero on a hardware reset.
+                      (       scream.asm):00044         ;Bit 7  0: 1 stop bit
+                      (       scream.asm):00045         ;       1: a) with 8 data bits and 1 parity bit: 1 stop bit
+                      (       scream.asm):00046         ;          b) with 5 data bits and no parity bit: 1.5 stop bits
+                      (       scream.asm):00047         ;          c) otherwise 2 stop bits
+                      (       scream.asm):00048         ;
+                      (       scream.asm):00049         ;Bit 6 5  data bits
+                      (       scream.asm):00050         ;    0 0  8
+                      (       scream.asm):00051         ;    0 1  7
+                      (       scream.asm):00052         ;    1 0  6
+                      (       scream.asm):00053         ;    1 1  5
+                      (       scream.asm):00054         ;
+                      (       scream.asm):00055         ;Bit 4  0: external receive clock
+                      (       scream.asm):00056         ;       1: builtin clock as receive clock
+                      (       scream.asm):00057         ;
+                      (       scream.asm):00058         ;Bit 3 2 1 0  baud rate
+                      (       scream.asm):00059         ;    0 0 0 0  1/16 times external clock
+                      (       scream.asm):00060         ;    0 0 0 1  50 bps
+                      (       scream.asm):00061         ;    0 0 1 0  75 bps
+                      (       scream.asm):00062         ;    0 0 1 1  109.92 bps
+                      (       scream.asm):00063         ;    0 1 0 0  134.58 bps
+                      (       scream.asm):00064         ;    0 1 0 1  150 bps
+                      (       scream.asm):00065         ;    0 1 1 0  300 bps
+                      (       scream.asm):00066         ;    0 1 1 1  600 bps
+                      (       scream.asm):00067         ;    1 0 0 0  1200 bps
+                      (       scream.asm):00068         ;    1 0 0 1  1800 bps
+                      (       scream.asm):00069         ;    1 0 1 0  2400 bps
+                      (       scream.asm):00070         ;    1 0 1 1  3600 bps
+                      (       scream.asm):00071         ;    1 1 0 0  4800 bps
+                      (       scream.asm):00072         ;    1 1 0 1  7200 bps
+                      (       scream.asm):00073         ;    1 1 1 0  9600 bps
+                      (       scream.asm):00074         ;    1 1 1 1  19200 bps
+                      (       scream.asm):00075         
+                      (       scream.asm):00076         
+                      (       scream.asm):00077         ;
+                      (       scream.asm):00078                 ORG     $F000
+F000                  (       scream.asm):00079         COLD_START:
+                      (       scream.asm):00080         
+                      (       scream.asm):00081         
+F000 8600             (       scream.asm):00082 [2]             LDA     #$00                              ; RESET UART
+F002 B7EF85           (       scream.asm):00083 [5]             STA     UART1STATUS                       ;
+F005 860B             (       scream.asm):00084 [2]             LDA     #$0B                              ;
+F007 B7EF86           (       scream.asm):00085 [5]             STA     UART1COMMAND                      ;
+F00A 861E             (       scream.asm):00086 [2]             LDA     #$1E                              ; 9600, 8 BITS, NO PARITY, 1 STOP BIT
+F00C B7EF87           (       scream.asm):00087 [5]             STA     UART1CONTROL                      ;
+                      (       scream.asm):00088         
+F00F 8641             (       scream.asm):00089 [2]             LDA     #'A'
+F011 B71000           (       scream.asm):00090 [5]             STA     $1000
+                      (       scream.asm):00091         
+F014                  (       scream.asm):00092         WRSER1a:
+F014 B6EF85           (       scream.asm):00093 [5]             LDA     UART1STATUS                       ; GET STATUS
+F017 8410             (       scream.asm):00094 [2]             ANDA    #%00010000                        ; IS TX READY
+F019 27F9             (       scream.asm):00095 [3]             BEQ     WRSER1a                           ; NO, WAIT FOR IT
+                      (       scream.asm):00096         
+                      (       scream.asm):00097         ;        LDA     #'A'
+                      (       scream.asm):00098         
+F01B 7C1000           (       scream.asm):00099 [7]             INC     $1000
+F01E B61000           (       scream.asm):00100 [5]             LDA     $1000
+                      (       scream.asm):00101         
+F021 44               (       scream.asm):00102 [2]             LSRA                                      ; OUT HEX LEFT BCD DIGIT
+F022 44               (       scream.asm):00103 [2]             LSRA                                      ;
+F023 44               (       scream.asm):00104 [2]             LSRA                                      ;
+F024 44               (       scream.asm):00105 [2]             LSRA                                      ;
+F025 840F             (       scream.asm):00106 [2]             ANDA    #$0F
+F027 8B30             (       scream.asm):00107 [2]             ADDA    #$30                              ;
+F029 8139             (       scream.asm):00108 [2]             CMPA    #$39                              ;
+F02B 2302             (       scream.asm):00109 [3]             BLS     OUTHR1                            ;
+F02D 8B07             (       scream.asm):00110 [2]             ADDA    #$07                              ;
+F02F                  (       scream.asm):00111         OUTHR1:
+F02F B7EF84           (       scream.asm):00112 [5]             STA     UART1DATA                         ; WRITE DATA
+                      (       scream.asm):00113         
+F032                  (       scream.asm):00114         WRSER2a:
+F032 B6EF85           (       scream.asm):00115 [5]             LDA     UART1STATUS                       ; GET STATUS
+F035 8410             (       scream.asm):00116 [2]             ANDA    #%00010000                        ; IS TX READY
+F037 27F9             (       scream.asm):00117 [3]             BEQ     WRSER2a                           ; NO, WAIT FOR IT
+                      (       scream.asm):00118         
+                      (       scream.asm):00119         
+F039 B61000           (       scream.asm):00120 [5]             LDA     $1000
+                      (       scream.asm):00121         
+F03C 840F             (       scream.asm):00122 [2]             ANDA    #$0F                              ; OUT HEC RIGHT DIGIT
+F03E 8B30             (       scream.asm):00123 [2]             ADDA    #$30                              ;
+F040 8139             (       scream.asm):00124 [2]             CMPA    #$39                              ;
+F042 2302             (       scream.asm):00125 [3]             BLS     OUTHR2                            ;
+F044 8B07             (       scream.asm):00126 [2]             ADDA    #$07                              ;
+F046                  (       scream.asm):00127         OUTHR2:
+F046 B7EF84           (       scream.asm):00128 [5]             STA     UART1DATA                         ; WRITE DATA
+                      (       scream.asm):00129         
+F049 7EF014           (       scream.asm):00130 [4]             JMP     WRSER1a
+                      (       scream.asm):00131         
+                      (       scream.asm):00132         
+                      (       scream.asm):00133         
+                      (       scream.asm):00134                 ORG     $FFFE                             ; SET RESET VECTOR TO
+FFFE                  (       scream.asm):00135         RESETV:
+FFFE F000             (       scream.asm):00136                 FDB     $F000
+                      (       scream.asm):00137                 END
+
+Symbol Table:
+[ G] COLD_START                       F000
+[ G] IOSPACE                          EF00
+[ G] OUTHR1                           F02F
+[ G] OUTHR2                           F046
+[ G] RESETV                           FFFE
+[ G] UART1COMMAND                     EF86
+[ G] UART1CONTROL                     EF87
+[ G] UART1DATA                        EF84
+[ G] UART1STATUS                      EF85
+[ G] WRSER1a                          F014
+[ G] WRSER2a                          F032
