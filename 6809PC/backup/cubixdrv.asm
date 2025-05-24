@@ -18,6 +18,7 @@
 ;____________________________________________________________________________________________________
 ;
 FUNCTION_DISPATCHER:
+
         ASLB                                      ; DOUBLE NUMBER FOR TABLE LOOKUP
         LDA     #$00
         TFR     D,X

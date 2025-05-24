@@ -9,7 +9,14 @@ DEFAULT_IO_BASE = $E000                           ; BIOS DEFAULT IO LOCATION
 MMU_ACT_TASK    = $FE0+DEFAULT_IO_BASE
 MMU_MAP_SETUP   = $FE1+DEFAULT_IO_BASE
 MMU_ENABLE      = $FE2+DEFAULT_IO_BASE
-MMU_TASK_EDIT   = $FE2+DEFAULT_IO_BASE
+MMU_TASK_EDIT   = $FD0+DEFAULT_IO_BASE
+
+IO_BASE         = $1000                           ; NEW IO LOCATION
+LMMU_ACT_TASK   = $FE0+IO_BASE
+LMMU_MAP_SETUP  = $FE1+IO_BASE
+LMMU_ENABLE     = $FE2+IO_BASE
+LMMU_TASK_EDIT  = $FD0+IO_BASE
+
 
         ORG     $2000
 
@@ -50,6 +57,7 @@ INITPAGE:
         RTS
 
 COPYOS:
+
 ; copy Cubix to proper bank
         LDX     #$2200
         LDY     #$E000
@@ -60,8 +68,9 @@ LOOP:
         BNE     LOOP                              ;CONTINUE
 
 ; copy Drivers to proper bank
+
         LDA     #$01
-        STA     MMU_ACT_TASK                      ; SET ACTIVE TASK TO 01
+        STA     LMMU_ACT_TASK                     ; SET ACTIVE TASK TO 01
         LDX     #$4200
         LDY     #$C100
 
@@ -72,11 +81,9 @@ LOOP1:
         BNE     LOOP1                             ;CONTINUE
 
 ;* Setup Memory Banks  (page out ROM)
+
         LDA     #$00
-        STA     MMU_ACT_TASK                      ; SET ACTIVE TASK TO 00
+        STA     LMMU_ACT_TASK                     ; SET ACTIVE TASK TO 00
 
 ; Boot
         JMP     $E108
-
-
-.END

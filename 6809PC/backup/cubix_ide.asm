@@ -9,8 +9,10 @@
 ;________________________________________________________________________________________________________________________________
 ;
 
-XTIDE_DATA      = CUBIX_IO_BASE+$300
+XTIDE_DATA_LO   = CUBIX_IO_BASE+$300
+XTIDE_DATA_HI   = CUBIX_IO_BASE+$301
 XTIDE_ERR       = CUBIX_IO_BASE+$302
+XTIDE_FECODE    = CUBIX_IO_BASE+$302
 XTIDE_SEC_CNT   = CUBIX_IO_BASE+$304
 XTIDE_LBALOW    = CUBIX_IO_BASE+$306
 XTIDE_LBAMID    = CUBIX_IO_BASE+$308
@@ -18,8 +20,8 @@ XTIDE_LBAHI     = CUBIX_IO_BASE+$30A
 XTIDE_DEVICE    = CUBIX_IO_BASE+$30C
 XTIDE_COMMAND   = CUBIX_IO_BASE+$30E
 XTIDE_STATUS    = CUBIX_IO_BASE+$30E
-XTIDE_CONTROL   = CUBIX_IO_BASE+$31C
-XTIDE_ASTATUS   = CUBIX_IO_BASE+$31E
+
+
 
 
 ;IDE COMMAND CONSTANTS.  THESE SHOULD NEVER CHANGE.
@@ -28,6 +30,7 @@ XTIDE_CMD_READ  = $20
 XTIDE_CMD_WRITE = $30
 XTIDE_CMD_INIT  = $91
 XTIDE_CMD_ID    = $EC
+XTIDE_CMD_FEAT  = $EF
 XTIDE_CMD_SPINDOWN = $E0
 XTIDE_CMD_SPINUP = $E1
 
@@ -51,7 +54,7 @@ XTIDE_INIT:
 ;
         LDX     #MESSAGE2
         JSR     WRSTR                             ; DO PROMPT
-        LDD     #XTIDE_DATA                       ; GET BASE PORT
+        LDD     #XTIDE_DATA_LO                    ; GET BASE PORT
         JSR     WRHEXW                            ; PRINT BASE PORT
 ;
         JSR     XTIDE_PROBE                       ; DETECT AN ATA DEVICE, ABORT IF NOT FOUND
@@ -130,8 +133,26 @@ IDE_READ_INFO:
         JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
         BCS     IDE_READ_INFO_ABORT
 
-        LDA     #XTIDE_CMD_ID
-        STA     XTIDE_COMMAND                     ;SELECT IDE REGISTER
+        LDA     #$01                              ; ENABLE 8-BIT MODE (XT-CF-LITE)
+        STA     XTIDE_FECODE
+        LDA     #XTIDE_CMD_FEAT
+        STA     XTIDE_COMMAND
+
+        NOP                                       ; TINY DELAY, JUST IN CASE
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
+        NOP
+
+
+        LDA     #XTIDE_CMD_ID                     ; ID COMMAND
+        STA     XTIDE_COMMAND
 
         JSR     IDE_WAIT_DRQ                      ;WAIT UNTIL IT'S GOT THE DATA
         BCS     IDE_READ_INFO_ABORT
@@ -276,8 +297,11 @@ IDE_WAIT_DRQ3:
 IDE_READ_BUFFER:
         LDY     #$0000                            ; INDEX
 IDEBUFRD:
-        LDB     XTIDE_DATA
-        STB     HSTBUF,Y                          ; 'ID DRIVE' IDE RESPONSE IS LITTLE ENDIAN FORMAT
+        LDB     XTIDE_DATA_LO
+        STB     HSTBUF,Y                        ;
+        INY
+        LDB     XTIDE_DATA_HI
+        STB     HSTBUF,Y                          ;
         INY
         CMPY    #$0200                            ;
         BNE     IDEBUFRD                          ;
@@ -291,9 +315,12 @@ IDEBUFRD:
 IDE_WRITE_BUFFER:
         LDY     #$0000                            ; INDEX
 IDEBUFWT:
-        LDB     HSTBUF,Y                          ; SECTORS ARE BIG ENDIAN
+        LDB     HSTBUF,Y                        ;
+        STB     XTIDE_DATA_LO
         INY
-        STB     XTIDE_DATA
+        LDB     HSTBUF,Y                          ;
+        STB     XTIDE_DATA_HI
+        INY
         CMPY    #$0200                            ;
         BNE     IDEBUFWT                          ;
         RTS                                       ;

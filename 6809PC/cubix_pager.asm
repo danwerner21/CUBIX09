@@ -70,6 +70,9 @@ MMU_TASK_EDIT   = $FE2+CUBIX_IO_BASE
 
 ; CODE FOR PAGER OPERATIONS
 MD_PAGERA:
+
+
+
 ; CODE TO CALL A "FAR FUNCTION"
 ; THIS CHANGES PAGES AND THEN CALLS THE DISPATCHER
         STD     >PAGER_D                          ; SAVE 'D'
@@ -77,6 +80,7 @@ MD_PAGERA:
         STY     >PAGER_Y                          ; SAVE 'Y'
         STU     >PAGER_U                          ; SAVE 'U'
         STS     >PAGER_S                          ; SAVE STACK
+
         LDS     #PAGER_STACK                      ; SET TEMP STACK
 
         LDA     #$01
@@ -94,4 +98,4 @@ MD_PAGERA:
         LDD     >PAGER_D                          ; RESTORE 'D'
         RTS
 
-PAGER_STACK = $00FF
+PAGER_STACK     = $00FF

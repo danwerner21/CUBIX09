@@ -101,9 +101,9 @@ CLRRAM:
 MONITOR:
         LBSR    WRMSG                             ;OUTPUT MESSAGE
         FCB     $0A,$0D,$0A,$0D,$0A,$0D
-        FCC     '    ____ ___  ___  ___  ___  _____'
+        FCC     '  ____ ___  ___  ___  ___  _____'
         FCB     $0A,$0D
-        FCC     '  / __/( _ )/ _ \/ _ \/ _ \/ ___/'
+        FCC     ' / __/( _ )/ _ \/ _ \/ _ \/ ___/'
         FCB     $0A,$0D
         FCC     '/ _ \/ _  / // /\_, / ___/ /__'
         FCB     $0A,$0D

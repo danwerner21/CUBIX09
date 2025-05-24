@@ -283,6 +283,6 @@ RITAB           EQU *
 ;        FCB     $11,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
         FCB     $21,$02
         FCB     $21,$03
-                                                  ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
+; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
 RISIZ           EQU *-RITAB                       ;SIZE OF INITILAIZED RAM
 ;

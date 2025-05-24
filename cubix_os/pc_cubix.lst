@@ -3952,22 +3952,22 @@ FA13 5F5F5F5F5F5F5F5F (../6809PC/drivers):00045                 FCC     '_______
 FA59 00               (../6809PC/drivers):00046                 FCB     0
                       (../6809PC/drivers):00047         ;
 FA5A C602             (../6809PC/drivers):00048                 LDB     #02                               ;INIT SERIAL PORT
-FA5C BDFBA3           (../6809PC/drivers):00049                 JSR     MD_PAGERA
+FA5C BDFB68           (../6809PC/drivers):00049                 JSR     MD_PAGERA
                       (../6809PC/drivers):00050         ;
-FA5F C612             (../6809PC/drivers):00051                 LDB     #18                               ;INIT Floppy
-FA61 BDFBA3           (../6809PC/drivers):00052                 JSR     MD_PAGERA
+                      (../6809PC/drivers):00051         ;        LDB     #18                               ;INIT Floppy
+                      (../6809PC/drivers):00052         ;        JSR     MD_PAGERA
                       (../6809PC/drivers):00053         ;
-FA64 C615             (../6809PC/drivers):00054                 LDB     #21                               ;INIT IDE
-FA66 BDFBA3           (../6809PC/drivers):00055                 JSR     MD_PAGERA
+FA5F C615             (../6809PC/drivers):00054                 LDB     #21                               ;INIT IDE
+FA61 BDFB68           (../6809PC/drivers):00055                 JSR     MD_PAGERA
                       (../6809PC/drivers):00056         ;
-FA69 C61B             (../6809PC/drivers):00057                 LDB     #27                               ;INIT DSKY/NG
-FA6B BDFBA3           (../6809PC/drivers):00058                 JSR     MD_PAGERA
+                      (../6809PC/drivers):00057         ;        LDB     #27                               ;INIT DSKY/NG
+                      (../6809PC/drivers):00058         ;        JSR     MD_PAGERA
                       (../6809PC/drivers):00059         ;
-FA6E C625             (../6809PC/drivers):00060                 LDB     #37                               ;INIT FRONT PANEL
-FA70 BDFBA3           (../6809PC/drivers):00061                 JSR     MD_PAGERA
+                      (../6809PC/drivers):00060         ;        LDB     #37                               ;INIT FRONT PANEL
+                      (../6809PC/drivers):00061         ;        JSR     MD_PAGERA
                       (../6809PC/drivers):00062         ;
-FA73 C628             (../6809PC/drivers):00063                 LDB     #40                               ;INIT I2C
-FA75 BDFBA3           (../6809PC/drivers):00064                 JSR     MD_PAGERA
+                      (../6809PC/drivers):00063         ;        LDB     #40                               ;INIT I2C
+                      (../6809PC/drivers):00064         ;        JSR     MD_PAGERA
                       (../6809PC/drivers):00065         ;
                       (../6809PC/drivers):00066         ;       LDB     #24                               ;INIT FP SD
                       (../6809PC/drivers):00067         ;       JSR     MD_PAGERA
@@ -3978,8 +3978,8 @@ FA75 BDFBA3           (../6809PC/drivers):00064                 JSR     MD_PAGER
                       (../6809PC/drivers):00072         ;       LDB     #45                               ;Clear Front Panel Display
                       (../6809PC/drivers):00073         ;       JSR     MD_PAGERA
                       (../6809PC/drivers):00074         ;
-FA78 BDE57E           (../6809PC/drivers):00075                 JSR     WRMSG
-FA7B 5F5F5F5F5F5F5F5F (../6809PC/drivers):00076                 FCC     '______________________________________________________________________'
+FA64 BDE57E           (../6809PC/drivers):00075                 JSR     WRMSG
+FA67 5F5F5F5F5F5F5F5F (../6809PC/drivers):00076                 FCC     '______________________________________________________________________'
      5F5F5F5F5F5F5F5F
      5F5F5F5F5F5F5F5F
      5F5F5F5F5F5F5F5F
@@ -3988,162 +3988,142 @@ FA7B 5F5F5F5F5F5F5F5F (../6809PC/drivers):00076                 FCC     '_______
      5F5F5F5F5F5F5F5F
      5F5F5F5F5F5F5F5F
      5F5F5F5F5F5F
-FAC1 00               (../6809PC/drivers):00077                 FCB     0
+FAAD 00               (../6809PC/drivers):00077                 FCB     0
                       (../6809PC/drivers):00078         ;
-FAC2 39               (../6809PC/drivers):00079                 RTS
+FAAE 39               (../6809PC/drivers):00079                 RTS
                       (../6809PC/drivers):00080         
-FAC3                  (../6809PC/drivers):00081         WRSER:
-FAC3 C600             (../6809PC/drivers):00082                 LDB     #00                               ;WRITE SERIAL PORT
-FAC5 7EFBA3           (../6809PC/drivers):00083                 JMP     MD_PAGERA
+FAAF                  (../6809PC/drivers):00081         WRSER:
+FAAF C600             (../6809PC/drivers):00082                 LDB     #00                               ;WRITE SERIAL PORT
+FAB1 7EFB68           (../6809PC/drivers):00083                 JMP     MD_PAGERA
                       (../6809PC/drivers):00084         
-FAC8                  (../6809PC/drivers):00085         RDSER:
-FAC8 C601             (../6809PC/drivers):00086                 LDB     #01                               ;READ SERIAL PORT
-FACA BDFBA3           (../6809PC/drivers):00087                 JSR     MD_PAGERA
-FACD 81FF             (../6809PC/drivers):00088                 CMPA    #$FF
-FACF 2703             (../6809PC/drivers):00089                 BEQ     >
-FAD1 1A04             (../6809PC/drivers):00090                 ORCC    #%00000100                        ; SET 'Z'
-FAD3 39               (../6809PC/drivers):00091                 RTS
+FAB4                  (../6809PC/drivers):00085         RDSER:
+FAB4 C601             (../6809PC/drivers):00086                 LDB     #01                               ;READ SERIAL PORT
+FAB6 BDFB68           (../6809PC/drivers):00087                 JSR     MD_PAGERA
+FAB9 81FF             (../6809PC/drivers):00088                 CMPA    #$FF
+FABB 2703             (../6809PC/drivers):00089                 BEQ     >
+FABD 1A04             (../6809PC/drivers):00090                 ORCC    #%00000100                        ; SET 'Z'
+FABF 39               (../6809PC/drivers):00091                 RTS
                       (../6809PC/drivers):00092         !
-FAD4 86FF             (../6809PC/drivers):00093                 LDA     #$FF                              ; CLEAR 'Z'
-FAD6 39               (../6809PC/drivers):00094                 RTS                                       ;
+FAC0 86FF             (../6809PC/drivers):00093                 LDA     #$FF                              ; CLEAR 'Z'
+FAC2 39               (../6809PC/drivers):00094                 RTS                                       ;
                       (../6809PC/drivers):00095         ;
                       (../6809PC/drivers):00096         
                       (../6809PC/drivers):00097         ;* NULL DEVICE DRIVERS
-FAD7                  (../6809PC/drivers):00098         RDNULL
-FAD7 86FF             (../6809PC/drivers):00099                 LDA     #$FF                              ;INDICATE NO CHARACTER
-FAD9                  (../6809PC/drivers):00100         WRNULL
-FAD9 39               (../6809PC/drivers):00101                 RTS     IGNORE OPERATION
+FAC3                  (../6809PC/drivers):00098         RDNULL
+FAC3 86FF             (../6809PC/drivers):00099                 LDA     #$FF                              ;INDICATE NO CHARACTER
+FAC5                  (../6809PC/drivers):00100         WRNULL
+FAC5 39               (../6809PC/drivers):00101                 RTS     IGNORE OPERATION
                       (../6809PC/drivers):00102         
                       (../6809PC/drivers):00103         ;*
                       (../6809PC/drivers):00104         ;* FORMAT DISK ('U' POINTS TO DCB), INTERLEAVE FACTOR IN 'A'
                       (../6809PC/drivers):00105         ;*
-FADA                  (../6809PC/drivers):00106         DFORMAT
+FAC6                  (../6809PC/drivers):00106         DFORMAT
                       (../6809PC/drivers):00107         ;*      LDAA    DRIVE,U                 ; GET DRIVE
                       (../6809PC/drivers):00108         ;*      CMPA    #$01                    ; DRIVE B?
                       (../6809PC/drivers):00109         ;*      BNE     NOTFDB                  ;
                       (../6809PC/drivers):00110         ;*      JMP     FORMFL                  ; DIRECT ATTACHED FLOPPY FORMAT
                       (../6809PC/drivers):00111         ;*NOTFDB:
-FADA 39               (../6809PC/drivers):00112                 RTS
+FAC6 39               (../6809PC/drivers):00112                 RTS
                       (../6809PC/drivers):00113         
                       (../6809PC/drivers):00114         ;*
                       (../6809PC/drivers):00115         ;* HOME HEAD ON DRIVE ('U' POINTS TO DCB)
                       (../6809PC/drivers):00116         ;*
-FADB                  (../6809PC/drivers):00117         DHOME
-FADB 39               (../6809PC/drivers):00118                 RTS
+FAC7                  (../6809PC/drivers):00117         DHOME
+FAC7 39               (../6809PC/drivers):00118                 RTS
                       (../6809PC/drivers):00119         
                       (../6809PC/drivers):00120         
                       (../6809PC/drivers):00121         ;*
                       (../6809PC/drivers):00122         ;* READ A SECTOR, FROM DISK ('U' POINTS TO DCB) TO MEMORY(X)
                       (../6809PC/drivers):00123         ;*
-FADC                  (../6809PC/drivers):00124         DRDSEC
-FADC BDFB7C           (../6809PC/drivers):00125                 JSR     DECODEDRIVE
-FADF 84F0             (../6809PC/drivers):00126                 ANDA    #$F0
-FAE1 8110             (../6809PC/drivers):00127                 CMPA    #$10                              ; FLOPPY?
-FAE3 260D             (../6809PC/drivers):00128                 BNE     >                                 ;
-FAE5 C613             (../6809PC/drivers):00129                 LDB     #19                               ;Floppy_READ_SECTOR
-FAE7 BDFBA3           (../6809PC/drivers):00130                 JSR     MD_PAGERA
-FAEA 8D30             (../6809PC/drivers):00131                 BSR     CPYHOSTBUF
-FAEC B60103           (../6809PC/drivers):00132                 LDA     DISKERROR                         ; GET ERROR CONDITION
-FAEF 8100             (../6809PC/drivers):00133                 CMPA    #$00
-FAF1 39               (../6809PC/drivers):00134                 RTS
+FAC8                  (../6809PC/drivers):00124         DRDSEC
+FAC8 BDFB41           (../6809PC/drivers):00125                 JSR     DECODEDRIVE
+FACB 84F0             (../6809PC/drivers):00126                 ANDA    #$F0
+FACD 8110             (../6809PC/drivers):00127                 CMPA    #$10                              ; FLOPPY?
+FACF 260D             (../6809PC/drivers):00128                 BNE     >                                 ;
+FAD1 C613             (../6809PC/drivers):00129                 LDB     #19                               ;Floppy_READ_SECTOR
+FAD3 BDFB68           (../6809PC/drivers):00130                 JSR     MD_PAGERA
+FAD6 8D18             (../6809PC/drivers):00131                 BSR     CPYHOSTBUF
+FAD8 B60103           (../6809PC/drivers):00132                 LDA     DISKERROR                         ; GET ERROR CONDITION
+FADB 8100             (../6809PC/drivers):00133                 CMPA    #$00
+FADD 39               (../6809PC/drivers):00134                 RTS
                       (../6809PC/drivers):00135         !
-FAF2 8120             (../6809PC/drivers):00136                 CMPA    #$20                              ; IDE?
-FAF4 260D             (../6809PC/drivers):00137                 BNE     >                                 ;
-FAF6 C616             (../6809PC/drivers):00138                 LDB     #22                               ;IDE_READ_SECTOR
-FAF8 BDFBA3           (../6809PC/drivers):00139                 JSR     MD_PAGERA
-FAFB 8D1F             (../6809PC/drivers):00140                 BSR     CPYHOSTBUF
-FAFD B60103           (../6809PC/drivers):00141                 LDA     DISKERROR                         ; GET ERROR CONDITION
-FB00 8100             (../6809PC/drivers):00142                 CMPA    #$00
-FB02 39               (../6809PC/drivers):00143                 RTS
+FADE 8120             (../6809PC/drivers):00136                 CMPA    #$20                              ; IDE?
+FAE0 260D             (../6809PC/drivers):00137                 BNE     >                                 ;
+FAE2 C616             (../6809PC/drivers):00138                 LDB     #22                               ;IDE_READ_SECTOR
+FAE4 BDFB68           (../6809PC/drivers):00139                 JSR     MD_PAGERA
+FAE7 8D07             (../6809PC/drivers):00140                 BSR     CPYHOSTBUF
+FAE9 B60103           (../6809PC/drivers):00141                 LDA     DISKERROR                         ; GET ERROR CONDITION
+FAEC 8100             (../6809PC/drivers):00142                 CMPA    #$00
+FAEE 39               (../6809PC/drivers):00143                 RTS
                       (../6809PC/drivers):00144         !
-FB03 8130             (../6809PC/drivers):00145                 CMPA    #$30                              ; SD?
-FB05 2614             (../6809PC/drivers):00146                 BNE     >                                 ;
-FB07 3410             (../6809PC/drivers):00147                 PSHS    X
-FB09 8E0200           (../6809PC/drivers):00148                 LDX     #HSTBUF
-FB0C C619             (../6809PC/drivers):00149                 LDB     #25                               ;FPSD_READ_SECTOR
-FB0E BDFBA3           (../6809PC/drivers):00150                 JSR     MD_PAGERA
-FB11 3510             (../6809PC/drivers):00151                 PULS    X
-FB13 8D07             (../6809PC/drivers):00152                 BSR     CPYHOSTBUF
-FB15 B60103           (../6809PC/drivers):00153                 LDA     DISKERROR                         ; GET ERROR CONDITION
-FB18 8100             (../6809PC/drivers):00154                 CMPA    #$00
-FB1A 39               (../6809PC/drivers):00155                 RTS
-                      (../6809PC/drivers):00156         !
-FB1B 39               (../6809PC/drivers):00157                 RTS
-FB1C                  (../6809PC/drivers):00158         CPYHOSTBUF:
-FB1C 3420             (../6809PC/drivers):00159                 PSHS    Y
-FB1E 108E0000         (../6809PC/drivers):00160                 LDY     #$0000
-                      (../6809PC/drivers):00161         !
-FB22 A6A90200         (../6809PC/drivers):00162                 LDA     HSTBUF,Y
-FB26 A780             (../6809PC/drivers):00163                 STA     ,X+
-FB28 3121             (../6809PC/drivers):00164                 INY
-                      (../6809PC/drivers):00165         
-FB2A 108C0200         (../6809PC/drivers):00166                 CMPY    #$0200
-FB2E 26F2             (../6809PC/drivers):00167                 BNE     <
-FB30 3520             (../6809PC/drivers):00168                 PULS    Y
-FB32 39               (../6809PC/drivers):00169                 RTS
-                      (../6809PC/drivers):00170         ;*
-                      (../6809PC/drivers):00171         ;* WRITE A SECTOR TO DISK ('U' POINTS TO DCB) FROM MEMORY(X)
-                      (../6809PC/drivers):00172         ;*
-                      (../6809PC/drivers):00173         
-FB33                  (../6809PC/drivers):00174         DWRSEC
-                      (../6809PC/drivers):00175         ; START BY POPULATING THE HOST BUFFER
-FB33 3420             (../6809PC/drivers):00176                 PSHS    Y
-FB35 108E0000         (../6809PC/drivers):00177                 LDY     #$0000
-                      (../6809PC/drivers):00178         !
-FB39 A680             (../6809PC/drivers):00179                 LDA     ,X+
-FB3B A7A90200         (../6809PC/drivers):00180                 STA     HSTBUF,Y
-FB3F 3121             (../6809PC/drivers):00181                 INY
-FB41 108C0200         (../6809PC/drivers):00182                 CMPY    #$0200
-FB45 26F2             (../6809PC/drivers):00183                 BNE     <
-FB47 3520             (../6809PC/drivers):00184                 PULS    Y
-                      (../6809PC/drivers):00185         ; NOW DO SOME DRIVE MAGIC
-FB49 BDFB7C           (../6809PC/drivers):00186                 JSR     DECODEDRIVE
-FB4C 84F0             (../6809PC/drivers):00187                 ANDA    #$F0
-FB4E 8110             (../6809PC/drivers):00188                 CMPA    #$10                              ; FLOPPY?
-FB50 260B             (../6809PC/drivers):00189                 BNE     >                                 ;
-FB52 C614             (../6809PC/drivers):00190                 LDB     #20                               ;floppy_WRITE_SECTOR
-FB54 BDFBA3           (../6809PC/drivers):00191                 JSR     MD_PAGERA
-FB57 B60103           (../6809PC/drivers):00192                 LDA     DISKERROR                         ; GET ERROR CONDITION
-FB5A 8100             (../6809PC/drivers):00193                 CMPA    #$00
-FB5C 39               (../6809PC/drivers):00194                 RTS
-                      (../6809PC/drivers):00195         !
-FB5D 8120             (../6809PC/drivers):00196                 CMPA    #$20                              ; IDE?
-FB5F 260B             (../6809PC/drivers):00197                 BNE     >                                 ;
-FB61 C617             (../6809PC/drivers):00198                 LDB     #23                               ;IDE_WRITE_SECTOR
-FB63 BDFBA3           (../6809PC/drivers):00199                 JSR     MD_PAGERA
-FB66 B60103           (../6809PC/drivers):00200                 LDA     DISKERROR                         ; GET ERROR CONDITION
-FB69 8100             (../6809PC/drivers):00201                 CMPA    #$00
-FB6B 39               (../6809PC/drivers):00202                 RTS
-                      (../6809PC/drivers):00203         !
-FB6C 8130             (../6809PC/drivers):00204                 CMPA    #$30                              ; SD?
-FB6E 260B             (../6809PC/drivers):00205                 BNE     >                                 ;
-FB70 C61A             (../6809PC/drivers):00206                 LDB     #26                               ;FPSD_WRITE_SECTOR
-FB72 BDFBA3           (../6809PC/drivers):00207                 JSR     MD_PAGERA
-FB75 B60103           (../6809PC/drivers):00208                 LDA     DISKERROR                         ; GET ERROR CONDITION
-FB78 8100             (../6809PC/drivers):00209                 CMPA    #$00
-FB7A 39               (../6809PC/drivers):00210                 RTS
-                      (../6809PC/drivers):00211         !
-FB7B 39               (../6809PC/drivers):00212                 RTS
-                      (../6809PC/drivers):00213         
-FB7C                  (../6809PC/drivers):00214         DECODEDRIVE:
-FB7C 3420             (../6809PC/drivers):00215                 PSHS    y
-FB7E A645             (../6809PC/drivers):00216                 LDA     HEAD,U
-FB80 B70108           (../6809PC/drivers):00217                 STA     CURRENTHEAD
-FB83 A644             (../6809PC/drivers):00218                 LDA     CYL,U
-FB85 B70106           (../6809PC/drivers):00219                 STA     CURRENTCYL
-FB88 A646             (../6809PC/drivers):00220                 LDA     SEC,U
-FB8A B70107           (../6809PC/drivers):00221                 STA     CURRENTSEC
-FB8D 4F               (../6809PC/drivers):00222                 CLRA
-FB8E E6C4             (../6809PC/drivers):00223                 LDB     DRIVE,U                           ; GET DRIVE
-FB90 58               (../6809PC/drivers):00224                 ASLB                                      ; a=a*2
-FB91 1F02             (../6809PC/drivers):00225                 TFR     D,Y
-FB93 A6A904B7         (../6809PC/drivers):00226                 LDA     DRIVEMAP,Y
-FB97 E6A904B8         (../6809PC/drivers):00227                 LDB     DRIVEMAP+1,Y
-FB9B B70104           (../6809PC/drivers):00228                 STA     CURRENTDEVICE
-FB9E F70105           (../6809PC/drivers):00229                 STB     CURRENTSLICE
-FBA1 35A0             (../6809PC/drivers):00230                 PULS    y,pc
-                      (../6809PC/drivers):00231         
-                      (../6809PC/drivers):00232                 INCLUDE ../6809PC/cubix_pager.asm
+FAEF 39               (../6809PC/drivers):00145                 RTS
+FAF0                  (../6809PC/drivers):00146         CPYHOSTBUF:
+FAF0 3420             (../6809PC/drivers):00147                 PSHS    Y
+FAF2 108E0000         (../6809PC/drivers):00148                 LDY     #$0000
+                      (../6809PC/drivers):00149         !
+FAF6 A6A90200         (../6809PC/drivers):00150                 LDA     HSTBUF,Y
+FAFA A780             (../6809PC/drivers):00151                 STA     ,X+
+FAFC 3121             (../6809PC/drivers):00152                 INY
+                      (../6809PC/drivers):00153         
+FAFE 108C0200         (../6809PC/drivers):00154                 CMPY    #$0200
+FB02 26F2             (../6809PC/drivers):00155                 BNE     <
+FB04 3520             (../6809PC/drivers):00156                 PULS    Y
+FB06 39               (../6809PC/drivers):00157                 RTS
+                      (../6809PC/drivers):00158         ;*
+                      (../6809PC/drivers):00159         ;* WRITE A SECTOR TO DISK ('U' POINTS TO DCB) FROM MEMORY(X)
+                      (../6809PC/drivers):00160         ;*
+                      (../6809PC/drivers):00161         
+FB07                  (../6809PC/drivers):00162         DWRSEC
+                      (../6809PC/drivers):00163         ; START BY POPULATING THE HOST BUFFER
+FB07 3420             (../6809PC/drivers):00164                 PSHS    Y
+FB09 108E0000         (../6809PC/drivers):00165                 LDY     #$0000
+                      (../6809PC/drivers):00166         !
+FB0D A680             (../6809PC/drivers):00167                 LDA     ,X+
+FB0F A7A90200         (../6809PC/drivers):00168                 STA     HSTBUF,Y
+FB13 3121             (../6809PC/drivers):00169                 INY
+FB15 108C0200         (../6809PC/drivers):00170                 CMPY    #$0200
+FB19 26F2             (../6809PC/drivers):00171                 BNE     <
+FB1B 3520             (../6809PC/drivers):00172                 PULS    Y
+                      (../6809PC/drivers):00173         ; NOW DO SOME DRIVE MAGIC
+FB1D BDFB41           (../6809PC/drivers):00174                 JSR     DECODEDRIVE
+FB20 84F0             (../6809PC/drivers):00175                 ANDA    #$F0
+FB22 8110             (../6809PC/drivers):00176                 CMPA    #$10                              ; FLOPPY?
+FB24 260B             (../6809PC/drivers):00177                 BNE     >                                 ;
+FB26 C614             (../6809PC/drivers):00178                 LDB     #20                               ;floppy_WRITE_SECTOR
+FB28 BDFB68           (../6809PC/drivers):00179                 JSR     MD_PAGERA
+FB2B B60103           (../6809PC/drivers):00180                 LDA     DISKERROR                         ; GET ERROR CONDITION
+FB2E 8100             (../6809PC/drivers):00181                 CMPA    #$00
+FB30 39               (../6809PC/drivers):00182                 RTS
+                      (../6809PC/drivers):00183         !
+FB31 8120             (../6809PC/drivers):00184                 CMPA    #$20                              ; IDE?
+FB33 260B             (../6809PC/drivers):00185                 BNE     >                                 ;
+FB35 C617             (../6809PC/drivers):00186                 LDB     #23                               ;IDE_WRITE_SECTOR
+FB37 BDFB68           (../6809PC/drivers):00187                 JSR     MD_PAGERA
+FB3A B60103           (../6809PC/drivers):00188                 LDA     DISKERROR                         ; GET ERROR CONDITION
+FB3D 8100             (../6809PC/drivers):00189                 CMPA    #$00
+FB3F 39               (../6809PC/drivers):00190                 RTS
+                      (../6809PC/drivers):00191         !
+FB40 39               (../6809PC/drivers):00192                 RTS
+                      (../6809PC/drivers):00193         
+FB41                  (../6809PC/drivers):00194         DECODEDRIVE:
+FB41 3420             (../6809PC/drivers):00195                 PSHS    y
+FB43 A645             (../6809PC/drivers):00196                 LDA     HEAD,U
+FB45 B70108           (../6809PC/drivers):00197                 STA     CURRENTHEAD
+FB48 A644             (../6809PC/drivers):00198                 LDA     CYL,U
+FB4A B70106           (../6809PC/drivers):00199                 STA     CURRENTCYL
+FB4D A646             (../6809PC/drivers):00200                 LDA     SEC,U
+FB4F B70107           (../6809PC/drivers):00201                 STA     CURRENTSEC
+FB52 4F               (../6809PC/drivers):00202                 CLRA
+FB53 E6C4             (../6809PC/drivers):00203                 LDB     DRIVE,U                           ; GET DRIVE
+FB55 58               (../6809PC/drivers):00204                 ASLB                                      ; a=a*2
+FB56 1F02             (../6809PC/drivers):00205                 TFR     D,Y
+FB58 A6A904B7         (../6809PC/drivers):00206                 LDA     DRIVEMAP,Y
+FB5C E6A904B8         (../6809PC/drivers):00207                 LDB     DRIVEMAP+1,Y
+FB60 B70104           (../6809PC/drivers):00208                 STA     CURRENTDEVICE
+FB63 F70105           (../6809PC/drivers):00209                 STB     CURRENTSLICE
+FB66 35A0             (../6809PC/drivers):00210                 PULS    y,pc
+                      (../6809PC/drivers):00211         
+                      (../6809PC/drivers):00212                 INCLUDE ../6809PC/cubix_pager.asm
                       (../6809PC/cubix_p):00001         ;__pager_________________________________________________________________________________________________________________________
                       (../6809PC/cubix_p):00002         ;
                       (../6809PC/cubix_p):00003         ;       Duodyne Memory page management code
@@ -4215,89 +4195,91 @@ FBA1 35A0             (../6809PC/drivers):00230                 PULS    y,pc
                       (../6809PC/cubix_p):00069         
                       (../6809PC/cubix_p):00070         
                       (../6809PC/cubix_p):00071         ; CODE FOR PAGER OPERATIONS
-FBA3                  (../6809PC/cubix_p):00072         MD_PAGERA:
-                      (../6809PC/cubix_p):00073         ; CODE TO CALL A "FAR FUNCTION"
-                      (../6809PC/cubix_p):00074         ; THIS CHANGES PAGES AND THEN CALLS THE DISPATCHER
-FBA3 FD0109           (../6809PC/cubix_p):00075                 STD     >PAGER_D                          ; SAVE 'D'
-FBA6 BF010B           (../6809PC/cubix_p):00076                 STX     >PAGER_X                          ; SAVE 'X'
-FBA9 10BF010D         (../6809PC/cubix_p):00077                 STY     >PAGER_Y                          ; SAVE 'Y'
-FBAD FF0111           (../6809PC/cubix_p):00078                 STU     >PAGER_U                          ; SAVE 'U'
-FBB0 10FF010F         (../6809PC/cubix_p):00079                 STS     >PAGER_S                          ; SAVE STACK
-FBB4 10CE00FF         (../6809PC/cubix_p):00080                 LDS     #PAGER_STACK                      ; SET TEMP STACK
-                      (../6809PC/cubix_p):00081         
-FBB8 8601             (../6809PC/cubix_p):00082                 LDA     #$01
-FBBA B71FE0           (../6809PC/cubix_p):00083                 STA     MMU_ACT_TASK                      ; SET ACTIVE TASK TO 01
-                      (../6809PC/cubix_p):00084         
-FBBD BDC100           (../6809PC/cubix_p):00085                 JSR     BANKED_DRIVER_DISPATCHER
-                      (../6809PC/cubix_p):00086         
-FBC0 8600             (../6809PC/cubix_p):00087                 LDA     #$00
-FBC2 B71FE0           (../6809PC/cubix_p):00088                 STA     MMU_ACT_TASK                      ; SET ACTIVE TASK TO 00
-                      (../6809PC/cubix_p):00089         
-FBC5 10FE010F         (../6809PC/cubix_p):00090                 LDS     >PAGER_S                          ; RESTORE STACK
-FBC9 BE010B           (../6809PC/cubix_p):00091                 LDX     >PAGER_X                          ; RESTORE 'X'
-FBCC 10BE010D         (../6809PC/cubix_p):00092                 LDY     >PAGER_Y                          ; RESTORE 'Y'
-FBD0 FE0111           (../6809PC/cubix_p):00093                 LDU     >PAGER_U                          ; RESTORE 'U'
-FBD3 FC0109           (../6809PC/cubix_p):00094                 LDD     >PAGER_D                          ; RESTORE 'D'
-FBD6 39               (../6809PC/cubix_p):00095                 RTS
-                      (../6809PC/cubix_p):00096         
-     00FF             (../6809PC/cubix_p):00097         PAGER_STACK = $00FF
-                      (../6809PC/drivers):00233         
-                      (../6809PC/drivers):00234                 ORG     $FF00
-                      (../6809PC/drivers):00235         ;
-                      (../6809PC/drivers):00236         ; DISK COMMAND BLOCK
-                      (../6809PC/drivers):00237         ;
-                      (../6809PC/drivers):00238         ;* IGNORE ANY UNUSED INTERRUPTS
-FF00                  (../6809PC/drivers):00239         IGNORE
-FF00 3B               (../6809PC/drivers):00240                 RTI
-                      (../6809PC/drivers):00241         ;* RESULT CODES FOR FDC OPERATIONS
-FF01                  (../6809PC/drivers):00242         RESTAB
-FF01 0300020000030401 (../6809PC/drivers):00243                 FCB     3,0,2,0,0,3,4,1
-                      (../6809PC/drivers):00244         ;*
-                      (../6809PC/drivers):00245         ;* INITIALIZATION TABLE FOR CUBIX RAM
-                      (../6809PC/drivers):00246         ;*
-     FF09             (../6809PC/drivers):00247         RITAB           EQU *
-                      (../6809PC/drivers):00248         ;* DEFAULT DRIVE CHARACTISTICS
-FF09 00FF01FF000000   (../6809PC/drivers):00249                 FCB     0,255,1,255,0,0,0                 ;ADR 0, 255 CYL, 1 HEAD, 255 SEC/TRK
-FF10 01FF01FF000000   (../6809PC/drivers):00250                 FCB     1,255,1,255,0,0,0                 ;ADR 1, 255 CYL, 1 HEAD, 255 SEC/TRK
-FF17 02FF01FF000000   (../6809PC/drivers):00251                 FCB     2,255,1,255,0,0,0                 ;ADR 2, 255 CYL, 1 HEAD, 255 SEC/TRK
-FF1E 03500209000000   (../6809PC/drivers):00252                 FCB     3,80,2,9,0,0,0                    ;ADR 3, 80 CYL, 2 HEAD, 9 SEC/TRK
-                      (../6809PC/drivers):00253         ;* CONSOLE DEVICE ASSIGNMENTS
-FF25 01               (../6809PC/drivers):00254                 FCB     1                                 ;CONSOLE INPUT DEVICE
-FF26 01               (../6809PC/drivers):00255                 FCB     1                                 ;CONSOLE OUTPUT DEVICE
-                      (../6809PC/drivers):00256         ;* SERIAL DEVICE DRIVERS
-FF27 FAD7FAC800000000 (../6809PC/drivers):00257                 FDB     RDNULL,RDSER,0,0,0,0,0,0
+FB68                  (../6809PC/cubix_p):00072         MD_PAGERA:
+                      (../6809PC/cubix_p):00073         
+                      (../6809PC/cubix_p):00074         
+                      (../6809PC/cubix_p):00075         
+                      (../6809PC/cubix_p):00076         ; CODE TO CALL A "FAR FUNCTION"
+                      (../6809PC/cubix_p):00077         ; THIS CHANGES PAGES AND THEN CALLS THE DISPATCHER
+FB68 FD0109           (../6809PC/cubix_p):00078                 STD     >PAGER_D                          ; SAVE 'D'
+FB6B BF010B           (../6809PC/cubix_p):00079                 STX     >PAGER_X                          ; SAVE 'X'
+FB6E 10BF010D         (../6809PC/cubix_p):00080                 STY     >PAGER_Y                          ; SAVE 'Y'
+FB72 FF0111           (../6809PC/cubix_p):00081                 STU     >PAGER_U                          ; SAVE 'U'
+FB75 10FF010F         (../6809PC/cubix_p):00082                 STS     >PAGER_S                          ; SAVE STACK
+                      (../6809PC/cubix_p):00083         
+FB79 10CE00FF         (../6809PC/cubix_p):00084                 LDS     #PAGER_STACK                      ; SET TEMP STACK
+                      (../6809PC/cubix_p):00085         
+FB7D 8601             (../6809PC/cubix_p):00086                 LDA     #$01
+FB7F B71FE0           (../6809PC/cubix_p):00087                 STA     MMU_ACT_TASK                      ; SET ACTIVE TASK TO 01
+                      (../6809PC/cubix_p):00088         
+FB82 BDC100           (../6809PC/cubix_p):00089                 JSR     BANKED_DRIVER_DISPATCHER
+                      (../6809PC/cubix_p):00090         
+FB85 8600             (../6809PC/cubix_p):00091                 LDA     #$00
+FB87 B71FE0           (../6809PC/cubix_p):00092                 STA     MMU_ACT_TASK                      ; SET ACTIVE TASK TO 00
+                      (../6809PC/cubix_p):00093         
+FB8A 10FE010F         (../6809PC/cubix_p):00094                 LDS     >PAGER_S                          ; RESTORE STACK
+FB8E BE010B           (../6809PC/cubix_p):00095                 LDX     >PAGER_X                          ; RESTORE 'X'
+FB91 10BE010D         (../6809PC/cubix_p):00096                 LDY     >PAGER_Y                          ; RESTORE 'Y'
+FB95 FE0111           (../6809PC/cubix_p):00097                 LDU     >PAGER_U                          ; RESTORE 'U'
+FB98 FC0109           (../6809PC/cubix_p):00098                 LDD     >PAGER_D                          ; RESTORE 'D'
+FB9B 39               (../6809PC/cubix_p):00099                 RTS
+                      (../6809PC/cubix_p):00100         
+     00FF             (../6809PC/cubix_p):00101         PAGER_STACK     = $00FF
+                      (../6809PC/drivers):00213         
+                      (../6809PC/drivers):00214                 ORG     $FF00
+                      (../6809PC/drivers):00215         ;
+                      (../6809PC/drivers):00216         ; DISK COMMAND BLOCK
+                      (../6809PC/drivers):00217         ;
+                      (../6809PC/drivers):00218         ;* IGNORE ANY UNUSED INTERRUPTS
+FF00                  (../6809PC/drivers):00219         IGNORE
+FF00 3B               (../6809PC/drivers):00220                 RTI
+                      (../6809PC/drivers):00221         ;* RESULT CODES FOR FDC OPERATIONS
+FF01                  (../6809PC/drivers):00222         RESTAB
+FF01 0300020000030401 (../6809PC/drivers):00223                 FCB     3,0,2,0,0,3,4,1
+                      (../6809PC/drivers):00224         ;*
+                      (../6809PC/drivers):00225         ;* INITIALIZATION TABLE FOR CUBIX RAM
+                      (../6809PC/drivers):00226         ;*
+     FF09             (../6809PC/drivers):00227         RITAB           EQU *
+                      (../6809PC/drivers):00228         ;* DEFAULT DRIVE CHARACTISTICS
+FF09 00FF01FF000000   (../6809PC/drivers):00229                 FCB     0,255,1,255,0,0,0                 ;ADR 0, 255 CYL, 1 HEAD, 255 SEC/TRK
+FF10 01FF01FF000000   (../6809PC/drivers):00230                 FCB     1,255,1,255,0,0,0                 ;ADR 1, 255 CYL, 1 HEAD, 255 SEC/TRK
+FF17 02FF01FF000000   (../6809PC/drivers):00231                 FCB     2,255,1,255,0,0,0                 ;ADR 2, 255 CYL, 1 HEAD, 255 SEC/TRK
+FF1E 03FF01FF000000   (../6809PC/drivers):00232                 FCB     3,255,1,255,0,0,0                 ;ADR 3, 80 CYL, 2 HEAD, 9 SEC/TRK
+                      (../6809PC/drivers):00233         ;* CONSOLE DEVICE ASSIGNMENTS
+FF25 01               (../6809PC/drivers):00234                 FCB     1                                 ;CONSOLE INPUT DEVICE
+FF26 01               (../6809PC/drivers):00235                 FCB     1                                 ;CONSOLE OUTPUT DEVICE
+                      (../6809PC/drivers):00236         ;* SERIAL DEVICE DRIVERS
+FF27 FAC3FAB400000000 (../6809PC/drivers):00237                 FDB     RDNULL,RDSER,0,0,0,0,0,0
      0000000000000000
-FF37 FAD9FAC300000000 (../6809PC/drivers):00258                 FDB     WRNULL,WRSER,0,0,0,0,0,0
+FF37 FAC5FAAF00000000 (../6809PC/drivers):00238                 FDB     WRNULL,WRSER,0,0,0,0,0,0
      0000000000000000
-                      (../6809PC/drivers):00259         ;* DISK DEVICE DRIVERS
-FF47 FADBFADCFB33FADA (../6809PC/drivers):00260                 FDB     DHOME,DRDSEC,DWRSEC,DFORMAT
-                      (../6809PC/drivers):00261         ;* 6809 HARDWARE VECTORS
-FF4F E00B             (../6809PC/drivers):00262                 FDB     SSR                               ;SWI VECTOR (USED FOR SSRS)
-FF51 FF00             (../6809PC/drivers):00263                 FDB     IGNORE                            ;SWI2 VECTOR
-FF53 FF00             (../6809PC/drivers):00264                 FDB     IGNORE                            ;SWI3 VECTOR
-FF55 FF00             (../6809PC/drivers):00265                 FDB     IGNORE                            ;IRQ  VECTOR
-FF57 FF00             (../6809PC/drivers):00266                 FDB     IGNORE                            ;FIRQ VECTOR
-FF59 FF00             (../6809PC/drivers):00267                 FDB     IGNORE                            ;NMI VECTOR
-                      (../6809PC/drivers):00268         ;* MISC FLAGS & VARIABLES
-FF5B FF               (../6809PC/drivers):00269                 FCB     $FF                               ;ERROR MESSAGES ENABLED
-FF5C 00               (../6809PC/drivers):00270                 FCB     0                                 ;TRACE DISABLED
-FF5D 00               (../6809PC/drivers):00271                 FCB     0                                 ;DEBUG DISABLED
-FF5E 00               (../6809PC/drivers):00272                 FCB     0                                 ;DEFAULT DRIVE (A)
-FF5F 4D41494E         (../6809PC/drivers):00273                 FCC     'MAIN'                            ;DEFAULT DIRECTORY
-FF63 00000000         (../6809PC/drivers):00274                 FCB     0,0,0,0                           ;(FILLER)
-FF67 00               (../6809PC/drivers):00275                 FCB     0                                 ;SYSTEM DRIVE (A)
-FF68 53595354454D     (../6809PC/drivers):00276                 FCC     'SYSTEM'                          ;SYSTEM DIRECTORY
-FF6E 0000             (../6809PC/drivers):00277                 FCB     0,0                               ;(FILLER)
-                      (../6809PC/drivers):00278         ; DRIVE MAPPING TABLE
-FF70 2100             (../6809PC/drivers):00279                 FCB     $21,$00                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
-FF72 2101             (../6809PC/drivers):00280                 FCB     $21,$01                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=PPIDE, $3x=FPSD
-                      (../6809PC/drivers):00281         ;        FCB     $37,$00                           ; LOW NIBBLE IS DEVICE ADDRESS (Device address+$20 for FPSD)
-                      (../6809PC/drivers):00282         ;        FCB     $11,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
-FF74 2102             (../6809PC/drivers):00283                 FCB     $21,$02
-FF76 2103             (../6809PC/drivers):00284                 FCB     $21,$03
-                      (../6809PC/drivers):00285         ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
-     006F             (../6809PC/drivers):00286         RISIZ           EQU *-RITAB                       ;SIZE OF INITILAIZED RAM
-                      (../6809PC/drivers):00287         ;
+                      (../6809PC/drivers):00239         ;* DISK DEVICE DRIVERS
+FF47 FAC7FAC8FB07FAC6 (../6809PC/drivers):00240                 FDB     DHOME,DRDSEC,DWRSEC,DFORMAT
+                      (../6809PC/drivers):00241         ;* 6809 HARDWARE VECTORS
+FF4F E00B             (../6809PC/drivers):00242                 FDB     SSR                               ;SWI VECTOR (USED FOR SSRS)
+FF51 FF00             (../6809PC/drivers):00243                 FDB     IGNORE                            ;SWI2 VECTOR
+FF53 FF00             (../6809PC/drivers):00244                 FDB     IGNORE                            ;SWI3 VECTOR
+FF55 FF00             (../6809PC/drivers):00245                 FDB     IGNORE                            ;IRQ  VECTOR
+FF57 FF00             (../6809PC/drivers):00246                 FDB     IGNORE                            ;FIRQ VECTOR
+FF59 FF00             (../6809PC/drivers):00247                 FDB     IGNORE                            ;NMI VECTOR
+                      (../6809PC/drivers):00248         ;* MISC FLAGS & VARIABLES
+FF5B FF               (../6809PC/drivers):00249                 FCB     $FF                               ;ERROR MESSAGES ENABLED
+FF5C 00               (../6809PC/drivers):00250                 FCB     0                                 ;TRACE DISABLED
+FF5D 00               (../6809PC/drivers):00251                 FCB     0                                 ;DEBUG DISABLED
+FF5E 00               (../6809PC/drivers):00252                 FCB     0                                 ;DEFAULT DRIVE (A)
+FF5F 4D41494E         (../6809PC/drivers):00253                 FCC     'MAIN'                            ;DEFAULT DIRECTORY
+FF63 00000000         (../6809PC/drivers):00254                 FCB     0,0,0,0                           ;(FILLER)
+FF67 00               (../6809PC/drivers):00255                 FCB     0                                 ;SYSTEM DRIVE (A)
+FF68 53595354454D     (../6809PC/drivers):00256                 FCC     'SYSTEM'                          ;SYSTEM DIRECTORY
+FF6E 0000             (../6809PC/drivers):00257                 FCB     0,0                               ;(FILLER)
+                      (../6809PC/drivers):00258         ; DRIVE MAPPING TABLE
+FF70 2000             (../6809PC/drivers):00259                 FCB     $20,$00                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
+FF72 2001             (../6809PC/drivers):00260                 FCB     $20,$01                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=xt-CF-IDE
+FF74 2002             (../6809PC/drivers):00261                 FCB     $20,$02                           ; LOW NIBBLE IS DEVICE ADDRESS (Device address+$20 for FPSD)
+FF76 2003             (../6809PC/drivers):00262                 FCB     $20,$03                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
+                      (../6809PC/drivers):00263         ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
+     006F             (../6809PC/drivers):00264         RISIZ           EQU *-RITAB                       ;SIZE OF INITILAIZED RAM
+                      (../6809PC/drivers):00265         ;
                       (        cubix.asm):01545                 ENDIF
                       (        cubix.asm):01546         
                       (        cubix.asm):01547         ;*
@@ -4384,7 +4366,7 @@ Symbol Table:
 [ G] CONIN                            046C
 [ G] CONOUT                           046D
 [ G] CONSOLEDEVICE                    0100
-[ G] CPYHOSTBUF                       FB1C
+[ G] CPYHOSTBUF                       FAF0
 [ G] CRD1                             ED74
 [ G] CRD2                             ED7A
 [ G] CRE1                             E73E
@@ -4416,7 +4398,7 @@ Symbol Table:
 [ G] DCTRL                            0450
 [ G] DDADR                            0013
 [ G] DECDIG                           E460
-[ G] DECODEDRIVE                      FB7C
+[ G] DECODEDRIVE                      FB41
 [ G] DEFATR                           00F0
 [ G] DEFDIR                           04A6
 [ G] DEFDRV                           04A5
@@ -4424,8 +4406,8 @@ Symbol Table:
 [ G] DELFIL                           EDF4
 [ G] DETAB                            EBAD
 [ G] DEVMSG                           F81E
-[ G] DFORMAT                          FADA
-[ G] DHOME                            FADB
+[ G] DFORMAT                          FAC6
+[ G] DHOME                            FAC7
 [ G] DIGOK                            E439
 [ G] DIRSEC                           0000
 [ G] DISDIR                           E6B6
@@ -4461,13 +4443,13 @@ Symbol Table:
 [ G] DPERM                            0010
 [ G] DPREFIX                          0000
 [ G] DRADR                            0015
-[ G] DRDSEC                           FADC
+[ G] DRDSEC                           FAC8
 [ G] DRIVE                            0000
 [ G] DRIVEMAP                         04B7
 [ G] DRVSIZ                           E715
 [ G] DSHFT                            E441
 [ G] DTYPE                            0010
-[ G] DWRSEC                           FB33
+[ G] DWRSEC                           FB07
 [ G] EOF                              E8C3
 [ G] EPERM                            0020
 [ G] ERRCNT                           04F4
@@ -4624,7 +4606,7 @@ Symbol Table:
 [ G] LODF1                            EEBD
 [ G] LODFIL                           EEA7
 [ G] MBASE                            E002
-[ G] MD_PAGERA                        FBA3
+[ G] MD_PAGERA                        FB68
 [ G] MMU_ACT_TASK                     1FE0
 [ G] MMU_ENABLE                       1FE2
 [ G] MMU_MAP_SETUP                    1FE1
@@ -4718,10 +4700,10 @@ Symbol Table:
 [ G] RDDEV                            E5BC
 [ G] RDDLC                            F008
 [ G] RDISK                            EAE4
-[ G] RDNULL                           FAD7
+[ G] RDNULL                           FAC3
 [ G] RDONE                            EB09
 [ G] RDSEC                            F741
-[ G] RDSER                            FAC8
+[ G] RDSER                            FAB4
 [ G] RDW1                             E611
 [ G] RDWRK                            E5FC
 [ G] READB                            E87E
@@ -4905,9 +4887,9 @@ Symbol Table:
 [ G] WRKSPC                           0600
 [ G] WRLIN                            E54E
 [ G] WRMSG                            E57E
-[ G] WRNULL                           FAD9
+[ G] WRNULL                           FAC5
 [ G] WRSEC                            F745
-[ G] WRSER                            FAC3
+[ G] WRSER                            FAAF
 [ G] WRST1                            E576
 [ G] WRST2                            E598
 [ G] WRSTR                            E574

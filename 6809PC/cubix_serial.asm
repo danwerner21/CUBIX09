@@ -57,6 +57,7 @@ RDSER1
         ANDA    #%00001000                        ; IS RX READY
         BEQ     >                                 ; No DATA IS READY
         LDA     UART1DATA                         ; GET DATA CHAR
+        STA     >PAGER_D                          ; SAVE 'D'
         RTS
 
         RTS

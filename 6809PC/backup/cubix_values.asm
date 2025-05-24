@@ -4,7 +4,7 @@
 ;
 ;  DWERNER 5/17/2025 	Initial
 ;________________________________________________________________________________________________________________________________
-; $0000-$00FF OPEN
+; $0000-$00FF DRIVER/PAGER STACK
 ; $0100-$01FF OS Driver Storage
 CONSOLEDEVICE   = $0100                           ; (BYTE)
 farpointer      = $0101
@@ -19,7 +19,7 @@ PAGER_X         = $010B
 PAGER_Y         = $010D
 PAGER_S         = $010F
 PAGER_U         = $0111
-PAGER_STACK     = $0113
+
 
 ; $200-$3FF Host Buffer Driver Storage
 HSTBUF          = $0200

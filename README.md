@@ -174,7 +174,7 @@ Cubix can be started from CP/M by launching the cubix.com file located in the bi
 
 Cubix can also be started by uploading the cubix.s19 file located in the bin folder for each respective system. Then transferring control to $1000.
 
-## Using the Front Panel SD interface
+## Using the DUODYNE Front Panel SD interface
 
 In order for the front panel SD interface to be used, the front panel ATTINY chip needs to be flashed with the "Duodyne SD card I2C to SD" firmware with the I2C address set to 0x25.  Note that if there is more than one Front Panel in the system (attached to different processor cards), each I2C address must be unique.   Cubix can be configured to use any front panel in the 0x25-0x27 range.
 See the instructions with the firmware for more information on how to configure the firmware and setup image files for use on the SD card.
