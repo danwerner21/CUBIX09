@@ -143,6 +143,33 @@ Duodyne Map:
             $FF00-$FFF1 - OS VECTORS AND CONFIG TABLES
             $FFF2-$FFFF - HARDWARE VECTORS
 
+6809PC Map:
+            $0000-$00FF - FREE WORKING RAM/Driver Stack
+            $0100       - CONSOLE DEVICE
+            $0101       - farpointer (word)     
+            $0103       - DISKERROR
+            $0104       - CURRENTDEVICE
+            $0105       - CURRENTSLICE 
+            $0106       - CURRENTCYL
+            $0107       - CURRENTSEC
+            $0108       - CURRENTHEAD 
+            $0109       - PAGER_D
+            $010B       - PAGER_X
+            $010D       - PAGER_Y 
+            $010F       - PAGER_S
+            $0111       - PAGER_U
+            $0111-$01FF - FREE WORKING RAM
+            $0200-$03FF - DISK BUFFER
+            $0400-$0FFF - OS LOCAL STORAGE 
+            $1000-$1FFF - Memory Mapped IO
+            $2000-$DFFF - Application Random Access Memory.     
+            $E000-$F944 - CUBIX Operating System 
+            $F945-$FEFF - CUBIX Low Memory Device Drivers
+            $FF00-$FFF1 - OS VECTORS AND CONFIG TABLES
+            $FFF2-$FFFF - HARDWARE VECTORS
+            
+            $C000-DFFF  - (BANKED) CUBIX DEVICE DRIVERS
+
 ```
 
 ---
@@ -168,7 +195,7 @@ A disk image (CUBIX_DISK.IMG) is provided in this repo that can be unzipped and 
 
 more information on Cubix drives and directories can be found in the Cubix user documentation in this repo.
 
-## Starting Cubix from CP/M
+## Starting Cubix from CP/M on the Nhyodyne or Duodyne
 
 Cubix can be started from CP/M by launching the cubix.com file located in the bin folder for each respective system.  
 

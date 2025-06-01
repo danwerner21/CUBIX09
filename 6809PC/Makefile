@@ -1,6 +1,6 @@
 all:  	scream.hex monitor.hex mon09.hex cubixdrv.s19 cubix.s19
 
-cubixdrv.s19: cubixdrv.asm cubix_serial.asm cubix_ide.asm cubix_values.asm
+cubixdrv.s19: cubixdrv.asm cubix_serial.asm cubix_ide.asm cubix_values.asm cubix_multio.asm
 	lwasm --6809   --6800compat cubixdrv.asm -s --list=cubixdrv.lst --map=cubixdrv.map --output=cubixdrv.s --format=srec
 	srec_cat  cubixdrv.s -exclude 0x0000 0xc100 -o cubixdrv.s19
 	@rm cubixdrv.s
@@ -42,6 +42,7 @@ pretty:
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/cubix_pager.asm cubix_pager.asm
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/cubix_serial.asm cubix_serial.asm
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/cubix_ide.asm cubix_ide.asm
+	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/cubix_multio.asm cubix_multio.asm
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/cubixdrv.asm cubixdrv.asm
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/drivers.asm drivers.asm
 	pretty6502 -p1 -a0 -du -mu -c50 -l ./backup/cubix_boot.asm cubix_boot.asm

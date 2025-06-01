@@ -1,0 +1,257 @@
+                      (     cubixzip.asm):00001         ;TITLE   "ZIP/6809-C INFOCOM, INC. --- INITIALIZATION"
+                      (     cubixzip.asm):00002         
+                      (     cubixzip.asm):00003         ; -------------------------------
+                      (     cubixzip.asm):00004         ; ZIP/6809 VERSION C
+                      (     cubixzip.asm):00005         ; Z-CODE INTERPRETER PROGRAM
+                      (     cubixzip.asm):00006         ; FOR CUBIX
+                      (     cubixzip.asm):00007         ; -------------------------------
+                      (     cubixzip.asm):00008         
+                      (     cubixzip.asm):00009         ; COMPANY PRIVATE -- NOT FOR DISTRIBUTION
+                      (     cubixzip.asm):00010         
+     0A00             (     cubixzip.asm):00011         MSTART          = $0A00                           ; START OF FREE PROGRAM RAM
+                      (     cubixzip.asm):00012         
+     0000             (     cubixzip.asm):00013         DEBUG           = 0                               ; ASSEMBLY FLAG
+                      (     cubixzip.asm):00014         
+                      (     cubixzip.asm):00015         ; -----------
+                      (     cubixzip.asm):00016         ; ERROR CODES
+                      (     cubixzip.asm):00017         ; -----------
+                      (     cubixzip.asm):00018         
+                      (     cubixzip.asm):00019         ; 00 -- INSUFFICIENT RAM
+                      (     cubixzip.asm):00020         ; 01 -- ILLEGAL X-OP
+                      (     cubixzip.asm):00021         ; 02 -- ILLEGAL 0-OP
+                      (     cubixzip.asm):00022         ; 03 -- ILLEGAL 1-OP
+                      (     cubixzip.asm):00023         ; 04 -- ILLEGAL 2-OP
+                      (     cubixzip.asm):00024         ; 05 -- Z-STACK UNDERFLOW
+                      (     cubixzip.asm):00025         ; 06 -- Z-STACK OVERFLOW
+                      (     cubixzip.asm):00026         ; 07 -- ILLEGAL PROPERTY LENGTH (GETP)
+                      (     cubixzip.asm):00027         ; 08 -- DIVISION BY ZERO
+                      (     cubixzip.asm):00028         ; 09 -- ILLEGAL ARGUMENT COUNT (EQUAL?)
+                      (     cubixzip.asm):00029         ; 10 -- ILLEGAL PROPERTY ID (PUTP)
+                      (     cubixzip.asm):00030         ; 11 -- ILLEGAL PROPERTY LENGTH (PUTP)
+                      (     cubixzip.asm):00031         ; 12 -- DISK ADDRESS OUT OF RANGE
+                      (     cubixzip.asm):00032         ; 13 -- PARSER OVERFLOW
+                      (     cubixzip.asm):00033         ; 14 -- DRIVE ACCESS
+                      (     cubixzip.asm):00034         ; 15 -- Z-STACK DESTROYED
+                      (     cubixzip.asm):00035         ; 16 -- ZIP NOT FULLY LOADED
+                      (     cubixzip.asm):00036         
+                      (     cubixzip.asm):00037         
+                      (     cubixzip.asm):00038                 INCLUDE eq.asm
+                      (           eq.asm):00001         ;PAGE
+                      (           eq.asm):00002         ;SBTTL "--- MEMORY ORGANIZATION ---"
+                      (           eq.asm):00003         
+     00FF             (           eq.asm):00004         TRUE            = $FF
+     0000             (           eq.asm):00005         FALSE           = 0
+                      (           eq.asm):00006         
+     0000             (           eq.asm):00007         DSTART          = 0                               ; START OF DIRECT-PAGE RAM
+                      (           eq.asm):00008         
+     0AFE             (           eq.asm):00009         MSTACK          = MSTART+$FE                      ; TOP OF MACHINE STACK (254 BYTES)
+     0B00             (           eq.asm):00010         IOBUFF          = MSTART+$100                     ; 256-BYTE DISK I/O BUFFER
+     0C00             (           eq.asm):00011         ZSTACK          = MSTART+$200                     ; Z-STACK (255 WORDS)
+     00FF             (           eq.asm):00012         ZSTAKL          = 255                             ; LENGTH OF Z-STACK IN WORDS
+     0DFE             (           eq.asm):00013         TOPSTA          = (2*ZSTAKL)+ZSTACK               ; TOP OF Z-STACK
+     0E00             (           eq.asm):00014         PTABLE          = MSTART+$400                     ; PAGING TABLE ($140 BYTES/$A0 WORDS)
+     0F50             (           eq.asm):00015         LRUMAP          = MSTART+$550                     ; TIMESTAMP MAP ($A0 BYTES)
+     1000             (           eq.asm):00016         LOCALS          = MSTART+$600                     ; LOCAL VARIABLE STORAGE (32 BYTES)
+     1020             (           eq.asm):00017         BUFFER          = MSTART+$620                     ; I/O LINE BUFFER (32 BYTES)
+     1040             (           eq.asm):00018         BUFSAV          = MSTART+$640                     ; I/O AUX BUFFER (32 BYTES)
+     1100             (           eq.asm):00019         ZIP             = MSTART+$700                     ; START OF EXECUTABLE CODE
+     2800             (           eq.asm):00020         ZCODE           = ZIP+$1700                       ; START OF Z-CODE (ASSUME 5.75K ZIP)
+                      (           eq.asm):00021         
+                      (           eq.asm):00022         ; Z-CODE HEADER OFFSETS
+                      (           eq.asm):00023         
+     0000             (           eq.asm):00024         ZVERS           = 0                               ; VERSION BYTE
+     0001             (           eq.asm):00025         ZMODE           = 1                               ; MODE SELECT BYTE
+     0002             (           eq.asm):00026         ZID             = 2                               ; GAME ID WORD
+     0004             (           eq.asm):00027         ZENDLD          = 4                               ; START OF NON-PRELOADED Z-CODE
+     0006             (           eq.asm):00028         ZBEGIN          = 6                               ; EXECUTION ADDRESS
+     0008             (           eq.asm):00029         ZVOCAB          = 8                               ; START OF VOCABULARY TABLE
+     000A             (           eq.asm):00030         ZOBJEC          = 10                              ; START OF OBJECT TABLE
+     000C             (           eq.asm):00031         ZGLOBA          = 12                              ; START OF GLOBAL VARIABLE TABLE
+     000E             (           eq.asm):00032         ZPURBT          = 14                              ; START OF "PURE" Z-CODE
+     0010             (           eq.asm):00033         ZSCRIP          = 16                              ; FLAG WORD
+     0012             (           eq.asm):00034         ZSERIA          = 18                              ; 3-WORD ASCII SERIAL NUMBER
+     0018             (           eq.asm):00035         ZFWORD          = 24                              ; START OF FWORDS TABLE
+     001A             (           eq.asm):00036         ZLENTH          = 26                              ; LENGTH OF Z-PROGRAM IN WORDS
+     001C             (           eq.asm):00037         ZCHKSM          = 28                              ; Z-CODE CHECKSUM WORD
+                      (           eq.asm):00038         
+                      (           eq.asm):00039         ;       SBTTL "--- ZIP D-PAGE VARIABLES ---"
+                      (           eq.asm):00040         
+     0000             (           eq.asm):00041         OPCODE          = DSTART                          ; CURRENT OPCODE
+     0001             (           eq.asm):00042         ARGCNT          = OPCODE+1                        ; # ARGUMENTS
+     0002             (           eq.asm):00043         ARG1            = OPCODE+2                        ; ARGUMENT #1 (WORD)
+     0004             (           eq.asm):00044         ARG2            = OPCODE+4                        ; ARGUMENT #2 (WORD)
+     0006             (           eq.asm):00045         ARG3            = OPCODE+6                        ; ARGUMENT #3 (WORD)
+     0008             (           eq.asm):00046         ARG4            = OPCODE+8                        ; ARGUMENT #4 (WORD)
+                      (           eq.asm):00047         
+     000A             (           eq.asm):00048         LRU             = OPCODE+10                       ; (BYTE) LEAST RECENTLY USED PAGE INDEX
+     000B             (           eq.asm):00049         ZPURE           = LRU+1                           ; (BYTE) 1ST VIRTUAL PAGE OF PURE Z-CODE
+     000C             (           eq.asm):00050         PMAX            = LRU+2                           ; (BYTE) MAXIMUM # SWAPPING PAGES
+     000D             (           eq.asm):00051         ZPAGE           = LRU+3                           ; (BYTE) CURRENT SWAPPING PAGE
+     000E             (           eq.asm):00052         PAGE0           = LRU+4                           ; (BYTE) 1ST ABS PAGE OF SWAPPING SPACE
+     000F             (           eq.asm):00053         TABTOP          = LRU+5                           ; (WORD) ADDRESS OF LAST P-TABLE ENTRY
+     0011             (           eq.asm):00054         STAMP           = LRU+7                           ; (BYTE) CURRENT TIMESTAMP (BM 11/24/84)
+     0012             (           eq.asm):00055         SWAP            = LRU+8                           ; (BYTE) EARLIEST BUFFER (BM 11/24/84)
+                      (           eq.asm):00056         
+     0013             (           eq.asm):00057         ZPCH            = LRU+9                           ; HIGHEST-ORDER BIT OF PC
+     0014             (           eq.asm):00058         ZPCM            = ZPCH+1                          ; MIDDLE 8 BITS OF PC
+     0015             (           eq.asm):00059         ZPCL            = ZPCH+2                          ; LOWER 8 BITS OF PC
+     0016             (           eq.asm):00060         ZPCPNT          = ZPCH+3                          ; POINTER TO ACTUAL PC PAGE (WORD)
+     0018             (           eq.asm):00061         ZPCFLG          = ZPCH+5                          ; FLAG: "TRUE" IF ZPCPNT VALID
+                      (           eq.asm):00062         
+     001A             (           eq.asm):00063         MPCH            = ZPCH+7                          ; HIGHEST-ORDER BIT OF MEM POINTER
+     001B             (           eq.asm):00064         MPCM            = MPCH+1                          ; MIDDLE 8 BITS OF MEM POINTER
+     001C             (           eq.asm):00065         MPCL            = MPCH+2                          ; LOW-ORDER 8 BITS OF MEMORY POINTER
+     001D             (           eq.asm):00066         MPCPNT          = MPCH+3                          ; ACTUAL POINTER TO MEMORY (WORD)
+     001F             (           eq.asm):00067         MPCFLG          = MPCH+5                          ; FLAG: "TRUE" IF MPCPNT VALID
+                      (           eq.asm):00068         
+     0021             (           eq.asm):00069         GLOBAL          = MPCH+7                          ; GLOBAL VARIABLE POINTER (WORD)
+     0023             (           eq.asm):00070         VOCAB           = GLOBAL+2                        ; VOCAB TABLE POINTER (WORD)
+     0025             (           eq.asm):00071         FWORDS          = GLOBAL+4                        ; FWORDS TABLE POINTER (WORD)
+                      (           eq.asm):00072         
+     0027             (           eq.asm):00073         OZSTAK          = GLOBAL+6                        ; ZSP SAVE REGISTER (FOR ZCALL)
+                      (           eq.asm):00074         
+     0029             (           eq.asm):00075         CSTEMP          = OZSTAK+2                        ; SET IF TEMP CHARSET IN EFFECT
+     002A             (           eq.asm):00076         CSPERM          = CSTEMP+1                        ; CURRENT PERM CHARSET
+     002B             (           eq.asm):00077         STBYTF          = CSTEMP+2                        ; 0=1ST, 1=2ND, 2=3RD, 0=LAST
+                      (           eq.asm):00078         
+     002C             (           eq.asm):00079         ZSTWRD          = CSTEMP+3                        ; WORD STORAGE (WORD)
+     002E             (           eq.asm):00080         ZSTBUI          = ZSTWRD+2                        ; Z-STRING INPUT BUFFER (6 BYTES)
+     0034             (           eq.asm):00081         ZSTBUO          = ZSTWRD+8                        ; Z-STRING OUTPUT BUFFER (6 BYTES)
+     003A             (           eq.asm):00082         RTABP           = ZSTWRD+14                       ; RESULT TABLE POINTER
+     003B             (           eq.asm):00083         STABP           = ZSTWRD+15                       ; SOURCE TABLE POINTER
+     003C             (           eq.asm):00084         PZSTFO          = ZSTWRD+16                       ; FWORD TABLE BLOCK OFFSET
+                      (           eq.asm):00085         
+     003D             (           eq.asm):00086         VAL             = ZSTWRD+17                       ; VALUE RETURN REGISTER (WORD)
+     003F             (           eq.asm):00087         TEMP            = VAL+2                           ; TEMPORARY REGISTER (WORD)
+     0041             (           eq.asm):00088         TEMP2           = VAL+4                           ; ANOTHER TEMPORARY REGISTER (WORD)
+     0043             (           eq.asm):00089         MASK            = VAL+6                           ; BIT-MASK REGISTER (WORD)
+     0045             (           eq.asm):00090         SQUOT           = VAL+8                           ; SIGN OF QUOTIENT
+     0046             (           eq.asm):00091         SREM            = VAL+9                           ; SIGN OF REMAINDER
+     0047             (           eq.asm):00092         MTEMP           = VAL+10                          ; MATH TEMP REGISTER (WORD)
+                      (           eq.asm):00093         
+     0049             (           eq.asm):00094         DRIVE           = VAL+12                          ; DRIVE NUMBER
+     004A             (           eq.asm):00095         DBUFF           = DRIVE+1                         ; DISK I/O BUFFER POINTER (WORD)
+     004C             (           eq.asm):00096         DBLOCK          = DRIVE+3                         ; Z-BLOCK # (WORD)
+     004E             (           eq.asm):00097         TRACK           = DRIVE+5                         ; TRACK/SECTOR ADDRESS (WORD)
+                      (           eq.asm):00098         
+     0050             (           eq.asm):00099         TIMEFL          = DRIVE+7                         ; "TRUE" IF TIME MODE
+                      (           eq.asm):00100         
+     0051             (           eq.asm):00101         CHRPNT          = TIMEFL+1                        ; I/O BUFFER INDEX
+     0052             (           eq.asm):00102         CPSAV           = CHRPNT+1                        ; SAVE REGISTER FOR [CHRPNT]
+     0053             (           eq.asm):00103         BINDEX          = CHRPNT+2                        ; BUFFER DISPLAY INDEX
+     0054             (           eq.asm):00104         LINCNT          = CHRPNT+3                        ; # LINES DISPLAYED SINCE LAST USL
+     0055             (           eq.asm):00105         IOCHAR          = CHRPNT+4                        ; CURRENT I/O CHARACTER
+     0056             (           eq.asm):00106         GDRIVE          = CHRPNT+5                        ; GAME-SAVE DEFAULT DRIVE #
+     0057             (           eq.asm):00107         GPOSIT          = CHRPNT+6                        ; GAME-SAVE DEFAULT POSITION
+     0058             (           eq.asm):00108         RAND1           = CHRPNT+7                        ; RANDOM NUMBER REGISTER
+     0059             (           eq.asm):00109         RAND2           = CHRPNT+8                        ; DITTO
+     005A             (           eq.asm):00110         CYCLE           = CHRPNT+9                        ; TIMER FOR CURSOR BLINK (WORD)
+     005C             (           eq.asm):00111         BLINK           = CHRPNT+11                       ; MASK FOR CURSOR BLINK
+     005D             (           eq.asm):00112         CFLAG           = CHRPNT+12                       ; CURSOR ENABLE FLAG
+     005E             (           eq.asm):00113         SCRIPT          = CHRPNT+13                       ; SCRIPTING ENABLE FLAG
+     005F             (           eq.asm):00114         IHOLD           = CHRPNT+14                       ; INTERRUPT HOLD
+     0060             (           eq.asm):00115         TPOSIT          = CHRPNT+15                       ; TEMP GAME POSITION
+     0061             (           eq.asm):00116         TDRIVE          = CHRPNT+16                       ; TEMP GAME DRIVE
+                      (           eq.asm):00117         
+     0060             (           eq.asm):00118         ZPGTOP          = CHRPNT+15                       ; END OF DIRECT-PAGE VARIABLES
+                      (           eq.asm):00119         
+                      (           eq.asm):00120                 END
+
+Symbol Table:
+[ G] ARG1                             0002
+[ G] ARG2                             0004
+[ G] ARG3                             0006
+[ G] ARG4                             0008
+[ G] ARGCNT                           0001
+[ G] BINDEX                           0053
+[ G] BLINK                            005C
+[ G] BUFFER                           1020
+[ G] BUFSAV                           1040
+[ G] CFLAG                            005D
+[ G] CHRPNT                           0051
+[ G] CPSAV                            0052
+[ G] CSPERM                           002A
+[ G] CSTEMP                           0029
+[ G] CYCLE                            005A
+[ G] DBLOCK                           004C
+[ G] DBUFF                            004A
+[ G] DEBUG                            0000
+[ G] DRIVE                            0049
+[ G] DSTART                           0000
+[ G] FALSE                            0000
+[ G] FWORDS                           0025
+[ G] GDRIVE                           0056
+[ G] GLOBAL                           0021
+[ G] GPOSIT                           0057
+[ G] IHOLD                            005F
+[ G] IOBUFF                           0B00
+[ G] IOCHAR                           0055
+[ G] LINCNT                           0054
+[ G] LOCALS                           1000
+[ G] LRU                              000A
+[ G] LRUMAP                           0F50
+[ G] MASK                             0043
+[ G] MPCFLG                           001F
+[ G] MPCH                             001A
+[ G] MPCL                             001C
+[ G] MPCM                             001B
+[ G] MPCPNT                           001D
+[ G] MSTACK                           0AFE
+[ G] MSTART                           0A00
+[ G] MTEMP                            0047
+[ G] OPCODE                           0000
+[ G] OZSTAK                           0027
+[ G] PAGE0                            000E
+[ G] PMAX                             000C
+[ G] PTABLE                           0E00
+[ G] PZSTFO                           003C
+[ G] RAND1                            0058
+[ G] RAND2                            0059
+[ G] RTABP                            003A
+[ G] SCRIPT                           005E
+[ G] SQUOT                            0045
+[ G] SREM                             0046
+[ G] STABP                            003B
+[ G] STAMP                            0011
+[ G] STBYTF                           002B
+[ G] SWAP                             0012
+[ G] TABTOP                           000F
+[ G] TDRIVE                           0061
+[ G] TEMP                             003F
+[ G] TEMP2                            0041
+[ G] TIMEFL                           0050
+[ G] TOPSTA                           0DFE
+[ G] TPOSIT                           0060
+[ G] TRACK                            004E
+[ G] TRUE                             00FF
+[ G] VAL                              003D
+[ G] VOCAB                            0023
+[ G] ZBEGIN                           0006
+[ G] ZCHKSM                           001C
+[ G] ZCODE                            2800
+[ G] ZENDLD                           0004
+[ G] ZFWORD                           0018
+[ G] ZGLOBA                           000C
+[ G] ZID                              0002
+[ G] ZIP                              1100
+[ G] ZLENTH                           001A
+[ G] ZMODE                            0001
+[ G] ZOBJEC                           000A
+[ G] ZPAGE                            000D
+[ G] ZPCFLG                           0018
+[ G] ZPCH                             0013
+[ G] ZPCL                             0015
+[ G] ZPCM                             0014
+[ G] ZPCPNT                           0016
+[ G] ZPGTOP                           0060
+[ G] ZPURBT                           000E
+[ G] ZPURE                            000B
+[ G] ZSCRIP                           0010
+[ G] ZSERIA                           0012
+[ G] ZSTACK                           0C00
+[ G] ZSTAKL                           00FF
+[ G] ZSTBUI                           002E
+[ G] ZSTBUO                           0034
+[ G] ZSTWRD                           002C
+[ G] ZVERS                            0000
+[ G] ZVOCAB                           0008

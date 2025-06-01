@@ -95,18 +95,38 @@ XTIDE_PROBE:
 ; BECAUSE THE WRITE SIGNAL IS NEVER PULSED.
 
 ; CHECK SIGNATURE
+
+        LDX     #$0000
+;       SOMETIMES THE CF-XTIDE WILL ONLY READ 80, THIS CAN BE RESET BY WRITING ZEROS UNTIL VALUES ARE PROPERLY READ
+!
+        LDB     XTIDE_DATA_LO
+        CMPB    #$80
+        BNE     >
+        LDB     #$00
+        STB     XTIDE_DATA_LO
+        NOP
+        STB     XTIDE_DATA_HI
+        NOP
+        STB     XTIDE_LBALOW
+        NOP
+        STB     XTIDE_LBAMID
+        NOP
+        STB     XTIDE_LBAHI
+        NOP
+        STB     XTIDE_DEVICE
+        NOP
+        STB     XTIDE_COMMAND
+        NOP
+        STB     XTIDE_STATUS
+        NOP
+        INX
+        CPX     #$0300
+        BNE     <
+        BRA     XTIDE_PROBE_FAIL                  ; TIMED OUT
+!
         LDB     XTIDE_SEC_CNT
         CMPB    #$01
         BNE     XTIDE_PROBE_FAIL                  ; IF NOT '01' THEN REPORT NO IDE PRESENT
-        LDB     XTIDE_LBALOW
-        CMPB    #$01
-        BNE     XTIDE_PROBE_FAIL                  ; IF NOT '01' THEN REPORT NO IDE PRESENT
-        LDB     XTIDE_LBAMID
-        CMPB    #$00
-        BNE     XTIDE_PROBE_FAIL                  ; IF NOT '00' THEN REPORT NO IDE PRESENT
-        LDB     XTIDE_LBAHI
-        CMPB    #$00
-        BNE     XTIDE_PROBE_FAIL                  ; IF NOT '00' THEN REPORT NO IDE PRESENT
         CLC
         JMP     XTIDE_PROBE_SUCCESS
 XTIDE_PROBE_FAIL:
@@ -298,7 +318,7 @@ IDE_READ_BUFFER:
         LDY     #$0000                            ; INDEX
 IDEBUFRD:
         LDB     XTIDE_DATA_LO
-        STB     HSTBUF,Y                        ;
+        STB     HSTBUF,Y                          ;
         INY
         LDB     XTIDE_DATA_HI
         STB     HSTBUF,Y                          ;
@@ -315,7 +335,7 @@ IDEBUFRD:
 IDE_WRITE_BUFFER:
         LDY     #$0000                            ; INDEX
 IDEBUFWT:
-        LDB     HSTBUF,Y                        ;
+        LDB     HSTBUF,Y                          ;
         STB     XTIDE_DATA_LO
         INY
         LDB     HSTBUF,Y                          ;
