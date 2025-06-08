@@ -37,9 +37,9 @@ KBD_CAPSLCK     EQU $40                           ; BIT 6, SCROLL LOCK ACTIVE (T
 KBD_NUMPAD      EQU $80                           ; BIT 7, NUM PAD KEY (KEY PRESSED IS ON NUM PAD)
 ;
 KBD_DEFRPT      EQU $40                           ; DEFAULT REPEAT RATE (.5 SEC DELAY, 30CPS)
-KBD_DEFSTATE    EQU KBD_NUMLCK                    ; DEFAULT STATE (NUM LOCK ON)
+KBD_DEFSTATE    EQU KBD_NUMLCK|KBD_CAPSLCK|KBD_SCRLCK                  ; DEFAULT STATE (NUM LOCK ON)
 
-KBD_WAITTO      EQU $00FF                         ; DEFAULT TIMEOUT
+KBD_WAITTO      EQU $30FF                         ; DEFAULT TIMEOUT
 ;
 ;__________________________________________________________________________________________________
 ; DATA
@@ -75,14 +75,14 @@ MULTIOINIT:
         JSR     WRSTR                             ; DO PROMPT
         JSR     LFCR                              ; AND CRLF
 ; KEYBOARD INITIALIZATION
-        LDX     #MIOMESSAGE2
+        LDX     #MESSAGE2
         JSR     WRSTR                             ; DO PROMPT
         LDD     #KBD_DAT                          ; GET BASE PORT
         JSR     WRHEXW                            ; PRINT BASE PORT
+        JSR     LFCR                              ; AND CRLF
 ;
         JSR     KBD_PROBE                         ; DETECT A KEYBOARD, ABORT IF NOT FOUND
         BCS     >
-        JMP     IDE_PRINT_INFO
 !
         RTS                                       ; DONE
 
@@ -119,6 +119,7 @@ KBD_PROBE:
         JSR     KBD_RESET                         ; RESET THE KEYBOARD
         JSR     KBD_SETLEDS                       ; UPDATE LEDS BASED ON CURRENT TOGGLE STATE BITS
         JSR     KBD_SETRPT                        ; UPDATE REPEAT RATE BASED ON CURRENT SETTING
+
         CLC                                       ; SIGNAL SUCCESS
         RTS
 
@@ -135,17 +136,17 @@ KBD_PUTCMD:
         LDX     #KBD_WAITTO                       ; SETUP TO LOOP
 KBD_PUTCMD0:
         LDB     KBD_ST                            ; STATUS PORT
-        ANDB    #$02                              ; ISOLATE OUTPUT EMPTY BIT
-        EORB    #$02                              ; FLIP IT FOR APPROPRIATE RETURN VALUES
-        BNE     KBD_PUTCMD1                       ; EMPTY, GO TO WRITE
+        ANDB    #$02                              ; ISOLATE EMPTY BIT
+        BEQ     KBD_PUTCMD1                       ; EMPTY, GO TO WRITE
         JSR     DELAY                             ; WAIT A BIT
         DEX
         BNE     KBD_PUTCMD0                       ; LOOP UNTIL COUNTER EXHAUSTED
+
         SEC                                       ; TIMED OUT
         RTS
 KBD_PUTCMD1:
         STA     KBD_CMD                           ; WRITE TO COMMAND PORT
-KBD_PUTCMD2:
+
         CLC                                       ; SIGNAL SUCCESS
         RTS
 ;
@@ -158,16 +159,16 @@ KBD_PUTDATA:
 KBD_PUTDATA0:
         LDB     KBD_ST                            ; STATUS PORT
         ANDB    #$02                              ; ISOLATE OUTPUT EMPTY BIT
-        EORB    #02                               ; FLIP IT FOR APPROPRIATE RETURN VALUES
-        BNE     KBD_PUTDATA1                      ; EMPTY, GO TO WRITE
+        BEQ     KBD_PUTDATA1                      ; EMPTY, GO TO WRITE
         JSR     DELAY                             ; WAIT A BIT
         DEX
         BNE     KBD_PUTDATA0                      ; LOOP UNTIL COUNTER EXHAUSTED
+
         SEC                                       ; TIMED OUT
         RTS
 KBD_PUTDATA1:
         STA     KBD_DAT                           ; WRITE TO DATA PORT
-KBD_PUTDATA2:
+
         CLC                                       ; SIGNAL SUCCESS
         RTS
 ;
@@ -180,14 +181,16 @@ KBD_GETDATA:
 KBD_GETDATA0:
         LDA     KBD_ST                            ; GET STATUS PORT
         ANDA    #$01                              ; ISOLATE INPUT PENDING BIT
-        BNE     KBD_GETDATA1                      ; BYTE PENDING, GO GET IT
+        BNE     KBD_GETDATA1                      ; READY, GET DATA
         JSR     DELAY                             ; WAIT A BIT
         DEX
         BNE     KBD_GETDATA0                      ; LOOP UNTIL COUNTER EXHAUSTED
         LDA     #$00
+
         SEC                                       ; NO DATA, RETURN ZERO
         RTS
 KBD_GETDATA1:
+
         LDA     KBD_DAT                           ; GET DATA PORT
         CLC                                       ; SET FLAGS
         RTS
@@ -198,9 +201,10 @@ KBD_GETDATAX:
 ; GET A RAW DATA BYTE FROM KEYBOARD INTERFACE INTO A WITH NOTIMEOUT
 ;
         LDA     KBD_ST                            ; STATUS PORT
-        ANDA    $01                               ; ISOLATE INPUT PENDING BIT
+        ANDA    #$01                              ; ISOLATE INPUT PENDING BIT
         BNE     KBD_GETDATA1                      ; BYTE PENDING, GO GET IT
         LDA     #$00
+
         SEC                                       ; NO DATA, RETURN ZERO
         RTS
 ;
@@ -212,7 +216,7 @@ KBD_RESET:
         LDA     #$FF                              ; RESET COMMAND
         JSR     KBD_PUTDATA                       ; SEND IT
         JSR     KBD_GETDATA                       ; GET THE ACK
-        LDX     #$100                             ; SETUP LOOP COUNTER
+        LDX     #$F100                             ; SETUP LOOP COUNTER
 KBD_RESET0:
         PSHS    X                                 ; PRESERVE COUNTER
         JSR     KBD_GETDATA                       ; TRY TO GET THE RESPONSE
@@ -220,7 +224,11 @@ KBD_RESET0:
         BNE     KBD_RESET1                        ; GOT A BYTE?  IF SO, GET OUT OF LOOP
         DEX
         BNE     KBD_RESET0                        ; LOOP TILL COUNTER EXHAUSTED
+
+        SEC                                       ; SIGNAL FAILURE
+        RTS                                       ; DONE
 KBD_RESET1:
+
         CLC                                       ; SIGNAL SUCCESS (RESPONSE IS IGNORED...)
         RTS                                       ; DONE
 ;
@@ -234,6 +242,7 @@ KBD_SETLEDS:
         JSR     KBD_GETDATA                       ; READ THE RESPONSE
         CMPA    #$FA                              ; MAKE SURE WE GET ACK
         BEQ     >
+
         SEC
         RTS                                       ; ABORT IF NO ACK
 !
@@ -247,11 +256,13 @@ KBD_SETLEDS:
         JSR     KBD_GETDATA                       ; READ THE ACK
         CMPA    #$FA                              ; MAKE SURE WE GET ACK
         BEQ     >
+
         SEC
         RTS                                       ; ABORT IF NO ACK
 !
         LDA     #$00                              ; A=0
         STA     KBD_STATUS                        ; CLEAR STATUS
+
         CLC
         RTS
 ;
@@ -265,6 +276,7 @@ KBD_SETRPT:
         JSR     KBD_GETDATA                       ; GET THE ACK
         CMPA    #$FA                              ; MAKE SURE WE GET ACK
         BEQ     >
+
         SEC
         RTS                                       ; ABORT IF NO ACK
 !
@@ -273,11 +285,32 @@ KBD_SETRPT:
         JSR     KBD_GETDATA                       ; GET THE ACK
         CMPA    #$FA                              ; MAKE SURE WE GET ACK
         BEQ     >
+
         SEC
         RTS                                       ; ABORT IF NO ACK
 !
         CLC
         RTS
+
+;__GETKEY__________________________________________________________________________________________
+; Get char from Keyboard, return in A
+;__________________________________________________________________________________________________
+KBD_GETKEY:
+        JSR     KBD_DECODE
+        BCC     >
+        LDA     #$FF                              ;
+        STA     >PAGER_D                          ; SAVE 'D'
+        SEC
+        RTS
+!
+        LDA     KBD_KEYCODE
+        STA     >PAGER_D                          ; SAVE 'D'
+        LDA     KBD_STATUS
+        ANDA    #$7F
+        STA     KBD_STATUS
+        CLC
+        RTS
+
 ;
 ;__________________________________________________________________________________________________
 ; DECODING ENGINE
@@ -386,14 +419,14 @@ KBD_DECODE:
 ;
 KBD_DEC0:                                         ; CHECK KEYCODE BUFFER
         LDA     KBD_STATUS                        ; GET CURRENT STATUS
-        ANDA    KBD_KEYRDY                        ; ISOLATE KEY READY FLAG
+        ANDA    #KBD_KEYRDY                       ; ISOLATE KEY READY FLAG
         BEQ     KBD_DEC1
         SEC
         RTS                                       ; ABORT IF KEY IS ALREADY PENDING
 
 KBD_DEC1:                                         ; PROCESS NEXT SCANCODE
         JSR     KBD_GETDATAX                      ; GET THE SCANCODE
-        BNE     KBD_DEC2
+        BCC     KBD_DEC2
         SEC
         RTS                                       ; NO KEY READY, RETURN WITH A=0, SET ERROR
 
@@ -411,7 +444,7 @@ KBD_DEC3:                                         ; DETECT AND HANDLE SCANCODE P
         CMPA    #$E0                              ; EXTENDED KEY PREFIX $E0?
         BNE     KBD_DEC3B                         ; NOPE MOVE ON
         LDB     KBD_STATUS                        ; GET STATUS
-        ORB     KBD_EXT                           ; SET EXTENDED BIT
+        ORB     #KBD_EXT                          ; SET EXTENDED BIT
         STB     KBD_STATUS                        ; SAVE STATUS
         JMP     KBD_DEC1                          ; LOOP TO DO NEXT SCANCODE
 
@@ -421,7 +454,7 @@ KBD_DEC3B:                                        ; HANDLE SCANCODE PREFIX $E1 (
         LDA     #$EE                              ; MAP TO KEYCODE $EE
         STA     KBD_KEYCODE                       ; SAVE IT
 ; SWALLOW NEXT 7 SCANCODES
-        LDX     #7                                ; LOOP 5 TIMES
+        LDX     #7                                ; LOOP 7 TIMES
 KBD_DEC3B1:
         PSHS    X
         JSR     KBD_GETDATA                       ; RETRIEVE NEXT SCANCODE
@@ -434,13 +467,13 @@ KBD_DEC4:                                         ; DETECT AND FLAG BREAK EVENT
         CMPA    #$F0                              ; BREAK (KEY UP) PREFIX?
         BNE     KBD_DEC5                          ; NOPE MOVE ON
         LDB     KBD_STATUS                        ; GET STATUS
-        ORB     KBD_BREAK                         ; SET BREAK BIT
+        ORB     #KBD_BREAK                        ; SET BREAK BIT
         STB     KBD_STATUS                        ; SAVE STATUS
         JMP     KBD_DEC1                          ; LOOP TO DO NEXT SCANCODE
 
 KBD_DEC5:                                         ; MAP SCANCODE TO KEYCODE
         LDA     KBD_STATUS                        ; GET STATUS
-        ANDA    KBD_EXT                           ; EXTENDED BIT SET?
+        ANDA    #KBD_EXT                          ; EXTENDED BIT SET?
         BEQ     KBD_DEC5C                         ; NOPE, MOVE ON
 
 ; PERFORM EXTENDED KEY MAPPING
@@ -449,7 +482,7 @@ KBD_DEC5:                                         ; MAP SCANCODE TO KEYCODE
         TFR     D,X
         LDX     KBD_MAPEXT                        ; POINT TO START OF EXT MAP TABLE
 KBD_DEC5A:
-        LDA     KBD_MAPEXT,X                     ; GET FIRST BYTE OF PAIR FROM EXT MAP TABLE
+        LDA     KBD_MAPEXT,X                      ; GET FIRST BYTE OF PAIR FROM EXT MAP TABLE
         INX
         CMPA    #$00                              ; END OF TABLE?
         LBEQ    KBD_DECNEW                        ; UNKNOWN OR BOGUS, START OVER
@@ -576,7 +609,7 @@ KBD_DEC9:                                         ; ADJUST KEYCODE FOR CONTROL M
         BHI     KBD_DEC9A                         ; ABOVE IT, BYPASS
         ANDA    #$DF                              ; KEYCODE IN LOWERCASE A-Z RANGE CLEAR BIT 5 TO MAKE IT UPPERCASE
 KBD_DEC9A:
-        CMPA    '@'                               ; COMPARE TO @
+        CMPA    #'@'                              ; COMPARE TO @
         BLT     KBD_DEC10                         ; BELOW IT, BYPASS
         CMPA    #$5F                              ; COMPARE TO _+1
         BHI     KBD_DEC10                         ; ABOVE IT, BYPASS
@@ -626,12 +659,11 @@ KBD_DEC11:                                        ; HANDLE NUM PAD KEYS
 
 KBD_DEC11A:                                       ; APPLY NUMPAD MAPPING
         LDB     KBD_KEYCODE                       ; GET THE CURRENT KEYCODE
+        SBCB    #$C0                              ; KEYCODES START AT $C0
         LDA     #$00
         STD     KBD_TEMP
-        SEC
         LDD     #KBD_MAPNUMPAD                    ; LOAD THE START OF THE MAPPING TABLE
-        SBCB    #$C0                              ; KEYCODES START AT $C0
-        SBCA    #$00
+        CLC
         ADDD    KBD_TEMP
         TFR     D,X                               ; INDEX IN X
 
@@ -658,7 +690,14 @@ KBD_DECNEW:                                       ; START NEW KEYPRESS (CLEAR AL
 
 DELAY:
         PSHS    A,B,X,Y,U
-        PULS    A,B,X,Y,U,PC
+        PULS    A,B,X,Y,U
+        PSHS    A,B,X,Y,U
+        PULS    A,B,X,Y,U
+        PSHS    A,B,X,Y,U
+        PULS    A,B,X,Y,U
+        PSHS    A,B,X,Y,U
+        PULS    A,B,X,Y,U
+        RTS
 
 LDELAY:
         PSHS    A,B,X,Y,U
@@ -667,25 +706,24 @@ LDELAY:
         JSR     DELAY
         DEX
         BNE     <
-        PULS    A,B,X,Y,U,PC
+        PULS    A,B,X,Y,U
+        RTS
 
 ;
 ; DRIVER DATA
 ;__________________________________________________________________________________________________
 ; MESSAGES
 ;__________________________________________________________________________________________________
- MIOMESSAGE1:
-        FCC     "IDE MULTI-IO"
-        FCB     $0D,$0A,00
- MIOMESSAGE2:
-        FCC     "    KEYBOARD 82C42 COMPATIBLE  BASE PORT: "
+MIOMESSAGE1:
+        FCC     "ISA MULTI-IO:"
         FCB     00
- MIOMESSAGE3:
-        FCC     " NOT FOUND"
-        FCB     $0D,$0A,00
- MIOMESSAGE4:
-        FCC     " INITIALIZED."
-        FCB     $0D,$0A,00
+MIOMESSAGE3:
+        FCC     "  KBD: VT82C42 NOT FOUND."
+        FCB     00
+MIOMESSAGE4:
+        FCC     "  KBD: INITIALIZED."
+        FCB     00
+;
 ; MAPPING
 ;__________________________________________________________________________________________________
 ;
@@ -723,8 +761,8 @@ KBD_MAPEXT:                                       ; PAIRS ARE [SCANCODE,KEYCODE]
         FCB     $7D,$F4,$7E,$FD,$00,$00
 ;
 KBD_MAPNUMPAD:                                    ; KEYCODE TRANSLATION FROM NUMPAD RANGE TO STD ASCII/KEYCODES
-        FCB     $F3,$F7,$F5,$F8,$FF,$F9,$F2,$F6,$F4,$F0,$F1,$2F,$2A,$2D,$2B,$0D
-        FCB     $31,$32,$33,$34,$35,$36,$37,$38,$39,$30,$2E,$2F,$2A,$2D,$2B,$0D
+        FCB     $F3,$F7,$F5,$F8,$FF,$F9,$F2,$F6,$F4,$F0,$F1,$2F,$2A,$2D,$2B,$0D  ; END, DOWN, PGDN, LEFT, NULL, RIGHT, HOME, UP , PGUP, INS, DEL, '/', '*', '-', '+', CR
+        FCB     $31,$32,$33,$34,$35,$36,$37,$38,$39,$30,$2E,$2F,$2A,$2D,$2B,$0D  ; '1','2','3','4','5','6','7','8','9','0','.','/','*', '-', '+', CR
 ;
 ;
 ;__________________________________________________________________________________________________

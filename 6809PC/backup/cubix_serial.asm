@@ -32,7 +32,6 @@ SERIALINIT:
         LDA     #$1E                              ; 9600, 8 BITS, NO PARITY, 1 STOP BIT
         STA     UART1CONTROL                      ;
         RTS
-        RTS
 
 ;__WRSER1________________________________________________________________________________________________________________________
 ;
@@ -53,6 +52,10 @@ WRSER1
 ;________________________________________________________________________________________________________________________________
 ;
 RDSER1
+        JSR     KBD_GETKEY
+        BCS     >
+        RTS
+!
         LDA     UART1STATUS                       ; GET STATUS REGISTER
         ANDA    #%00001000                        ; IS RX READY
         BEQ     >                                 ; No DATA IS READY

@@ -37,7 +37,7 @@ KBD_CAPSLCK     EQU $40                           ; BIT 6, SCROLL LOCK ACTIVE (T
 KBD_NUMPAD      EQU $80                           ; BIT 7, NUM PAD KEY (KEY PRESSED IS ON NUM PAD)
 ;
 KBD_DEFRPT      EQU $40                           ; DEFAULT REPEAT RATE (.5 SEC DELAY, 30CPS)
-KBD_DEFSTATE    EQU KBD_NUMLCK|KBD_CAPSLCK|KBD_SCRLCK                  ; DEFAULT STATE (NUM LOCK ON)
+KBD_DEFSTATE    EQU KBD_NUMLCK|KBD_CAPSLCK|KBD_SCRLCK ; DEFAULT STATE (NUM LOCK ON)
 
 KBD_WAITTO      EQU $30FF                         ; DEFAULT TIMEOUT
 ;
@@ -216,7 +216,7 @@ KBD_RESET:
         LDA     #$FF                              ; RESET COMMAND
         JSR     KBD_PUTDATA                       ; SEND IT
         JSR     KBD_GETDATA                       ; GET THE ACK
-        LDX     #$F100                             ; SETUP LOOP COUNTER
+        LDX     #$F100                            ; SETUP LOOP COUNTER
 KBD_RESET0:
         PSHS    X                                 ; PRESERVE COUNTER
         JSR     KBD_GETDATA                       ; TRY TO GET THE RESPONSE
@@ -444,7 +444,7 @@ KBD_DEC3:                                         ; DETECT AND HANDLE SCANCODE P
         CMPA    #$E0                              ; EXTENDED KEY PREFIX $E0?
         BNE     KBD_DEC3B                         ; NOPE MOVE ON
         LDB     KBD_STATUS                        ; GET STATUS
-        ORB     KBD_EXT                           ; SET EXTENDED BIT
+        ORB     #KBD_EXT                          ; SET EXTENDED BIT
         STB     KBD_STATUS                        ; SAVE STATUS
         JMP     KBD_DEC1                          ; LOOP TO DO NEXT SCANCODE
 
@@ -454,7 +454,7 @@ KBD_DEC3B:                                        ; HANDLE SCANCODE PREFIX $E1 (
         LDA     #$EE                              ; MAP TO KEYCODE $EE
         STA     KBD_KEYCODE                       ; SAVE IT
 ; SWALLOW NEXT 7 SCANCODES
-        LDX     #7                                ; LOOP 5 TIMES
+        LDX     #7                                ; LOOP 7 TIMES
 KBD_DEC3B1:
         PSHS    X
         JSR     KBD_GETDATA                       ; RETRIEVE NEXT SCANCODE
@@ -467,7 +467,7 @@ KBD_DEC4:                                         ; DETECT AND FLAG BREAK EVENT
         CMPA    #$F0                              ; BREAK (KEY UP) PREFIX?
         BNE     KBD_DEC5                          ; NOPE MOVE ON
         LDB     KBD_STATUS                        ; GET STATUS
-        ORB     KBD_BREAK                         ; SET BREAK BIT
+        ORB     #KBD_BREAK                        ; SET BREAK BIT
         STB     KBD_STATUS                        ; SAVE STATUS
         JMP     KBD_DEC1                          ; LOOP TO DO NEXT SCANCODE
 
@@ -521,14 +521,14 @@ KBD_DEC5D:
 KBD_DEC6:                                         ; HANDLE MODIFIER KEYS
         LDA     KBD_KEYCODE                       ; MAKE SURE WE HAVE KEYCODE
         CMPA    #$B8                              ; END OF MODIFIER KEYS
-        BHI     KBD_DEC7                          ; BYPASS MODIFIER KEY CHECKING
+        BGE     KBD_DEC7                          ; BYPASS MODIFIER KEY CHECKING
         CMPA    #$B0                              ; START OF MODIFIER KEYS
-        BLS     KBD_DEC7                          ; BYPASS MODIFIER KEY CHECKING
+        BLO     KBD_DEC7                          ; BYPASS MODIFIER KEY CHECKING
 
         LDX     #4                                ; LOOP COUNTER TO LOOP THRU 4 MODIFIER BITS
-        LDB     #$80                              ; SETUP B TO ROATE THROUGH MODIFIER STATE BITS
-        SEC
-        SBCA    #$B0                              ; SETUP A TO DECREMENT THROUGH MODIFIER VALUES
+        SUBA    #$AF                              ; SETUP A TO DECREMENT THROUGH MODIFIER VALUES
+        LDB     #$00                              ; SETUP B TO ROATE THROUGH MODIFIER STATE BITS
+        SEC                                       ; SET CARRY FOR ROTATE
 
 KBD_DEC6A:
         ROLB                                      ; SHIFT TO NEXT MODIFIER STATE BIT
@@ -604,14 +604,14 @@ KBD_DEC9:                                         ; ADJUST KEYCODE FOR CONTROL M
         BEQ     KBD_DEC10                         ; CONTROL KEY NOT PRESSED, MOVE ON
         LDA     KBD_KEYCODE                       ; GET CURRENT KEYCODE IN A
         CMPA    #'a'                              ; COMPARE TO LOWERCASE A
-        BLT     KBD_DEC9A                         ; BELOW IT, BYPASS
-        CMPA    #$7B                              ; COMPARE TO LOWERCASE Z+1
+        BLO     KBD_DEC9A                         ; BELOW IT, BYPASS
+        CMPA    #'z'                              ; COMPARE TO LOWERCASE Z+1
         BHI     KBD_DEC9A                         ; ABOVE IT, BYPASS
         ANDA    #$DF                              ; KEYCODE IN LOWERCASE A-Z RANGE CLEAR BIT 5 TO MAKE IT UPPERCASE
 KBD_DEC9A:
-        CMPA    '@'                               ; COMPARE TO @
-        BLT     KBD_DEC10                         ; BELOW IT, BYPASS
-        CMPA    #$5F                              ; COMPARE TO _+1
+        CMPA    #'@'                              ; COMPARE TO @
+        BLO     KBD_DEC10                         ; BELOW IT, BYPASS
+        CMPA    #'_'                              ; COMPARE TO _+1
         BHI     KBD_DEC10                         ; ABOVE IT, BYPASS
         ANDA    #$BF                              ; CONVERT TO CONTROL VALUE BY CLEARING BIT 6
         STA     KBD_KEYCODE                       ; UPDATE KEYCODE TO CONTROL VALUE
@@ -622,14 +622,14 @@ KBD_DEC10:                                        ; ADJUST KEYCODE FOR CAPS LOCK
         BEQ     KBD_DEC11                         ; CAPS LOCK NOT ACTIVE, MOVE ON
         LDA     KBD_KEYCODE                       ; GET THE CURRENT KEYCODE VALUE
         CMPA    #'a'                              ; COMPARE TO LOWERCASE A
-        BLT     KBD_DEC10A                        ; BELOW IT, BYPASS
-        CMPA    #$7b                              ; COMPARE TO LOWERCASE Z+1
+        BLO     KBD_DEC10A                        ; BELOW IT, BYPASS
+        CMPA    #'z'                              ; COMPARE TO LOWERCASE Z+1
         BHI     KBD_DEC10A                        ; ABOVE IT, BYPASS
         JMP     KBD_DEC10B                        ; IN RANGE LOWERCASE A-Z, GO TO CASE SWAPPING LOGIC
 KBD_DEC10A:
         CMPA    #'A'                              ; COMPARE TO UPPERCASE A
-        BLT     KBD_DEC11                         ; BELOW IT, BYPASS
-        CMPA    #$91                              ; COMPARE TO UPPERCASE Z+1
+        BLO     KBD_DEC11                         ; BELOW IT, BYPASS
+        CMPA    #'Z'                              ; COMPARE TO UPPERCASE Z+1
         BHI     KBD_DEC11                         ; ABOVE IT, BYPASS
         JMP     KBD_DEC10B                        ; IN RANGE UPPERCASE A-Z, GO TO CASE SWAPPING LOGIC
 KBD_DEC10B:
@@ -659,8 +659,7 @@ KBD_DEC11:                                        ; HANDLE NUM PAD KEYS
 
 KBD_DEC11A:                                       ; APPLY NUMPAD MAPPING
         LDB     KBD_KEYCODE                       ; GET THE CURRENT KEYCODE
-        SEC
-        SBCB    #$C0                              ; KEYCODES START AT $C0
+        SUBB    #$C0                              ; KEYCODES START AT $C0
         LDA     #$00
         STD     KBD_TEMP
         LDD     #KBD_MAPNUMPAD                    ; LOAD THE START OF THE MAPPING TABLE
