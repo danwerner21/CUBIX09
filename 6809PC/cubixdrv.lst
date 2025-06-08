@@ -61,69 +61,84 @@ C10F 6E9F0101         (     cubixdrv.asm):00028                 JMP     [farpoin
                       (     cubixdrv.asm):00029         
                       (     cubixdrv.asm):00030         
 C113                  (     cubixdrv.asm):00031         DISPATCHTABLE:
-C113 C184             (     cubixdrv.asm):00032                 .WORD   WRSER1                            ; FUNCTION 00 - WRITE SERIAL PORT
-C115 C18F             (     cubixdrv.asm):00033                 .WORD   RDSER1                            ; FUNCTION 01 - READ SERIAL PORT
-C117 C173             (     cubixdrv.asm):00034                 .WORD   SERIALINIT                        ; FUNCTION 02 - SERIAL PORT INIT
+C113 C191             (     cubixdrv.asm):00032                 .WORD   WRSER1                            ; FUNCTION 00 - WRITE SERIAL PORT
+C115 C19C             (     cubixdrv.asm):00033                 .WORD   RDSER1                            ; FUNCTION 01 - READ SERIAL PORT
+C117 C181             (     cubixdrv.asm):00034                 .WORD   SERIALINIT                        ; FUNCTION 02 - SERIAL PORT INIT
                       (     cubixdrv.asm):00035         
-C119 C3CE             (     cubixdrv.asm):00036                 .WORD   drv_noop                          ; FUNCTION 03 - WRITE VIDEO
-C11B C3CE             (     cubixdrv.asm):00037                 .WORD   drv_noop                          ; FUNCTION 04 - READ KEYBOARD
-C11D C3CE             (     cubixdrv.asm):00038                 .WORD   drv_noop                          ; FUNCTION 05 - INIT INTERFACE
+C119 C8C8             (     cubixdrv.asm):00036                 .WORD   drv_noop                          ; FUNCTION 03 - WRITE VIDEO
+C11B C8C8             (     cubixdrv.asm):00037                 .WORD   drv_noop                          ; FUNCTION 04 - READ KEYBOARD
+C11D C8C8             (     cubixdrv.asm):00038                 .WORD   drv_noop                          ; FUNCTION 05 - INIT INTERFACE
                       (     cubixdrv.asm):00039         
-C11F C3CE             (     cubixdrv.asm):00040                 .WORD   drv_noop                          ; FUNCTION 06
-C121 C3CE             (     cubixdrv.asm):00041                 .WORD   drv_noop                          ; FUNCTION 07
-C123 C3CE             (     cubixdrv.asm):00042                 .WORD   drv_noop                          ; FUNCTION 08
+C11F C8C8             (     cubixdrv.asm):00040                 .WORD   drv_noop                          ; FUNCTION 06
+C121 C8C8             (     cubixdrv.asm):00041                 .WORD   drv_noop                          ; FUNCTION 07
+C123 C8C8             (     cubixdrv.asm):00042                 .WORD   drv_noop                          ; FUNCTION 08
                       (     cubixdrv.asm):00043         
-C125 C3CE             (     cubixdrv.asm):00044                 .WORD   drv_noop                          ; FUNCTION 09
-C127 C3CE             (     cubixdrv.asm):00045                 .WORD   drv_noop                          ; FUNCTION 10
-C129 C3CE             (     cubixdrv.asm):00046                 .WORD   drv_noop                          ; FUNCTION 11
+C125 C8C8             (     cubixdrv.asm):00044                 .WORD   drv_noop                          ; FUNCTION 09
+C127 C8C8             (     cubixdrv.asm):00045                 .WORD   drv_noop                          ; FUNCTION 10
+C129 C8C8             (     cubixdrv.asm):00046                 .WORD   drv_noop                          ; FUNCTION 11
                       (     cubixdrv.asm):00047         
-C12B C3CE             (     cubixdrv.asm):00048                 .WORD   drv_noop                          ; FUNCTION 12
-C12D C3CE             (     cubixdrv.asm):00049                 .WORD   drv_noop                          ; FUNCTION 13
-C12F C3CE             (     cubixdrv.asm):00050                 .WORD   drv_noop                          ; FUNCTION 14
+C12B C8C8             (     cubixdrv.asm):00048                 .WORD   drv_noop                          ; FUNCTION 12
+C12D C8C8             (     cubixdrv.asm):00049                 .WORD   drv_noop                          ; FUNCTION 13
+C12F C8C8             (     cubixdrv.asm):00050                 .WORD   drv_noop                          ; FUNCTION 14
                       (     cubixdrv.asm):00051         
-C131 C3CE             (     cubixdrv.asm):00052                 .WORD   drv_noop                          ; FUNCTION 15 - called during OS init
-C133 C3CE             (     cubixdrv.asm):00053                 .WORD   drv_noop                          ; FUNCTION 16 - read a sector from drive
-C135 C3CE             (     cubixdrv.asm):00054                 .WORD   drv_noop                          ; FUNCTION 17 - write a sector to drive
+C131 C8C8             (     cubixdrv.asm):00052                 .WORD   drv_noop                          ; FUNCTION 15 - called during OS init
+C133 C8C8             (     cubixdrv.asm):00053                 .WORD   drv_noop                          ; FUNCTION 16 - read a sector from drive
+C135 C8C8             (     cubixdrv.asm):00054                 .WORD   drv_noop                          ; FUNCTION 17 - write a sector to drive
                       (     cubixdrv.asm):00055         ;
-C137 C3CE             (     cubixdrv.asm):00056                 .WORD   drv_noop                          ;FL_SETUP                          ; FUNCTION 18 - init floppy device
-C139 C3CE             (     cubixdrv.asm):00057                 .WORD   drv_noop                          ;FL_READ_SECTOR                    ; FUNCTION 19 - read a sector from floppy device
-C13B C3CE             (     cubixdrv.asm):00058                 .WORD   drv_noop                          ;FL_WRITE_SECTOR                   ; FUNCTION 20 - write a sector to floppy device
+C137 C8C8             (     cubixdrv.asm):00056                 .WORD   drv_noop                          ;FL_SETUP                          ; FUNCTION 18 - init floppy device
+C139 C8C8             (     cubixdrv.asm):00057                 .WORD   drv_noop                          ;FL_READ_SECTOR                    ; FUNCTION 19 - read a sector from floppy device
+C13B C8C8             (     cubixdrv.asm):00058                 .WORD   drv_noop                          ;FL_WRITE_SECTOR                   ; FUNCTION 20 - write a sector to floppy device
                       (     cubixdrv.asm):00059         ;
-C13D C1A6             (     cubixdrv.asm):00060                 .WORD   XTIDE_INIT                        ; FUNCTION 21 - init XT IDE device
-C13F C295             (     cubixdrv.asm):00061                 .WORD   IDE_READ_SECTOR                   ; FUNCTION 22 - read a sector from XT IDE device
-C141 C2B5             (     cubixdrv.asm):00062                 .WORD   IDE_WRITE_SECTOR                  ; FUNCTION 23 - write a sector to XT IDE device
+C13D C1B9             (     cubixdrv.asm):00060                 .WORD   XTIDE_INIT                        ; FUNCTION 21 - init XT IDE device
+C13F C2A8             (     cubixdrv.asm):00061                 .WORD   IDE_READ_SECTOR                   ; FUNCTION 22 - read a sector from XT IDE device
+C141 C2C8             (     cubixdrv.asm):00062                 .WORD   IDE_WRITE_SECTOR                  ; FUNCTION 23 - write a sector to XT IDE device
                       (     cubixdrv.asm):00063         ;
-C143 C3CE             (     cubixdrv.asm):00064                 .WORD   drv_noop                          ;FPSD_INIT                         ; FUNCTION 24 - init PPIDE device
-C145 C3CE             (     cubixdrv.asm):00065                 .WORD   drv_noop                          ;FPSD_READ_SECTOR                  ; FUNCTION 25 - read a sector from PPIDE device
-C147 C3CE             (     cubixdrv.asm):00066                 .WORD   drv_noop                          ;FPSD_WRITE_SECTOR                 ; FUNCTION 26 - write a sector to PPIDE device
+C143 C8C8             (     cubixdrv.asm):00064                 .WORD   drv_noop                          ;FPSD_INIT                         ; FUNCTION 24 - init PPIDE device
+C145 C8C8             (     cubixdrv.asm):00065                 .WORD   drv_noop                          ;FPSD_READ_SECTOR                  ; FUNCTION 25 - read a sector from PPIDE device
+C147 C8C8             (     cubixdrv.asm):00066                 .WORD   drv_noop                          ;FPSD_WRITE_SECTOR                 ; FUNCTION 26 - write a sector to PPIDE device
                       (     cubixdrv.asm):00067         ;
-C149 C3CE             (     cubixdrv.asm):00068                 .WORD   drv_noop                          ;DSKY_INIT                         ; FUNCTION 27 -
-C14B C3CE             (     cubixdrv.asm):00069                 .WORD   drv_noop                          ;DSKY_SHOW                         ; FUNCTION 28 -
-C14D C3CE             (     cubixdrv.asm):00070                 .WORD   drv_noop                          ;DSKY_BIN2SEG                      ; FUNCTION 29 -
-C14F C3CE             (     cubixdrv.asm):00071                 .WORD   drv_noop                          ;DSKY_RESET                        ; FUNCTION 30 -
-C151 C3CE             (     cubixdrv.asm):00072                 .WORD   drv_noop                          ;DSKY_STAT                         ; FUNCTION 31 -
-C153 C3CE             (     cubixdrv.asm):00073                 .WORD   drv_noop                          ;DSKY_GETKEY                       ; FUNCTION 32 -
-C155 C3CE             (     cubixdrv.asm):00074                 .WORD   drv_noop                          ;DSKY_BEEP                         ; FUNCTION 33 -
-C157 C3CE             (     cubixdrv.asm):00075                 .WORD   drv_noop                          ;DSKY_DSPL                         ; FUNCTION 34 -
-C159 C3CE             (     cubixdrv.asm):00076                 .WORD   drv_noop                          ;DSKY_PUTLED                       ; FUNCTION 35 -
-C15B C3CE             (     cubixdrv.asm):00077                 .WORD   drv_noop                          ;DSKY_BLANK                        ; FUNCTION 36 -
-C15D C3CE             (     cubixdrv.asm):00078                 .WORD   drv_noop                          ;FP_INIT                           ; FUNCTION 37 -
-C15F C3CE             (     cubixdrv.asm):00079                 .WORD   drv_noop                          ;FP_SETLED                         ; FUNCTION 38 -
-C161 C3CE             (     cubixdrv.asm):00080                 .WORD   drv_noop                          ;FP_GETSWITCH                      ; FUNCTION 39 -
-C163 C3CE             (     cubixdrv.asm):00081                 .WORD   drv_noop                          ;PCF_INIT                          ; FUNCTION 40 -
-C165 C3CE             (     cubixdrv.asm):00082                 .WORD   drv_noop                          ;PCF_READBYTES                     ; FUNCTION 41 -
-C167 C3CE             (     cubixdrv.asm):00083                 .WORD   drv_noop                          ;PCF_SENDBYTES                     ; FUNCTION 42 -
-C169 C3CE             (     cubixdrv.asm):00084                 .WORD   drv_noop                          ;PCF_INITDEV                       ; FUNCTION 43 -
-C16B C3CE             (     cubixdrv.asm):00085                 .WORD   drv_noop                          ;FPDIS_INIT                        ; FUNCTION 44 - Init Front Panel Display
-C16D C3CE             (     cubixdrv.asm):00086                 .WORD   drv_noop                          ;FPDIS_CLEAR                       ; FUNCTION 45 - Clear Front Panel Display
-C16F C3CE             (     cubixdrv.asm):00087                 .WORD   drv_noop                          ;FPDIS_SETXY                       ; FUNCTION 46 - SET XY ON Front Panel Display
-C171 C3CE             (     cubixdrv.asm):00088                 .WORD   drv_noop                          ;FPDIS_OUTCH                       ; FUNCTION 47 - Output char on Front Panel Display
-                      (     cubixdrv.asm):00089         ;
-                      (     cubixdrv.asm):00090         
-                      (     cubixdrv.asm):00091         
-                      (     cubixdrv.asm):00092         ;__DRIVERS___________________________________________________________________________________________
-                      (     cubixdrv.asm):00093         ;
-                      (     cubixdrv.asm):00094                 INCLUDE cubix_serial.asm
+C149 C8C8             (     cubixdrv.asm):00068                 .WORD   drv_noop                          ; FUNCTION 27 -
+C14B C8C8             (     cubixdrv.asm):00069                 .WORD   drv_noop                          ; FUNCTION 28 -
+C14D C8C8             (     cubixdrv.asm):00070                 .WORD   drv_noop                          ; FUNCTION 29 -
+                      (     cubixdrv.asm):00071         ;
+C14F C8C8             (     cubixdrv.asm):00072                 .WORD   drv_noop                          ; FUNCTION 30 -
+C151 C8C8             (     cubixdrv.asm):00073                 .WORD   drv_noop                          ; FUNCTION 31 -
+C153 C8C8             (     cubixdrv.asm):00074                 .WORD   drv_noop                          ; FUNCTION 32 -
+                      (     cubixdrv.asm):00075         ;
+C155 C8C8             (     cubixdrv.asm):00076                 .WORD   drv_noop                          ; FUNCTION 33 -
+C157 C8C8             (     cubixdrv.asm):00077                 .WORD   drv_noop                          ; FUNCTION 34 -
+C159 C8C8             (     cubixdrv.asm):00078                 .WORD   drv_noop                          ; FUNCTION 35 -
+                      (     cubixdrv.asm):00079         ;
+C15B C8C8             (     cubixdrv.asm):00080                 .WORD   drv_noop                          ; FUNCTION 36 -
+C15D C8C8             (     cubixdrv.asm):00081                 .WORD   drv_noop                          ; FUNCTION 37 -
+C15F C8C8             (     cubixdrv.asm):00082                 .WORD   drv_noop                          ; FUNCTION 38 -
+                      (     cubixdrv.asm):00083         ;
+C161 C8C8             (     cubixdrv.asm):00084                 .WORD   drv_noop                          ; FUNCTION 39 -
+C163 C8C8             (     cubixdrv.asm):00085                 .WORD   drv_noop                          ; FUNCTION 40 -
+C165 C8C8             (     cubixdrv.asm):00086                 .WORD   drv_noop                          ; FUNCTION 41 -
+                      (     cubixdrv.asm):00087         ;
+C167 C8C8             (     cubixdrv.asm):00088                 .WORD   drv_noop                          ; FUNCTION 42 -
+C169 C8C8             (     cubixdrv.asm):00089                 .WORD   drv_noop                          ; FUNCTION 43 -
+C16B C8C8             (     cubixdrv.asm):00090                 .WORD   drv_noop                          ; FUNCTION 44 -
+                      (     cubixdrv.asm):00091         ;
+C16D C8C8             (     cubixdrv.asm):00092                 .WORD   drv_noop                          ; FUNCTION 45 -
+C16F C8C8             (     cubixdrv.asm):00093                 .WORD   drv_noop                          ; FUNCTION 46 -
+C171 C8C8             (     cubixdrv.asm):00094                 .WORD   drv_noop                          ; FUNCTION 47 -
+                      (     cubixdrv.asm):00095         ;
+C173 C8C8             (     cubixdrv.asm):00096                 .WORD   drv_noop                          ; FUNCTION 48 -
+C175 C8C8             (     cubixdrv.asm):00097                 .WORD   drv_noop                          ; FUNCTION 49 -
+C177 C8C8             (     cubixdrv.asm):00098                 .WORD   drv_noop                          ; FUNCTION 50 -
+                      (     cubixdrv.asm):00099         ;
+C179 C3EB             (     cubixdrv.asm):00100                 .WORD   MULTIOINIT                        ; FUNCTION 51 - INIT MULTI IO CARD
+C17B C8C8             (     cubixdrv.asm):00101                 .WORD   drv_noop                          ; FUNCTION 52 -
+C17D C8C8             (     cubixdrv.asm):00102                 .WORD   drv_noop                          ; FUNCTION 53 -
+C17F C8C8             (     cubixdrv.asm):00103                 .WORD   drv_noop                          ; FUNCTION 54 -
+                      (     cubixdrv.asm):00104         ;
+                      (     cubixdrv.asm):00105         
+                      (     cubixdrv.asm):00106         
+                      (     cubixdrv.asm):00107         ;__DRIVERS___________________________________________________________________________________________
+                      (     cubixdrv.asm):00108         ;
+                      (     cubixdrv.asm):00109                 INCLUDE cubix_serial.asm
                       ( cubix_serial.asm):00001         ;__SERIAL DRIVERS________________________________________________________________________________________________________________
                       ( cubix_serial.asm):00002         ;
                       ( cubix_serial.asm):00003         ;       CUBIX serial drivers for 6809PC
@@ -150,48 +165,51 @@ C171 C3CE             (     cubixdrv.asm):00088                 .WORD   drv_noop
                       ( cubix_serial.asm):00024         ;       INITIALIZE SERIAL PORTS
                       ( cubix_serial.asm):00025         ;________________________________________________________________________________________________________________________________
                       ( cubix_serial.asm):00026         ;
-C173                  ( cubix_serial.asm):00027         SERIALINIT:
-C173 8600             ( cubix_serial.asm):00028                 LDA     #$00                              ; RESET UART
-C175 B71F85           ( cubix_serial.asm):00029                 STA     UART1STATUS                       ;
-C178 860B             ( cubix_serial.asm):00030                 LDA     #$0B                              ;
-C17A B71F86           ( cubix_serial.asm):00031                 STA     UART1COMMAND                      ;
-C17D 861E             ( cubix_serial.asm):00032                 LDA     #$1E                              ; 9600, 8 BITS, NO PARITY, 1 STOP BIT
-C17F B71F87           ( cubix_serial.asm):00033                 STA     UART1CONTROL                      ;
-C182 39               ( cubix_serial.asm):00034                 RTS
-C183 39               ( cubix_serial.asm):00035                 RTS
-                      ( cubix_serial.asm):00036         
-                      ( cubix_serial.asm):00037         ;__WRSER1________________________________________________________________________________________________________________________
-                      ( cubix_serial.asm):00038         ;
-                      ( cubix_serial.asm):00039         ;       WRITE CHARACTER(A) TO UART
-                      ( cubix_serial.asm):00040         ;________________________________________________________________________________________________________________________________
-                      ( cubix_serial.asm):00041         ;
-C184                  ( cubix_serial.asm):00042         WRSER1
-                      ( cubix_serial.asm):00043         !
-C184 F61F85           ( cubix_serial.asm):00044                 LDB     UART1STATUS                       ; GET STATUS
-C187 C410             ( cubix_serial.asm):00045                 ANDB    #%00010000                        ; IS TX READY
-C189 27F9             ( cubix_serial.asm):00046                 BEQ     <                                 ; IF NOT REPEAT
-C18B B71F84           ( cubix_serial.asm):00047                 STA     UART1DATA                         ; WRITE DATA
-C18E 39               ( cubix_serial.asm):00048                 RTS
-                      ( cubix_serial.asm):00049         
-                      ( cubix_serial.asm):00050         ;__RDSER1________________________________________________________________________________________________________________________
-                      ( cubix_serial.asm):00051         ;
-                      ( cubix_serial.asm):00052         ;       READ CHARACTER FROM UART TO (A)
-                      ( cubix_serial.asm):00053         ;________________________________________________________________________________________________________________________________
-                      ( cubix_serial.asm):00054         ;
-C18F                  ( cubix_serial.asm):00055         RDSER1
-C18F B61F85           ( cubix_serial.asm):00056                 LDA     UART1STATUS                       ; GET STATUS REGISTER
-C192 8408             ( cubix_serial.asm):00057                 ANDA    #%00001000                        ; IS RX READY
-C194 2708             ( cubix_serial.asm):00058                 BEQ     >                                 ; No DATA IS READY
-C196 B61F84           ( cubix_serial.asm):00059                 LDA     UART1DATA                         ; GET DATA CHAR
-C199 B70109           ( cubix_serial.asm):00060                 STA     >PAGER_D                          ; SAVE 'D'
-C19C 39               ( cubix_serial.asm):00061                 RTS
-                      ( cubix_serial.asm):00062         
-C19D 39               ( cubix_serial.asm):00063                 RTS
-                      ( cubix_serial.asm):00064         !
-C19E 86FF             ( cubix_serial.asm):00065                 LDA     #$FF                              ;
-C1A0 B70109           ( cubix_serial.asm):00066                 STA     >PAGER_D                          ; SAVE 'D'
-C1A3 39               ( cubix_serial.asm):00067                 RTS                                       ;
-                      (     cubixdrv.asm):00095                 INCLUDE cubix_ide.asm
+C181                  ( cubix_serial.asm):00027         SERIALINIT:
+C181 8600             ( cubix_serial.asm):00028                 LDA     #$00                              ; RESET UART
+C183 B71F85           ( cubix_serial.asm):00029                 STA     UART1STATUS                       ;
+C186 860B             ( cubix_serial.asm):00030                 LDA     #$0B                              ;
+C188 B71F86           ( cubix_serial.asm):00031                 STA     UART1COMMAND                      ;
+C18B 861E             ( cubix_serial.asm):00032                 LDA     #$1E                              ; 9600, 8 BITS, NO PARITY, 1 STOP BIT
+C18D B71F87           ( cubix_serial.asm):00033                 STA     UART1CONTROL                      ;
+C190 39               ( cubix_serial.asm):00034                 RTS
+                      ( cubix_serial.asm):00035         
+                      ( cubix_serial.asm):00036         ;__WRSER1________________________________________________________________________________________________________________________
+                      ( cubix_serial.asm):00037         ;
+                      ( cubix_serial.asm):00038         ;       WRITE CHARACTER(A) TO UART
+                      ( cubix_serial.asm):00039         ;________________________________________________________________________________________________________________________________
+                      ( cubix_serial.asm):00040         ;
+C191                  ( cubix_serial.asm):00041         WRSER1
+                      ( cubix_serial.asm):00042         !
+C191 F61F85           ( cubix_serial.asm):00043                 LDB     UART1STATUS                       ; GET STATUS
+C194 C410             ( cubix_serial.asm):00044                 ANDB    #%00010000                        ; IS TX READY
+C196 27F9             ( cubix_serial.asm):00045                 BEQ     <                                 ; IF NOT REPEAT
+C198 B71F84           ( cubix_serial.asm):00046                 STA     UART1DATA                         ; WRITE DATA
+C19B 39               ( cubix_serial.asm):00047                 RTS
+                      ( cubix_serial.asm):00048         
+                      ( cubix_serial.asm):00049         ;__RDSER1________________________________________________________________________________________________________________________
+                      ( cubix_serial.asm):00050         ;
+                      ( cubix_serial.asm):00051         ;       READ CHARACTER FROM UART TO (A)
+                      ( cubix_serial.asm):00052         ;________________________________________________________________________________________________________________________________
+                      ( cubix_serial.asm):00053         ;
+C19C                  ( cubix_serial.asm):00054         RDSER1
+C19C BDC50F           ( cubix_serial.asm):00055                 JSR     KBD_GETKEY
+C19F 2501             ( cubix_serial.asm):00056                 BCS     >
+C1A1 39               ( cubix_serial.asm):00057                 RTS
+                      ( cubix_serial.asm):00058         !
+C1A2 B61F85           ( cubix_serial.asm):00059                 LDA     UART1STATUS                       ; GET STATUS REGISTER
+C1A5 8408             ( cubix_serial.asm):00060                 ANDA    #%00001000                        ; IS RX READY
+C1A7 2708             ( cubix_serial.asm):00061                 BEQ     >                                 ; No DATA IS READY
+C1A9 B61F84           ( cubix_serial.asm):00062                 LDA     UART1DATA                         ; GET DATA CHAR
+C1AC B70109           ( cubix_serial.asm):00063                 STA     >PAGER_D                          ; SAVE 'D'
+C1AF 39               ( cubix_serial.asm):00064                 RTS
+                      ( cubix_serial.asm):00065         
+C1B0 39               ( cubix_serial.asm):00066                 RTS
+                      ( cubix_serial.asm):00067         !
+C1B1 86FF             ( cubix_serial.asm):00068                 LDA     #$FF                              ;
+C1B3 B70109           ( cubix_serial.asm):00069                 STA     >PAGER_D                          ; SAVE 'D'
+C1B6 39               ( cubix_serial.asm):00070                 RTS                                       ;
+                      (     cubixdrv.asm):00110                 INCLUDE cubix_ide.asm
                       (    cubix_ide.asm):00001         ;__IDE DRIVERS___________________________________________________________________________________________________________________
                       (    cubix_ide.asm):00002         ;
                       (    cubix_ide.asm):00003         ;       CUBIX IDE disk drivers 6809PC - XT IDE ISA CARD
@@ -230,8 +248,8 @@ C1A3 39               ( cubix_serial.asm):00067                 RTS             
                       (    cubix_ide.asm):00036         
                       (    cubix_ide.asm):00037         
                       (    cubix_ide.asm):00038         
-C1A4                  (    cubix_ide.asm):00039         XTIDETIMEOUT:
-C1A4 0000             (    cubix_ide.asm):00040                 .BYTE   $00,$00
+C1B7                  (    cubix_ide.asm):00039         XTIDETIMEOUT:
+C1B7 0000             (    cubix_ide.asm):00040                 .BYTE   $00,$00
                       (    cubix_ide.asm):00041         
                       (    cubix_ide.asm):00042         
                       (    cubix_ide.asm):00043         
@@ -240,44 +258,44 @@ C1A4 0000             (    cubix_ide.asm):00040                 .BYTE   $00,$00
                       (    cubix_ide.asm):00046         ;  INIT AND DISPLAY IDE INFO
                       (    cubix_ide.asm):00047         ;____________________________________________________________________________________________________
                       (    cubix_ide.asm):00048         ;
-C1A6                  (    cubix_ide.asm):00049         XTIDE_INIT:
-C1A6 BDC3CF           (    cubix_ide.asm):00050                 JSR     LFCR                              ; AND CRLF
-C1A9 8EC364           (    cubix_ide.asm):00051                 LDX     #MESSAGE1
-C1AC BDC3E3           (    cubix_ide.asm):00052                 JSR     WRSTR                             ; DO PROMPT
-C1AF BDC3CF           (    cubix_ide.asm):00053                 JSR     LFCR                              ; AND CRLF
+C1B9                  (    cubix_ide.asm):00049         XTIDE_INIT:
+C1B9 BDC8C9           (    cubix_ide.asm):00050                 JSR     LFCR                              ; AND CRLF
+C1BC 8EC377           (    cubix_ide.asm):00051                 LDX     #MESSAGE1
+C1BF BDC8DD           (    cubix_ide.asm):00052                 JSR     WRSTR                             ; DO PROMPT
+C1C2 BDC8C9           (    cubix_ide.asm):00053                 JSR     LFCR                              ; AND CRLF
                       (    cubix_ide.asm):00054         ;
-C1B2 8EC36C           (    cubix_ide.asm):00055                 LDX     #MESSAGE2
-C1B5 BDC3E3           (    cubix_ide.asm):00056                 JSR     WRSTR                             ; DO PROMPT
-C1B8 CC1300           (    cubix_ide.asm):00057                 LDD     #XTIDE_DATA_LO                    ; GET BASE PORT
-C1BB BDC3EF           (    cubix_ide.asm):00058                 JSR     WRHEXW                            ; PRINT BASE PORT
+C1C5 8EC37F           (    cubix_ide.asm):00055                 LDX     #MESSAGE2
+C1C8 BDC8DD           (    cubix_ide.asm):00056                 JSR     WRSTR                             ; DO PROMPT
+C1CB CC1300           (    cubix_ide.asm):00057                 LDD     #XTIDE_DATA_LO                    ; GET BASE PORT
+C1CE BDC8E9           (    cubix_ide.asm):00058                 JSR     WRHEXW                            ; PRINT BASE PORT
                       (    cubix_ide.asm):00059         ;
-C1BE BDC1EC           (    cubix_ide.asm):00060                 JSR     XTIDE_PROBE                       ; DETECT AN ATA DEVICE, ABORT IF NOT FOUND
-C1C1 2503             (    cubix_ide.asm):00061                 BCS     IDE_ABORT
-C1C3 7EC1CF           (    cubix_ide.asm):00062                 JMP     IDE_PRINT_INFO
-C1C6                  (    cubix_ide.asm):00063         IDE_ABORT:
-C1C6 8EC373           (    cubix_ide.asm):00064                 LDX     #MESSAGE3
-C1C9 BDC3E3           (    cubix_ide.asm):00065                 JSR     WRSTR                             ; DO PROMPT
-C1CC 7EC1E8           (    cubix_ide.asm):00066                 JMP     IDE_INITA
-C1CF                  (    cubix_ide.asm):00067         IDE_PRINT_INFO:
-C1CF BDC3CF           (    cubix_ide.asm):00068                 JSR     LFCR                              ; AND CRLF
-C1D2 8EC380           (    cubix_ide.asm):00069                 LDX     #MESSAGE4
-C1D5 BDC3E3           (    cubix_ide.asm):00070                 JSR     WRSTR                             ; DO PROMPT
-C1D8 8600             (    cubix_ide.asm):00071                 LDA     #$00
-C1DA BDC230           (    cubix_ide.asm):00072                 JSR     IDE_READ_INFO                     ; GET DRIVE INFO, ABORT IF ERROR
-C1DD 8EC391           (    cubix_ide.asm):00073                 LDX     #MESSAGE5
-C1E0 BDC3E3           (    cubix_ide.asm):00074                 JSR     WRSTR                             ; DO PROMPT
-C1E3 8601             (    cubix_ide.asm):00075                 LDA     #$01
-C1E5 BDC230           (    cubix_ide.asm):00076                 JSR     IDE_READ_INFO                     ; GET DRIVE INFO, ABORT IF ERROR
-C1E8                  (    cubix_ide.asm):00077         IDE_INITA:
-C1E8 BDC3CF           (    cubix_ide.asm):00078                 JSR     LFCR                              ; AND CRLF
-C1EB 39               (    cubix_ide.asm):00079                 RTS                                       ; DONE
+C1D1 BDC1FF           (    cubix_ide.asm):00060                 JSR     XTIDE_PROBE                       ; DETECT AN ATA DEVICE, ABORT IF NOT FOUND
+C1D4 2503             (    cubix_ide.asm):00061                 BCS     IDE_ABORT
+C1D6 7EC1E2           (    cubix_ide.asm):00062                 JMP     IDE_PRINT_INFO
+C1D9                  (    cubix_ide.asm):00063         IDE_ABORT:
+C1D9 8EC386           (    cubix_ide.asm):00064                 LDX     #MESSAGE3
+C1DC BDC8DD           (    cubix_ide.asm):00065                 JSR     WRSTR                             ; DO PROMPT
+C1DF 7EC1FB           (    cubix_ide.asm):00066                 JMP     IDE_INITA
+C1E2                  (    cubix_ide.asm):00067         IDE_PRINT_INFO:
+C1E2 BDC8C9           (    cubix_ide.asm):00068                 JSR     LFCR                              ; AND CRLF
+C1E5 8EC393           (    cubix_ide.asm):00069                 LDX     #MESSAGE4
+C1E8 BDC8DD           (    cubix_ide.asm):00070                 JSR     WRSTR                             ; DO PROMPT
+C1EB 8600             (    cubix_ide.asm):00071                 LDA     #$00
+C1ED BDC243           (    cubix_ide.asm):00072                 JSR     IDE_READ_INFO                     ; GET DRIVE INFO, ABORT IF ERROR
+C1F0 8EC3A4           (    cubix_ide.asm):00073                 LDX     #MESSAGE5
+C1F3 BDC8DD           (    cubix_ide.asm):00074                 JSR     WRSTR                             ; DO PROMPT
+C1F6 8601             (    cubix_ide.asm):00075                 LDA     #$01
+C1F8 BDC243           (    cubix_ide.asm):00076                 JSR     IDE_READ_INFO                     ; GET DRIVE INFO, ABORT IF ERROR
+C1FB                  (    cubix_ide.asm):00077         IDE_INITA:
+C1FB BDC8C9           (    cubix_ide.asm):00078                 JSR     LFCR                              ; AND CRLF
+C1FE 39               (    cubix_ide.asm):00079                 RTS                                       ; DONE
                       (    cubix_ide.asm):00080         ;
                       (    cubix_ide.asm):00081         ;__XTIDE_PROBE_______________________________________________________________________________________
                       (    cubix_ide.asm):00082         ;
                       (    cubix_ide.asm):00083         ;  XTPROBE FOR IDE HARDWARE
                       (    cubix_ide.asm):00084         ;____________________________________________________________________________________________________
                       (    cubix_ide.asm):00085         ;
-C1EC                  (    cubix_ide.asm):00086         XTIDE_PROBE:
+C1FF                  (    cubix_ide.asm):00086         XTIDE_PROBE:
                       (    cubix_ide.asm):00087         ;
                       (    cubix_ide.asm):00088         ; BELOW TESTS FOR EXISTENCE OF AN IDE CONTROLLER ON THE
                       (    cubix_ide.asm):00089         ; PPIDE INTERFACE.  WE WRITE A VALUE OF ZERO FIRST SO THAT
@@ -290,43 +308,43 @@ C1EC                  (    cubix_ide.asm):00086         XTIDE_PROBE:
                       (    cubix_ide.asm):00096         
                       (    cubix_ide.asm):00097         ; CHECK SIGNATURE
                       (    cubix_ide.asm):00098         
-C1EC 8E0000           (    cubix_ide.asm):00099                 LDX     #$0000
-                      (    cubix_ide.asm):00100         ;       SOMETIMES THE CF-XTIDE WILL ONLY READ 80, THIS CAN BE RESET BY WRITING ZEROS UNTIL THE 80s GO AWAY
+C1FF 8E0000           (    cubix_ide.asm):00099                 LDX     #$0000
+                      (    cubix_ide.asm):00100         ;       SOMETIMES THE CF-XTIDE WILL ONLY READ 80, THIS CAN BE RESET BY WRITING ZEROS UNTIL VALUES ARE PROPERLY READ
                       (    cubix_ide.asm):00101         !
-C1EF F61300           (    cubix_ide.asm):00102                 LDB     XTIDE_DATA_LO
-C1F2 C180             (    cubix_ide.asm):00103                 CMPB    #$80
-C1F4 262B             (    cubix_ide.asm):00104                 BNE     >
-C1F6 C600             (    cubix_ide.asm):00105                 LDB     #$00
-C1F8 F71300           (    cubix_ide.asm):00106                 STB     XTIDE_DATA_LO
-C1FB 12               (    cubix_ide.asm):00107                 NOP
-C1FC F71301           (    cubix_ide.asm):00108                 STB     XTIDE_DATA_HI
-C1FF 12               (    cubix_ide.asm):00109                 NOP
-C200 F71306           (    cubix_ide.asm):00110                 STB     XTIDE_LBALOW
-C203 12               (    cubix_ide.asm):00111                 NOP
-C204 F71308           (    cubix_ide.asm):00112                 STB     XTIDE_LBAMID
-C207 12               (    cubix_ide.asm):00113                 NOP
-C208 F7130A           (    cubix_ide.asm):00114                 STB     XTIDE_LBAHI
-C20B 12               (    cubix_ide.asm):00115                 NOP
-C20C F7130C           (    cubix_ide.asm):00116                 STB     XTIDE_DEVICE
-C20F 12               (    cubix_ide.asm):00117                 NOP
-C210 F7130E           (    cubix_ide.asm):00118                 STB     XTIDE_COMMAND
-C213 12               (    cubix_ide.asm):00119                 NOP
-C214 F7130E           (    cubix_ide.asm):00120                 STB     XTIDE_STATUS
-C217 12               (    cubix_ide.asm):00121                 NOP
-C218 3001             (    cubix_ide.asm):00122                 INX
-C21A 8C0300           (    cubix_ide.asm):00123                 CPX     #$0300
-C21D 26D0             (    cubix_ide.asm):00124                 BNE     <
-C21F 200C             (    cubix_ide.asm):00125                 BRA     XTIDE_PROBE_FAIL                  ; TIMED OUT
+C202 F61300           (    cubix_ide.asm):00102                 LDB     XTIDE_DATA_LO
+C205 C180             (    cubix_ide.asm):00103                 CMPB    #$80
+C207 262B             (    cubix_ide.asm):00104                 BNE     >
+C209 C600             (    cubix_ide.asm):00105                 LDB     #$00
+C20B F71300           (    cubix_ide.asm):00106                 STB     XTIDE_DATA_LO
+C20E 12               (    cubix_ide.asm):00107                 NOP
+C20F F71301           (    cubix_ide.asm):00108                 STB     XTIDE_DATA_HI
+C212 12               (    cubix_ide.asm):00109                 NOP
+C213 F71306           (    cubix_ide.asm):00110                 STB     XTIDE_LBALOW
+C216 12               (    cubix_ide.asm):00111                 NOP
+C217 F71308           (    cubix_ide.asm):00112                 STB     XTIDE_LBAMID
+C21A 12               (    cubix_ide.asm):00113                 NOP
+C21B F7130A           (    cubix_ide.asm):00114                 STB     XTIDE_LBAHI
+C21E 12               (    cubix_ide.asm):00115                 NOP
+C21F F7130C           (    cubix_ide.asm):00116                 STB     XTIDE_DEVICE
+C222 12               (    cubix_ide.asm):00117                 NOP
+C223 F7130E           (    cubix_ide.asm):00118                 STB     XTIDE_COMMAND
+C226 12               (    cubix_ide.asm):00119                 NOP
+C227 F7130E           (    cubix_ide.asm):00120                 STB     XTIDE_STATUS
+C22A 12               (    cubix_ide.asm):00121                 NOP
+C22B 3001             (    cubix_ide.asm):00122                 INX
+C22D 8C0300           (    cubix_ide.asm):00123                 CPX     #$0300
+C230 26D0             (    cubix_ide.asm):00124                 BNE     <
+C232 200C             (    cubix_ide.asm):00125                 BRA     XTIDE_PROBE_FAIL                  ; TIMED OUT
                       (    cubix_ide.asm):00126         !
-C221 F61304           (    cubix_ide.asm):00127                 LDB     XTIDE_SEC_CNT
-C224 C101             (    cubix_ide.asm):00128                 CMPB    #$01
-C226 2605             (    cubix_ide.asm):00129                 BNE     XTIDE_PROBE_FAIL                  ; IF NOT '01' THEN REPORT NO IDE PRESENT
-C228 1CFE             (    cubix_ide.asm):00130                 CLC
-C22A 7EC22F           (    cubix_ide.asm):00131                 JMP     XTIDE_PROBE_SUCCESS
-C22D                  (    cubix_ide.asm):00132         XTIDE_PROBE_FAIL:
-C22D 1A01             (    cubix_ide.asm):00133                 SEC
-C22F                  (    cubix_ide.asm):00134         XTIDE_PROBE_SUCCESS:
-C22F 39               (    cubix_ide.asm):00135                 RTS                                       ; DONE, NOTE THAT A=0 AND Z IS SET
+C234 F61304           (    cubix_ide.asm):00127                 LDB     XTIDE_SEC_CNT
+C237 C101             (    cubix_ide.asm):00128                 CMPB    #$01
+C239 2605             (    cubix_ide.asm):00129                 BNE     XTIDE_PROBE_FAIL                  ; IF NOT '01' THEN REPORT NO IDE PRESENT
+C23B 1CFE             (    cubix_ide.asm):00130                 CLC
+C23D 7EC242           (    cubix_ide.asm):00131                 JMP     XTIDE_PROBE_SUCCESS
+C240                  (    cubix_ide.asm):00132         XTIDE_PROBE_FAIL:
+C240 1A01             (    cubix_ide.asm):00133                 SEC
+C242                  (    cubix_ide.asm):00134         XTIDE_PROBE_SUCCESS:
+C242 39               (    cubix_ide.asm):00135                 RTS                                       ; DONE, NOTE THAT A=0 AND Z IS SET
                       (    cubix_ide.asm):00136         
                       (    cubix_ide.asm):00137         ;*__IDE_READ_INFO___________________________________________________________________________________
                       (    cubix_ide.asm):00138         ;*
@@ -334,66 +352,66 @@ C22F 39               (    cubix_ide.asm):00135                 RTS             
                       (    cubix_ide.asm):00140         ;*      CARRY SET ON ERROR
                       (    cubix_ide.asm):00141         ;*      A=MST/SLV
                       (    cubix_ide.asm):00142         ;*____________________________________________________________________________________________________
-C230                  (    cubix_ide.asm):00143         IDE_READ_INFO:
+C243                  (    cubix_ide.asm):00143         IDE_READ_INFO:
                       (    cubix_ide.asm):00144         ; SET DRIVE BIT
-C230 8401             (    cubix_ide.asm):00145                 ANDA    #$01                              ; ONLY WANT THE 1 BIT (MST/SLV)
-C232 48               (    cubix_ide.asm):00146                 ASLA                                      ; SHIFT 4
-C233 48               (    cubix_ide.asm):00147                 ASLA                                      ;
-C234 48               (    cubix_ide.asm):00148                 ASLA                                      ;
-C235 48               (    cubix_ide.asm):00149                 ASLA                                      ;
-C236 8AE0             (    cubix_ide.asm):00150                 ORA     #$E0                              ; E0=MST  F0=SLV
-C238 B7130C           (    cubix_ide.asm):00151                 STA     XTIDE_DEVICE
+C243 8401             (    cubix_ide.asm):00145                 ANDA    #$01                              ; ONLY WANT THE 1 BIT (MST/SLV)
+C245 48               (    cubix_ide.asm):00146                 ASLA                                      ; SHIFT 4
+C246 48               (    cubix_ide.asm):00147                 ASLA                                      ;
+C247 48               (    cubix_ide.asm):00148                 ASLA                                      ;
+C248 48               (    cubix_ide.asm):00149                 ASLA                                      ;
+C249 8AE0             (    cubix_ide.asm):00150                 ORA     #$E0                              ; E0=MST  F0=SLV
+C24B B7130C           (    cubix_ide.asm):00151                 STA     XTIDE_DEVICE
                       (    cubix_ide.asm):00152         
-C23B BDC2DA           (    cubix_ide.asm):00153                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
-C23E 2543             (    cubix_ide.asm):00154                 BCS     IDE_READ_INFO_ABORT
+C24E BDC2ED           (    cubix_ide.asm):00153                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
+C251 2543             (    cubix_ide.asm):00154                 BCS     IDE_READ_INFO_ABORT
                       (    cubix_ide.asm):00155         
-C240 8601             (    cubix_ide.asm):00156                 LDA     #$01                              ; ENABLE 8-BIT MODE (XT-CF-LITE)
-C242 B71302           (    cubix_ide.asm):00157                 STA     XTIDE_FECODE
-C245 86EF             (    cubix_ide.asm):00158                 LDA     #XTIDE_CMD_FEAT
-C247 B7130E           (    cubix_ide.asm):00159                 STA     XTIDE_COMMAND
+C253 8601             (    cubix_ide.asm):00156                 LDA     #$01                              ; ENABLE 8-BIT MODE (XT-CF-LITE)
+C255 B71302           (    cubix_ide.asm):00157                 STA     XTIDE_FECODE
+C258 86EF             (    cubix_ide.asm):00158                 LDA     #XTIDE_CMD_FEAT
+C25A B7130E           (    cubix_ide.asm):00159                 STA     XTIDE_COMMAND
                       (    cubix_ide.asm):00160         
-C24A 12               (    cubix_ide.asm):00161                 NOP                                       ; TINY DELAY, JUST IN CASE
-C24B 12               (    cubix_ide.asm):00162                 NOP
-C24C 12               (    cubix_ide.asm):00163                 NOP
-C24D 12               (    cubix_ide.asm):00164                 NOP
-C24E 12               (    cubix_ide.asm):00165                 NOP
-C24F 12               (    cubix_ide.asm):00166                 NOP
-C250 12               (    cubix_ide.asm):00167                 NOP
-C251 12               (    cubix_ide.asm):00168                 NOP
-C252 12               (    cubix_ide.asm):00169                 NOP
-C253 12               (    cubix_ide.asm):00170                 NOP
-C254 12               (    cubix_ide.asm):00171                 NOP
+C25D 12               (    cubix_ide.asm):00161                 NOP                                       ; TINY DELAY, JUST IN CASE
+C25E 12               (    cubix_ide.asm):00162                 NOP
+C25F 12               (    cubix_ide.asm):00163                 NOP
+C260 12               (    cubix_ide.asm):00164                 NOP
+C261 12               (    cubix_ide.asm):00165                 NOP
+C262 12               (    cubix_ide.asm):00166                 NOP
+C263 12               (    cubix_ide.asm):00167                 NOP
+C264 12               (    cubix_ide.asm):00168                 NOP
+C265 12               (    cubix_ide.asm):00169                 NOP
+C266 12               (    cubix_ide.asm):00170                 NOP
+C267 12               (    cubix_ide.asm):00171                 NOP
                       (    cubix_ide.asm):00172         
                       (    cubix_ide.asm):00173         
-C255 86EC             (    cubix_ide.asm):00174                 LDA     #XTIDE_CMD_ID                     ; ID COMMAND
-C257 B7130E           (    cubix_ide.asm):00175                 STA     XTIDE_COMMAND
+C268 86EC             (    cubix_ide.asm):00174                 LDA     #XTIDE_CMD_ID                     ; ID COMMAND
+C26A B7130E           (    cubix_ide.asm):00175                 STA     XTIDE_COMMAND
                       (    cubix_ide.asm):00176         
-C25A BDC2FE           (    cubix_ide.asm):00177                 JSR     IDE_WAIT_DRQ                      ;WAIT UNTIL IT'S GOT THE DATA
-C25D 2524             (    cubix_ide.asm):00178                 BCS     IDE_READ_INFO_ABORT
+C26D BDC311           (    cubix_ide.asm):00177                 JSR     IDE_WAIT_DRQ                      ;WAIT UNTIL IT'S GOT THE DATA
+C270 2524             (    cubix_ide.asm):00178                 BCS     IDE_READ_INFO_ABORT
                       (    cubix_ide.asm):00179         
-C25F BDC32A           (    cubix_ide.asm):00180                 JSR     IDE_READ_BUFFER                   ; GRAB THE 256 WORDS FROM THE BUFFER
+C272 BDC33D           (    cubix_ide.asm):00180                 JSR     IDE_READ_BUFFER                   ; GRAB THE 256 WORDS FROM THE BUFFER
                       (    cubix_ide.asm):00181         
-C262 8EC3A2           (    cubix_ide.asm):00182                 LDX     #MESSAGE6
-C265 BDC3E3           (    cubix_ide.asm):00183                 JSR     WRSTR
-C268 B6027B           (    cubix_ide.asm):00184                 LDA     HSTBUF+123
-C26B BDC3FB           (    cubix_ide.asm):00185                 JSR     WRHEX
-C26E B6027A           (    cubix_ide.asm):00186                 LDA     HSTBUF+122
-C271 BDC3FB           (    cubix_ide.asm):00187                 JSR     WRHEX
-C274 B60279           (    cubix_ide.asm):00188                 LDA     HSTBUF+121
-C277 BDC3FB           (    cubix_ide.asm):00189                 JSR     WRHEX
-C27A B60278           (    cubix_ide.asm):00190                 LDA     HSTBUF+120
-C27D BDC3FB           (    cubix_ide.asm):00191                 JSR     WRHEX
-C280 7EC28F           (    cubix_ide.asm):00192                 JMP     IDE_READ_INFO_OK
-C283                  (    cubix_ide.asm):00193         IDE_READ_INFO_ABORT:
-C283 8EC373           (    cubix_ide.asm):00194                 LDX     #MESSAGE3
-C286 BDC3E3           (    cubix_ide.asm):00195                 JSR     WRSTR                             ;DO PROMPT
-C289 BDC3CF           (    cubix_ide.asm):00196                 JSR     LFCR                              ;AND CRLF
-C28C 1A01             (    cubix_ide.asm):00197                 SEC
-C28E 39               (    cubix_ide.asm):00198                 RTS                                       ;
-C28F                  (    cubix_ide.asm):00199         IDE_READ_INFO_OK:
-C28F BDC3CF           (    cubix_ide.asm):00200                 JSR     LFCR                              ; AND CRLF
-C292 1CFE             (    cubix_ide.asm):00201                 CLC
-C294 39               (    cubix_ide.asm):00202                 RTS
+C275 8EC3B5           (    cubix_ide.asm):00182                 LDX     #MESSAGE6
+C278 BDC8DD           (    cubix_ide.asm):00183                 JSR     WRSTR
+C27B B6027B           (    cubix_ide.asm):00184                 LDA     HSTBUF+123
+C27E BDC8F5           (    cubix_ide.asm):00185                 JSR     WRHEX
+C281 B6027A           (    cubix_ide.asm):00186                 LDA     HSTBUF+122
+C284 BDC8F5           (    cubix_ide.asm):00187                 JSR     WRHEX
+C287 B60279           (    cubix_ide.asm):00188                 LDA     HSTBUF+121
+C28A BDC8F5           (    cubix_ide.asm):00189                 JSR     WRHEX
+C28D B60278           (    cubix_ide.asm):00190                 LDA     HSTBUF+120
+C290 BDC8F5           (    cubix_ide.asm):00191                 JSR     WRHEX
+C293 7EC2A2           (    cubix_ide.asm):00192                 JMP     IDE_READ_INFO_OK
+C296                  (    cubix_ide.asm):00193         IDE_READ_INFO_ABORT:
+C296 8EC386           (    cubix_ide.asm):00194                 LDX     #MESSAGE3
+C299 BDC8DD           (    cubix_ide.asm):00195                 JSR     WRSTR                             ;DO PROMPT
+C29C BDC8C9           (    cubix_ide.asm):00196                 JSR     LFCR                              ;AND CRLF
+C29F 1A01             (    cubix_ide.asm):00197                 SEC
+C2A1 39               (    cubix_ide.asm):00198                 RTS                                       ;
+C2A2                  (    cubix_ide.asm):00199         IDE_READ_INFO_OK:
+C2A2 BDC8C9           (    cubix_ide.asm):00200                 JSR     LFCR                              ; AND CRLF
+C2A5 1CFE             (    cubix_ide.asm):00201                 CLC
+C2A7 39               (    cubix_ide.asm):00202                 RTS
                       (    cubix_ide.asm):00203         
                       (    cubix_ide.asm):00204         
                       (    cubix_ide.asm):00205         
@@ -402,48 +420,48 @@ C294 39               (    cubix_ide.asm):00202                 RTS
                       (    cubix_ide.asm):00208         ;*  READ IDE SECTOR (IN LBA) INTO BUFFER
                       (    cubix_ide.asm):00209         ;*
                       (    cubix_ide.asm):00210         ;*____________________________________________________________________________________________________
-C295                  (    cubix_ide.asm):00211         IDE_READ_SECTOR:
-C295 BDC2DA           (    cubix_ide.asm):00212                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
-C298 2515             (    cubix_ide.asm):00213                 BCS     IDE_READ_SECTOR_ERROR             ; IF TIMEOUT, REPORT NO IDE PRESENT
-C29A                  (    cubix_ide.asm):00214         IDE_READ_SECTOR_1:
-C29A BDC3A5           (    cubix_ide.asm):00215                 JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
-C29D 8620             (    cubix_ide.asm):00216                 LDA     #XTIDE_CMD_READ
-C29F B7130E           (    cubix_ide.asm):00217                 STA     XTIDE_COMMAND
+C2A8                  (    cubix_ide.asm):00211         IDE_READ_SECTOR:
+C2A8 BDC2ED           (    cubix_ide.asm):00212                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
+C2AB 2515             (    cubix_ide.asm):00213                 BCS     IDE_READ_SECTOR_ERROR             ; IF TIMEOUT, REPORT NO IDE PRESENT
+C2AD                  (    cubix_ide.asm):00214         IDE_READ_SECTOR_1:
+C2AD BDC3B8           (    cubix_ide.asm):00215                 JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
+C2B0 8620             (    cubix_ide.asm):00216                 LDA     #XTIDE_CMD_READ
+C2B2 B7130E           (    cubix_ide.asm):00217                 STA     XTIDE_COMMAND
                       (    cubix_ide.asm):00218         
-C2A2 BDC2FE           (    cubix_ide.asm):00219                 JSR     IDE_WAIT_DRQ                      ; WAIT UNTIL IT'S GOT THE DATA
-C2A5 2508             (    cubix_ide.asm):00220                 BCS     IDE_READ_SECTOR_ERROR             ; IF TIMEOUT, REPORT NO IDE PRESENT
-C2A7 BDC32A           (    cubix_ide.asm):00221                 JSR     IDE_READ_BUFFER                   ; GRAB THE 256 WORDS FROM THE BUFFER
-C2AA 4F               (    cubix_ide.asm):00222                 CLRA                                      ; ZERO = 1 ON RETURN = OPERATION OK
-C2AB B70103           (    cubix_ide.asm):00223                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
-C2AE 39               (    cubix_ide.asm):00224                 RTS
-C2AF                  (    cubix_ide.asm):00225         IDE_READ_SECTOR_ERROR:
-C2AF 8602             (    cubix_ide.asm):00226                 LDA     #$02                              ; SET ERROR CONDITION
-C2B1 B70103           (    cubix_ide.asm):00227                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
-C2B4 39               (    cubix_ide.asm):00228                 RTS
+C2B5 BDC311           (    cubix_ide.asm):00219                 JSR     IDE_WAIT_DRQ                      ; WAIT UNTIL IT'S GOT THE DATA
+C2B8 2508             (    cubix_ide.asm):00220                 BCS     IDE_READ_SECTOR_ERROR             ; IF TIMEOUT, REPORT NO IDE PRESENT
+C2BA BDC33D           (    cubix_ide.asm):00221                 JSR     IDE_READ_BUFFER                   ; GRAB THE 256 WORDS FROM THE BUFFER
+C2BD 4F               (    cubix_ide.asm):00222                 CLRA                                      ; ZERO = 1 ON RETURN = OPERATION OK
+C2BE B70103           (    cubix_ide.asm):00223                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
+C2C1 39               (    cubix_ide.asm):00224                 RTS
+C2C2                  (    cubix_ide.asm):00225         IDE_READ_SECTOR_ERROR:
+C2C2 8602             (    cubix_ide.asm):00226                 LDA     #$02                              ; SET ERROR CONDITION
+C2C4 B70103           (    cubix_ide.asm):00227                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
+C2C7 39               (    cubix_ide.asm):00228                 RTS
                       (    cubix_ide.asm):00229         
                       (    cubix_ide.asm):00230         ;*__IDE_WRITE_SECTOR__________________________________________________________________________________
                       (    cubix_ide.asm):00231         ;*
                       (    cubix_ide.asm):00232         ;*  WRITE IDE SECTOR (IN LBA) FROM BUFFER
                       (    cubix_ide.asm):00233         ;*
                       (    cubix_ide.asm):00234         ;*____________________________________________________________________________________________________
-C2B5                  (    cubix_ide.asm):00235         IDE_WRITE_SECTOR:
-C2B5 BDC2DA           (    cubix_ide.asm):00236                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
-C2B8 251A             (    cubix_ide.asm):00237                 BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
-C2BA BDC3A5           (    cubix_ide.asm):00238                 JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
-C2BD 8630             (    cubix_ide.asm):00239                 LDA     #XTIDE_CMD_WRITE
-C2BF B7130E           (    cubix_ide.asm):00240                 STA     XTIDE_COMMAND
-C2C2 BDC2FE           (    cubix_ide.asm):00241                 JSR     IDE_WAIT_DRQ                      ;WAIT UNIT IT WANTS THE DATA
-C2C5 250D             (    cubix_ide.asm):00242                 BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
-C2C7 BDC347           (    cubix_ide.asm):00243                 JSR     IDE_WRITE_BUFFER                  ;GIVE THE DATA TO THE DRIVE
-C2CA BDC2DA           (    cubix_ide.asm):00244                 JSR     IDE_WAIT_NOT_BUSY                 ;WAIT UNTIL THE WRITE IS COMPLETE
-C2CD 2505             (    cubix_ide.asm):00245                 BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
-C2CF 4F               (    cubix_ide.asm):00246                 CLRA                                      ; ZERO = 1 ON RETURN = OPERATION OK
-C2D0 B70103           (    cubix_ide.asm):00247                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
-C2D3 39               (    cubix_ide.asm):00248                 RTS
-C2D4                  (    cubix_ide.asm):00249         IDE_WRITE_SECTOR_ERROR:
-C2D4 8602             (    cubix_ide.asm):00250                 LDA     #$02
-C2D6 B70103           (    cubix_ide.asm):00251                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
-C2D9 39               (    cubix_ide.asm):00252                 RTS
+C2C8                  (    cubix_ide.asm):00235         IDE_WRITE_SECTOR:
+C2C8 BDC2ED           (    cubix_ide.asm):00236                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
+C2CB 251A             (    cubix_ide.asm):00237                 BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
+C2CD BDC3B8           (    cubix_ide.asm):00238                 JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
+C2D0 8630             (    cubix_ide.asm):00239                 LDA     #XTIDE_CMD_WRITE
+C2D2 B7130E           (    cubix_ide.asm):00240                 STA     XTIDE_COMMAND
+C2D5 BDC311           (    cubix_ide.asm):00241                 JSR     IDE_WAIT_DRQ                      ;WAIT UNIT IT WANTS THE DATA
+C2D8 250D             (    cubix_ide.asm):00242                 BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
+C2DA BDC35A           (    cubix_ide.asm):00243                 JSR     IDE_WRITE_BUFFER                  ;GIVE THE DATA TO THE DRIVE
+C2DD BDC2ED           (    cubix_ide.asm):00244                 JSR     IDE_WAIT_NOT_BUSY                 ;WAIT UNTIL THE WRITE IS COMPLETE
+C2E0 2505             (    cubix_ide.asm):00245                 BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
+C2E2 4F               (    cubix_ide.asm):00246                 CLRA                                      ; ZERO = 1 ON RETURN = OPERATION OK
+C2E3 B70103           (    cubix_ide.asm):00247                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
+C2E6 39               (    cubix_ide.asm):00248                 RTS
+C2E7                  (    cubix_ide.asm):00249         IDE_WRITE_SECTOR_ERROR:
+C2E7 8602             (    cubix_ide.asm):00250                 LDA     #$02
+C2E9 B70103           (    cubix_ide.asm):00251                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
+C2EC 39               (    cubix_ide.asm):00252                 RTS
                       (    cubix_ide.asm):00253         
                       (    cubix_ide.asm):00254         
                       (    cubix_ide.asm):00255         ;*__IDE_WAIT_NOT_BUSY_______________________________________________________________________________
@@ -451,55 +469,55 @@ C2D9 39               (    cubix_ide.asm):00252                 RTS
                       (    cubix_ide.asm):00257         ;*  WAIT FOR IDE CHANNEL TO BECOME READY
                       (    cubix_ide.asm):00258         ;*
                       (    cubix_ide.asm):00259         ;*____________________________________________________________________________________________________
-C2DA                  (    cubix_ide.asm):00260         IDE_WAIT_NOT_BUSY:
-C2DA 3406             (    cubix_ide.asm):00261                 PSHS    A,B
-C2DC 8600             (    cubix_ide.asm):00262                 LDA     #$00
-C2DE B7C1A4           (    cubix_ide.asm):00263                 STA     XTIDETIMEOUT
-C2E1 B7C1A5           (    cubix_ide.asm):00264                 STA     XTIDETIMEOUT+1
-C2E4                  (    cubix_ide.asm):00265         IDE_WAIT_NOT_BUSY1:
-C2E4 F6130E           (    cubix_ide.asm):00266                 LDB     XTIDE_STATUS                      ;WAIT FOR RDY BIT TO BE SET
-C2E7 C480             (    cubix_ide.asm):00267                 ANDB    #$80
-C2E9 270F             (    cubix_ide.asm):00268                 BEQ     IDE_WAIT_NOT_BUSY2
-C2EB 7CC1A4           (    cubix_ide.asm):00269                 INC     XTIDETIMEOUT
-C2EE 26F4             (    cubix_ide.asm):00270                 BNE     IDE_WAIT_NOT_BUSY1
-C2F0 7CC1A5           (    cubix_ide.asm):00271                 INC     XTIDETIMEOUT+1
-C2F3 26EF             (    cubix_ide.asm):00272                 BNE     IDE_WAIT_NOT_BUSY1
-C2F5 1A01             (    cubix_ide.asm):00273                 SEC
-C2F7 7EC2FC           (    cubix_ide.asm):00274                 JMP     IDE_WAIT_NOT_BUSY3
-C2FA                  (    cubix_ide.asm):00275         IDE_WAIT_NOT_BUSY2:
-C2FA 1CFE             (    cubix_ide.asm):00276                 CLC
-C2FC                  (    cubix_ide.asm):00277         IDE_WAIT_NOT_BUSY3:
-C2FC 3586             (    cubix_ide.asm):00278                 PULS    PC,A,B
+C2ED                  (    cubix_ide.asm):00260         IDE_WAIT_NOT_BUSY:
+C2ED 3406             (    cubix_ide.asm):00261                 PSHS    A,B
+C2EF 8600             (    cubix_ide.asm):00262                 LDA     #$00
+C2F1 B7C1B7           (    cubix_ide.asm):00263                 STA     XTIDETIMEOUT
+C2F4 B7C1B8           (    cubix_ide.asm):00264                 STA     XTIDETIMEOUT+1
+C2F7                  (    cubix_ide.asm):00265         IDE_WAIT_NOT_BUSY1:
+C2F7 F6130E           (    cubix_ide.asm):00266                 LDB     XTIDE_STATUS                      ;WAIT FOR RDY BIT TO BE SET
+C2FA C480             (    cubix_ide.asm):00267                 ANDB    #$80
+C2FC 270F             (    cubix_ide.asm):00268                 BEQ     IDE_WAIT_NOT_BUSY2
+C2FE 7CC1B7           (    cubix_ide.asm):00269                 INC     XTIDETIMEOUT
+C301 26F4             (    cubix_ide.asm):00270                 BNE     IDE_WAIT_NOT_BUSY1
+C303 7CC1B8           (    cubix_ide.asm):00271                 INC     XTIDETIMEOUT+1
+C306 26EF             (    cubix_ide.asm):00272                 BNE     IDE_WAIT_NOT_BUSY1
+C308 1A01             (    cubix_ide.asm):00273                 SEC
+C30A 7EC30F           (    cubix_ide.asm):00274                 JMP     IDE_WAIT_NOT_BUSY3
+C30D                  (    cubix_ide.asm):00275         IDE_WAIT_NOT_BUSY2:
+C30D 1CFE             (    cubix_ide.asm):00276                 CLC
+C30F                  (    cubix_ide.asm):00277         IDE_WAIT_NOT_BUSY3:
+C30F 3586             (    cubix_ide.asm):00278                 PULS    PC,A,B
                       (    cubix_ide.asm):00279         
                       (    cubix_ide.asm):00280         ;*__IDE_WAIT_DRQ______________________________________________________________________________________
                       (    cubix_ide.asm):00281         ;*
                       (    cubix_ide.asm):00282         ;*      WAIT FOR THE DRIVE TO BE READY TO TRANSFER DATA.
                       (    cubix_ide.asm):00283         ;*
                       (    cubix_ide.asm):00284         ;*____________________________________________________________________________________________________
-C2FE                  (    cubix_ide.asm):00285         IDE_WAIT_DRQ:
-C2FE 3426             (    cubix_ide.asm):00286                 PSHS    A,B,Y
-C300 8600             (    cubix_ide.asm):00287                 LDA     #$00
-C302 B7C1A4           (    cubix_ide.asm):00288                 STA     XTIDETIMEOUT
-C305 B7C1A5           (    cubix_ide.asm):00289                 STA     XTIDETIMEOUT+1
-C308                  (    cubix_ide.asm):00290         IDE_WAIT_DRQ1:
-C308 F6130E           (    cubix_ide.asm):00291                 LDB     XTIDE_STATUS                      ;WAIT FOR DRQ BIT TO BE SET
-C30B C488             (    cubix_ide.asm):00292                 ANDB    #%10001000                        ; MASK OFF BUSY(7) AND DRQ(3)
-C30D C108             (    cubix_ide.asm):00293                 CMPB    #%00001000                        ; WE WANT BUSY(7) TO BE 0 AND DRQ (3) TO BE 1
-C30F 2715             (    cubix_ide.asm):00294                 BEQ     IDE_WAIT_DRQ2
-C311 C401             (    cubix_ide.asm):00295                 ANDB    #%00000001                        ; IS ERROR?
-C313 C101             (    cubix_ide.asm):00296                 CMPB    #%00000001                        ;
-C315 270A             (    cubix_ide.asm):00297                 BEQ     IDE_WAIT_DRQE
-C317 7CC1A4           (    cubix_ide.asm):00298                 INC     XTIDETIMEOUT
-C31A 26EC             (    cubix_ide.asm):00299                 BNE     IDE_WAIT_DRQ1
-C31C 7CC1A5           (    cubix_ide.asm):00300                 INC     XTIDETIMEOUT+1
-C31F 26E7             (    cubix_ide.asm):00301                 BNE     IDE_WAIT_DRQ1
-C321                  (    cubix_ide.asm):00302         IDE_WAIT_DRQE:
-C321 1A01             (    cubix_ide.asm):00303                 SEC
-C323 7EC328           (    cubix_ide.asm):00304                 JMP     IDE_WAIT_DRQ3
-C326                  (    cubix_ide.asm):00305         IDE_WAIT_DRQ2:
-C326 1CFE             (    cubix_ide.asm):00306                 CLC
-C328                  (    cubix_ide.asm):00307         IDE_WAIT_DRQ3:
-C328 35A6             (    cubix_ide.asm):00308                 PULS    PC,A,B,Y
+C311                  (    cubix_ide.asm):00285         IDE_WAIT_DRQ:
+C311 3426             (    cubix_ide.asm):00286                 PSHS    A,B,Y
+C313 8600             (    cubix_ide.asm):00287                 LDA     #$00
+C315 B7C1B7           (    cubix_ide.asm):00288                 STA     XTIDETIMEOUT
+C318 B7C1B8           (    cubix_ide.asm):00289                 STA     XTIDETIMEOUT+1
+C31B                  (    cubix_ide.asm):00290         IDE_WAIT_DRQ1:
+C31B F6130E           (    cubix_ide.asm):00291                 LDB     XTIDE_STATUS                      ;WAIT FOR DRQ BIT TO BE SET
+C31E C488             (    cubix_ide.asm):00292                 ANDB    #%10001000                        ; MASK OFF BUSY(7) AND DRQ(3)
+C320 C108             (    cubix_ide.asm):00293                 CMPB    #%00001000                        ; WE WANT BUSY(7) TO BE 0 AND DRQ (3) TO BE 1
+C322 2715             (    cubix_ide.asm):00294                 BEQ     IDE_WAIT_DRQ2
+C324 C401             (    cubix_ide.asm):00295                 ANDB    #%00000001                        ; IS ERROR?
+C326 C101             (    cubix_ide.asm):00296                 CMPB    #%00000001                        ;
+C328 270A             (    cubix_ide.asm):00297                 BEQ     IDE_WAIT_DRQE
+C32A 7CC1B7           (    cubix_ide.asm):00298                 INC     XTIDETIMEOUT
+C32D 26EC             (    cubix_ide.asm):00299                 BNE     IDE_WAIT_DRQ1
+C32F 7CC1B8           (    cubix_ide.asm):00300                 INC     XTIDETIMEOUT+1
+C332 26E7             (    cubix_ide.asm):00301                 BNE     IDE_WAIT_DRQ1
+C334                  (    cubix_ide.asm):00302         IDE_WAIT_DRQE:
+C334 1A01             (    cubix_ide.asm):00303                 SEC
+C336 7EC33B           (    cubix_ide.asm):00304                 JMP     IDE_WAIT_DRQ3
+C339                  (    cubix_ide.asm):00305         IDE_WAIT_DRQ2:
+C339 1CFE             (    cubix_ide.asm):00306                 CLC
+C33B                  (    cubix_ide.asm):00307         IDE_WAIT_DRQ3:
+C33B 35A6             (    cubix_ide.asm):00308                 PULS    PC,A,B,Y
                       (    cubix_ide.asm):00309         
                       (    cubix_ide.asm):00310         
                       (    cubix_ide.asm):00311         
@@ -508,60 +526,60 @@ C328 35A6             (    cubix_ide.asm):00308                 PULS    PC,A,B,Y
                       (    cubix_ide.asm):00314         ;*  READ IDE BUFFER LITTLE ENDIAN
                       (    cubix_ide.asm):00315         ;*
                       (    cubix_ide.asm):00316         ;*____________________________________________________________________________________________________
-C32A                  (    cubix_ide.asm):00317         IDE_READ_BUFFER:
-C32A 108E0000         (    cubix_ide.asm):00318                 LDY     #$0000                            ; INDEX
-C32E                  (    cubix_ide.asm):00319         IDEBUFRD:
-C32E F61300           (    cubix_ide.asm):00320                 LDB     XTIDE_DATA_LO
-C331 E7A90200         (    cubix_ide.asm):00321                 STB     HSTBUF,Y                          ;
-C335 3121             (    cubix_ide.asm):00322                 INY
-C337 F61301           (    cubix_ide.asm):00323                 LDB     XTIDE_DATA_HI
-C33A E7A90200         (    cubix_ide.asm):00324                 STB     HSTBUF,Y                          ;
-C33E 3121             (    cubix_ide.asm):00325                 INY
-C340 108C0200         (    cubix_ide.asm):00326                 CMPY    #$0200                            ;
-C344 26E8             (    cubix_ide.asm):00327                 BNE     IDEBUFRD                          ;
-C346 39               (    cubix_ide.asm):00328                 RTS                                       ;
+C33D                  (    cubix_ide.asm):00317         IDE_READ_BUFFER:
+C33D 108E0000         (    cubix_ide.asm):00318                 LDY     #$0000                            ; INDEX
+C341                  (    cubix_ide.asm):00319         IDEBUFRD:
+C341 F61300           (    cubix_ide.asm):00320                 LDB     XTIDE_DATA_LO
+C344 E7A90200         (    cubix_ide.asm):00321                 STB     HSTBUF,Y                          ;
+C348 3121             (    cubix_ide.asm):00322                 INY
+C34A F61301           (    cubix_ide.asm):00323                 LDB     XTIDE_DATA_HI
+C34D E7A90200         (    cubix_ide.asm):00324                 STB     HSTBUF,Y                          ;
+C351 3121             (    cubix_ide.asm):00325                 INY
+C353 108C0200         (    cubix_ide.asm):00326                 CMPY    #$0200                            ;
+C357 26E8             (    cubix_ide.asm):00327                 BNE     IDEBUFRD                          ;
+C359 39               (    cubix_ide.asm):00328                 RTS                                       ;
                       (    cubix_ide.asm):00329         
                       (    cubix_ide.asm):00330         ;*__IDE_WRITE_BUFFER___________________________________________________________________________________
                       (    cubix_ide.asm):00331         ;*
                       (    cubix_ide.asm):00332         ;*  WRITE IDE BUFFER LITTLE ENDIAN
                       (    cubix_ide.asm):00333         ;*
                       (    cubix_ide.asm):00334         ;*____________________________________________________________________________________________________
-C347                  (    cubix_ide.asm):00335         IDE_WRITE_BUFFER:
-C347 108E0000         (    cubix_ide.asm):00336                 LDY     #$0000                            ; INDEX
-C34B                  (    cubix_ide.asm):00337         IDEBUFWT:
-C34B E6A90200         (    cubix_ide.asm):00338                 LDB     HSTBUF,Y                          ;
-C34F F71300           (    cubix_ide.asm):00339                 STB     XTIDE_DATA_LO
-C352 3121             (    cubix_ide.asm):00340                 INY
-C354 E6A90200         (    cubix_ide.asm):00341                 LDB     HSTBUF,Y                          ;
-C358 F71301           (    cubix_ide.asm):00342                 STB     XTIDE_DATA_HI
-C35B 3121             (    cubix_ide.asm):00343                 INY
-C35D 108C0200         (    cubix_ide.asm):00344                 CMPY    #$0200                            ;
-C361 26E8             (    cubix_ide.asm):00345                 BNE     IDEBUFWT                          ;
-C363 39               (    cubix_ide.asm):00346                 RTS                                       ;
+C35A                  (    cubix_ide.asm):00335         IDE_WRITE_BUFFER:
+C35A 108E0000         (    cubix_ide.asm):00336                 LDY     #$0000                            ; INDEX
+C35E                  (    cubix_ide.asm):00337         IDEBUFWT:
+C35E E6A90200         (    cubix_ide.asm):00338                 LDB     HSTBUF,Y                          ;
+C362 F71300           (    cubix_ide.asm):00339                 STB     XTIDE_DATA_LO
+C365 3121             (    cubix_ide.asm):00340                 INY
+C367 E6A90200         (    cubix_ide.asm):00341                 LDB     HSTBUF,Y                          ;
+C36B F71301           (    cubix_ide.asm):00342                 STB     XTIDE_DATA_HI
+C36E 3121             (    cubix_ide.asm):00343                 INY
+C370 108C0200         (    cubix_ide.asm):00344                 CMPY    #$0200                            ;
+C374 26E8             (    cubix_ide.asm):00345                 BNE     IDEBUFWT                          ;
+C376 39               (    cubix_ide.asm):00346                 RTS                                       ;
                       (    cubix_ide.asm):00347         
                       (    cubix_ide.asm):00348         
                       (    cubix_ide.asm):00349         
-C364                  (    cubix_ide.asm):00350         MESSAGE1
-C364 5050494445203A   (    cubix_ide.asm):00351                 FCC     "PPIDE :"
-C36B 00               (    cubix_ide.asm):00352                 FCB     00
-C36C                  (    cubix_ide.asm):00353         MESSAGE2
-C36C 20494F3D3078     (    cubix_ide.asm):00354                 FCC     " IO=0x"
-C372 00               (    cubix_ide.asm):00355                 FCB     00
-C373                  (    cubix_ide.asm):00356         MESSAGE3
-C373 204E4F5420505245 (    cubix_ide.asm):00357                 FCC     " NOT PRESENT"
+C377                  (    cubix_ide.asm):00350         MESSAGE1
+C377 5050494445203A   (    cubix_ide.asm):00351                 FCC     "PPIDE :"
+C37E 00               (    cubix_ide.asm):00352                 FCB     00
+C37F                  (    cubix_ide.asm):00353         MESSAGE2
+C37F 20494F3D3078     (    cubix_ide.asm):00354                 FCC     " IO=0x"
+C385 00               (    cubix_ide.asm):00355                 FCB     00
+C386                  (    cubix_ide.asm):00356         MESSAGE3
+C386 204E4F5420505245 (    cubix_ide.asm):00357                 FCC     " NOT PRESENT"
      53454E54
-C37F 00               (    cubix_ide.asm):00358                 FCB     00
-C380                  (    cubix_ide.asm):00359         MESSAGE4
-C380 205050494445303A (    cubix_ide.asm):00360                 FCC     " PPIDE0: BLOCKS="
+C392 00               (    cubix_ide.asm):00358                 FCB     00
+C393                  (    cubix_ide.asm):00359         MESSAGE4
+C393 205050494445303A (    cubix_ide.asm):00360                 FCC     " PPIDE0: BLOCKS="
      20424C4F434B533D
-C390 00               (    cubix_ide.asm):00361                 FCB     00
-C391                  (    cubix_ide.asm):00362         MESSAGE5
-C391 205050494445313A (    cubix_ide.asm):00363                 FCC     " PPIDE1: BLOCKS="
+C3A3 00               (    cubix_ide.asm):00361                 FCB     00
+C3A4                  (    cubix_ide.asm):00362         MESSAGE5
+C3A4 205050494445313A (    cubix_ide.asm):00363                 FCC     " PPIDE1: BLOCKS="
      20424C4F434B533D
-C3A1 00               (    cubix_ide.asm):00364                 FCB     00
-C3A2                  (    cubix_ide.asm):00365         MESSAGE6
-C3A2 3078             (    cubix_ide.asm):00366                 FCC     "0x"
-C3A4 00               (    cubix_ide.asm):00367                 FCB     00
+C3B4 00               (    cubix_ide.asm):00364                 FCB     00
+C3B5                  (    cubix_ide.asm):00365         MESSAGE6
+C3B5 3078             (    cubix_ide.asm):00366                 FCC     "0x"
+C3B7 00               (    cubix_ide.asm):00367                 FCB     00
                       (    cubix_ide.asm):00368         
                       (    cubix_ide.asm):00369         
                       (    cubix_ide.asm):00370         ;*__IDE_SETUP_LBA_____________________________________________________________________________________
@@ -577,120 +595,950 @@ C3A4 00               (    cubix_ide.asm):00367                 FCB     00
                       (    cubix_ide.asm):00380         ;     S=SECTOR
                       (    cubix_ide.asm):00381         ;*
                       (    cubix_ide.asm):00382         ;*____________________________________________________________________________________________________
-C3A5                  (    cubix_ide.asm):00383         IDE_SETUP_LBA:
-C3A5 3406             (    cubix_ide.asm):00384                 PSHS    D
-C3A7 F60104           (    cubix_ide.asm):00385                 LDB     CURRENTDEVICE
-C3AA C401             (    cubix_ide.asm):00386                 ANDB    #$01                              ; only want drive cfg
-C3AC 58               (    cubix_ide.asm):00387                 ASLB                                      ; SHIFT 4
-C3AD 58               (    cubix_ide.asm):00388                 ASLB                                      ;
-C3AE 58               (    cubix_ide.asm):00389                 ASLB                                      ;
-C3AF 58               (    cubix_ide.asm):00390                 ASLB                                      ;
-C3B0 CAE0             (    cubix_ide.asm):00391                 ORB     #$E0                              ; E0=MST  F0=SLV
-C3B2 F7130C           (    cubix_ide.asm):00392                 STB     XTIDE_DEVICE
+C3B8                  (    cubix_ide.asm):00383         IDE_SETUP_LBA:
+C3B8 3406             (    cubix_ide.asm):00384                 PSHS    D
+C3BA F60104           (    cubix_ide.asm):00385                 LDB     CURRENTDEVICE
+C3BD C401             (    cubix_ide.asm):00386                 ANDB    #$01                              ; only want drive cfg
+C3BF 58               (    cubix_ide.asm):00387                 ASLB                                      ; SHIFT 4
+C3C0 58               (    cubix_ide.asm):00388                 ASLB                                      ;
+C3C1 58               (    cubix_ide.asm):00389                 ASLB                                      ;
+C3C2 58               (    cubix_ide.asm):00390                 ASLB                                      ;
+C3C3 CAE0             (    cubix_ide.asm):00391                 ORB     #$E0                              ; E0=MST  F0=SLV
+C3C5 F7130C           (    cubix_ide.asm):00392                 STB     XTIDE_DEVICE
                       (    cubix_ide.asm):00393         
-C3B5 F60105           (    cubix_ide.asm):00394                 LDB     CURRENTSLICE
-C3B8 F7130A           (    cubix_ide.asm):00395                 STB     XTIDE_LBAHI
+C3C8 F60105           (    cubix_ide.asm):00394                 LDB     CURRENTSLICE
+C3CB F7130A           (    cubix_ide.asm):00395                 STB     XTIDE_LBAHI
                       (    cubix_ide.asm):00396         
-C3BB F60106           (    cubix_ide.asm):00397                 LDB     CURRENTCYL                        ;
-C3BE F71308           (    cubix_ide.asm):00398                 STB     XTIDE_LBAMID
+C3CE F60106           (    cubix_ide.asm):00397                 LDB     CURRENTCYL                        ;
+C3D1 F71308           (    cubix_ide.asm):00398                 STB     XTIDE_LBAMID
                       (    cubix_ide.asm):00399         
-C3C1 F60107           (    cubix_ide.asm):00400                 LDB     CURRENTSEC                        ;
-C3C4 F71306           (    cubix_ide.asm):00401                 STB     XTIDE_LBALOW
+C3D4 F60107           (    cubix_ide.asm):00400                 LDB     CURRENTSEC                        ;
+C3D7 F71306           (    cubix_ide.asm):00401                 STB     XTIDE_LBALOW
                       (    cubix_ide.asm):00402         
-C3C7 C601             (    cubix_ide.asm):00403                 LDB     #$01
-C3C9 F71304           (    cubix_ide.asm):00404                 STB     XTIDE_SEC_CNT
+C3DA C601             (    cubix_ide.asm):00403                 LDB     #$01
+C3DC F71304           (    cubix_ide.asm):00404                 STB     XTIDE_SEC_CNT
                       (    cubix_ide.asm):00405         
-C3CC 3586             (    cubix_ide.asm):00406                 PULS    D,PC
-                      (     cubixdrv.asm):00096         ;        INCLUDE cubix_dskyng.asm
-                      (     cubixdrv.asm):00097         ;        INCLUDE cubix_floppy.asm
-                      (     cubixdrv.asm):00098         ;        INCLUDE cubix_fp.asm
-                      (     cubixdrv.asm):00099         ;        INCLUDE cubix_i2c.asm
-                      (     cubixdrv.asm):00100         ;        INCLUDE cubix_esp32.asm
-                      (     cubixdrv.asm):00101         ;        INCLUDE cubix_dsky.asm
-                      (     cubixdrv.asm):00102         
-                      (     cubixdrv.asm):00103         
-                      (     cubixdrv.asm):00104         
-C3CE                  (     cubixdrv.asm):00105         drv_noop:
-C3CE 39               (     cubixdrv.asm):00106                 RTS
-                      (     cubixdrv.asm):00107         
-                      (     cubixdrv.asm):00108         ;*
-                      (     cubixdrv.asm):00109         ;* OUTPUT LFCR TO CONSOLE
-                      (     cubixdrv.asm):00110         ;*
-C3CF                  (     cubixdrv.asm):00111         LFCR:
-C3CF 3406             (     cubixdrv.asm):00112                 PSHS    a,b
-C3D1 860A             (     cubixdrv.asm):00113                 LDA     #10
-C3D3 8D40             (     cubixdrv.asm):00114                 BSR     PUTCHR
-C3D5 860D             (     cubixdrv.asm):00115                 LDA     #13
-C3D7 8D3C             (     cubixdrv.asm):00116                 BSR     PUTCHR
-C3D9 3586             (     cubixdrv.asm):00117                 PULS    A,B,pc
-C3DB                  (     cubixdrv.asm):00118         SPACE:
-C3DB 3406             (     cubixdrv.asm):00119                 PSHS    a,b
-C3DD 8620             (     cubixdrv.asm):00120                 LDA     #32
-C3DF 8D34             (     cubixdrv.asm):00121                 BSR     PUTCHR
-C3E1 3586             (     cubixdrv.asm):00122                 PULS    A,B,pc
-                      (     cubixdrv.asm):00123         ;*
-                      (     cubixdrv.asm):00124         ;* WRITE STRING(X) TO CONSOLE
-                      (     cubixdrv.asm):00125         ;*
-C3E3                  (     cubixdrv.asm):00126         WRSTR:
-C3E3 3406             (     cubixdrv.asm):00127                 PSHS    A,B                               ;SAVE A
-C3E5                  (     cubixdrv.asm):00128         WRST1:
-C3E5 A680             (     cubixdrv.asm):00129                 LDA     ,X+                               ;GET CHAR
-C3E7 2704             (     cubixdrv.asm):00130                 BEQ     WRST2                             ;END, QUIT
-C3E9 8D2A             (     cubixdrv.asm):00131                 BSR     PUTCHR
-C3EB 20F8             (     cubixdrv.asm):00132                 BRA     WRST1                             ;CONTINUE
-C3ED                  (     cubixdrv.asm):00133         WRST2:
-C3ED 3586             (     cubixdrv.asm):00134                 PULS    A,B,pc
-                      (     cubixdrv.asm):00135         ;*
-                      (     cubixdrv.asm):00136         ;* OUTPUT NUMBER IN 'D' TO CONSOLE IN HEX
-                      (     cubixdrv.asm):00137         ;*
-C3EF                  (     cubixdrv.asm):00138         WRHEXW
-C3EF 3406             (     cubixdrv.asm):00139                 PSHS    d
-C3F1 8D08             (     cubixdrv.asm):00140                 BSR     WRHEX                             ;OUTPUT
-C3F3 1E89             (     cubixdrv.asm):00141                 EXG     A,B                               ;SWAP
-C3F5 8D04             (     cubixdrv.asm):00142                 BSR     WRHEX                             ;OUTPUT
-C3F7 1E89             (     cubixdrv.asm):00143                 EXG     A,B                               ;BACK
-C3F9 3586             (     cubixdrv.asm):00144                 PULS    d,pc
-                      (     cubixdrv.asm):00145         
-                      (     cubixdrv.asm):00146         ;*
-                      (     cubixdrv.asm):00147         ;* OUTPUT 'A' NUMBER TO CONSOLE IN HEX
-                      (     cubixdrv.asm):00148         ;*
-C3FB                  (     cubixdrv.asm):00149         WRHEX
-C3FB 3406             (     cubixdrv.asm):00150                 PSHS    A,B                               ;SAVE IT
-C3FD 44               (     cubixdrv.asm):00151                 LSRA                                      ;SHIFT
-C3FE 44               (     cubixdrv.asm):00152                 LSRA                                      ;HIGH NIBBLE
-C3FF 44               (     cubixdrv.asm):00153                 LSRA                                      ;INTO
-C400 44               (     cubixdrv.asm):00154                 LSRA                                      ;LOW NIBBLE
-C401 8D06             (     cubixdrv.asm):00155                 BSR     HOUT                              ;HIGH
-C403 A6E4             (     cubixdrv.asm):00156                 LDA     ,S                                ;GET LOW
-C405 8D02             (     cubixdrv.asm):00157                 BSR     HOUT                              ;OUTPUT
-C407 3586             (     cubixdrv.asm):00158                 PULS    A,B,PC                            ;RESTORE IT
-                      (     cubixdrv.asm):00159         ;* OUTPUT NIBBLE IN HEX
-C409                  (     cubixdrv.asm):00160         HOUT
-C409 840F             (     cubixdrv.asm):00161                 ANDA    #%00001111                        ;REMOVE HIGH
-C40B 8B30             (     cubixdrv.asm):00162                 ADDA    #'0'                              ;CONVERT
-C40D 8139             (     cubixdrv.asm):00163                 CMPA    #'9'                              ;OK?
-C40F 2304             (     cubixdrv.asm):00164                 BLS     PUTCHR                            ;OK, OUTPUT
-C411 8B07             (     cubixdrv.asm):00165                 ADDA    #7                                ;CONVERT TO 'A'-'F'
-C413 2000             (     cubixdrv.asm):00166                 BRA     PUTCHR                            ;OUTPUT
-C415                  (     cubixdrv.asm):00167         PUTCHR:
-C415 7EC184           (     cubixdrv.asm):00168                 JMP     WRSER1
-C418 3404             (     cubixdrv.asm):00169                 PSHS    B
-C41A 3402             (     cubixdrv.asm):00170                 PSHS    A
-C41C 58               (     cubixdrv.asm):00171                 ASLB                                      ; DOUBLE NUMBER FOR TABLE LOOKUP
-C41D 8600             (     cubixdrv.asm):00172                 LDA     #$00
-C41F F60100           (     cubixdrv.asm):00173                 LDB     CONSOLEDEVICE
-C422 1F01             (     cubixdrv.asm):00174                 TFR     D,X
-C424 EC89C113         (     cubixdrv.asm):00175                 LDD     DISPATCHTABLE,X
-C428 FD0101           (     cubixdrv.asm):00176                 STD     farpointer
-C42B 3502             (     cubixdrv.asm):00177                 PULS    A
-C42D AD9F0101         (     cubixdrv.asm):00178                 JSR     [farpointer]
-C431 3504             (     cubixdrv.asm):00179                 PULS    B
-C433 39               (     cubixdrv.asm):00180                 RTS
-                      (     cubixdrv.asm):00181         
-                      (     cubixdrv.asm):00182                 END
+C3DF 3586             (    cubix_ide.asm):00406                 PULS    D,PC
+                      (     cubixdrv.asm):00111                 INCLUDE cubix_multio.asm
+                      ( cubix_multio.asm):00001         ;__MULTI IO DRIVERS______________________________________________________________________________________________________________
+                      ( cubix_multio.asm):00002         ;
+                      ( cubix_multio.asm):00003         ;       CUBIX ISA MULTI IO drivers for 6809PC
+                      ( cubix_multio.asm):00004         ;
+                      ( cubix_multio.asm):00005         ;       Entry points:
+                      ( cubix_multio.asm):00006         ;               MULTIOINIT  - JSR ed during OS init
+                      ( cubix_multio.asm):00007         ;               RDKB        - read a character from the ps/2 keyboard ('A' POINTS TO BYTE)
+                      ( cubix_multio.asm):00008         ;               SETKB       -
+                      ( cubix_multio.asm):00009         ;________________________________________________________________________________________________________________________________
+                      ( cubix_multio.asm):00010         ;
+                      ( cubix_multio.asm):00011         ;*
+                      ( cubix_multio.asm):00012         ;*        HARDWARE I/O ADDRESSES
+                      ( cubix_multio.asm):00013         ;*
+                      ( cubix_multio.asm):00014         ;
+     13E0             ( cubix_multio.asm):00015         MULTIO_BASE     EQU CUBIX_IO_BASE+$3E0
+     13FE             ( cubix_multio.asm):00016         KBD_DAT         EQU MULTIO_BASE+$1E               ;
+     13FF             ( cubix_multio.asm):00017         KBD_ST          EQU MULTIO_BASE+$1F               ;
+     13FF             ( cubix_multio.asm):00018         KBD_CMD         EQU MULTIO_BASE+$1F               ;
+                      ( cubix_multio.asm):00019         
+                      ( cubix_multio.asm):00020         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00021         ;
+                      ( cubix_multio.asm):00022         ; STATUS BITS (FOR KBD_STATUS)
+                      ( cubix_multio.asm):00023         ;
+     0001             ( cubix_multio.asm):00024         KBD_EXT         EQU $01                           ; BIT 0, EXTENDED SCANCODE ACTIVE
+     0002             ( cubix_multio.asm):00025         KBD_BREAK       EQU $02                           ; BIT 1, THIS IS A KEY UP (BREAK) EVENT
+     0080             ( cubix_multio.asm):00026         KBD_KEYRDY      EQU $80                           ; BIT 7, INDICATES A DECODED KEYCODE IS READY
+                      ( cubix_multio.asm):00027         ;
+                      ( cubix_multio.asm):00028         ; STATE BITS (FOR KBD_STATE, KBD_LSTATE, KBD_RSTATE)
+                      ( cubix_multio.asm):00029         ;
+     0001             ( cubix_multio.asm):00030         KBD_SHIFT       EQU $01                           ; BIT 0, SHIFT ACTIVE (PRESSED)
+     0002             ( cubix_multio.asm):00031         KBD_CTRL        EQU $02                           ; BIT 1, CONTROL ACTIVE (PRESSED)
+     0004             ( cubix_multio.asm):00032         KBD_ALT         EQU $04                           ; BIT 2, ALT ACTIVE (PRESSED)
+     0008             ( cubix_multio.asm):00033         KBD_WIN         EQU $08                           ; BIT 3, WIN ACTIVE (PRESSED)
+     0010             ( cubix_multio.asm):00034         KBD_SCRLCK      EQU $10                           ; BIT 4, CAPS LOCK ACTIVE (TOGGLED ON)
+     0020             ( cubix_multio.asm):00035         KBD_NUMLCK      EQU $20                           ; BIT 5, NUM LOCK ACTIVE (TOGGLED ON)
+     0040             ( cubix_multio.asm):00036         KBD_CAPSLCK     EQU $40                           ; BIT 6, SCROLL LOCK ACTIVE (TOGGLED ON)
+     0080             ( cubix_multio.asm):00037         KBD_NUMPAD      EQU $80                           ; BIT 7, NUM PAD KEY (KEY PRESSED IS ON NUM PAD)
+                      ( cubix_multio.asm):00038         ;
+     0040             ( cubix_multio.asm):00039         KBD_DEFRPT      EQU $40                           ; DEFAULT REPEAT RATE (.5 SEC DELAY, 30CPS)
+     0070             ( cubix_multio.asm):00040         KBD_DEFSTATE    EQU KBD_NUMLCK|KBD_CAPSLCK|KBD_SCRLCK                  ; DEFAULT STATE (NUM LOCK ON)
+                      ( cubix_multio.asm):00041         
+     30FF             ( cubix_multio.asm):00042         KBD_WAITTO      EQU $30FF                         ; DEFAULT TIMEOUT
+                      ( cubix_multio.asm):00043         ;
+                      ( cubix_multio.asm):00044         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00045         ; DATA
+                      ( cubix_multio.asm):00046         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00047         ;
+C3E1                  ( cubix_multio.asm):00048         KBD_SCANCODE
+C3E1 00               ( cubix_multio.asm):00049                 FCB     0                                 ; RAW SCANCODE
+C3E2                  ( cubix_multio.asm):00050         KBD_KEYCODE
+C3E2 00               ( cubix_multio.asm):00051                 FCB     0                                 ; RESULTANT KEYCODE AFTER DECODING
+C3E3                  ( cubix_multio.asm):00052         KBD_STATE
+C3E3 70               ( cubix_multio.asm):00053                 FCB     KBD_DEFSTATE                      ; STATE BITS (SEE ABOVE)
+C3E4                  ( cubix_multio.asm):00054         KBD_LSTATE
+C3E4 00               ( cubix_multio.asm):00055                 FCB     0                                 ; STATE BITS FOR "LEFT" KEYS
+C3E5                  ( cubix_multio.asm):00056         KBD_RSTATE
+C3E5 00               ( cubix_multio.asm):00057                 FCB     0                                 ; STATE BITS FOR "RIGHT" KEYS
+C3E6                  ( cubix_multio.asm):00058         KBD_STATUS
+C3E6 00               ( cubix_multio.asm):00059                 FCB     0                                 ; CURRENT STATUS BITS (SEE ABOVE)
+C3E7                  ( cubix_multio.asm):00060         KBD_REPEAT
+C3E7 40               ( cubix_multio.asm):00061                 FCB     KBD_DEFRPT                        ; CURRENT REPEAT RATE
+C3E8                  ( cubix_multio.asm):00062         KBD_IDLE
+C3E8 00               ( cubix_multio.asm):00063                 FCB     0                                 ; IDLE COUNT
+C3E9                  ( cubix_multio.asm):00064         KBD_TEMP
+C3E9 0000             ( cubix_multio.asm):00065                 FCB     0,0                               ; WORKING STORAGE
+                      ( cubix_multio.asm):00066         ;
+                      ( cubix_multio.asm):00067         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00068         ; MULTI IO INITIALIZATION
+                      ( cubix_multio.asm):00069         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00070         ;
+C3EB                  ( cubix_multio.asm):00071         MULTIOINIT:
+                      ( cubix_multio.asm):00072         ;
+C3EB BDC8C9           ( cubix_multio.asm):00073                 JSR     LFCR                              ; AND CRLF
+C3EE 8EC734           ( cubix_multio.asm):00074                 LDX     #MIOMESSAGE1
+C3F1 BDC8DD           ( cubix_multio.asm):00075                 JSR     WRSTR                             ; DO PROMPT
+C3F4 BDC8C9           ( cubix_multio.asm):00076                 JSR     LFCR                              ; AND CRLF
+                      ( cubix_multio.asm):00077         ; KEYBOARD INITIALIZATION
+C3F7 8EC37F           ( cubix_multio.asm):00078                 LDX     #MESSAGE2
+C3FA BDC8DD           ( cubix_multio.asm):00079                 JSR     WRSTR                             ; DO PROMPT
+C3FD CC13FE           ( cubix_multio.asm):00080                 LDD     #KBD_DAT                          ; GET BASE PORT
+C400 BDC8E9           ( cubix_multio.asm):00081                 JSR     WRHEXW                            ; PRINT BASE PORT
+C403 BDC8C9           ( cubix_multio.asm):00082                 JSR     LFCR                              ; AND CRLF
+                      ( cubix_multio.asm):00083         ;
+C406 BDC40C           ( cubix_multio.asm):00084                 JSR     KBD_PROBE                         ; DETECT A KEYBOARD, ABORT IF NOT FOUND
+C409 2500             ( cubix_multio.asm):00085                 BCS     >
+                      ( cubix_multio.asm):00086         !
+C40B 39               ( cubix_multio.asm):00087                 RTS                                       ; DONE
+                      ( cubix_multio.asm):00088         
+                      ( cubix_multio.asm):00089         
+C40C                  ( cubix_multio.asm):00090         KBD_PROBE:
+                      ( cubix_multio.asm):00091         ;
+C40C 86AA             ( cubix_multio.asm):00092                 LDA     #$AA                              ; CONTROLLER SELF TEST
+C40E BDC446           ( cubix_multio.asm):00093                 JSR     KBD_PUTCMD                        ; SEND IT
+C411 BDC47A           ( cubix_multio.asm):00094                 JSR     KBD_GETDATA                       ; CONTROLLER SHOULD RESPOND WITH $55 (ACK)
+                      ( cubix_multio.asm):00095         ;
+C414 8155             ( cubix_multio.asm):00096                 CMPA    #$55                              ; IS IT THERE?
+C416 270C             ( cubix_multio.asm):00097                 BEQ     >                                 ; IF SO, CONTINUE
+C418 8EC742           ( cubix_multio.asm):00098                 LDX     #MIOMESSAGE3                      ; PRINT NOT PRESENT ERROR
+C41B BDC8DD           ( cubix_multio.asm):00099                 JSR     WRSTR
+C41E BDC8C9           ( cubix_multio.asm):00100                 JSR     LFCR                              ; AND CRLF
+                      ( cubix_multio.asm):00101         ;
+C421 1A01             ( cubix_multio.asm):00102                 SEC                                       ; SET ERROR
+C423 39               ( cubix_multio.asm):00103                 RTS                                       ; BAIL OUT
+                      ( cubix_multio.asm):00104         ;
+                      ( cubix_multio.asm):00105         !
+C424 8EC75C           ( cubix_multio.asm):00106                 LDX     #MIOMESSAGE4                      ; PRINT KB FOUND
+C427 BDC8DD           ( cubix_multio.asm):00107                 JSR     WRSTR
+C42A BDC8C9           ( cubix_multio.asm):00108                 JSR     LFCR                              ; AND CRLF
+                      ( cubix_multio.asm):00109         
+                      ( cubix_multio.asm):00110         ;
+C42D 8660             ( cubix_multio.asm):00111                 LDA     #$60                              ; SET COMMAND REGISTER
+C42F BDC446           ( cubix_multio.asm):00112                 JSR     KBD_PUTCMD                        ; SEND IT
+                      ( cubix_multio.asm):00113         ;       LDA    #$60                               ; XLAT ENABLED, MOUSE DISABLED, NO INTS
+C432 8620             ( cubix_multio.asm):00114                 LDA     #$20                              ; XLAT DISABLED, MOUSE DISABLED, NO INTS
+C434 BDC460           ( cubix_multio.asm):00115                 JSR     KBD_PUTDATA                       ; SEND IT
+                      ( cubix_multio.asm):00116         
+C437 BDC47A           ( cubix_multio.asm):00117                 JSR     KBD_GETDATA                       ; GOBBLE UP $AA FROM POWER UP, AS NEEDED
+                      ( cubix_multio.asm):00118         
+C43A BDC4A2           ( cubix_multio.asm):00119                 JSR     KBD_RESET                         ; RESET THE KEYBOARD
+C43D BDC4C0           ( cubix_multio.asm):00120                 JSR     KBD_SETLEDS                       ; UPDATE LEDS BASED ON CURRENT TOGGLE STATE BITS
+C440 BDC4ED           ( cubix_multio.asm):00121                 JSR     KBD_SETRPT                        ; UPDATE REPEAT RATE BASED ON CURRENT SETTING
+                      ( cubix_multio.asm):00122         
+C443 1CFE             ( cubix_multio.asm):00123                 CLC                                       ; SIGNAL SUCCESS
+C445 39               ( cubix_multio.asm):00124                 RTS
+                      ( cubix_multio.asm):00125         
+                      ( cubix_multio.asm):00126         
+                      ( cubix_multio.asm):00127         ;
+                      ( cubix_multio.asm):00128         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00129         ; HARDWARE INTERFACE
+                      ( cubix_multio.asm):00130         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00131         ;
+                      ( cubix_multio.asm):00132         ;__________________________________________________________________________________________________
+C446                  ( cubix_multio.asm):00133         KBD_PUTCMD:
+                      ( cubix_multio.asm):00134         ; PUT A CMD BYTE FROM A TO THE KEYBOARD INTERFACE WITH TIMEOUT
+                      ( cubix_multio.asm):00135         ;
+C446 8E30FF           ( cubix_multio.asm):00136                 LDX     #KBD_WAITTO                       ; SETUP TO LOOP
+C449                  ( cubix_multio.asm):00137         KBD_PUTCMD0:
+C449 F613FF           ( cubix_multio.asm):00138                 LDB     KBD_ST                            ; STATUS PORT
+C44C C402             ( cubix_multio.asm):00139                 ANDB    #$02                              ; ISOLATE EMPTY BIT
+C44E 270A             ( cubix_multio.asm):00140                 BEQ     KBD_PUTCMD1                       ; EMPTY, GO TO WRITE
+C450 BDC714           ( cubix_multio.asm):00141                 JSR     DELAY                             ; WAIT A BIT
+C453 301F             ( cubix_multio.asm):00142                 DEX
+C455 26F2             ( cubix_multio.asm):00143                 BNE     KBD_PUTCMD0                       ; LOOP UNTIL COUNTER EXHAUSTED
+                      ( cubix_multio.asm):00144         
+C457 1A01             ( cubix_multio.asm):00145                 SEC                                       ; TIMED OUT
+C459 39               ( cubix_multio.asm):00146                 RTS
+C45A                  ( cubix_multio.asm):00147         KBD_PUTCMD1:
+C45A B713FF           ( cubix_multio.asm):00148                 STA     KBD_CMD                           ; WRITE TO COMMAND PORT
+                      ( cubix_multio.asm):00149         
+C45D 1CFE             ( cubix_multio.asm):00150                 CLC                                       ; SIGNAL SUCCESS
+C45F 39               ( cubix_multio.asm):00151                 RTS
+                      ( cubix_multio.asm):00152         ;
+                      ( cubix_multio.asm):00153         ;__________________________________________________________________________________________________
+C460                  ( cubix_multio.asm):00154         KBD_PUTDATA:
+                      ( cubix_multio.asm):00155         ;
+                      ( cubix_multio.asm):00156         ; PUT A DATA BYTE FROM A TO THE KEYBOARD INTERFACE WITH TIMEOUT
+                      ( cubix_multio.asm):00157         ;
+C460 8E30FF           ( cubix_multio.asm):00158                 LDX     #KBD_WAITTO                       ; SETUP TO LOOP
+C463                  ( cubix_multio.asm):00159         KBD_PUTDATA0:
+C463 F613FF           ( cubix_multio.asm):00160                 LDB     KBD_ST                            ; STATUS PORT
+C466 C402             ( cubix_multio.asm):00161                 ANDB    #$02                              ; ISOLATE OUTPUT EMPTY BIT
+C468 270A             ( cubix_multio.asm):00162                 BEQ     KBD_PUTDATA1                      ; EMPTY, GO TO WRITE
+C46A BDC714           ( cubix_multio.asm):00163                 JSR     DELAY                             ; WAIT A BIT
+C46D 301F             ( cubix_multio.asm):00164                 DEX
+C46F 26F2             ( cubix_multio.asm):00165                 BNE     KBD_PUTDATA0                      ; LOOP UNTIL COUNTER EXHAUSTED
+                      ( cubix_multio.asm):00166         
+C471 1A01             ( cubix_multio.asm):00167                 SEC                                       ; TIMED OUT
+C473 39               ( cubix_multio.asm):00168                 RTS
+C474                  ( cubix_multio.asm):00169         KBD_PUTDATA1:
+C474 B713FE           ( cubix_multio.asm):00170                 STA     KBD_DAT                           ; WRITE TO DATA PORT
+                      ( cubix_multio.asm):00171         
+C477 1CFE             ( cubix_multio.asm):00172                 CLC                                       ; SIGNAL SUCCESS
+C479 39               ( cubix_multio.asm):00173                 RTS
+                      ( cubix_multio.asm):00174         ;
+                      ( cubix_multio.asm):00175         ;__________________________________________________________________________________________________
+C47A                  ( cubix_multio.asm):00176         KBD_GETDATA:
+                      ( cubix_multio.asm):00177         ;
+                      ( cubix_multio.asm):00178         ; GET A RAW DATA BYTE FROM KEYBOARD INTERFACE INTO A WITH TIMEOUT
+                      ( cubix_multio.asm):00179         ;
+C47A 8E30FF           ( cubix_multio.asm):00180                 LDX     #KBD_WAITTO                       ; SETUP TO LOOP
+C47D                  ( cubix_multio.asm):00181         KBD_GETDATA0:
+C47D B613FF           ( cubix_multio.asm):00182                 LDA     KBD_ST                            ; GET STATUS PORT
+C480 8401             ( cubix_multio.asm):00183                 ANDA    #$01                              ; ISOLATE INPUT PENDING BIT
+C482 260C             ( cubix_multio.asm):00184                 BNE     KBD_GETDATA1                      ; READY, GET DATA
+C484 BDC714           ( cubix_multio.asm):00185                 JSR     DELAY                             ; WAIT A BIT
+C487 301F             ( cubix_multio.asm):00186                 DEX
+C489 26F2             ( cubix_multio.asm):00187                 BNE     KBD_GETDATA0                      ; LOOP UNTIL COUNTER EXHAUSTED
+C48B 8600             ( cubix_multio.asm):00188                 LDA     #$00
+                      ( cubix_multio.asm):00189         
+C48D 1A01             ( cubix_multio.asm):00190                 SEC                                       ; NO DATA, RETURN ZERO
+C48F 39               ( cubix_multio.asm):00191                 RTS
+C490                  ( cubix_multio.asm):00192         KBD_GETDATA1:
+                      ( cubix_multio.asm):00193         
+C490 B613FE           ( cubix_multio.asm):00194                 LDA     KBD_DAT                           ; GET DATA PORT
+C493 1CFE             ( cubix_multio.asm):00195                 CLC                                       ; SET FLAGS
+C495 39               ( cubix_multio.asm):00196                 RTS
+                      ( cubix_multio.asm):00197         ;
+                      ( cubix_multio.asm):00198         ;__________________________________________________________________________________________________
+C496                  ( cubix_multio.asm):00199         KBD_GETDATAX:
+                      ( cubix_multio.asm):00200         ;
+                      ( cubix_multio.asm):00201         ; GET A RAW DATA BYTE FROM KEYBOARD INTERFACE INTO A WITH NOTIMEOUT
+                      ( cubix_multio.asm):00202         ;
+C496 B613FF           ( cubix_multio.asm):00203                 LDA     KBD_ST                            ; STATUS PORT
+C499 8401             ( cubix_multio.asm):00204                 ANDA    #$01                              ; ISOLATE INPUT PENDING BIT
+C49B 26F3             ( cubix_multio.asm):00205                 BNE     KBD_GETDATA1                      ; BYTE PENDING, GO GET IT
+C49D 8600             ( cubix_multio.asm):00206                 LDA     #$00
+                      ( cubix_multio.asm):00207         
+C49F 1A01             ( cubix_multio.asm):00208                 SEC                                       ; NO DATA, RETURN ZERO
+C4A1 39               ( cubix_multio.asm):00209                 RTS
+                      ( cubix_multio.asm):00210         ;
+                      ( cubix_multio.asm):00211         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00212         ; RESET KEYBOARD
+                      ( cubix_multio.asm):00213         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00214         ;
+C4A2                  ( cubix_multio.asm):00215         KBD_RESET:
+C4A2 86FF             ( cubix_multio.asm):00216                 LDA     #$FF                              ; RESET COMMAND
+C4A4 BDC460           ( cubix_multio.asm):00217                 JSR     KBD_PUTDATA                       ; SEND IT
+C4A7 BDC47A           ( cubix_multio.asm):00218                 JSR     KBD_GETDATA                       ; GET THE ACK
+C4AA 8EF100           ( cubix_multio.asm):00219                 LDX     #$F100                             ; SETUP LOOP COUNTER
+C4AD                  ( cubix_multio.asm):00220         KBD_RESET0:
+C4AD 3410             ( cubix_multio.asm):00221                 PSHS    X                                 ; PRESERVE COUNTER
+C4AF BDC47A           ( cubix_multio.asm):00222                 JSR     KBD_GETDATA                       ; TRY TO GET THE RESPONSE
+C4B2 3510             ( cubix_multio.asm):00223                 PULS    X                                 ; RECOVER COUNTER
+C4B4 2607             ( cubix_multio.asm):00224                 BNE     KBD_RESET1                        ; GOT A BYTE?  IF SO, GET OUT OF LOOP
+C4B6 301F             ( cubix_multio.asm):00225                 DEX
+C4B8 26F3             ( cubix_multio.asm):00226                 BNE     KBD_RESET0                        ; LOOP TILL COUNTER EXHAUSTED
+                      ( cubix_multio.asm):00227         
+C4BA 1A01             ( cubix_multio.asm):00228                 SEC                                       ; SIGNAL FAILURE
+C4BC 39               ( cubix_multio.asm):00229                 RTS                                       ; DONE
+C4BD                  ( cubix_multio.asm):00230         KBD_RESET1:
+                      ( cubix_multio.asm):00231         
+C4BD 1CFE             ( cubix_multio.asm):00232                 CLC                                       ; SIGNAL SUCCESS (RESPONSE IS IGNORED...)
+C4BF 39               ( cubix_multio.asm):00233                 RTS                                       ; DONE
+                      ( cubix_multio.asm):00234         ;
+                      ( cubix_multio.asm):00235         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00236         ; UPDATE KEYBOARD LEDS BASED ON CURRENT TOGGLE FLAGS
+                      ( cubix_multio.asm):00237         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00238         ;
+C4C0                  ( cubix_multio.asm):00239         KBD_SETLEDS:
+C4C0 86ED             ( cubix_multio.asm):00240                 LDA     #$ED                              ; SET/RESET LED'S COMMAND
+C4C2 BDC460           ( cubix_multio.asm):00241                 JSR     KBD_PUTDATA                       ; SEND THE COMMAND
+C4C5 BDC47A           ( cubix_multio.asm):00242                 JSR     KBD_GETDATA                       ; READ THE RESPONSE
+C4C8 81FA             ( cubix_multio.asm):00243                 CMPA    #$FA                              ; MAKE SURE WE GET ACK
+C4CA 2703             ( cubix_multio.asm):00244                 BEQ     >
+                      ( cubix_multio.asm):00245         
+C4CC 1A01             ( cubix_multio.asm):00246                 SEC
+C4CE 39               ( cubix_multio.asm):00247                 RTS                                       ; ABORT IF NO ACK
+                      ( cubix_multio.asm):00248         !
+C4CF B6C3E3           ( cubix_multio.asm):00249                 LDA     KBD_STATE                         ; LOAD THE STATE BYTE
+C4D2 46               ( cubix_multio.asm):00250                 RORA                                      ; ROTATE TOGGLE KEY BITS AS NEEDED
+C4D3 46               ( cubix_multio.asm):00251                 RORA
+C4D4 46               ( cubix_multio.asm):00252                 RORA
+C4D5 46               ( cubix_multio.asm):00253                 RORA
+C4D6 8407             ( cubix_multio.asm):00254                 ANDA    #$07                              ; CLEAR THE IRRELEVANT BITS
+C4D8 BDC460           ( cubix_multio.asm):00255                 JSR     KBD_PUTDATA                       ; SEND THE LED DATA
+C4DB BDC47A           ( cubix_multio.asm):00256                 JSR     KBD_GETDATA                       ; READ THE ACK
+C4DE 81FA             ( cubix_multio.asm):00257                 CMPA    #$FA                              ; MAKE SURE WE GET ACK
+C4E0 2703             ( cubix_multio.asm):00258                 BEQ     >
+                      ( cubix_multio.asm):00259         
+C4E2 1A01             ( cubix_multio.asm):00260                 SEC
+C4E4 39               ( cubix_multio.asm):00261                 RTS                                       ; ABORT IF NO ACK
+                      ( cubix_multio.asm):00262         !
+C4E5 8600             ( cubix_multio.asm):00263                 LDA     #$00                              ; A=0
+C4E7 B7C3E6           ( cubix_multio.asm):00264                 STA     KBD_STATUS                        ; CLEAR STATUS
+                      ( cubix_multio.asm):00265         
+C4EA 1CFE             ( cubix_multio.asm):00266                 CLC
+C4EC 39               ( cubix_multio.asm):00267                 RTS
+                      ( cubix_multio.asm):00268         ;
+                      ( cubix_multio.asm):00269         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00270         ; UPDATE KEYBOARD REPEAT RATE BASED ON CURRENT SETTING
+                      ( cubix_multio.asm):00271         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00272         ;
+C4ED                  ( cubix_multio.asm):00273         KBD_SETRPT:
+C4ED 86F3             ( cubix_multio.asm):00274                 LDA     #$F3                              ; COMMAND = SET TYPEMATIC RATE/DELAY
+C4EF BDC460           ( cubix_multio.asm):00275                 JSR     KBD_PUTDATA                       ; SEND IT
+C4F2 BDC47A           ( cubix_multio.asm):00276                 JSR     KBD_GETDATA                       ; GET THE ACK
+C4F5 81FA             ( cubix_multio.asm):00277                 CMPA    #$FA                              ; MAKE SURE WE GET ACK
+C4F7 2703             ( cubix_multio.asm):00278                 BEQ     >
+                      ( cubix_multio.asm):00279         
+C4F9 1A01             ( cubix_multio.asm):00280                 SEC
+C4FB 39               ( cubix_multio.asm):00281                 RTS                                       ; ABORT IF NO ACK
+                      ( cubix_multio.asm):00282         !
+C4FC B6C3E7           ( cubix_multio.asm):00283                 LDA     KBD_REPEAT                        ; LOAD THE CURRENT RATE/DELAY BYTE
+C4FF BDC460           ( cubix_multio.asm):00284                 JSR     KBD_PUTDATA                       ; SEND IT
+C502 BDC47A           ( cubix_multio.asm):00285                 JSR     KBD_GETDATA                       ; GET THE ACK
+C505 81FA             ( cubix_multio.asm):00286                 CMPA    #$FA                              ; MAKE SURE WE GET ACK
+C507 2703             ( cubix_multio.asm):00287                 BEQ     >
+                      ( cubix_multio.asm):00288         
+C509 1A01             ( cubix_multio.asm):00289                 SEC
+C50B 39               ( cubix_multio.asm):00290                 RTS                                       ; ABORT IF NO ACK
+                      ( cubix_multio.asm):00291         !
+C50C 1CFE             ( cubix_multio.asm):00292                 CLC
+C50E 39               ( cubix_multio.asm):00293                 RTS
+                      ( cubix_multio.asm):00294         
+                      ( cubix_multio.asm):00295         ;__GETKEY__________________________________________________________________________________________
+                      ( cubix_multio.asm):00296         ; Get char from Keyboard, return in A
+                      ( cubix_multio.asm):00297         ;__________________________________________________________________________________________________
+C50F                  ( cubix_multio.asm):00298         KBD_GETKEY:
+C50F BDC52D           ( cubix_multio.asm):00299                 JSR     KBD_DECODE
+C512 2408             ( cubix_multio.asm):00300                 BCC     >
+C514 86FF             ( cubix_multio.asm):00301                 LDA     #$FF                              ;
+C516 B70109           ( cubix_multio.asm):00302                 STA     >PAGER_D                          ; SAVE 'D'
+C519 1A01             ( cubix_multio.asm):00303                 SEC
+C51B 39               ( cubix_multio.asm):00304                 RTS
+                      ( cubix_multio.asm):00305         !
+C51C B6C3E2           ( cubix_multio.asm):00306                 LDA     KBD_KEYCODE
+C51F B70109           ( cubix_multio.asm):00307                 STA     >PAGER_D                          ; SAVE 'D'
+C522 B6C3E6           ( cubix_multio.asm):00308                 LDA     KBD_STATUS
+C525 847F             ( cubix_multio.asm):00309                 ANDA    #$7F
+C527 B7C3E6           ( cubix_multio.asm):00310                 STA     KBD_STATUS
+C52A 1CFE             ( cubix_multio.asm):00311                 CLC
+C52C 39               ( cubix_multio.asm):00312                 RTS
+                      ( cubix_multio.asm):00313         
+                      ( cubix_multio.asm):00314         ;
+                      ( cubix_multio.asm):00315         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00316         ; DECODING ENGINE
+                      ( cubix_multio.asm):00317         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00318         ;
+                      ( cubix_multio.asm):00319         ;__________________________________________________________________________________________________
+C52D                  ( cubix_multio.asm):00320         KBD_DECODE:
+                      ( cubix_multio.asm):00321         ;
+                      ( cubix_multio.asm):00322         ;  RUN THE DECODING ENGINE UNTIL EITHER: 1) NO MORE SCANCODES ARE AVAILABLE
+                      ( cubix_multio.asm):00323         ;  FROM THE KEYBOARD, OR 2) A DECODED KEY VALUE IS AVAILABLE
+                      ( cubix_multio.asm):00324         ;
+                      ( cubix_multio.asm):00325         ;  RETURNS A=0 AND Z SET IF NO KEYCODE READY, OTHERWISE A DECODED KEY VALUE IS AVAILABLE.
+                      ( cubix_multio.asm):00326         ;  THE DECODED KEY VALUE AND KEY STATE IS STORED IN KBD_KEYCODE AND KBD_STATE.
+                      ( cubix_multio.asm):00327         ;
+                      ( cubix_multio.asm):00328         ;  KBD_STATUS IS NOT CLEARED AT START. IT IS THE JSR ER'S RESPONSIBILITY
+                      ( cubix_multio.asm):00329         ;  TO CLEAR KBD_STATUS WHEN IT HAS RETRIEVED A PENDING VALUE.  IF DECODE IS JSR ED
+                      ( cubix_multio.asm):00330         ;  WITH A KEYCODE STILL PENDING, IT WILL JUST RETURN WITHOUT DOING ANYTHING.
+                      ( cubix_multio.asm):00331         ;
+                      ( cubix_multio.asm):00332         ; Step 0: Check keycode buffer
+                      ( cubix_multio.asm):00333         ;   if status[keyrdy]
+                      ( cubix_multio.asm):00334         ;     return
+                      ( cubix_multio.asm):00335         ;
+                      ( cubix_multio.asm):00336         ; Step 1: Get scancode
+                      ( cubix_multio.asm):00337         ;   if no scancode ready
+                      ( cubix_multio.asm):00338         ;     return
+                      ( cubix_multio.asm):00339         ;   read scancode
+                      ( cubix_multio.asm):00340         ;
+                      ( cubix_multio.asm):00341         ; Step 2: Detect and handle special keycodes
+                      ( cubix_multio.asm):00342         ;   if scancode == $AA
+                      ( cubix_multio.asm):00343         ;     *** handle hot insert somehow ***
+                      ( cubix_multio.asm):00344         ;
+                      ( cubix_multio.asm):00345         ; Step 3: Detect and handle scancode prefixes
+                      ( cubix_multio.asm):00346         ;   if scancode == $E0
+                      ( cubix_multio.asm):00347         ;     set status[extended]
+                      ( cubix_multio.asm):00348         ;     goto Step 1
+                      ( cubix_multio.asm):00349         ;
+                      ( cubix_multio.asm):00350         ;   if scancode == $E1
+                      ( cubix_multio.asm):00351         ;     *** handle pause key somehow ***
+                      ( cubix_multio.asm):00352         ;
+                      ( cubix_multio.asm):00353         ; Step 4: Detect and flag break event
+                      ( cubix_multio.asm):00354         ;   *** scancode set #1 variation ***
+                      ( cubix_multio.asm):00355         ;     set status[break] = high bit of scancode
+                      ( cubix_multio.asm):00356         ;     clear high order bit
+                      ( cubix_multio.asm):00357         ;     continue to Step 5
+                      ( cubix_multio.asm):00358         ;   *** scancode set #2 variation ***
+                      ( cubix_multio.asm):00359         ;     if scancode == $F0
+                      ( cubix_multio.asm):00360         ;       set status[break]
+                      ( cubix_multio.asm):00361         ;       goto Step 1
+                      ( cubix_multio.asm):00362         ;
+                      ( cubix_multio.asm):00363         ; Step 5: Map scancode to keycode
+                      ( cubix_multio.asm):00364         ;   if status[extended]
+                      ( cubix_multio.asm):00365         ;     apply extended-map[scancode] -> keycode
+                      ( cubix_multio.asm):00366         ;   else if state[shifted]
+                      ( cubix_multio.asm):00367         ;     apply shifted-map[scancode] -> keycode
+                      ( cubix_multio.asm):00368         ;   else
+                      ( cubix_multio.asm):00369         ;     apply normal-map[scancode] -> keycode
+                      ( cubix_multio.asm):00370         ;
+                      ( cubix_multio.asm):00371         ; Step 6: Handle modifier keys
+                      ( cubix_multio.asm):00372         ;   if keycode is modifier (shift, ctrl, alt, win)
+                      ( cubix_multio.asm):00373         ;     set (l/r)state[<modifier>] = not status[break]
+                      ( cubix_multio.asm):00374         ;     clear modifier bits in state
+                      ( cubix_multio.asm):00375         ;     set state = (lstate OR rstate OR state)
+                      ( cubix_multio.asm):00376         ;     goto New Key
+                      ( cubix_multio.asm):00377         ;
+                      ( cubix_multio.asm):00378         ; Step 7: Complete procesing of key break events
+                      ( cubix_multio.asm):00379         ;   if status[break]
+                      ( cubix_multio.asm):00380         ;     goto New Key
+                      ( cubix_multio.asm):00381         ;
+                      ( cubix_multio.asm):00382         ; Step 8: Handle toggle keys
+                      ( cubix_multio.asm):00383         ;   if keycode is toggle (capslock, numlock, scrolllock)
+                      ( cubix_multio.asm):00384         ;     invert (XOR) state[<toggle>]
+                      ( cubix_multio.asm):00385         ;     update keyboard LED's
+                      ( cubix_multio.asm):00386         ;     goto New Key
+                      ( cubix_multio.asm):00387         ;
+                      ( cubix_multio.asm):00388         ; Step 9: Adjust keycode for control modifier
+                      ( cubix_multio.asm):00389         ;   if state[ctrl]
+                      ( cubix_multio.asm):00390         ;     if keycode is 'a'-'z'
+                      ( cubix_multio.asm):00391         ;       subtract 20 (clear bit 5) from keycode
+                      ( cubix_multio.asm):00392         ;     if keycode is '@'-'_'
+                      ( cubix_multio.asm):00393         ;       subtract 40 (clear bit 6) from keycode
+                      ( cubix_multio.asm):00394         ;
+                      ( cubix_multio.asm):00395         ; Step 10: Adjust keycode for caps lock
+                      ( cubix_multio.asm):00396         ;   if state[capslock]
+                      ( cubix_multio.asm):00397         ;     if keycode is 'a'-'z' OR 'A'-'Z'
+                      ( cubix_multio.asm):00398         ;       toggle (XOR) bit 5 of keycode
+                      ( cubix_multio.asm):00399         ;
+                      ( cubix_multio.asm):00400         ; Step 11: Handle num pad keys
+                      ( cubix_multio.asm):00401         ;   clear state[numpad]
+                      ( cubix_multio.asm):00402         ;   if keycode is numpad
+                      ( cubix_multio.asm):00403         ;     set state[numpad]
+                      ( cubix_multio.asm):00404         ;     if state[numlock]
+                      ( cubix_multio.asm):00405         ;       toggle (XOR) bit 4 of keycode
+                      ( cubix_multio.asm):00406         ;     apply numpad-map[keycode] -> keycode
+                      ( cubix_multio.asm):00407         ;
+                      ( cubix_multio.asm):00408         ; Step 12: Detect unknown/invalid keycodes
+                      ( cubix_multio.asm):00409         ;   if keycode == $FF
+                      ( cubix_multio.asm):00410         ;     goto New Key
+                      ( cubix_multio.asm):00411         ;
+                      ( cubix_multio.asm):00412         ; Step 13: Done
+                      ( cubix_multio.asm):00413         ;   set status[keyrdy]
+                      ( cubix_multio.asm):00414         ;   return
+                      ( cubix_multio.asm):00415         ;
+                      ( cubix_multio.asm):00416         ; New Key:
+                      ( cubix_multio.asm):00417         ;   clear status
+                      ( cubix_multio.asm):00418         ;   goto Step 1
+                      ( cubix_multio.asm):00419         ;
+C52D                  ( cubix_multio.asm):00420         KBD_DEC0:                                         ; CHECK KEYCODE BUFFER
+C52D B6C3E6           ( cubix_multio.asm):00421                 LDA     KBD_STATUS                        ; GET CURRENT STATUS
+C530 8480             ( cubix_multio.asm):00422                 ANDA    #KBD_KEYRDY                       ; ISOLATE KEY READY FLAG
+C532 2703             ( cubix_multio.asm):00423                 BEQ     KBD_DEC1
+C534 1A01             ( cubix_multio.asm):00424                 SEC
+C536 39               ( cubix_multio.asm):00425                 RTS                                       ; ABORT IF KEY IS ALREADY PENDING
+                      ( cubix_multio.asm):00426         
+C537                  ( cubix_multio.asm):00427         KBD_DEC1:                                         ; PROCESS NEXT SCANCODE
+C537 BDC496           ( cubix_multio.asm):00428                 JSR     KBD_GETDATAX                      ; GET THE SCANCODE
+C53A 2403             ( cubix_multio.asm):00429                 BCC     KBD_DEC2
+C53C 1A01             ( cubix_multio.asm):00430                 SEC
+C53E 39               ( cubix_multio.asm):00431                 RTS                                       ; NO KEY READY, RETURN WITH A=0, SET ERROR
+                      ( cubix_multio.asm):00432         
+C53F                  ( cubix_multio.asm):00433         KBD_DEC2:                                         ; DETECT AND HANDLE SPECIAL KEYCODES
+C53F B7C3E1           ( cubix_multio.asm):00434                 STA     KBD_SCANCODE                      ; SAVE SCANCODE
+C542 81AA             ( cubix_multio.asm):00435                 CMPA    #$AA                              ; KEYBOARD INSERTION?
+C544 260F             ( cubix_multio.asm):00436                 BNE     KBD_DEC3                          ; NOPE, BYPASS
+C546 BDC725           ( cubix_multio.asm):00437                 JSR     LDELAY                            ; WAIT A BIT
+C549 BDC4A2           ( cubix_multio.asm):00438                 JSR     KBD_RESET                         ; RESET KEYBOARD
+C54C BDC4C0           ( cubix_multio.asm):00439                 JSR     KBD_SETLEDS                       ; SET LEDS
+C54F BDC4ED           ( cubix_multio.asm):00440                 JSR     KBD_SETRPT                        ; SET REPEAT RATE
+C552 7EC70C           ( cubix_multio.asm):00441                 JMP     KBD_DECNEW                        ; RESTART THE ENGINE
+                      ( cubix_multio.asm):00442         
+C555                  ( cubix_multio.asm):00443         KBD_DEC3:                                         ; DETECT AND HANDLE SCANCODE PREFIXES
+C555 81E0             ( cubix_multio.asm):00444                 CMPA    #$E0                              ; EXTENDED KEY PREFIX $E0?
+C557 260B             ( cubix_multio.asm):00445                 BNE     KBD_DEC3B                         ; NOPE MOVE ON
+C559 F6C3E6           ( cubix_multio.asm):00446                 LDB     KBD_STATUS                        ; GET STATUS
+C55C DA01             ( cubix_multio.asm):00447                 ORB     KBD_EXT                           ; SET EXTENDED BIT
+C55E F7C3E6           ( cubix_multio.asm):00448                 STB     KBD_STATUS                        ; SAVE STATUS
+C561 7EC537           ( cubix_multio.asm):00449                 JMP     KBD_DEC1                          ; LOOP TO DO NEXT SCANCODE
+                      ( cubix_multio.asm):00450         
+C564                  ( cubix_multio.asm):00451         KBD_DEC3B:                                        ; HANDLE SCANCODE PREFIX $E1 (PAUSE KEY)
+C564 81E1             ( cubix_multio.asm):00452                 CMPA    #$E1                              ; EXTENDED KEY PREFIX $E1
+C566 2616             ( cubix_multio.asm):00453                 BNE     KBD_DEC4                          ; NOPE MOVE ON
+C568 86EE             ( cubix_multio.asm):00454                 LDA     #$EE                              ; MAP TO KEYCODE $EE
+C56A B7C3E2           ( cubix_multio.asm):00455                 STA     KBD_KEYCODE                       ; SAVE IT
+                      ( cubix_multio.asm):00456         ; SWALLOW NEXT 7 SCANCODES
+C56D 8E0007           ( cubix_multio.asm):00457                 LDX     #7                                ; LOOP 5 TIMES
+C570                  ( cubix_multio.asm):00458         KBD_DEC3B1:
+C570 3410             ( cubix_multio.asm):00459                 PSHS    X
+C572 BDC47A           ( cubix_multio.asm):00460                 JSR     KBD_GETDATA                       ; RETRIEVE NEXT SCANCODE
+C575 3510             ( cubix_multio.asm):00461                 PULS    X
+C577 301F             ( cubix_multio.asm):00462                 DEX
+C579 26F5             ( cubix_multio.asm):00463                 BNE     KBD_DEC3B1                        ; LOOP AS NEEDED
+C57B 7EC5E7           ( cubix_multio.asm):00464                 JMP     KBD_DEC6                          ; RESUME AFTER MAPPING
+                      ( cubix_multio.asm):00465         
+C57E                  ( cubix_multio.asm):00466         KBD_DEC4:                                         ; DETECT AND FLAG BREAK EVENT
+C57E 81F0             ( cubix_multio.asm):00467                 CMPA    #$F0                              ; BREAK (KEY UP) PREFIX?
+C580 260B             ( cubix_multio.asm):00468                 BNE     KBD_DEC5                          ; NOPE MOVE ON
+C582 F6C3E6           ( cubix_multio.asm):00469                 LDB     KBD_STATUS                        ; GET STATUS
+C585 DA02             ( cubix_multio.asm):00470                 ORB     KBD_BREAK                         ; SET BREAK BIT
+C587 F7C3E6           ( cubix_multio.asm):00471                 STB     KBD_STATUS                        ; SAVE STATUS
+C58A 7EC537           ( cubix_multio.asm):00472                 JMP     KBD_DEC1                          ; LOOP TO DO NEXT SCANCODE
+                      ( cubix_multio.asm):00473         
+C58D                  ( cubix_multio.asm):00474         KBD_DEC5:                                         ; MAP SCANCODE TO KEYCODE
+C58D B6C3E6           ( cubix_multio.asm):00475                 LDA     KBD_STATUS                        ; GET STATUS
+C590 8401             ( cubix_multio.asm):00476                 ANDA    #KBD_EXT                          ; EXTENDED BIT SET?
+C592 272A             ( cubix_multio.asm):00477                 BEQ     KBD_DEC5C                         ; NOPE, MOVE ON
+                      ( cubix_multio.asm):00478         
+                      ( cubix_multio.asm):00479         ; PERFORM EXTENDED KEY MAPPING
+C594 F6C3E1           ( cubix_multio.asm):00480                 LDB     KBD_SCANCODE                      ; GET SCANCODE
+C597 8600             ( cubix_multio.asm):00481                 LDA     #$00
+C599 1F01             ( cubix_multio.asm):00482                 TFR     D,X
+C59B BEC87A           ( cubix_multio.asm):00483                 LDX     KBD_MAPEXT                        ; POINT TO START OF EXT MAP TABLE
+C59E                  ( cubix_multio.asm):00484         KBD_DEC5A:
+C59E A689C87A         ( cubix_multio.asm):00485                 LDA     KBD_MAPEXT,X                      ; GET FIRST BYTE OF PAIR FROM EXT MAP TABLE
+C5A2 3001             ( cubix_multio.asm):00486                 INX
+C5A4 8100             ( cubix_multio.asm):00487                 CMPA    #$00                              ; END OF TABLE?
+C5A6 10270162         ( cubix_multio.asm):00488                 LBEQ    KBD_DECNEW                        ; UNKNOWN OR BOGUS, START OVER
+C5AA B1C3E1           ( cubix_multio.asm):00489                 CMPA    KBD_SCANCODE                      ; DOES MATCH BYTE EQUAL SCANCODE?
+C5AD 2705             ( cubix_multio.asm):00490                 BEQ     KBD_DEC5B                         ; YES! JUMP OUT
+C5AF 3001             ( cubix_multio.asm):00491                 INX                                       ; BUMP TO START OF NEXT PAIR
+C5B1 7EC59E           ( cubix_multio.asm):00492                 JMP     KBD_DEC5A                         ; LOOP TO CHECK NEXT TABLE ENTRY
+C5B4                  ( cubix_multio.asm):00493         KBD_DEC5B:
+C5B4 A689C87A         ( cubix_multio.asm):00494                 LDA     KBD_MAPEXT,X                      ; GET THE KEYCODE VIA MAPPING TABLE
+C5B8 B7C3E2           ( cubix_multio.asm):00495                 STA     KBD_KEYCODE                       ; SAVE IT
+C5BB 7EC5E7           ( cubix_multio.asm):00496                 JMP     KBD_DEC6
+                      ( cubix_multio.asm):00497         
+C5BE                  ( cubix_multio.asm):00498         KBD_DEC5C:                                        ; PERFORM REGULAR KEY (NOT EXTENDED) KEY MAPPING
+C5BE B6C3E1           ( cubix_multio.asm):00499                 LDA     KBD_SCANCODE                      ; GET THE SCANCODE
+C5C1 8185             ( cubix_multio.asm):00500                 CMPA    #KBD_MAPSIZ                       ; COMPARE TO SIZE OF TABLE
+C5C3 2222             ( cubix_multio.asm):00501                 BHI     KBD_DEC6                          ; PAST END, SKIP OVER LOOKUP
+                      ( cubix_multio.asm):00502         
+                      ( cubix_multio.asm):00503         ; SETUP POINTER TO MAPPING TABLE BASED ON SHIFTED OR UNSHIFTED STATE
+C5C5 F6C3E3           ( cubix_multio.asm):00504                 LDB     KBD_STATE                         ; GET STATE
+C5C8 C401             ( cubix_multio.asm):00505                 ANDB    #KBD_SHIFT                        ; SHIFT ACTIVE?
+C5CA 270D             ( cubix_multio.asm):00506                 BEQ     KBD_DEC5D                         ; NON-SHIFTED, MOVE ON
+                      ( cubix_multio.asm):00507         
+C5CC F6C3E1           ( cubix_multio.asm):00508                 LDB     KBD_SCANCODE                      ; GET THE SCANCODE
+C5CF 8600             ( cubix_multio.asm):00509                 LDA     #$00
+C5D1 1F01             ( cubix_multio.asm):00510                 TFR     D,X
+C5D3 A689C7F5         ( cubix_multio.asm):00511                 LDA     KBD_MAPSHIFT,X                    ; GET SHIFTED
+C5D7 200B             ( cubix_multio.asm):00512                 BRA     >
+C5D9                  ( cubix_multio.asm):00513         KBD_DEC5D:
+C5D9 F6C3E1           ( cubix_multio.asm):00514                 LDB     KBD_SCANCODE                      ; GET THE SCANCODE
+C5DC 8600             ( cubix_multio.asm):00515                 LDA     #$00
+C5DE 1F01             ( cubix_multio.asm):00516                 TFR     D,X
+C5E0 A689C770         ( cubix_multio.asm):00517                 LDA     KBD_MAPSTD,X                      ; GET STANDARD
+                      ( cubix_multio.asm):00518         !
+C5E4 B7C3E2           ( cubix_multio.asm):00519                 STA     KBD_KEYCODE                       ; SAVE KEYCODE
+                      ( cubix_multio.asm):00520         
+C5E7                  ( cubix_multio.asm):00521         KBD_DEC6:                                         ; HANDLE MODIFIER KEYS
+C5E7 B6C3E2           ( cubix_multio.asm):00522                 LDA     KBD_KEYCODE                       ; MAKE SURE WE HAVE KEYCODE
+C5EA 81B8             ( cubix_multio.asm):00523                 CMPA    #$B8                              ; END OF MODIFIER KEYS
+C5EC 2252             ( cubix_multio.asm):00524                 BHI     KBD_DEC7                          ; BYPASS MODIFIER KEY CHECKING
+C5EE 81B0             ( cubix_multio.asm):00525                 CMPA    #$B0                              ; START OF MODIFIER KEYS
+C5F0 234E             ( cubix_multio.asm):00526                 BLS     KBD_DEC7                          ; BYPASS MODIFIER KEY CHECKING
+                      ( cubix_multio.asm):00527         
+C5F2 8E0004           ( cubix_multio.asm):00528                 LDX     #4                                ; LOOP COUNTER TO LOOP THRU 4 MODIFIER BITS
+C5F5 C680             ( cubix_multio.asm):00529                 LDB     #$80                              ; SETUP B TO ROATE THROUGH MODIFIER STATE BITS
+C5F7 1A01             ( cubix_multio.asm):00530                 SEC
+C5F9 82B0             ( cubix_multio.asm):00531                 SBCA    #$B0                              ; SETUP A TO DECREMENT THROUGH MODIFIER VALUES
+                      ( cubix_multio.asm):00532         
+C5FB                  ( cubix_multio.asm):00533         KBD_DEC6A:
+C5FB 59               ( cubix_multio.asm):00534                 ROLB                                      ; SHIFT TO NEXT MODIFIER STATE BIT
+C5FC 4A               ( cubix_multio.asm):00535                 DECA                                      ; L-MODIFIER?
+C5FD 270A             ( cubix_multio.asm):00536                 BEQ     KBD_DEC6B                         ; YES, HANDLE L-MODIFIER MAKE/BREAK
+C5FF 4A               ( cubix_multio.asm):00537                 DECA                                      ; R-MODIFIER?
+C600 270D             ( cubix_multio.asm):00538                 BEQ     KBD_DEC6C                         ; YES, HANDLE R-MODIFIER MAKE/BREAK
+C602 301F             ( cubix_multio.asm):00539                 DEX
+C604 26F5             ( cubix_multio.asm):00540                 BNE     KBD_DEC6A                         ; LOOP THRU 4 MODIFIER BITS
+C606 7EC640           ( cubix_multio.asm):00541                 JMP     KBD_DEC7                          ; FAILSAFE, SHOULD NEVER GET HERE!
+                      ( cubix_multio.asm):00542         
+C609                  ( cubix_multio.asm):00543         KBD_DEC6B:                                        ; LEFT STATE KEY MAKE/BREAK (STATE BIT TO SET/CLEAR IN B)
+C609 8EC3E4           ( cubix_multio.asm):00544                 LDX     #KBD_LSTATE                       ; POINT TO LEFT STATE BYTE
+C60C 7EC615           ( cubix_multio.asm):00545                 JMP     KBD_DEC6D                         ; CONTINUE
+                      ( cubix_multio.asm):00546         
+C60F                  ( cubix_multio.asm):00547         KBD_DEC6C:                                        ; RIGHT STATE KEY MAKE/BREAK (STATE BIT TO SET/CLEAR IN B)
+C60F 8EC3E5           ( cubix_multio.asm):00548                 LDX     #KBD_RSTATE                       ; POINT TO RIGHT STATE BYTE
+C612 7EC615           ( cubix_multio.asm):00549                 JMP     KBD_DEC6D                         ; CONTINUE
+                      ( cubix_multio.asm):00550         
+C615                  ( cubix_multio.asm):00551         KBD_DEC6D:                                        ; BRANCH BASED ON WHETHER THIS IS A MAKE OR BREAK EVENT
+C615 B6C3E6           ( cubix_multio.asm):00552                 LDA     KBD_STATUS                        ; GET STATUS FLAGS
+C618 8402             ( cubix_multio.asm):00553                 ANDA    #KBD_BREAK                        ; BREAK EVENT?
+C61A 2703             ( cubix_multio.asm):00554                 BEQ     KBD_DEC6E                         ; NO, HANDLE A MODIFIER KEY MAKE EVENT
+C61C 7EC626           ( cubix_multio.asm):00555                 JMP     KBD_DEC6F                         ; YES, HANDLE A MODIFIER BREAK EVENT
+                      ( cubix_multio.asm):00556         
+C61F                  ( cubix_multio.asm):00557         KBD_DEC6E:                                        ; HANDLE STATE KEY MAKE EVENT
+C61F EA84             ( cubix_multio.asm):00558                 ORB     ,X                                ; OR IN THE BIT TO SET
+C621 E784             ( cubix_multio.asm):00559                 STB     ,X                                ; SAVE THE RESULT
+C623 7EC62F           ( cubix_multio.asm):00560                 JMP     KBD_DEC6G                         ; CONTINUE
+                      ( cubix_multio.asm):00561         
+C626                  ( cubix_multio.asm):00562         KBD_DEC6F:                                        ; HANDLE STATE KEY BREAK EVENT
+C626 C8FF             ( cubix_multio.asm):00563                 EORB    #$FF                              ; FLIP ALL BITS TO SETUP FOR A CLEAR OPERATION
+C628 E484             ( cubix_multio.asm):00564                 ANDB    ,X                                ; AND IN THE FLIPPED BITS TO CLEAR DESIRED BIT
+C62A E784             ( cubix_multio.asm):00565                 STB     ,X                                ; SAVE THE RESULT
+C62C 7EC62F           ( cubix_multio.asm):00566                 JMP     KBD_DEC6G                         ; CONTINUE
+                      ( cubix_multio.asm):00567         
+C62F                  ( cubix_multio.asm):00568         KBD_DEC6G:                                        ; COALESCE L/R STATE FLAGS
+C62F B6C3E3           ( cubix_multio.asm):00569                 LDA     KBD_STATE                         ; GET EXISTING STATE BITS
+C632 84F0             ( cubix_multio.asm):00570                 ANDA    #$F0                              ; GET RID OF OLD MODIFIER BITS
+C634 BAC3E4           ( cubix_multio.asm):00571                 ORA     KBD_LSTATE                        ; MERGE IN LEFT STATE BITS
+C637 BAC3E5           ( cubix_multio.asm):00572                 ORA     KBD_RSTATE                        ; MERGE IN RIGHT STATE BITS
+C63A B7C3E3           ( cubix_multio.asm):00573                 STA     KBD_STATE                         ; SAVE IT
+C63D 7EC70C           ( cubix_multio.asm):00574                 JMP     KBD_DECNEW                        ; DONE WITH CURRENT KEYSTROKE
+                      ( cubix_multio.asm):00575         
+C640                  ( cubix_multio.asm):00576         KBD_DEC7:                                         ; COMPLETE PROCESSING OF EXTENDED AND KEY BREAK EVENTS
+C640 B6C3E6           ( cubix_multio.asm):00577                 LDA     KBD_STATUS                        ; GET CURRENT STATUS FLAGS
+C643 8402             ( cubix_multio.asm):00578                 ANDA    #KBD_BREAK                        ; IS THIS A KEY BREAK EVENT?
+C645 102600C3         ( cubix_multio.asm):00579                 LBNE    KBD_DECNEW                        ; PROCESS NEXT KEY
+                      ( cubix_multio.asm):00580         
+C649                  ( cubix_multio.asm):00581         KBD_DEC8:                                         ; HANDLE TOGGLE KEYS
+C649 B6C3E2           ( cubix_multio.asm):00582                 LDA     KBD_KEYCODE                       ; GET THE CURRENT KEYCODE INTO A
+C64C C640             ( cubix_multio.asm):00583                 LDB     #KBD_CAPSLCK                      ; SETUP E WITH CAPS LOCK STATE BIT
+C64E 81BC             ( cubix_multio.asm):00584                 CMPA    #$BC                              ; IS THIS THE CAPS LOCK KEY?
+C650 270F             ( cubix_multio.asm):00585                 BEQ     KBD_DEC8A                         ; YES, GO TO BIT SET ROUTINE
+C652 C620             ( cubix_multio.asm):00586                 LDB     #KBD_NUMLCK                       ; SETUP E WITH NUM LOCK STATE BIT
+C654 81BD             ( cubix_multio.asm):00587                 CMPA    #$BD                              ; IS THIS THE NUM LOCK KEY?
+C656 2709             ( cubix_multio.asm):00588                 BEQ     KBD_DEC8A                         ; YES, GO TO BIT SET ROUTINE
+C658 C610             ( cubix_multio.asm):00589                 LDB     #KBD_SCRLCK                       ; SETUP E WITH SCROLL LOCK STATE BIT
+C65A 81BE             ( cubix_multio.asm):00590                 CMPA    #$BE                              ; IS THIS THE SCROLL LOCK KEY?
+C65C 2703             ( cubix_multio.asm):00591                 BEQ     KBD_DEC8A                         ; YES, GO TO BIT SET ROUTINE
+C65E 7EC66F           ( cubix_multio.asm):00592                 JMP     KBD_DEC9                          ; NOT A TOGGLE KEY, CONTINUE
+                      ( cubix_multio.asm):00593         
+C661                  ( cubix_multio.asm):00594         KBD_DEC8A:                                        ; RECORD THE TOGGLE
+C661 F8C3E3           ( cubix_multio.asm):00595                 EORB    KBD_STATE                         ; SET THE TOGGLE KEY BIT FROM ABOVE
+C664 F7C3E3           ( cubix_multio.asm):00596                 STB     KBD_STATE                         ; SAVE IT
+C667 1F98             ( cubix_multio.asm):00597                 TFR     B,A
+C669 BDC4C0           ( cubix_multio.asm):00598                 JSR     KBD_SETLEDS                       ; UPDATE LED LIGHTS ON KBD
+C66C 7EC70C           ( cubix_multio.asm):00599                 JMP     KBD_DECNEW                        ; RESTART DECODER FOR A NEW KEY
+                      ( cubix_multio.asm):00600         
+C66F                  ( cubix_multio.asm):00601         KBD_DEC9:                                         ; ADJUST KEYCODE FOR CONTROL MODIFIER
+C66F B6C3E3           ( cubix_multio.asm):00602                 LDA     KBD_STATE                         ; GET THE CURRENT STATE BITS
+C672 8402             ( cubix_multio.asm):00603                 ANDA    #KBD_CTRL                         ; CHECK THE CONTROL BIT
+C674 271A             ( cubix_multio.asm):00604                 BEQ     KBD_DEC10                         ; CONTROL KEY NOT PRESSED, MOVE ON
+C676 B6C3E2           ( cubix_multio.asm):00605                 LDA     KBD_KEYCODE                       ; GET CURRENT KEYCODE IN A
+C679 8161             ( cubix_multio.asm):00606                 CMPA    #'a'                              ; COMPARE TO LOWERCASE A
+C67B 2D06             ( cubix_multio.asm):00607                 BLT     KBD_DEC9A                         ; BELOW IT, BYPASS
+C67D 817B             ( cubix_multio.asm):00608                 CMPA    #$7B                              ; COMPARE TO LOWERCASE Z+1
+C67F 2202             ( cubix_multio.asm):00609                 BHI     KBD_DEC9A                         ; ABOVE IT, BYPASS
+C681 84DF             ( cubix_multio.asm):00610                 ANDA    #$DF                              ; KEYCODE IN LOWERCASE A-Z RANGE CLEAR BIT 5 TO MAKE IT UPPERCASE
+C683                  ( cubix_multio.asm):00611         KBD_DEC9A:
+C683 9140             ( cubix_multio.asm):00612                 CMPA    '@'                               ; COMPARE TO @
+C685 2D09             ( cubix_multio.asm):00613                 BLT     KBD_DEC10                         ; BELOW IT, BYPASS
+C687 815F             ( cubix_multio.asm):00614                 CMPA    #$5F                              ; COMPARE TO _+1
+C689 2205             ( cubix_multio.asm):00615                 BHI     KBD_DEC10                         ; ABOVE IT, BYPASS
+C68B 84BF             ( cubix_multio.asm):00616                 ANDA    #$BF                              ; CONVERT TO CONTROL VALUE BY CLEARING BIT 6
+C68D B7C3E2           ( cubix_multio.asm):00617                 STA     KBD_KEYCODE                       ; UPDATE KEYCODE TO CONTROL VALUE
+                      ( cubix_multio.asm):00618         
+C690                  ( cubix_multio.asm):00619         KBD_DEC10:                                        ; ADJUST KEYCODE FOR CAPS LOCK
+C690 B6C3E3           ( cubix_multio.asm):00620                 LDA     KBD_STATE                         ; LOAD THE STATE FLAGS
+C693 8440             ( cubix_multio.asm):00621                 ANDA    #KBD_CAPSLCK                      ; CHECK CAPS LOCK
+C695 2721             ( cubix_multio.asm):00622                 BEQ     KBD_DEC11                         ; CAPS LOCK NOT ACTIVE, MOVE ON
+C697 B6C3E2           ( cubix_multio.asm):00623                 LDA     KBD_KEYCODE                       ; GET THE CURRENT KEYCODE VALUE
+C69A 8161             ( cubix_multio.asm):00624                 CMPA    #'a'                              ; COMPARE TO LOWERCASE A
+C69C 2D07             ( cubix_multio.asm):00625                 BLT     KBD_DEC10A                        ; BELOW IT, BYPASS
+C69E 817B             ( cubix_multio.asm):00626                 CMPA    #$7b                              ; COMPARE TO LOWERCASE Z+1
+C6A0 2203             ( cubix_multio.asm):00627                 BHI     KBD_DEC10A                        ; ABOVE IT, BYPASS
+C6A2 7EC6B0           ( cubix_multio.asm):00628                 JMP     KBD_DEC10B                        ; IN RANGE LOWERCASE A-Z, GO TO CASE SWAPPING LOGIC
+C6A5                  ( cubix_multio.asm):00629         KBD_DEC10A:
+C6A5 8141             ( cubix_multio.asm):00630                 CMPA    #'A'                              ; COMPARE TO UPPERCASE A
+C6A7 2D0F             ( cubix_multio.asm):00631                 BLT     KBD_DEC11                         ; BELOW IT, BYPASS
+C6A9 8191             ( cubix_multio.asm):00632                 CMPA    #$91                              ; COMPARE TO UPPERCASE Z+1
+C6AB 220B             ( cubix_multio.asm):00633                 BHI     KBD_DEC11                         ; ABOVE IT, BYPASS
+C6AD 7EC6B0           ( cubix_multio.asm):00634                 JMP     KBD_DEC10B                        ; IN RANGE UPPERCASE A-Z, GO TO CASE SWAPPING LOGIC
+C6B0                  ( cubix_multio.asm):00635         KBD_DEC10B:
+C6B0 B6C3E2           ( cubix_multio.asm):00636                 LDA     KBD_KEYCODE                       ; GET THE CURRENT KEYCODE
+C6B3 8820             ( cubix_multio.asm):00637                 EORA    #$20                              ; FLIP BIT 5 TO SWAP UPPER/LOWER CASE
+C6B5 B7C3E2           ( cubix_multio.asm):00638                 STA     KBD_KEYCODE                       ; SAVE IT
+                      ( cubix_multio.asm):00639         
+C6B8                  ( cubix_multio.asm):00640         KBD_DEC11:                                        ; HANDLE NUM PAD KEYS
+C6B8 B6C3E3           ( cubix_multio.asm):00641                 LDA     KBD_STATE                         ; GET THE CURRENT STATE FLAGS
+C6BB 847F             ( cubix_multio.asm):00642                 ANDA    #~KBD_NUMPAD                      ; ASSUME NOT A NUMPAD KEY, CLEAR THE NUMPAD BIT
+C6BD B7C3E3           ( cubix_multio.asm):00643                 STA     KBD_STATE                         ; SAVE IT
+                      ( cubix_multio.asm):00644         
+C6C0 B6C3E2           ( cubix_multio.asm):00645                 LDA     KBD_KEYCODE                       ; GET THE CURRENT KEYCODE
+C6C3 84E0             ( cubix_multio.asm):00646                 ANDA    #%11100000                        ; ISOLATE TOP 3 BITS
+C6C5 81C0             ( cubix_multio.asm):00647                 CMPA    #%11000000                        ; IS IN NUMPAD RANGE?
+C6C7 262F             ( cubix_multio.asm):00648                 BNE     KBD_DEC12                         ; NOPE, GET OUT
+                      ( cubix_multio.asm):00649         
+C6C9 B6C3E3           ( cubix_multio.asm):00650                 LDA     KBD_STATE                         ; LOAD THE CURRENT STATE FLAGS
+C6CC 8A80             ( cubix_multio.asm):00651                 ORA     #KBD_NUMPAD                       ; TURN ON THE NUMPAD BIT
+C6CE B7C3E3           ( cubix_multio.asm):00652                 STA     KBD_STATE                         ; SAVE IT
+                      ( cubix_multio.asm):00653         
+C6D1 9420             ( cubix_multio.asm):00654                 ANDA    KBD_NUMLCK                        ; IS NUM LOCK BIT SET?
+C6D3 2708             ( cubix_multio.asm):00655                 BEQ     KBD_DEC11A                        ; NO, SKIP NUMLOCK PROCESSING
+C6D5 B6C3E2           ( cubix_multio.asm):00656                 LDA     KBD_KEYCODE                       ; GET THE KEYCODE
+C6D8 8810             ( cubix_multio.asm):00657                 EORA    #$10                              ; FLIP VALUES FOR NUMLOCK
+C6DA B7C3E2           ( cubix_multio.asm):00658                 STA     KBD_KEYCODE                       ; SAVE IT
+                      ( cubix_multio.asm):00659         
+C6DD                  ( cubix_multio.asm):00660         KBD_DEC11A:                                       ; APPLY NUMPAD MAPPING
+C6DD F6C3E2           ( cubix_multio.asm):00661                 LDB     KBD_KEYCODE                       ; GET THE CURRENT KEYCODE
+C6E0 1A01             ( cubix_multio.asm):00662                 SEC
+C6E2 C2C0             ( cubix_multio.asm):00663                 SBCB    #$C0                              ; KEYCODES START AT $C0
+C6E4 8600             ( cubix_multio.asm):00664                 LDA     #$00
+C6E6 FDC3E9           ( cubix_multio.asm):00665                 STD     KBD_TEMP
+C6E9 CCC8A8           ( cubix_multio.asm):00666                 LDD     #KBD_MAPNUMPAD                    ; LOAD THE START OF THE MAPPING TABLE
+C6EC 1CFE             ( cubix_multio.asm):00667                 CLC
+C6EE F3C3E9           ( cubix_multio.asm):00668                 ADDD    KBD_TEMP
+C6F1 1F01             ( cubix_multio.asm):00669                 TFR     D,X                               ; INDEX IN X
+                      ( cubix_multio.asm):00670         
+C6F3 A684             ( cubix_multio.asm):00671                 LDA     ,X                                ; GET IT IN A
+C6F5 B7C3E2           ( cubix_multio.asm):00672                 STA     KBD_KEYCODE                       ; SAVE IT
+                      ( cubix_multio.asm):00673         
+C6F8                  ( cubix_multio.asm):00674         KBD_DEC12:                                        ; DETECT UNKNOWN/INVALID KEYCODES
+C6F8 B6C3E2           ( cubix_multio.asm):00675                 LDA     KBD_KEYCODE                       ; GET THE FINAL KEYCODE
+C6FB 81FF             ( cubix_multio.asm):00676                 CMPA    #$FF                              ; IS IT $FF (UNKNOWN/INVALID)
+C6FD 270D             ( cubix_multio.asm):00677                 BEQ     KBD_DECNEW                        ; IF SO, JUST RESTART THE ENGINE
+                      ( cubix_multio.asm):00678         
+C6FF                  ( cubix_multio.asm):00679         KBD_DEC13:                                        ; DONE - RECORD RESULTS
+C6FF B6C3E6           ( cubix_multio.asm):00680                 LDA     KBD_STATUS                        ; GET CURRENT STATUS
+C702 8A80             ( cubix_multio.asm):00681                 ORA     #KBD_KEYRDY                       ; SET KEY READY BIT
+C704 B7C3E6           ( cubix_multio.asm):00682                 STA     KBD_STATUS                        ; SAVE IT
+C707 8600             ( cubix_multio.asm):00683                 LDA     #$00                              ; A=0
+C709 1CFE             ( cubix_multio.asm):00684                 CLC                                       ; SIGNAL SUCCESS WITH A=1, CARRY CLEAR
+C70B 39               ( cubix_multio.asm):00685                 RTS
+                      ( cubix_multio.asm):00686         
+C70C                  ( cubix_multio.asm):00687         KBD_DECNEW:                                       ; START NEW KEYPRESS (CLEAR ALL STATUS BITS)
+C70C 8600             ( cubix_multio.asm):00688                 LDA     #$00                              ; A=0
+C70E B7C3E6           ( cubix_multio.asm):00689                 STA     KBD_STATUS                        ; CLEAR STATUS
+C711 7EC537           ( cubix_multio.asm):00690                 JMP     KBD_DEC1                          ; RESTART THE ENGINE
+                      ( cubix_multio.asm):00691         
+C714                  ( cubix_multio.asm):00692         DELAY:
+C714 3476             ( cubix_multio.asm):00693                 PSHS    A,B,X,Y,U
+C716 3576             ( cubix_multio.asm):00694                 PULS    A,B,X,Y,U
+C718 3476             ( cubix_multio.asm):00695                 PSHS    A,B,X,Y,U
+C71A 3576             ( cubix_multio.asm):00696                 PULS    A,B,X,Y,U
+C71C 3476             ( cubix_multio.asm):00697                 PSHS    A,B,X,Y,U
+C71E 3576             ( cubix_multio.asm):00698                 PULS    A,B,X,Y,U
+C720 3476             ( cubix_multio.asm):00699                 PSHS    A,B,X,Y,U
+C722 3576             ( cubix_multio.asm):00700                 PULS    A,B,X,Y,U
+C724 39               ( cubix_multio.asm):00701                 RTS
+                      ( cubix_multio.asm):00702         
+C725                  ( cubix_multio.asm):00703         LDELAY:
+C725 3476             ( cubix_multio.asm):00704                 PSHS    A,B,X,Y,U
+C727 8E0100           ( cubix_multio.asm):00705                 LDX     #$100
+                      ( cubix_multio.asm):00706         !
+C72A BDC714           ( cubix_multio.asm):00707                 JSR     DELAY
+C72D 301F             ( cubix_multio.asm):00708                 DEX
+C72F 26F9             ( cubix_multio.asm):00709                 BNE     <
+C731 3576             ( cubix_multio.asm):00710                 PULS    A,B,X,Y,U
+C733 39               ( cubix_multio.asm):00711                 RTS
+                      ( cubix_multio.asm):00712         
+                      ( cubix_multio.asm):00713         ;
+                      ( cubix_multio.asm):00714         ; DRIVER DATA
+                      ( cubix_multio.asm):00715         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00716         ; MESSAGES
+                      ( cubix_multio.asm):00717         ;__________________________________________________________________________________________________
+C734                  ( cubix_multio.asm):00718         MIOMESSAGE1:
+C734 495341204D554C54 ( cubix_multio.asm):00719                 FCC     "ISA MULTI-IO:"
+     492D494F3A
+C741 00               ( cubix_multio.asm):00720                 FCB     00
+C742                  ( cubix_multio.asm):00721         MIOMESSAGE3:
+C742 20204B42443A2056 ( cubix_multio.asm):00722                 FCC     "  KBD: VT82C42 NOT FOUND."
+     543832433432204E
+     4F5420464F554E44
+     2E
+C75B 00               ( cubix_multio.asm):00723                 FCB     00
+C75C                  ( cubix_multio.asm):00724         MIOMESSAGE4:
+C75C 20204B42443A2049 ( cubix_multio.asm):00725                 FCC     "  KBD: INITIALIZED."
+     4E495449414C495A
+     45442E
+C76F 00               ( cubix_multio.asm):00726                 FCB     00
+                      ( cubix_multio.asm):00727         ;
+                      ( cubix_multio.asm):00728         ; MAPPING
+                      ( cubix_multio.asm):00729         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00730         ;
+C770                  ( cubix_multio.asm):00731         KBD_MAPSTD:                                       ; SCANCODE IS INDEX INTO TABLE TO RESULTANT LOOKUP KEYCODE
+C770 FFE8FFE4E2E0E1EB ( cubix_multio.asm):00732                 FCB     $FF,$E8,$FF,$E4,$E2,$E0,$E1,$EB,$FF,$E9,$E7,$E5,$E3,$09,'`',$FF
+     FFE9E7E5E30960FF
+C780 FFB4B0FFB27131FF ( cubix_multio.asm):00733                 FCB     $FF,$B4,$B0,$FF,$B2,'q','1',$FF,$FF,$FF,'z','s','a','w','2',$FF
+     FFFF7A73617732FF
+C790 FF637864653433FF ( cubix_multio.asm):00734                 FCB     $FF,'c','x','d','e','4','3',$FF,$FF,' ','v','f','t','r','5',$FF
+     FF207666747235FF
+C7A0 FF6E6268677936FF ( cubix_multio.asm):00735                 FCB     $FF,'n','b','h','g','y','6',$FF,$FF,$FF,'m','j','u','7','8',$FF
+     FFFF6D6A753738FF
+C7B0 FF2C6B696F3039FF ( cubix_multio.asm):00736                 FCB     $FF,',','k','i','o','0','9',$FF,$FF,'.','/','l',';','p','-',$FF
+     FF2E2F6C3B702DFF
+C7C0 FFFF27FF5B3DFFFF ( cubix_multio.asm):00737                 FCB     $FF,$FF,$27,$FF,'[','=',$FF,$FF,$BC,$B1,$0D,']',$FF,'\',$FF,$FF
+     BCB10D5DFF5CFFFF
+C7D0 FFFFFFFFFFFF08FF ( cubix_multio.asm):00738                 FCB     $FF,$FF,$FF,$FF,$FF,$FF,$08,$FF,$FF,$C0,$FF,$C3,$C6,$FF,$FF,$FF
+     FFC0FFC3C6FFFFFF
+C7E0 C9CAC1C4C5C71BBD ( cubix_multio.asm):00739                 FCB     $C9,$CA,$C1,$C4,$C5,$C7,$1B,$BD,$FA,$CE,$C2,$CD,$CC,$C8,$BE,$FF
+     FACEC2CDCCC8BEFF
+C7F0 FFFFFFE6EC       ( cubix_multio.asm):00740                 FCB     $FF,$FF,$FF,$E6,$EC
+C7F5                  ( cubix_multio.asm):00741         BD_MAPSTDEND:
+                      ( cubix_multio.asm):00742         ;
+     0085             ( cubix_multio.asm):00743         KBD_MAPSIZ      EQU BD_MAPSTDEND-KBD_MAPSTD
+                      ( cubix_multio.asm):00744         ;
+C7F5                  ( cubix_multio.asm):00745         KBD_MAPSHIFT:                                     ; SCANCODE IS INDEX INTO TABLE TO RESULTANT LOOKUP KEYCODE WHEN SHIFT ACTIVE
+C7F5 FFE8FFE4E2E0E1EB ( cubix_multio.asm):00746                 FCB     $FF,$E8,$FF,$E4,$E2,$E0,$E1,$EB,$FF,$E9,$E7,$E5,$E3,$09,'~',$FF
+     FFE9E7E5E3097EFF
+C805 FFB4B0FFB25121FF ( cubix_multio.asm):00747                 FCB     $FF,$B4,$B0,$FF,$B2,'Q','!',$FF,$FF,$FF,'Z','S','A','W','@',$FF
+     FFFF5A53415740FF
+C815 FF435844452423FF ( cubix_multio.asm):00748                 FCB     $FF,'C','X','D','E','$','#',$FF,$FF,' ','V','F','T','R','%',$FF
+     FF205646545225FF
+C825 FF4E424847595EFF ( cubix_multio.asm):00749                 FCB     $FF,'N','B','H','G','Y','^',$FF,$FF,$FF,'M','J','U','&','*',$FF
+     FFFF4D4A55262AFF
+C835 FF3C4B494F2928FF ( cubix_multio.asm):00750                 FCB     $FF,'<','K','I','O',')','(',$FF,$FF,'>','?','L',':','P','_',$FF
+     FF3E3F4C3A505FFF
+C845 FFFF22FF7B2BFFFF ( cubix_multio.asm):00751                 FCB     $FF,$FF,$22,$FF,'{','+',$FF,$FF,$BC,$B1,$0D,'}',$FF,'|',$FF,$FF
+     BCB10D7DFF7CFFFF
+C855 FFFFFFFFFFFF08FF ( cubix_multio.asm):00752                 FCB     $FF,$FF,$FF,$FF,$FF,$FF,$08,$FF,$FF,$D0,$FF,$D3,$D6,$FF,$FF,$FF
+     FFD0FFD3D6FFFFFF
+C865 D9DAD1D4D5D71BBD ( cubix_multio.asm):00753                 FCB     $D9,$DA,$D1,$D4,$D5,$D7,$1B,$BD,$FA,$DE,$D2,$DD,$DC,$D8,$BE,$FF
+     FADED2DDDCD8BEFF
+C875 FFFFFFE6EC       ( cubix_multio.asm):00754                 FCB     $FF,$FF,$FF,$E6,$EC
+                      ( cubix_multio.asm):00755         ;
+C87A                  ( cubix_multio.asm):00756         KBD_MAPEXT:                                       ; PAIRS ARE [SCANCODE,KEYCODE] FOR EXTENDED SCANCODES
+C87A 11B514B31FB627B7 ( cubix_multio.asm):00757                 FCB     $11,$B5,$14,$B3,$1F,$B6,$27,$B7
+C882 2FEF37FA3FFB4ACB ( cubix_multio.asm):00758                 FCB     $2F,$EF,$37,$FA,$3F,$FB,$4A,$CB
+C88A 5ACF5EFC69F36BF8 ( cubix_multio.asm):00759                 FCB     $5A,$CF,$5E,$FC,$69,$F3,$6B,$F8
+C892 6CF270F071F172F7 ( cubix_multio.asm):00760                 FCB     $6C,$F2,$70,$F0,$71,$F1,$72,$F7
+C89A 74F975F67AF57CED ( cubix_multio.asm):00761                 FCB     $74,$F9,$75,$F6,$7A,$F5,$7C,$ED
+C8A2 7DF47EFD0000     ( cubix_multio.asm):00762                 FCB     $7D,$F4,$7E,$FD,$00,$00
+                      ( cubix_multio.asm):00763         ;
+C8A8                  ( cubix_multio.asm):00764         KBD_MAPNUMPAD:                                    ; KEYCODE TRANSLATION FROM NUMPAD RANGE TO STD ASCII/KEYCODES
+C8A8 F3F7F5F8FFF9F2F6 ( cubix_multio.asm):00765                 FCB     $F3,$F7,$F5,$F8,$FF,$F9,$F2,$F6,$F4,$F0,$F1,$2F,$2A,$2D,$2B,$0D
+     F4F0F12F2A2D2B0D
+C8B8 3132333435363738 ( cubix_multio.asm):00766                 FCB     $31,$32,$33,$34,$35,$36,$37,$38,$39,$30,$2E,$2F,$2A,$2D,$2B,$0D
+     39302E2F2A2D2B0D
+                      ( cubix_multio.asm):00767         ;
+                      ( cubix_multio.asm):00768         ;
+                      ( cubix_multio.asm):00769         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00770         ; KEYCODE VALUES RETURNED BY THE DECODER
+                      ( cubix_multio.asm):00771         ;__________________________________________________________________________________________________
+                      ( cubix_multio.asm):00772         ;
+                      ( cubix_multio.asm):00773         ; VALUES 0-127 ARE STANDARD ASCII, SPECIAL KEYS WILL HAVE THE FOLLOWING VALUES:
+                      ( cubix_multio.asm):00774         ;
+                      ( cubix_multio.asm):00775         ; F1            $E0
+                      ( cubix_multio.asm):00776         ; F2            $E1
+                      ( cubix_multio.asm):00777         ; F3            $E2
+                      ( cubix_multio.asm):00778         ; F4            $E3
+                      ( cubix_multio.asm):00779         ; F5            $E4
+                      ( cubix_multio.asm):00780         ; F6            $E5
+                      ( cubix_multio.asm):00781         ; F7            $E6
+                      ( cubix_multio.asm):00782         ; F8            $E7
+                      ( cubix_multio.asm):00783         ; F9            $E8
+                      ( cubix_multio.asm):00784         ; F10           $E9
+                      ( cubix_multio.asm):00785         ; F11           $EA
+                      ( cubix_multio.asm):00786         ; F12           $EB
+                      ( cubix_multio.asm):00787         ; SYSRQ         $EC
+                      ( cubix_multio.asm):00788         ; PRTSC         $ED
+                      ( cubix_multio.asm):00789         ; PAUSE         $EE
+                      ( cubix_multio.asm):00790         ; APP           $EF
+                      ( cubix_multio.asm):00791         ; INS           $F0
+                      ( cubix_multio.asm):00792         ; DEL           $F1
+                      ( cubix_multio.asm):00793         ; HOME          $F2
+                      ( cubix_multio.asm):00794         ; END           $F3
+                      ( cubix_multio.asm):00795         ; PGUP          $F4
+                      ( cubix_multio.asm):00796         ; PGDN          $F5
+                      ( cubix_multio.asm):00797         ; UP            $F6
+                      ( cubix_multio.asm):00798         ; DOWN          $F7
+                      ( cubix_multio.asm):00799         ; LEFT          $F8
+                      ( cubix_multio.asm):00800         ; RIGHT         $F9
+                      ( cubix_multio.asm):00801         ; POWER         $FA
+                      ( cubix_multio.asm):00802         ; SLEEP         $FB
+                      ( cubix_multio.asm):00803         ; WAKE          $FC
+                      ( cubix_multio.asm):00804         ; BREAK         $FD
+                      (     cubixdrv.asm):00112         ;        INCLUDE cubix_dskyng.asm
+                      (     cubixdrv.asm):00113         ;        INCLUDE cubix_floppy.asm
+                      (     cubixdrv.asm):00114         ;        INCLUDE cubix_fp.asm
+                      (     cubixdrv.asm):00115         ;        INCLUDE cubix_i2c.asm
+                      (     cubixdrv.asm):00116         ;        INCLUDE cubix_esp32.asm
+                      (     cubixdrv.asm):00117         ;        INCLUDE cubix_dsky.asm
+                      (     cubixdrv.asm):00118         
+                      (     cubixdrv.asm):00119         
+                      (     cubixdrv.asm):00120         
+C8C8                  (     cubixdrv.asm):00121         drv_noop:
+C8C8 39               (     cubixdrv.asm):00122                 RTS
+                      (     cubixdrv.asm):00123         
+                      (     cubixdrv.asm):00124         ;*
+                      (     cubixdrv.asm):00125         ;* OUTPUT LFCR TO CONSOLE
+                      (     cubixdrv.asm):00126         ;*
+C8C9                  (     cubixdrv.asm):00127         LFCR:
+C8C9 3406             (     cubixdrv.asm):00128                 PSHS    a,b
+C8CB 860A             (     cubixdrv.asm):00129                 LDA     #10
+C8CD 8D40             (     cubixdrv.asm):00130                 BSR     PUTCHR
+C8CF 860D             (     cubixdrv.asm):00131                 LDA     #13
+C8D1 8D3C             (     cubixdrv.asm):00132                 BSR     PUTCHR
+C8D3 3586             (     cubixdrv.asm):00133                 PULS    A,B,pc
+C8D5                  (     cubixdrv.asm):00134         SPACE:
+C8D5 3406             (     cubixdrv.asm):00135                 PSHS    a,b
+C8D7 8620             (     cubixdrv.asm):00136                 LDA     #32
+C8D9 8D34             (     cubixdrv.asm):00137                 BSR     PUTCHR
+C8DB 3586             (     cubixdrv.asm):00138                 PULS    A,B,pc
+                      (     cubixdrv.asm):00139         ;*
+                      (     cubixdrv.asm):00140         ;* WRITE STRING(X) TO CONSOLE
+                      (     cubixdrv.asm):00141         ;*
+C8DD                  (     cubixdrv.asm):00142         WRSTR:
+C8DD 3406             (     cubixdrv.asm):00143                 PSHS    A,B                               ;SAVE A
+C8DF                  (     cubixdrv.asm):00144         WRST1:
+C8DF A680             (     cubixdrv.asm):00145                 LDA     ,X+                               ;GET CHAR
+C8E1 2704             (     cubixdrv.asm):00146                 BEQ     WRST2                             ;END, QUIT
+C8E3 8D2A             (     cubixdrv.asm):00147                 BSR     PUTCHR
+C8E5 20F8             (     cubixdrv.asm):00148                 BRA     WRST1                             ;CONTINUE
+C8E7                  (     cubixdrv.asm):00149         WRST2:
+C8E7 3586             (     cubixdrv.asm):00150                 PULS    A,B,pc
+                      (     cubixdrv.asm):00151         ;*
+                      (     cubixdrv.asm):00152         ;* OUTPUT NUMBER IN 'D' TO CONSOLE IN HEX
+                      (     cubixdrv.asm):00153         ;*
+C8E9                  (     cubixdrv.asm):00154         WRHEXW
+C8E9 3406             (     cubixdrv.asm):00155                 PSHS    d
+C8EB 8D08             (     cubixdrv.asm):00156                 BSR     WRHEX                             ;OUTPUT
+C8ED 1E89             (     cubixdrv.asm):00157                 EXG     A,B                               ;SWAP
+C8EF 8D04             (     cubixdrv.asm):00158                 BSR     WRHEX                             ;OUTPUT
+C8F1 1E89             (     cubixdrv.asm):00159                 EXG     A,B                               ;BACK
+C8F3 3586             (     cubixdrv.asm):00160                 PULS    d,pc
+                      (     cubixdrv.asm):00161         
+                      (     cubixdrv.asm):00162         ;*
+                      (     cubixdrv.asm):00163         ;* OUTPUT 'A' NUMBER TO CONSOLE IN HEX
+                      (     cubixdrv.asm):00164         ;*
+C8F5                  (     cubixdrv.asm):00165         WRHEX
+C8F5 3406             (     cubixdrv.asm):00166                 PSHS    A,B                               ;SAVE IT
+C8F7 44               (     cubixdrv.asm):00167                 LSRA                                      ;SHIFT
+C8F8 44               (     cubixdrv.asm):00168                 LSRA                                      ;HIGH NIBBLE
+C8F9 44               (     cubixdrv.asm):00169                 LSRA                                      ;INTO
+C8FA 44               (     cubixdrv.asm):00170                 LSRA                                      ;LOW NIBBLE
+C8FB 8D06             (     cubixdrv.asm):00171                 BSR     HOUT                              ;HIGH
+C8FD A6E4             (     cubixdrv.asm):00172                 LDA     ,S                                ;GET LOW
+C8FF 8D02             (     cubixdrv.asm):00173                 BSR     HOUT                              ;OUTPUT
+C901 3586             (     cubixdrv.asm):00174                 PULS    A,B,PC                            ;RESTORE IT
+                      (     cubixdrv.asm):00175         ;* OUTPUT NIBBLE IN HEX
+C903                  (     cubixdrv.asm):00176         HOUT
+C903 840F             (     cubixdrv.asm):00177                 ANDA    #%00001111                        ;REMOVE HIGH
+C905 8B30             (     cubixdrv.asm):00178                 ADDA    #'0'                              ;CONVERT
+C907 8139             (     cubixdrv.asm):00179                 CMPA    #'9'                              ;OK?
+C909 2304             (     cubixdrv.asm):00180                 BLS     PUTCHR                            ;OK, OUTPUT
+C90B 8B07             (     cubixdrv.asm):00181                 ADDA    #7                                ;CONVERT TO 'A'-'F'
+C90D 2000             (     cubixdrv.asm):00182                 BRA     PUTCHR                            ;OUTPUT
+C90F                  (     cubixdrv.asm):00183         PUTCHR:
+C90F 7EC191           (     cubixdrv.asm):00184                 JMP     WRSER1
+C912 3404             (     cubixdrv.asm):00185                 PSHS    B
+C914 3402             (     cubixdrv.asm):00186                 PSHS    A
+C916 58               (     cubixdrv.asm):00187                 ASLB                                      ; DOUBLE NUMBER FOR TABLE LOOKUP
+C917 8600             (     cubixdrv.asm):00188                 LDA     #$00
+C919 F60100           (     cubixdrv.asm):00189                 LDB     CONSOLEDEVICE
+C91C 1F01             (     cubixdrv.asm):00190                 TFR     D,X
+C91E EC89C113         (     cubixdrv.asm):00191                 LDD     DISPATCHTABLE,X
+C922 FD0101           (     cubixdrv.asm):00192                 STD     farpointer
+C925 3502             (     cubixdrv.asm):00193                 PULS    A
+C927 AD9F0101         (     cubixdrv.asm):00194                 JSR     [farpointer]
+C92B 3504             (     cubixdrv.asm):00195                 PULS    B
+C92D 39               (     cubixdrv.asm):00196                 RTS
+                      (     cubixdrv.asm):00197         
+                      (     cubixdrv.asm):00198                 END
 
 Symbol Table:
 [ G] BANKED_DRIVER_DISPATCHER         C100
+[ G] BD_MAPSTDEND                     C7F5
 [ G] CONSOLEDEVICE                    0100
 [ G] CUBIX_IO_BASE                    1000
 [ G] CURRENTCYL                       0106
@@ -698,64 +1546,153 @@ Symbol Table:
 [ G] CURRENTHEAD                      0108
 [ G] CURRENTSEC                       0107
 [ G] CURRENTSLICE                     0105
+[ G] DELAY                            C714
 [ G] DISKERROR                        0103
 [ G] DISPATCHTABLE                    C113
-[ G] drv_noop                         C3CE
+[ G] drv_noop                         C8C8
 [ G] farpointer                       0101
 [ G] FUNCTION_DISPATCHER              C100
-[ G] HOUT                             C409
+[ G] HOUT                             C903
 [ G] HSTBUF                           0200
-[ G] IDE_ABORT                        C1C6
-[ G] IDE_INITA                        C1E8
-[ G] IDE_PRINT_INFO                   C1CF
-[ G] IDE_READ_BUFFER                  C32A
-[ G] IDE_READ_INFO                    C230
-[ G] IDE_READ_INFO_ABORT              C283
-[ G] IDE_READ_INFO_OK                 C28F
-[ G] IDE_READ_SECTOR                  C295
-[ G] IDE_READ_SECTOR_1                C29A
-[ G] IDE_READ_SECTOR_ERROR            C2AF
-[ G] IDE_SETUP_LBA                    C3A5
-[ G] IDE_WAIT_DRQ                     C2FE
-[ G] IDE_WAIT_DRQ1                    C308
-[ G] IDE_WAIT_DRQ2                    C326
-[ G] IDE_WAIT_DRQ3                    C328
-[ G] IDE_WAIT_DRQE                    C321
-[ G] IDE_WAIT_NOT_BUSY                C2DA
-[ G] IDE_WAIT_NOT_BUSY1               C2E4
-[ G] IDE_WAIT_NOT_BUSY2               C2FA
-[ G] IDE_WAIT_NOT_BUSY3               C2FC
-[ G] IDE_WRITE_BUFFER                 C347
-[ G] IDE_WRITE_SECTOR                 C2B5
-[ G] IDE_WRITE_SECTOR_ERROR           C2D4
-[ G] IDEBUFRD                         C32E
-[ G] IDEBUFWT                         C34B
-[ G] LFCR                             C3CF
-[ G] MESSAGE1                         C364
-[ G] MESSAGE2                         C36C
-[ G] MESSAGE3                         C373
-[ G] MESSAGE4                         C380
-[ G] MESSAGE5                         C391
-[ G] MESSAGE6                         C3A2
+[ G] IDE_ABORT                        C1D9
+[ G] IDE_INITA                        C1FB
+[ G] IDE_PRINT_INFO                   C1E2
+[ G] IDE_READ_BUFFER                  C33D
+[ G] IDE_READ_INFO                    C243
+[ G] IDE_READ_INFO_ABORT              C296
+[ G] IDE_READ_INFO_OK                 C2A2
+[ G] IDE_READ_SECTOR                  C2A8
+[ G] IDE_READ_SECTOR_1                C2AD
+[ G] IDE_READ_SECTOR_ERROR            C2C2
+[ G] IDE_SETUP_LBA                    C3B8
+[ G] IDE_WAIT_DRQ                     C311
+[ G] IDE_WAIT_DRQ1                    C31B
+[ G] IDE_WAIT_DRQ2                    C339
+[ G] IDE_WAIT_DRQ3                    C33B
+[ G] IDE_WAIT_DRQE                    C334
+[ G] IDE_WAIT_NOT_BUSY                C2ED
+[ G] IDE_WAIT_NOT_BUSY1               C2F7
+[ G] IDE_WAIT_NOT_BUSY2               C30D
+[ G] IDE_WAIT_NOT_BUSY3               C30F
+[ G] IDE_WRITE_BUFFER                 C35A
+[ G] IDE_WRITE_SECTOR                 C2C8
+[ G] IDE_WRITE_SECTOR_ERROR           C2E7
+[ G] IDEBUFRD                         C341
+[ G] IDEBUFWT                         C35E
+[ G] KBD_ALT                          0004
+[ G] KBD_BREAK                        0002
+[ G] KBD_CAPSLCK                      0040
+[ G] KBD_CMD                          13FF
+[ G] KBD_CTRL                         0002
+[ G] KBD_DAT                          13FE
+[ G] KBD_DEC0                         C52D
+[ G] KBD_DEC1                         C537
+[ G] KBD_DEC10                        C690
+[ G] KBD_DEC10A                       C6A5
+[ G] KBD_DEC10B                       C6B0
+[ G] KBD_DEC11                        C6B8
+[ G] KBD_DEC11A                       C6DD
+[ G] KBD_DEC12                        C6F8
+[ G] KBD_DEC13                        C6FF
+[ G] KBD_DEC2                         C53F
+[ G] KBD_DEC3                         C555
+[ G] KBD_DEC3B                        C564
+[ G] KBD_DEC3B1                       C570
+[ G] KBD_DEC4                         C57E
+[ G] KBD_DEC5                         C58D
+[ G] KBD_DEC5A                        C59E
+[ G] KBD_DEC5B                        C5B4
+[ G] KBD_DEC5C                        C5BE
+[ G] KBD_DEC5D                        C5D9
+[ G] KBD_DEC6                         C5E7
+[ G] KBD_DEC6A                        C5FB
+[ G] KBD_DEC6B                        C609
+[ G] KBD_DEC6C                        C60F
+[ G] KBD_DEC6D                        C615
+[ G] KBD_DEC6E                        C61F
+[ G] KBD_DEC6F                        C626
+[ G] KBD_DEC6G                        C62F
+[ G] KBD_DEC7                         C640
+[ G] KBD_DEC8                         C649
+[ G] KBD_DEC8A                        C661
+[ G] KBD_DEC9                         C66F
+[ G] KBD_DEC9A                        C683
+[ G] KBD_DECNEW                       C70C
+[ G] KBD_DECODE                       C52D
+[ G] KBD_DEFRPT                       0040
+[ G] KBD_DEFSTATE                     0070
+[ G] KBD_EXT                          0001
+[ G] KBD_GETDATA                      C47A
+[ G] KBD_GETDATA0                     C47D
+[ G] KBD_GETDATA1                     C490
+[ G] KBD_GETDATAX                     C496
+[ G] KBD_GETKEY                       C50F
+[ G] KBD_IDLE                         C3E8
+[ G] KBD_KEYCODE                      C3E2
+[ G] KBD_KEYRDY                       0080
+[ G] KBD_LSTATE                       C3E4
+[ G] KBD_MAPEXT                       C87A
+[ G] KBD_MAPNUMPAD                    C8A8
+[ G] KBD_MAPSHIFT                     C7F5
+[ G] KBD_MAPSIZ                       0085
+[ G] KBD_MAPSTD                       C770
+[ G] KBD_NUMLCK                       0020
+[ G] KBD_NUMPAD                       0080
+[ G] KBD_PROBE                        C40C
+[ G] KBD_PUTCMD                       C446
+[ G] KBD_PUTCMD0                      C449
+[ G] KBD_PUTCMD1                      C45A
+[ G] KBD_PUTDATA                      C460
+[ G] KBD_PUTDATA0                     C463
+[ G] KBD_PUTDATA1                     C474
+[ G] KBD_REPEAT                       C3E7
+[ G] KBD_RESET                        C4A2
+[ G] KBD_RESET0                       C4AD
+[ G] KBD_RESET1                       C4BD
+[ G] KBD_RSTATE                       C3E5
+[ G] KBD_SCANCODE                     C3E1
+[ G] KBD_SCRLCK                       0010
+[ G] KBD_SETLEDS                      C4C0
+[ G] KBD_SETRPT                       C4ED
+[ G] KBD_SHIFT                        0001
+[ G] KBD_ST                           13FF
+[ G] KBD_STATE                        C3E3
+[ G] KBD_STATUS                       C3E6
+[ G] KBD_TEMP                         C3E9
+[ G] KBD_WAITTO                       30FF
+[ G] KBD_WIN                          0008
+[ G] LDELAY                           C725
+[ G] LFCR                             C8C9
+[ G] MESSAGE1                         C377
+[ G] MESSAGE2                         C37F
+[ G] MESSAGE3                         C386
+[ G] MESSAGE4                         C393
+[ G] MESSAGE5                         C3A4
+[ G] MESSAGE6                         C3B5
+[ G] MIOMESSAGE1                      C734
+[ G] MIOMESSAGE3                      C742
+[ G] MIOMESSAGE4                      C75C
+[ G] MULTIO_BASE                      13E0
+[ G] MULTIOINIT                       C3EB
 [ G] PAGER_D                          0109
 [ G] PAGER_S                          010F
 [ G] PAGER_U                          0111
 [ G] PAGER_X                          010B
 [ G] PAGER_Y                          010D
-[ G] PUTCHR                           C415
-[ G] RDSER1                           C18F
-[ G] SERIALINIT                       C173
-[ G] SPACE                            C3DB
+[ G] PUTCHR                           C90F
+[ G] RDSER1                           C19C
+[ G] SERIALINIT                       C181
+[ G] SPACE                            C8D5
 [ G] UART1COMMAND                     1F86
 [ G] UART1CONTROL                     1F87
 [ G] UART1DATA                        1F84
 [ G] UART1STATUS                      1F85
-[ G] WRHEX                            C3FB
-[ G] WRHEXW                           C3EF
-[ G] WRSER1                           C184
-[ G] WRST1                            C3E5
-[ G] WRST2                            C3ED
-[ G] WRSTR                            C3E3
+[ G] WRHEX                            C8F5
+[ G] WRHEXW                           C8E9
+[ G] WRSER1                           C191
+[ G] WRST1                            C8DF
+[ G] WRST2                            C8E7
+[ G] WRSTR                            C8DD
 [ G] XTIDE_CMD_FEAT                   00EF
 [ G] XTIDE_CMD_ID                     00EC
 [ G] XTIDE_CMD_INIT                   0091
@@ -770,13 +1707,13 @@ Symbol Table:
 [ G] XTIDE_DEVICE                     130C
 [ G] XTIDE_ERR                        1302
 [ G] XTIDE_FECODE                     1302
-[ G] XTIDE_INIT                       C1A6
+[ G] XTIDE_INIT                       C1B9
 [ G] XTIDE_LBAHI                      130A
 [ G] XTIDE_LBALOW                     1306
 [ G] XTIDE_LBAMID                     1308
-[ G] XTIDE_PROBE                      C1EC
-[ G] XTIDE_PROBE_FAIL                 C22D
-[ G] XTIDE_PROBE_SUCCESS              C22F
+[ G] XTIDE_PROBE                      C1FF
+[ G] XTIDE_PROBE_FAIL                 C240
+[ G] XTIDE_PROBE_SUCCESS              C242
 [ G] XTIDE_SEC_CNT                    1304
 [ G] XTIDE_STATUS                     130E
-[ G] XTIDETIMEOUT                     C1A4
+[ G] XTIDETIMEOUT                     C1B7

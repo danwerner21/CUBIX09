@@ -53,9 +53,9 @@ HWIN1
 ;
         LDB     #21                               ;INIT IDE
         JSR     MD_PAGERA
-;
-;        LDB     #27                               ;INIT DSKY/NG
-;        JSR     MD_PAGERA
+
+        LDB     #51                               ;INIT MULTI IO
+        JSR     MD_PAGERA
 ;
 ;        LDB     #37                               ;INIT FRONT PANEL
 ;        JSR     MD_PAGERA

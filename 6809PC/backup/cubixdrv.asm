@@ -65,27 +65,42 @@ DISPATCHTABLE:
         .WORD   drv_noop                          ;FPSD_READ_SECTOR                  ; FUNCTION 25 - read a sector from PPIDE device
         .WORD   drv_noop                          ;FPSD_WRITE_SECTOR                 ; FUNCTION 26 - write a sector to PPIDE device
 ;
-        .WORD   drv_noop                          ;DSKY_INIT                         ; FUNCTION 27 -
-        .WORD   drv_noop                          ;DSKY_SHOW                         ; FUNCTION 28 -
-        .WORD   drv_noop                          ;DSKY_BIN2SEG                      ; FUNCTION 29 -
-        .WORD   drv_noop                          ;DSKY_RESET                        ; FUNCTION 30 -
-        .WORD   drv_noop                          ;DSKY_STAT                         ; FUNCTION 31 -
-        .WORD   drv_noop                          ;DSKY_GETKEY                       ; FUNCTION 32 -
-        .WORD   drv_noop                          ;DSKY_BEEP                         ; FUNCTION 33 -
-        .WORD   drv_noop                          ;DSKY_DSPL                         ; FUNCTION 34 -
-        .WORD   drv_noop                          ;DSKY_PUTLED                       ; FUNCTION 35 -
-        .WORD   drv_noop                          ;DSKY_BLANK                        ; FUNCTION 36 -
-        .WORD   drv_noop                          ;FP_INIT                           ; FUNCTION 37 -
-        .WORD   drv_noop                          ;FP_SETLED                         ; FUNCTION 38 -
-        .WORD   drv_noop                          ;FP_GETSWITCH                      ; FUNCTION 39 -
-        .WORD   drv_noop                          ;PCF_INIT                          ; FUNCTION 40 -
-        .WORD   drv_noop                          ;PCF_READBYTES                     ; FUNCTION 41 -
-        .WORD   drv_noop                          ;PCF_SENDBYTES                     ; FUNCTION 42 -
-        .WORD   drv_noop                          ;PCF_INITDEV                       ; FUNCTION 43 -
-        .WORD   drv_noop                          ;FPDIS_INIT                        ; FUNCTION 44 - Init Front Panel Display
-        .WORD   drv_noop                          ;FPDIS_CLEAR                       ; FUNCTION 45 - Clear Front Panel Display
-        .WORD   drv_noop                          ;FPDIS_SETXY                       ; FUNCTION 46 - SET XY ON Front Panel Display
-        .WORD   drv_noop                          ;FPDIS_OUTCH                       ; FUNCTION 47 - Output char on Front Panel Display
+        .WORD   drv_noop                          ; FUNCTION 27 -
+        .WORD   drv_noop                          ; FUNCTION 28 -
+        .WORD   drv_noop                          ; FUNCTION 29 -
+;
+        .WORD   drv_noop                          ; FUNCTION 30 -
+        .WORD   drv_noop                          ; FUNCTION 31 -
+        .WORD   drv_noop                          ; FUNCTION 32 -
+;
+        .WORD   drv_noop                          ; FUNCTION 33 -
+        .WORD   drv_noop                          ; FUNCTION 34 -
+        .WORD   drv_noop                          ; FUNCTION 35 -
+;
+        .WORD   drv_noop                          ; FUNCTION 36 -
+        .WORD   drv_noop                          ; FUNCTION 37 -
+        .WORD   drv_noop                          ; FUNCTION 38 -
+;
+        .WORD   drv_noop                          ; FUNCTION 39 -
+        .WORD   drv_noop                          ; FUNCTION 40 -
+        .WORD   drv_noop                          ; FUNCTION 41 -
+;
+        .WORD   drv_noop                          ; FUNCTION 42 -
+        .WORD   drv_noop                          ; FUNCTION 43 -
+        .WORD   drv_noop                          ; FUNCTION 44 -
+;
+        .WORD   drv_noop                          ; FUNCTION 45 -
+        .WORD   drv_noop                          ; FUNCTION 46 -
+        .WORD   drv_noop                          ; FUNCTION 47 -
+;
+        .WORD   drv_noop                          ; FUNCTION 48 -
+        .WORD   drv_noop                          ; FUNCTION 49 -
+        .WORD   drv_noop                          ; FUNCTION 50 -
+;
+        .WORD   MULTIOINIT                        ; FUNCTION 51 - INIT MULTI IO CARD
+        .WORD   drv_noop                          ; FUNCTION 52 -
+        .WORD   drv_noop                          ; FUNCTION 53 -
+        .WORD   drv_noop                          ; FUNCTION 54 -
 ;
 
 
@@ -93,6 +108,7 @@ DISPATCHTABLE:
 ;
         INCLUDE cubix_serial.asm
         INCLUDE cubix_ide.asm
+        INCLUDE cubix_multio.asm
 ;        INCLUDE cubix_dskyng.asm
 ;        INCLUDE cubix_floppy.asm
 ;        INCLUDE cubix_fp.asm
