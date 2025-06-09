@@ -98,8 +98,8 @@ DISPATCHTABLE:
         .WORD   drv_noop                          ; FUNCTION 50 -
 ;
         .WORD   MULTIOINIT                        ; FUNCTION 51 - INIT MULTI IO CARD
-        .WORD   drv_noop                          ; FUNCTION 52 -
-        .WORD   drv_noop                          ; FUNCTION 53 -
+        .WORD   KBD_GETKEY                        ; FUNCTION 52 - KEYBOARD INPUT
+        .WORD   LPT_OUT                           ; FUNCTION 53 - LPT OUTPUT
         .WORD   drv_noop                          ; FUNCTION 54 -
 ;
 
@@ -181,18 +181,7 @@ HOUT
         ADDA    #7                                ;CONVERT TO 'A'-'F'
         BRA     PUTCHR                            ;OUTPUT
 PUTCHR:
+;       NOTE THAT EVENTUALLY THIS NEEDS TO BE THE SYSTEM SSR NOT A DIRECT CALL
         JMP     WRSER1
-        PSHS    B
-        PSHS    A
-        ASLB                                      ; DOUBLE NUMBER FOR TABLE LOOKUP
-        LDA     #$00
-        LDB     CONSOLEDEVICE
-        TFR     D,X
-        LDD     DISPATCHTABLE,X
-        STD     farpointer
-        PULS    A
-        JSR     [farpointer]
-        PULS    B
-        RTS
 
         END

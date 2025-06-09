@@ -32,9 +32,6 @@ HWIN1
         DECB                                      ;REDUCE COUNT
         BNE     HWIN1                             ;MOVE ENTIRE TABLE
 
-        LDA     #00
-        STA     CONSOLEDEVICE                     ; set console device for driver output
-
 ;
         JSR     WRMSG
         FCB     $0A
@@ -91,7 +88,24 @@ RDSER:
         RTS
 !
         LDA     #$FF                              ; CLEAR 'Z'
-        RTS                                       ;
+        RTS
+
+WRLPT:
+        LDB     #53                               ;WRITE LPT PORT
+        JMP     MD_PAGERA                         ;
+
+RDKYB:
+        LDB     #52                               ;READ KEYBOARD
+        JSR     MD_PAGERA
+        CMPA    #$FF
+        BEQ     >
+        ORCC    #%00000100                        ; SET 'Z'
+        RTS
+!
+        LDA     #$FF                              ; CLEAR 'Z'
+        RTS
+
+
 ;
 
 ;* NULL DEVICE DRIVERS
@@ -234,8 +248,8 @@ RITAB           EQU *
         FCB     1                                 ;CONSOLE INPUT DEVICE
         FCB     1                                 ;CONSOLE OUTPUT DEVICE
 ;* SERIAL DEVICE DRIVERS
-        FDB     RDNULL,RDSER,0,0,0,0,0,0
-        FDB     WRNULL,WRSER,0,0,0,0,0,0
+        FDB     RDNULL,RDSER,RDKYB,0,0,0,0,0
+        FDB     WRNULL,WRSER,WRLPT,0,0,0,0,0
 ;* DISK DEVICE DRIVERS
         FDB     DHOME,DRDSEC,DWRSEC,DFORMAT
 ;* 6809 HARDWARE VECTORS

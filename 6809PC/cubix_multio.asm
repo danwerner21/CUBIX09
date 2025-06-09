@@ -4,8 +4,8 @@
 ;
 ;	Entry points:
 ;		MULTIOINIT  - JSR ed during OS init
-;		RDKB	    - read a character from the ps/2 keyboard ('A' POINTS TO BYTE)
-;		SETKB	    -
+;		KBD_GETKEY  - read a character from the ps/2 keyboard ('A' POINTS TO BYTE)
+;		LPT_OUT	    - send a character to the printer
 ;________________________________________________________________________________________________________________________________
 ;
 ;*
@@ -16,6 +16,12 @@ MULTIO_BASE     EQU CUBIX_IO_BASE+$3E0
 KBD_DAT         EQU MULTIO_BASE+$1E               ;
 KBD_ST          EQU MULTIO_BASE+$1F               ;
 KBD_CMD         EQU MULTIO_BASE+$1F               ;
+
+LPT_0           EQU MULTIO_BASE+$10               ;
+LPT_1           EQU MULTIO_BASE+$11               ;
+LPT_2           EQU MULTIO_BASE+$12               ;
+
+
 
 ;__________________________________________________________________________________________________
 ;
@@ -40,6 +46,7 @@ KBD_DEFRPT      EQU $40                           ; DEFAULT REPEAT RATE (.5 SEC 
 KBD_DEFSTATE    EQU KBD_NUMLCK|KBD_CAPSLCK|KBD_SCRLCK ; DEFAULT STATE (NUM LOCK ON)
 
 KBD_WAITTO      EQU $30FF                         ; DEFAULT TIMEOUT
+LPT_WAITTO      EQU $30FF                         ; DEFAULT TIMEOUT
 ;
 ;__________________________________________________________________________________________________
 ; DATA
@@ -63,6 +70,31 @@ KBD_IDLE
         FCB     0                                 ; IDLE COUNT
 KBD_TEMP
         FCB     0,0                               ; WORKING STORAGE
+
+;
+;  IBM PC STANDARD PARALLEL PORT (SPP):
+;
+;  PORT 0 (OUTPUT):
+;
+;	D7	D6	D5	D4	D3	D2	D1	D0
+;     +-------+-------+-------+-------+-------+-------+-------+-------+
+;     | PD7   | PD6   | PD5   | PD4   | PD3   | PD2   | PD1   | PD0   |
+;     +-------+-------+-------+-------+-------+-------+-------+-------+
+;
+;  PORT 1 (INPUT):
+;
+;	D7	D6	D5	D4	D3	D2	D1	D0
+;     +-------+-------+-------+-------+-------+-------+-------+-------+
+;     | /BUSY | /ACK  | POUT  | SEL   | /ERR  | 0     | 0     | 0     |
+;     +-------+-------+-------+-------+-------+-------+-------+-------+
+;
+;  PORT 2 (OUTPUT):
+;
+;	D7	D6	D5	D4	D3	D2	D1	D0
+;     +-------+-------+-------+-------+-------+-------+-------+-------+
+;     | STAT1 | STAT0 | ENBL  | PINT  | SEL   | RES   | LF    | STB   |
+;     +-------+-------+-------+-------+-------+-------+-------+-------+
+;
 ;
 ;__________________________________________________________________________________________________
 ; MULTI IO INITIALIZATION
@@ -77,13 +109,28 @@ MULTIOINIT:
 ; KEYBOARD INITIALIZATION
         LDX     #MESSAGE2
         JSR     WRSTR                             ; DO PROMPT
-        LDD     #KBD_DAT                          ; GET BASE PORT
+        LDD     #MULTIO_BASE                      ; GET BASE PORT
         JSR     WRHEXW                            ; PRINT BASE PORT
         JSR     LFCR                              ; AND CRLF
 ;
         JSR     KBD_PROBE                         ; DETECT A KEYBOARD, ABORT IF NOT FOUND
         BCS     >
+; LPT INITIALIZATION ROUTINE
+        LDX     #MIOMESSAGE5
+        JSR     WRSTR                             ; DO PROMPT
+        JSR     LFCR                              ; AND CRLF
+
+        LDA     #$00
+        STA     LPT_0   		; PORT 0 (DATA)
+	LDA     #%00001000		; SELECT AND ASSERT RESET, LEDS OFF
+        STA     LPT_2   		; PORT 2 (STATUS)
+	JSR	LDELAY			; HALF SECOND DELAY
+	LDA	#%00001100		; SELECT AND DEASSERT RESET, LEDS OFF
+	STA     LPT_2   		; PORT 2 (STATUS)
+	CLC				; SIGNAL SUCCESS
+	RTS				; RETURN
 !
+        SEC
         RTS                                       ; DONE
 
 
@@ -110,7 +157,6 @@ KBD_PROBE:
 ;
         LDA     #$60                              ; SET COMMAND REGISTER
         JSR     KBD_PUTCMD                        ; SEND IT
-;	LDA    #$60			          ; XLAT ENABLED, MOUSE DISABLED, NO INTS
         LDA     #$20                              ; XLAT DISABLED, MOUSE DISABLED, NO INTS
         JSR     KBD_PUTDATA                       ; SEND IT
 
@@ -651,7 +697,7 @@ KBD_DEC11:                                        ; HANDLE NUM PAD KEYS
         ORA     #KBD_NUMPAD                       ; TURN ON THE NUMPAD BIT
         STA     KBD_STATE                         ; SAVE IT
 
-        ANDA    KBD_NUMLCK                        ; IS NUM LOCK BIT SET?
+        ANDA    #KBD_NUMLCK                       ; IS NUM LOCK BIT SET?
         BEQ     KBD_DEC11A                        ; NO, SKIP NUMLOCK PROCESSING
         LDA     KBD_KEYCODE                       ; GET THE KEYCODE
         EORA    #$10                              ; FLIP VALUES FOR NUMLOCK
@@ -723,6 +769,10 @@ MIOMESSAGE3:
 MIOMESSAGE4:
         FCC     "  KBD: INITIALIZED."
         FCB     00
+MIOMESSAGE5:
+        FCC     "  LPT: INITIALIZED."
+        FCB     00
+
 ;
 ; MAPPING
 ;__________________________________________________________________________________________________
@@ -801,3 +851,36 @@ KBD_MAPNUMPAD:                                    ; KEYCODE TRANSLATION FROM NUM
 ; SLEEP		$FB
 ; WAKE		$FC
 ; BREAK		$FD
+;___________________________________________________________________________________________________________________
+;
+; CENTRONICS (LPT) INTERFACE DRIVER
+;___________________________________________________________________________________________________________________
+;
+; BYTE OUTPUT
+;
+LPT_OUT:
+        LDX     #LPT_WAITTO
+!
+	JSR	LPT_OST			; READY TO SEND?
+	BNE	>        		; GO IF READY
+        DEX
+        BNE     <                       ; LOOP IF NOT READY
+        SEC                             ; SIGNAL ERROR
+        RTS
+!
+        STA	LPT_0   		; OUTPUT TO PORT 0 (DATA)
+	LDA	#%00001101		; SELECT & STROBE, LEDS OFF
+	STA     LPT_2			; OUTPUT DATA TO PORT
+	JSR	DELAY
+	LDA	#%00001100		; SELECT, LEDS OFF
+	STA     LPT_2			; OUTPUT DATA TO PORT
+	JSR	DELAY
+        CLC
+	RTS
+;
+; OUTPUT STATUS
+;
+LPT_OST:
+	LDB	LPT_2           	; GET STATUS INFO
+	ANDB	#%10000000		; ISOLATE /BUSY
+	RTS				; DONE
