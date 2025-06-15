@@ -240,10 +240,10 @@ RESTAB
 ;*
 RITAB           EQU *
 ;* DEFAULT DRIVE CHARACTISTICS
-        FCB     0,255,1,255,0,0,0                 ;ADR 0, 255 CYL, 1 HEAD, 255 SEC/TRK
-        FCB     1,255,1,255,0,0,0                 ;ADR 1, 255 CYL, 1 HEAD, 255 SEC/TRK
-        FCB     2,255,1,255,0,0,0                 ;ADR 2, 255 CYL, 1 HEAD, 255 SEC/TRK
-        FCB     3,255,1,255,0,0,0                 ;ADR 3, 80 CYL, 2 HEAD, 9 SEC/TRK
+        FCB     0,254,1,255,0,0,0                 ;ADR 0, 254 CYL, 1 HEAD, 255 SEC/TRK   - CYL 0 unusable by OS
+        FCB     1,254,1,255,0,0,0                 ;ADR 1, 254 CYL, 1 HEAD, 255 SEC/TRK   - CYL 0 unusable by OS
+        FCB     2,254,1,255,0,0,0                 ;ADR 2, 254 CYL, 1 HEAD, 255 SEC/TRK   - CYL 0 unusable by OS
+        FCB     3,254,1,255,0,0,0                 ;ADR 3, 254 CYL, 1 HEAD, 255 SEC/TRK   - CYL 0 unusable by OS
 ;* CONSOLE DEVICE ASSIGNMENTS
         FCB     1                                 ;CONSOLE INPUT DEVICE
         FCB     1                                 ;CONSOLE OUTPUT DEVICE

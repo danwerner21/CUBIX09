@@ -5,6 +5,7 @@ This is a port of the excellent CUBIX operating system by Dave Dunfield for vari
 Supported SBCs include:
 * Andrew Lynch's   Nhyodyne and Duodyne systems
 * Retrobrewcomputers.org's   6x0x system (todo)
+* Dan Werner's 6809PC
 
 ---
 More information about Dunfield Development services is included in the dunfield_cubix_info folder in this repo.

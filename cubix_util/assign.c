@@ -4,7 +4,13 @@ char floppy35720dcb[9]={80,2,9};
 char floppy35144dcb[9]={80,2,18};
 char floppy525360dcb[9]={40,2,8};
 char floppy52512dcb[9]={80,2,15};
+
+#ifdef PC6809
+char hdddcb[9]={254,1,255};
+#else
 char hdddcb[9]={255,1,255};
+#endif
+
 
 char *last;
 int dskcfgptr;

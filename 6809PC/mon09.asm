@@ -18,6 +18,7 @@
 ;*   Commands have been removed to conserve
 ;*   ROM space
 
+BIOS6809PC      EQU $01
 
 ;* HARDWARE INFORMATION
 ROM             EQU $F000                         ; MON09 code goes here
@@ -29,6 +30,7 @@ UART1DATA       EQU IOSPACE+$84                   ; SERIAL PORT 1 (I/O Card)
 UART1STATUS     EQU IOSPACE+$85                   ; SERIAL PORT 1 (I/O Card)
 UART1COMMAND    EQU IOSPACE+$86                   ; SERIAL PORT 1 (I/O Card)
 UART1CONTROL    EQU IOSPACE+$87                   ; SERIAL PORT 1 (I/O Card)
+CUBIX_IO_BASE   EQU $E000
 ;*
 ;*
         ORG     RAM                               ;Internal MON09 variables
@@ -79,6 +81,10 @@ DSPBUF:
         RMB     50                                ;DISASSEMBLER DISPLAY BUFFER
 INSRAM:
         RMB     7                                 ;INSTRUCTION EXECUTION ADDRESS
+DISKERROR:
+        RMB     1                                 ;DISK ERROR
+HSTBUF:
+        RMB     512                               ;DISK BUFFER
 ;*
         ORG     ROM                               ;MONITOR CODE
 ;*
@@ -1045,6 +1051,10 @@ SWIHN4
         DECB    REDUCE COUNT
         BNE     SWIHN3      GO AGAIN
         LBRA    MAIN        DO PROMPT
+
+;* Drivers
+
+        INCLUDE cubix_ide.asm
 ;* CONSTANTS
 PCRG
         FCC     ',PCR'

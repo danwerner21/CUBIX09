@@ -18,18 +18,18 @@ cubix.s19: cubix_boot.asm cubixdrv.sys
 	sed -i -e '$$aS9' cubix.s19
 
 scream.hex: scream.asm
-	lwasm --6809 scream.asm -s --list=scream.lst --map=scream.map --output=scream.s --format=srec
+	lwasm --6809 --6800compat scream.asm -s --list=scream.lst --map=scream.map --output=scream.s --format=srec
 	srec_cat  scream.s  -o  scream.hex  -intel -address-length=2
 	@rm scream.s
 
 monitor.hex: monitor.asm
-	lwasm --6809 monitor.asm -s --list=monitor.lst --map=monitor.map --output=monitor.s --format=srec
+	lwasm --6809 --6800compat monitor.asm -s --list=monitor.lst --map=monitor.map --output=monitor.s --format=srec
 	srec_cat  monitor.s -o  monitor.hex  -intel -address-length=2
 	@rm monitor.s
 
 
 mon09.hex: mon09.asm
-	lwasm --6809 mon09.asm -s --list=mon09.lst --map=mon09.map --output=mon09.s --format=srec
+	lwasm --6809 --6800compat mon09.asm -s --list=mon09.lst --map=mon09.map --output=mon09.s --format=srec
 	srec_cat  mon09.s -o  mon09.hex  -intel -address-length=2
 	@rm mon09.s
 

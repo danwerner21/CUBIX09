@@ -40,7 +40,7 @@ XTIDETIMEOUT:
         .BYTE   $00,$00
 
 
-
+        IFNDEF   BIOS6809PC
 ;__XTIDE_INIT________________________________________________________________________________________
 ;
 ;  INIT AND DISPLAY IDE INFO
@@ -200,7 +200,7 @@ IDE_READ_INFO_OK:
         JSR     LFCR                              ; AND CRLF
         CLC
         RTS
-
+        ENDIF
 
 
 ;*__IDE_READ_SECTOR___________________________________________________________________________________
@@ -212,7 +212,9 @@ IDE_READ_SECTOR:
         JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
         BCS     IDE_READ_SECTOR_ERROR             ; IF TIMEOUT, REPORT NO IDE PRESENT
 IDE_READ_SECTOR_1:
+        IFNDEF   BIOS6809PC
         JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
+        ENDIF
         LDA     #XTIDE_CMD_READ
         STA     XTIDE_COMMAND
 
@@ -224,30 +226,6 @@ IDE_READ_SECTOR_1:
         RTS
 IDE_READ_SECTOR_ERROR:
         LDA     #$02                              ; SET ERROR CONDITION
-        STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
-        RTS
-
-;*__IDE_WRITE_SECTOR__________________________________________________________________________________
-;*
-;*  WRITE IDE SECTOR (IN LBA) FROM BUFFER
-;*
-;*____________________________________________________________________________________________________
-IDE_WRITE_SECTOR:
-        JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
-        BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
-        JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
-        LDA     #XTIDE_CMD_WRITE
-        STA     XTIDE_COMMAND
-        JSR     IDE_WAIT_DRQ                      ;WAIT UNIT IT WANTS THE DATA
-        BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
-        JSR     IDE_WRITE_BUFFER                  ;GIVE THE DATA TO THE DRIVE
-        JSR     IDE_WAIT_NOT_BUSY                 ;WAIT UNTIL THE WRITE IS COMPLETE
-        BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
-        CLRA                                      ; ZERO = 1 ON RETURN = OPERATION OK
-        STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
-        RTS
-IDE_WRITE_SECTOR_ERROR:
-        LDA     #$02
         STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
         RTS
 
@@ -327,6 +305,32 @@ IDEBUFRD:
         BNE     IDEBUFRD                          ;
         RTS                                       ;
 
+
+        IFNDEF   BIOS6809PC
+;*__IDE_WRITE_SECTOR__________________________________________________________________________________
+;*
+;*  WRITE IDE SECTOR (IN LBA) FROM BUFFER
+;*
+;*____________________________________________________________________________________________________
+IDE_WRITE_SECTOR:
+        JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
+        BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
+        JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
+        LDA     #XTIDE_CMD_WRITE
+        STA     XTIDE_COMMAND
+        JSR     IDE_WAIT_DRQ                      ;WAIT UNIT IT WANTS THE DATA
+        BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
+        JSR     IDE_WRITE_BUFFER                  ;GIVE THE DATA TO THE DRIVE
+        JSR     IDE_WAIT_NOT_BUSY                 ;WAIT UNTIL THE WRITE IS COMPLETE
+        BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
+        CLRA                                      ; ZERO = 1 ON RETURN = OPERATION OK
+        STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
+        RTS
+IDE_WRITE_SECTOR_ERROR:
+        LDA     #$02
+        STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
+        RTS
+
 ;*__IDE_WRITE_BUFFER___________________________________________________________________________________
 ;*
 ;*  WRITE IDE BUFFER LITTLE ENDIAN
@@ -371,14 +375,6 @@ MESSAGE6
 ;*
 ;*
 ;        SETUP   LBA DATA
-;*
-;*    This assumes the drive is setup for 128 sectors, 128 Cylinders, 4 heads. = 65536 total sectors.
-;     LBA ADDRESS   LLLLLLLL CCCCCCCS SSSSSSHH
-;     L=SLICE
-;     H=HEAD
-;     C=CYLINDER
-;     S=SECTOR
-;*
 ;*____________________________________________________________________________________________________
 IDE_SETUP_LBA:
         PSHS    D
@@ -395,6 +391,7 @@ IDE_SETUP_LBA:
         STB     XTIDE_LBAHI
 
         LDB     CURRENTCYL                        ;
+        INCB                                      ; CYL 0 reserved for boot image
         STB     XTIDE_LBAMID
 
         LDB     CURRENTSEC                        ;
@@ -404,3 +401,4 @@ IDE_SETUP_LBA:
         STB     XTIDE_SEC_CNT
 
         PULS    D,PC
+        ENDIF

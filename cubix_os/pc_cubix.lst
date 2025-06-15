@@ -4254,10 +4254,10 @@ FF01 0300020000030401 (../6809PC/drivers):00237                 FCB     3,0,2,0,
                       (../6809PC/drivers):00240         ;*
      FF09             (../6809PC/drivers):00241         RITAB           EQU *
                       (../6809PC/drivers):00242         ;* DEFAULT DRIVE CHARACTISTICS
-FF09 00FF01FF000000   (../6809PC/drivers):00243                 FCB     0,255,1,255,0,0,0                 ;ADR 0, 255 CYL, 1 HEAD, 255 SEC/TRK
-FF10 01FF01FF000000   (../6809PC/drivers):00244                 FCB     1,255,1,255,0,0,0                 ;ADR 1, 255 CYL, 1 HEAD, 255 SEC/TRK
-FF17 02FF01FF000000   (../6809PC/drivers):00245                 FCB     2,255,1,255,0,0,0                 ;ADR 2, 255 CYL, 1 HEAD, 255 SEC/TRK
-FF1E 03FF01FF000000   (../6809PC/drivers):00246                 FCB     3,255,1,255,0,0,0                 ;ADR 3, 80 CYL, 2 HEAD, 9 SEC/TRK
+FF09 00FE01FF000000   (../6809PC/drivers):00243                 FCB     0,254,1,255,0,0,0                 ;ADR 0, 254 CYL, 1 HEAD, 255 SEC/TRK   - CYL 0 unusable by OS
+FF10 01FE01FF000000   (../6809PC/drivers):00244                 FCB     1,254,1,255,0,0,0                 ;ADR 1, 254 CYL, 1 HEAD, 255 SEC/TRK   - CYL 0 unusable by OS
+FF17 02FE01FF000000   (../6809PC/drivers):00245                 FCB     2,254,1,255,0,0,0                 ;ADR 2, 254 CYL, 1 HEAD, 255 SEC/TRK   - CYL 0 unusable by OS
+FF1E 03FE01FF000000   (../6809PC/drivers):00246                 FCB     3,254,1,255,0,0,0                 ;ADR 3, 254 CYL, 1 HEAD, 255 SEC/TRK   - CYL 0 unusable by OS
                       (../6809PC/drivers):00247         ;* CONSOLE DEVICE ASSIGNMENTS
 FF25 01               (../6809PC/drivers):00248                 FCB     1                                 ;CONSOLE INPUT DEVICE
 FF26 01               (../6809PC/drivers):00249                 FCB     1                                 ;CONSOLE OUTPUT DEVICE
