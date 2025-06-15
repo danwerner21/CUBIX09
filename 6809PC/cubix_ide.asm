@@ -35,12 +35,30 @@ XTIDE_CMD_SPINDOWN = $E0
 XTIDE_CMD_SPINUP = $E1
 
 
+        IFDEF   BIOS6809PC
+XTIDE_INIT:
+        JSR     XTIDE_PROBE
+        LDA     #$E0                              ; E0=MST  F0=SLV
+        STA     XTIDE_DEVICE
 
+        JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
+        BCS     >
+
+        LDA     #$01                              ; ENABLE 8-BIT MODE (XT-CF-LITE)
+        STA     XTIDE_FECODE
+        LDA     #XTIDE_CMD_FEAT
+        STA     XTIDE_COMMAND
+!
+        RTS
+        ENDIF
+
+
+        IFNDEF   BIOS6809PC
 XTIDETIMEOUT:
         .BYTE   $00,$00
 
 
-        IFNDEF   BIOS6809PC
+
 ;__XTIDE_INIT________________________________________________________________________________________
 ;
 ;  INIT AND DISPLAY IDE INFO
@@ -77,6 +95,7 @@ IDE_PRINT_INFO:
 IDE_INITA:
         JSR     LFCR                              ; AND CRLF
         RTS                                       ; DONE
+        ENDIF
 ;
 ;__XTIDE_PROBE_______________________________________________________________________________________
 ;
@@ -124,9 +143,8 @@ XTIDE_PROBE:
         BNE     <
         BRA     XTIDE_PROBE_FAIL                  ; TIMED OUT
 !
-        LDB     XTIDE_SEC_CNT
-        CMPB    #$01
-        BNE     XTIDE_PROBE_FAIL                  ; IF NOT '01' THEN REPORT NO IDE PRESENT
+        JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
+        BCS     XTIDE_PROBE_FAIL
         CLC
         JMP     XTIDE_PROBE_SUCCESS
 XTIDE_PROBE_FAIL:
@@ -134,6 +152,7 @@ XTIDE_PROBE_FAIL:
 XTIDE_PROBE_SUCCESS:
         RTS                                       ; DONE, NOTE THAT A=0 AND Z IS SET
 
+        IFNDEF   BIOS6809PC
 ;*__IDE_READ_INFO___________________________________________________________________________________
 ;*
 ;*  READ IDE INFORMATION
@@ -305,8 +324,6 @@ IDEBUFRD:
         BNE     IDEBUFRD                          ;
         RTS                                       ;
 
-
-        IFNDEF   BIOS6809PC
 ;*__IDE_WRITE_SECTOR__________________________________________________________________________________
 ;*
 ;*  WRITE IDE SECTOR (IN LBA) FROM BUFFER
@@ -315,7 +332,9 @@ IDEBUFRD:
 IDE_WRITE_SECTOR:
         JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
         BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
+        IFNDEF   BIOS6809PC
         JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
+        ENDIF
         LDA     #XTIDE_CMD_WRITE
         STA     XTIDE_COMMAND
         JSR     IDE_WAIT_DRQ                      ;WAIT UNIT IT WANTS THE DATA
@@ -350,7 +369,7 @@ IDEBUFWT:
         RTS                                       ;
 
 
-
+        IFNDEF   BIOS6809PC
 MESSAGE1
         FCC     "PPIDE :"
         FCB     00
