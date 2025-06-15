@@ -56,7 +56,6 @@ To Do List for this port:
 * add support for ROMRAM flash (Duodyne)
 * add support for MultiIO card (Duodyne) (USB/Serial/Parallel/SD/Keyboard/Mouse)
 * Enable Cubix FLOPPY Format Function (Duodyne/Nhyodyne)
-* Fix XMODEM CRC problem(R) and file length problem(S)
 * convert Xmodem EXEs to S19s
 * convert Assign EXE to S19s
 * DSKY V1 support (Duodyne/Nhyodyne)

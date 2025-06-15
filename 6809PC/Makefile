@@ -16,22 +16,26 @@ cubix.s19: cubix_boot.asm cubixdrv.sys
 	@rm	cubix_boot.3
 	@rm	cubix_boot.s
 	sed -i -e '$$aS9' cubix.s19
+	@cp cubix.s19 ../bin/6809PC
 
 scream.hex: scream.asm
 	lwasm --6809 --6800compat scream.asm -s --list=scream.lst --map=scream.map --output=scream.s --format=srec
 	srec_cat  scream.s  -o  scream.hex  -intel -address-length=2
 	@rm scream.s
+	@cp scream.hex ../bin/6809PC
 
 monitor.hex: monitor.asm
 	lwasm --6809 --6800compat monitor.asm -s --list=monitor.lst --map=monitor.map --output=monitor.s --format=srec
 	srec_cat  monitor.s -o  monitor.hex  -intel -address-length=2
 	@rm monitor.s
+	@cp monitor.hex ../bin/6809PC
 
 
 mon09.hex: mon09.asm
 	lwasm --6809 --6800compat mon09.asm -s --list=mon09.lst --map=mon09.map --output=mon09.s --format=srec
 	srec_cat  mon09.s -o  mon09.hex  -intel -address-length=2
 	@rm mon09.s
+	@cp mon09.hex ../bin/6809PC
 
 pretty:
 	cp *.asm ./backup

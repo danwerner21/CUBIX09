@@ -116,6 +116,13 @@ static unsigned int check(int crc2, const unsigned char *buf, int sz)
         if (crc3 == tcrc)
             return 1;
 
+        if (buf[sz+1] == 0)
+            {
+                tcrc = buf[sz] + 65280;
+                if(crc3 == tcrc)
+                   return 1;
+            }
+
         if(dbg<100)
         {
             Dcrc3[dbg]=crc3;
