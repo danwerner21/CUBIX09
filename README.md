@@ -60,15 +60,13 @@ To Do List for this port:
 * convert Assign EXE to S19s
 * DSKY V1 support (Duodyne/Nhyodyne)
 * DSKY functions should abort if no DSKY is there.
-* ESP32 support  (Duodyne/Nhyodyne)
+* ESP32 support  (Duodyne/Nhyodyne/6809PC)
 * TMS VDP support  (Duodyne/Nhyodyne)
 * color VDU support  (Duodyne/Nhyodyne)
 * RTC and NVRAM support  (Duodyne/Nhyodyne)
 * add support for DiskIO ethernet (Duodyne)
 * ADD FLOPPY DRIVE SUPPORT (Nhyodyne)
 * Microsoft Basic
-* Pull Dunfield MONITOR code from Duodyne repo into this one
-* 6x0x Version
 ---
 
 ```
@@ -145,7 +143,6 @@ Duodyne Map:
 
 6809PC Map:
             $0000-$00FF - FREE WORKING RAM/Driver Stack
-            $0100       - CONSOLE DEVICE
             $0101       - farpointer (word)     
             $0103       - DISKERROR
             $0104       - CURRENTDEVICE

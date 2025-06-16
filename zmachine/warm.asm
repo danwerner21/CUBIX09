@@ -4,24 +4,6 @@
         SETDP   0
         ORG     ZIP                               ; START OF EXECUTABLE CODE
 
-        CLRA                                      ; USE PAGE ZERO
-        TFR     A,DP                              ; AS THE DIRECT PAGE
-
-IRQVEC          EQU $10C
-
-        LDX     #DIRQSV                           ;SET VECTOR
-        STX     IRQVEC+1
-        LDA     #$7E                              ;JMP OP
-        STA     IRQVEC
-
-;	ORCC	#%01010000	; DISABLE INTERRUPTS
-; 	LDA	INT60		; DISABLE
-;	ANDA	#%11111110	; THE 60HZ
-        STA     INT60                             ; INTERRUPT
-        STA     ROMOFF                            ; AND THE ROMS
-        LDS     #MSTACK                           ; GIVE THE STACK A NEW HOME
-        JMP     COLD                              ; PERFORM ONE-TIME INITIALIZATION
-
 ; WARMSTART ENTRY
 
 START:
@@ -43,7 +25,7 @@ ENDERR:
         JMP     ZERROR                            ;
 
 ENDCMP:
-        FCN      'END'
+        FCN     'END'
 
 ; CLEAR ALL DIRECT-PAGE VARIABLES
 
@@ -73,6 +55,10 @@ ST1B:
         CMPX    #LRUMAP+$A0
         BLO     ST1B
 
+        JSR     OPENGAMEDSK                     ; open the game file -- needs to be selected by now
+        LDD     #0
+        STD     DBLOCK
+
 ; GET THE FIRST SECTOR OF Z-CODE
 
         LDD     #ZCODE                            ; POINT TO 1ST
@@ -84,7 +70,7 @@ ST1B:
         LDA     ZCODE+ZENDLD                      ; GET MSB OF ENDLOAD POINTER
         INCA                                      ; ADD ONE TO GET
         STA     ZPURE                             ; 1ST PAGE IN "PURE" CODE
-        ADDA    #HIGH ZCODE                       ; ADD BASE ADDRESS TO GET
+        ADDA    #ZCODEHIGH                        ; ADD BASE ADDRESS TO GET
         STA     PAGE0                             ; 1ST PAGE OF SWAPPING SPACE
 
         LDB     #MEMTOP                           ; TOP PAGE OF MEMORY
@@ -152,5 +138,3 @@ LDPRE:
         STA     ZCODE+ZSCRIP+1
 
 ; FALL INTO MAIN LOOP
-
-        END

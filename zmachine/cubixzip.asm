@@ -8,8 +8,6 @@
 
 ; COMPANY PRIVATE -- NOT FOR DISTRIBUTION
 
-MSTART          = $0A00                           ; START OF FREE PROGRAM RAM
-
 DEBUG           = 0                               ; ASSEMBLY FLAG
 
 ; -----------
@@ -34,6 +32,14 @@ DEBUG           = 0                               ; ASSEMBLY FLAG
 ; 15 -- Z-STACK DESTROYED
 ; 16 -- ZIP NOT FULLY LOADED
 
+        ORG     $2000
+
+        CLRA                                      ; USE PAGE ZERO
+        TFR     A,DP                              ; AS THE DIRECT PAGE
+        LDS     #MSTACK                           ; GIVE THE STACK A NEW HOME
+        JMP     COLD                              ; PERFORM ONE-TIME INITIALIZATION
+
+MSTART: ; START OF FREE PROGRAM RAM
 
         INCLUDE eq.asm
         INCLUDE warm.asm
@@ -55,7 +61,7 @@ DEBUG           = 0                               ; ASSEMBLY FLAG
         INCLUDE ZSTRING.ASM
         INCLUDE OBJECTS.ASM
 
-;TITLE "ZIP/6809-B INFOCOM, INC. --- COCO MACHINE DEPENDENT"
+;TITLE "ZIP/6809-B INFOCOM, INC. --- CUBIX DEPENDENT"
         INCLUDE IO.ASM
         INCLUDE SCREEN.ASM
         INCLUDE DISK.ASM

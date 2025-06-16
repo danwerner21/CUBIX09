@@ -121,6 +121,8 @@ static unsigned int check(int crc2, const unsigned char *buf, int sz)
                 tcrc = buf[sz] + 65280;
                 if(crc3 == tcrc)
                    return 1;
+                if(crc3 == buf[sz])
+                   return 1;
             }
 
         if(dbg<100)

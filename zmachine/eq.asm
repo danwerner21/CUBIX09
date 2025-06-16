@@ -1,6 +1,10 @@
 ;PAGE
 ;SBTTL "--- MEMORY ORGANIZATION ---"
 
+CFREQ           = $100
+BFREQ           = $1000
+
+
 TRUE            = $FF
 FALSE           = 0
 
@@ -18,6 +22,9 @@ BUFFER          = MSTART+$620                     ; I/O LINE BUFFER (32 BYTES)
 BUFSAV          = MSTART+$640                     ; I/O AUX BUFFER (32 BYTES)
 ZIP             = MSTART+$700                     ; START OF EXECUTABLE CODE
 ZCODE           = ZIP+$1700                       ; START OF Z-CODE (ASSUME 5.75K ZIP)
+ZCODEHIGH       = (ZIP+$1700)/256                 ; START OF Z-CODE (ASSUME 5.75K ZIP)
+MEMTOP          = $DC                             ; TOP PAGE OF AVAILABLE RAM
+INFCB           = $DD00
 
 ; Z-CODE HEADER OFFSETS
 
