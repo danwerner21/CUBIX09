@@ -16,8 +16,10 @@ SPACE           EQU $20                           ; SPACE CHARACTER
 
 
 OUTCHR:
+        PSHS    A,B,X,Y,U,CC
         SWI
         FCB     33                                ;DISPLAY
+        PULS    A,B,X,Y,U,CC
         RTS
 
 ; -----------------
@@ -31,7 +33,7 @@ BADKEY:
         BRA     GK                                ; AND TRY AGAIN
 
 GETKEY:
-        PSHS    U,X,Y,B                           ; SAVE THESE
+        PSHS    U,X,Y,B,CC                        ; SAVE THESE
 
 
 GK:
@@ -73,7 +75,7 @@ PKICK:
 ; "CLICK" SOUND FOR KEYS
 
 CLICK:
-        PULS    U,X,Y,B                           ; RESTORE THINGS
+        PULS    U,X,Y,B,CC                        ; RESTORE THINGS
         LDA     IOCHAR                            ; RETRIEVE THE KEYPRESS
         RTS
 
@@ -96,7 +98,6 @@ CDEL:
 ; EXIT:	# CHARS READ IN [A]
 
 INPUT:
-        JSR     LINOUT                            ; FLUSH OUTPUT BUFFER
         CLR     LINCNT                            ; RESET LINE COUNTER
         LDX     ARG1                              ; GET ADDRESS OF INPUT BUFFER
         LDB     ,X+                               ; GET MAX # CHARS
@@ -176,8 +177,10 @@ TOPRIN:
 
 SCROUT:
         LDA     ,X+                               ; GRAB A CHAR FROM BUFFER
+        PSHS    A,B,X,Y,U,CC
         SWI
         FCB     33                                ;DISPLAY
+        PULS    A,B,X,Y,U,CC
         DECB
         BNE     SCROUT
 INPEX:
@@ -197,18 +200,24 @@ SFLAG
 
 CHAR:
         STA     IOCHAR                            ; SAVE CHAR HERE
+        CMPA    #$0D
+        BEQ     >
+        PSHS    A,B,X,Y,U,CC
         SWI
         FCB     33
+        PULS    A,B,X,Y,U,CC
+        RTS
+!
+        PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     33
+        LDA     #$0A
+        SWI
+        FCB     33
+        PULS    A,B,X,Y,U,CC
         RTS
 
 
-; --------------------------
-; PRINT CONTENTS OF [BUFFER]
-; --------------------------
-
-BUFOUT:
-        LDB     CHRPNT                            ; # CHARS IN BUFFER
-        LDX     #BUFFER                           ; BUFFER ADDRESS
 
 ; FALL THROUGH TO ...
 
@@ -236,10 +245,12 @@ LN:
 ; ----------------
 
 CLS:
+        PSHS    A,B,X,Y,U,CC
         SWI
         FCB     24                                ;String to OS
         FCB     27
         FCN     '[2J'
+        PULS    A,B,X,Y,U,CC
         RTS
 
 ; --------------

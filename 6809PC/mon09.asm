@@ -83,6 +83,8 @@ XTIDETIMEOUT:
         RMB     2                                 ;DISK TIMEOUT
 DISKERROR:
         RMB     1                                 ;DISK ERROR
+ESPEXISTS:
+        RMB     1                                 ;CONSOLE DETECT STATUS
 ;*
         ORG     ROM                               ;MONITOR CODE
 ;*
@@ -102,6 +104,9 @@ CLRRAM:
         STD     SAVS                              ;SAVE IT
         LDA     #$D0                              ;SET CC
         STA     SAVCC                             ;SAVE IT
+        LDA     #$00                              ;SET CONSOLE
+        STA     ESPEXISTS
+
 MONITOR:
         LBSR    WRMSG                             ;OUTPUT MESSAGE
         FCB     $0A,$0D,$0A,$0D,$0A,$0D
@@ -1209,6 +1214,11 @@ INIT:
         STA     UART1COMMAND                      ;
         LDA     #$1E                              ; 9600, 8 BITS, NO PARITY, 1 STOP BIT
         STA     UART1CONTROL                      ;
+        LDX     #$0000
+!
+        DEX
+        CMPX    #$0000
+        BNE     <
         RTS
 ;* READ UART
 READ:
@@ -1218,7 +1228,11 @@ READ:
         LDA     UART1DATA                         ; GET DATA CHAR
         RTS
 NOCHR:
-        LDA     #$FF                              ; NO CHAR
+        LDA     ESPEXISTS
+        CMPA    #$FF
+        BEQ     >
+        JSR     ESPPS2IN
+!
         RTS
 ;* WRITE UART
 WRITE:
@@ -1226,7 +1240,18 @@ WRITE:
         ANDB    #%00010000                        ; IS TX READY
         BEQ     WRITE                             ; NO, WAIT FOR IT
         STA     UART1DATA                         ; WRITE DATA
+        LDB     ESPEXISTS
+        CMPB    #$FF
+        BEQ     >
+        JSR     ESPVIDEOOUT
+        BCS     >
         RTS
+!
+        LDB     #$FF
+        STB     ESPEXISTS
+        RTS
+
+        INCLUDE cubix_esp.asm
 
 ;*
 ;* MACHINE VECTORS

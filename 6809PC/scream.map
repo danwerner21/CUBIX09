@@ -1,0 +1,11 @@
+Symbol: COLD_START (scream.s) = F000
+Symbol: IOSPACE (scream.s) = EF00
+Symbol: OUTHR1 (scream.s) = F02F
+Symbol: OUTHR2 (scream.s) = F046
+Symbol: RESETV (scream.s) = FFFE
+Symbol: UART1COMMAND (scream.s) = EF86
+Symbol: UART1CONTROL (scream.s) = EF87
+Symbol: UART1DATA (scream.s) = EF84
+Symbol: UART1STATUS (scream.s) = EF85
+Symbol: WRSER1a (scream.s) = F014
+Symbol: WRSER2a (scream.s) = F032

@@ -1,0 +1,788 @@
+                      (      testpcf.asm):00001         ;*
+                      (      testpcf.asm):00002         ;*
+                      (      testpcf.asm):00003         ;* D. WERNER
+                      (      testpcf.asm):00004         ;*
+     2000             (      testpcf.asm):00005         OSRAM           = $2000                           ;APPLICATION RAM AREA
+     DBFF             (      testpcf.asm):00006         OSEND           = $DBFF                           ;END OF GENERAL RAM
+     D000             (      testpcf.asm):00007         OSUTIL          = $D000                           ;UTILITY ADDRESS SPACE
+     0016             (      testpcf.asm):00008         PAGSIZ          = 22                              ;PAGE SIZE
+     001B             (      testpcf.asm):00009         ESCCHR          = $1B                             ;ESCAPE CHARACTER
+     0009             (      testpcf.asm):00010         TAB             = $09                             ;TAB CHARACTER
+     000D             (      testpcf.asm):00011         CR              = $0D                             ;CARRIAGE RETURN
+     000A             (      testpcf.asm):00012         LF              = $0A                             ;LINE-FEED
+     0200             (      testpcf.asm):00013         MD_PAGERA       = $0200                           ; PAGE DRIVER ADDRESS
+                      (      testpcf.asm):00014         
+     DF56             (      testpcf.asm):00015         I2C_BASE        = $DF56
+     00AA             (      testpcf.asm):00016         PCF_ID          = $AA
+     000C             (      testpcf.asm):00017         CPU_CLK         = 12
+                      (      testpcf.asm):00018         ;
+     DF56             (      testpcf.asm):00019         PCF_RS0         = I2C_BASE
+     DF57             (      testpcf.asm):00020         PCF_RS1         = PCF_RS0+1
+     0055             (      testpcf.asm):00021         PCF_OWN         = $55                             ; PCF'S ADDRESS IN SLAVE MODE
+                      (      testpcf.asm):00022         ;
+     0300             (      testpcf.asm):00023         HSTBUF          = $0300
+                      (      testpcf.asm):00024         
+                      (      testpcf.asm):00025         
+                      (      testpcf.asm):00026         
+                      (      testpcf.asm):00027                 ORG     OSRAM                             ;DOS UTILITY RUN AREA
+                      (      testpcf.asm):00028         
+2000 3F               (      testpcf.asm):00029                 SWI
+2001 19               (      testpcf.asm):00030                 FCB     25                                ;DISPLAY MESSAGE
+2002 5445535420504346 (      testpcf.asm):00031                 FCN     'TEST PCF . . . Scanning I2C Devices'
+     202E202E202E2053
+     63616E6E696E6720
+     4932432044657669
+     63657300
+                      (      testpcf.asm):00032         
+2026 C62B             (      testpcf.asm):00033                 LDB     #43
+2028 BD0200           (      testpcf.asm):00034                 JSR     MD_PAGERA
+                      (      testpcf.asm):00035         ;
+                      (      testpcf.asm):00036         ; display x axis header 00-0F
+                      (      testpcf.asm):00037         
+202B 3F               (      testpcf.asm):00038                 SWI
+202C 15               (      testpcf.asm):00039                 FCB     21
+202D 3F               (      testpcf.asm):00040                 SWI
+202E 15               (      testpcf.asm):00041                 FCB     21
+202F 3F               (      testpcf.asm):00042                 SWI
+2030 15               (      testpcf.asm):00043                 FCB     21
+2031 8600             (      testpcf.asm):00044                 LDA     #$00
+2033 B723EA           (      testpcf.asm):00045                 STA     xaxis
+2036                  (      testpcf.asm):00046         lp1:
+2036 3F               (      testpcf.asm):00047                 SWI
+2037 15               (      testpcf.asm):00048                 FCB     21
+                      (      testpcf.asm):00049         
+2038 B623EA           (      testpcf.asm):00050                 LDA     xaxis
+203B 7C23EA           (      testpcf.asm):00051                 INC     xaxis
+203E 3F               (      testpcf.asm):00052                 SWI
+203F 1C               (      testpcf.asm):00053                 FCB     28
+2040 4C               (      testpcf.asm):00054                 INCA
+2041 8110             (      testpcf.asm):00055                 CMPA    #$10
+2043 26F1             (      testpcf.asm):00056                 BNE     lp1
+2045 3F               (      testpcf.asm):00057                 SWI
+2046 16               (      testpcf.asm):00058                 FCB     22
+                      (      testpcf.asm):00059         
+                      (      testpcf.asm):00060         ; start of line loop 00-07
+2047 8600             (      testpcf.asm):00061                 LDA     #$00
+2049 B723EB           (      testpcf.asm):00062                 STA     yaxis
+204C B723EC           (      testpcf.asm):00063                 STA     addr                              ; prefix
+204F 8608             (      testpcf.asm):00064                 LDA     #8
+2051 B723F0           (      testpcf.asm):00065                 STA     YWORK
+2054                  (      testpcf.asm):00066         lp3b:
+2054 B623EB           (      testpcf.asm):00067                 LDA     yaxis
+2057 3F               (      testpcf.asm):00068                 SWI
+2058 1C               (      testpcf.asm):00069                 FCB     28
+                      (      testpcf.asm):00070         
+2059 B623EB           (      testpcf.asm):00071                 LDA     yaxis
+205C 8B10             (      testpcf.asm):00072                 ADDA    #$10
+205E B723EB           (      testpcf.asm):00073                 STA     yaxis
+                      (      testpcf.asm):00074         
+2061 863A             (      testpcf.asm):00075                 LDA     #':'
+2063 3F               (      testpcf.asm):00076                 SWI
+2064 21               (      testpcf.asm):00077                 FCB     33
+                      (      testpcf.asm):00078         
+                      (      testpcf.asm):00079         ; set up x axis loop
+2065 8610             (      testpcf.asm):00080                 LDA     #16
+2067 B723EE           (      testpcf.asm):00081                 STA     XWORK
+206A                  (      testpcf.asm):00082         lp2b:
+206A 3F               (      testpcf.asm):00083                 SWI
+206B 15               (      testpcf.asm):00084                 FCB     21
+                      (      testpcf.asm):00085         
+                      (      testpcf.asm):00086         ; i2c challenge
+                      (      testpcf.asm):00087         ; . issue device start command
+                      (      testpcf.asm):00088         ; . write address to device
+                      (      testpcf.asm):00089         ; . issue device stop command.
+                      (      testpcf.asm):00090         ; . delay
+                      (      testpcf.asm):00091         ; . display response
+                      (      testpcf.asm):00092         
+                      (      testpcf.asm):00093         ;       call    _i2c_start
+                      (      testpcf.asm):00094         ;       ld      a,(addr)
+                      (      testpcf.asm):00095         ;       ld      c,a
+                      (      testpcf.asm):00096         ;       call    _i2c_write
+                      (      testpcf.asm):00097         ;       ld      (rc),a
+                      (      testpcf.asm):00098         ;       call    _i2c_stop
+                      (      testpcf.asm):00099         
+206C BD2270           (      testpcf.asm):00100                 JSR     PCF_WAIT_FOR_BB
+206F 8100             (      testpcf.asm):00101                 CMPA    #$00
+2071 10260195         (      testpcf.asm):00102                 LBNE    NOBB
+                      (      testpcf.asm):00103         ;
+2075 B623EC           (      testpcf.asm):00104                 LDA     addr
+2078 8100             (      testpcf.asm):00105                 CMPA    #$00
+207A 2719             (      testpcf.asm):00106                 BEQ     SKP
+207C 81AA             (      testpcf.asm):00107                 CMPA    #$AA
+207E 2715             (      testpcf.asm):00108                 BEQ     SKP
+2080 B7DF56           (      testpcf.asm):00109                 STA     PCF_RS0
+2083 BD2225           (      testpcf.asm):00110                 JSR     PCF_START                         ; GENERATE START CONDITION
+                      (      testpcf.asm):00111         ;
+2086 C600             (      testpcf.asm):00112                 LDB     #$00                              ; delay
+                      (      testpcf.asm):00113         !
+2088 12               (      testpcf.asm):00114                 NOP
+2089 5A               (      testpcf.asm):00115                 DECB
+208A C100             (      testpcf.asm):00116                 CMPB    #$00
+208C 26FA             (      testpcf.asm):00117                 BNE     <
+208E BD2232           (      testpcf.asm):00118                 JSR     PCF_WAIT_FOR_ACK                  ; AND ISSUE THE SLAVE ADDRESS
+                      (      testpcf.asm):00119         
+2091 8100             (      testpcf.asm):00120                 CMPA    #$00
+2093 270A             (      testpcf.asm):00121                 BEQ     lp4f
+2095                  (      testpcf.asm):00122         SKP:
+2095 862D             (      testpcf.asm):00123                 LDA     #'-'                              ; display no
+2097 3F               (      testpcf.asm):00124                 SWI
+2098 21               (      testpcf.asm):00125                 FCB     33
+2099 862D             (      testpcf.asm):00126                 LDA     #'-'                              ; display no
+209B 3F               (      testpcf.asm):00127                 SWI
+209C 21               (      testpcf.asm):00128                 FCB     33
+209D 2008             (      testpcf.asm):00129                 BRA     lp5f
+                      (      testpcf.asm):00130         
+209F                  (      testpcf.asm):00131         lp4f:
+209F B623EC           (      testpcf.asm):00132                 LDA     addr
+20A2 47               (      testpcf.asm):00133                 ASRA
+20A3 847F             (      testpcf.asm):00134                 ANDA    #$7F
+20A5 3F               (      testpcf.asm):00135                 SWI
+20A6 1C               (      testpcf.asm):00136                 FCB     28
+                      (      testpcf.asm):00137         
+20A7                  (      testpcf.asm):00138         lp5f:
+20A7 7C23EC           (      testpcf.asm):00139                 INC     addr                              ; next address
+20AA 7C23EC           (      testpcf.asm):00140                 INC     addr                              ; next address
+20AD BD222B           (      testpcf.asm):00141                 JSR     PCF_STOP
+                      (      testpcf.asm):00142         
+20B0 7A23EE           (      testpcf.asm):00143                 DEC     XWORK
+20B3 B623EE           (      testpcf.asm):00144                 LDA     XWORK
+20B6 8100             (      testpcf.asm):00145                 CMPA    #$00
+20B8 26B0             (      testpcf.asm):00146                 BNE     lp2b                              ; of line
+                      (      testpcf.asm):00147         
+20BA 3F               (      testpcf.asm):00148                 SWI
+20BB 16               (      testpcf.asm):00149                 FCB     22
+                      (      testpcf.asm):00150         
+20BC 7A23F0           (      testpcf.asm):00151                 DEC     YWORK
+20BF B623F0           (      testpcf.asm):00152                 LDA     YWORK
+20C2 8100             (      testpcf.asm):00153                 CMPA    #$00
+20C4 1026FF8C         (      testpcf.asm):00154                 LBNE    lp3b                              ; all done
+                      (      testpcf.asm):00155         
+                      (      testpcf.asm):00156         ;-------------------------------------------------------------------------
+20C8 8E0300           (      testpcf.asm):00157                 LDX     #HSTBUF
+20CB BF24E4           (      testpcf.asm):00158                 STX     POINTER
+20CE 8E23F5           (      testpcf.asm):00159                 LDX     #TESTMESSAGECONTROL
+20D1 108E0023         (      testpcf.asm):00160                 LDY     #TESTMESSAGECONTROLEND-TESTMESSAGECONTROL
+20D5 BD220E           (      testpcf.asm):00161                 JSR     MOVETOHOST
+                      (      testpcf.asm):00162         
+20D8 863C             (      testpcf.asm):00163                 LDA     #$3C
+20DA 108E0023         (      testpcf.asm):00164                 LDY     #TESTMESSAGECONTROLEND-TESTMESSAGECONTROL
+20DE 8E0300           (      testpcf.asm):00165                 LDX     #HSTBUF
+20E1 C62A             (      testpcf.asm):00166                 LDB     #42
+20E3 BD0200           (      testpcf.asm):00167                 JSR     MD_PAGERA
+20E6 BD22FA           (      testpcf.asm):00168                 JSR     RESULT
+                      (      testpcf.asm):00169         
+20E9 C62B             (      testpcf.asm):00170                 LDB     #43
+20EB BD0200           (      testpcf.asm):00171                 JSR     MD_PAGERA
+                      (      testpcf.asm):00172         
+                      (      testpcf.asm):00173         ;
+                      (      testpcf.asm):00174         ;
+                      (      testpcf.asm):00175         ;
+                      (      testpcf.asm):00176         ;
+                      (      testpcf.asm):00177         
+20EE 8E0300           (      testpcf.asm):00178                 LDX     #HSTBUF
+20F1 BF24E4           (      testpcf.asm):00179                 STX     POINTER
+20F4 8E2418           (      testpcf.asm):00180                 LDX     #TESTMESSAGEDATA
+20F7 108E00C4         (      testpcf.asm):00181                 LDY     #TESTMESSAGEDATAEND-TESTMESSAGEDATA
+20FB BD220E           (      testpcf.asm):00182                 JSR     MOVETOHOST
+                      (      testpcf.asm):00183         
+20FE 863C             (      testpcf.asm):00184                 LDA     #$3C
+2100 108E00C4         (      testpcf.asm):00185                 LDY     #TESTMESSAGEDATAEND-TESTMESSAGEDATA
+2104 8E0300           (      testpcf.asm):00186                 LDX     #HSTBUF
+2107 C62A             (      testpcf.asm):00187                 LDB     #42
+2109 BD0200           (      testpcf.asm):00188                 JSR     MD_PAGERA
+210C BD22FA           (      testpcf.asm):00189                 JSR     RESULT
+                      (      testpcf.asm):00190         
+                      (      testpcf.asm):00191         ;-------------------------------------------------------------------------
+210F 3F               (      testpcf.asm):00192                 SWI
+2110 19               (      testpcf.asm):00193                 FCB     25                                ;DISPLAY MESSAGE
+2111 5445535420504346 (      testpcf.asm):00194                 FCN     'TEST PCF . . . Getting SD Block'
+     202E202E202E2047
+     657474696E672053
+     4420426C6F636B00
+                      (      testpcf.asm):00195         
+                      (      testpcf.asm):00196         
+                      (      testpcf.asm):00197         ; send "I" command
+                      (      testpcf.asm):00198         
+2131 8E0300           (      testpcf.asm):00199                 LDX     #HSTBUF
+2134 BF24E4           (      testpcf.asm):00200                 STX     POINTER
+2137 8E24E2           (      testpcf.asm):00201                 LDX     #SDSEND2
+213A 108E0001         (      testpcf.asm):00202                 LDY     #1
+213E BD220E           (      testpcf.asm):00203                 JSR     MOVETOHOST
+                      (      testpcf.asm):00204         
+2141 8625             (      testpcf.asm):00205                 LDA     #$25
+2143 108E0001         (      testpcf.asm):00206                 LDY     #1
+2147 8E0300           (      testpcf.asm):00207                 LDX     #HSTBUF
+214A C62A             (      testpcf.asm):00208                 LDB     #42
+214C BD0200           (      testpcf.asm):00209                 JSR     MD_PAGERA
+214F BD22FA           (      testpcf.asm):00210                 JSR     RESULT
+                      (      testpcf.asm):00211         
+                      (      testpcf.asm):00212         ; send "R" command
+                      (      testpcf.asm):00213         
+2152 8E0300           (      testpcf.asm):00214                 LDX     #HSTBUF
+2155 BF24E4           (      testpcf.asm):00215                 STX     POINTER
+2158 8E24E1           (      testpcf.asm):00216                 LDX     #SDSEND1
+215B 108E0001         (      testpcf.asm):00217                 LDY     #1
+215F BD220E           (      testpcf.asm):00218                 JSR     MOVETOHOST
+                      (      testpcf.asm):00219         
+2162 8625             (      testpcf.asm):00220                 LDA     #$25
+2164 108E0001         (      testpcf.asm):00221                 LDY     #1
+2168 8E0300           (      testpcf.asm):00222                 LDX     #HSTBUF
+216B C62A             (      testpcf.asm):00223                 LDB     #42
+216D BD0200           (      testpcf.asm):00224                 JSR     MD_PAGERA
+2170 BD22FA           (      testpcf.asm):00225                 JSR     RESULT
+                      (      testpcf.asm):00226         
+                      (      testpcf.asm):00227         ; get sector
+2173 8625             (      testpcf.asm):00228                 LDA     #$25
+2175 108E0200         (      testpcf.asm):00229                 LDY     #512
+2179 8E0300           (      testpcf.asm):00230                 LDX     #HSTBUF
+217C C629             (      testpcf.asm):00231                 LDB     #41
+217E BD0200           (      testpcf.asm):00232                 JSR     MD_PAGERA
+2181 BD22FA           (      testpcf.asm):00233                 JSR     RESULT
+                      (      testpcf.asm):00234         
+                      (      testpcf.asm):00235         ; ouput results
+2184 3F               (      testpcf.asm):00236                 SWI
+2185 18               (      testpcf.asm):00237                 FCB     24                                ;DISPLAY MESSAGE
+2186 534420494E515549 (      testpcf.asm):00238                 FCN     'SD INQUIRE:'
+     52453A00
+2192 B60300           (      testpcf.asm):00239                 LDA     $0300
+2195 3F               (      testpcf.asm):00240                 SWI
+2196 21               (      testpcf.asm):00241                 FCB     33
+2197 B60301           (      testpcf.asm):00242                 LDA     $0301
+219A 3F               (      testpcf.asm):00243                 SWI
+219B 21               (      testpcf.asm):00244                 FCB     33
+219C 863A             (      testpcf.asm):00245                 LDA     #':'
+219E 3F               (      testpcf.asm):00246                 SWI
+219F 21               (      testpcf.asm):00247                 FCB     33
+21A0 B60302           (      testpcf.asm):00248                 LDA     $0302
+21A3 3F               (      testpcf.asm):00249                 SWI
+21A4 1C               (      testpcf.asm):00250                 FCB     28
+21A5 B60303           (      testpcf.asm):00251                 LDA     $0303
+21A8 3F               (      testpcf.asm):00252                 SWI
+21A9 1C               (      testpcf.asm):00253                 FCB     28
+21AA B60304           (      testpcf.asm):00254                 LDA     $0304
+21AD 3F               (      testpcf.asm):00255                 SWI
+21AE 1C               (      testpcf.asm):00256                 FCB     28
+21AF B60305           (      testpcf.asm):00257                 LDA     $0305
+21B2 3F               (      testpcf.asm):00258                 SWI
+21B3 1C               (      testpcf.asm):00259                 FCB     28
+21B4 3F               (      testpcf.asm):00260                 SWI
+21B5 16               (      testpcf.asm):00261                 FCB     22
+                      (      testpcf.asm):00262         
+                      (      testpcf.asm):00263         ; send "S" command
+21B6 8E0300           (      testpcf.asm):00264                 LDX     #HSTBUF
+21B9 BF24E4           (      testpcf.asm):00265                 STX     POINTER
+21BC 8E24DC           (      testpcf.asm):00266                 LDX     #SDSEND
+21BF 108E0005         (      testpcf.asm):00267                 LDY     #5
+21C3 BD220E           (      testpcf.asm):00268                 JSR     MOVETOHOST
+                      (      testpcf.asm):00269         
+21C6 8625             (      testpcf.asm):00270                 LDA     #$25
+21C8 108E0005         (      testpcf.asm):00271                 LDY     #5
+21CC C62A             (      testpcf.asm):00272                 LDB     #42
+21CE 8E0300           (      testpcf.asm):00273                 LDX     #HSTBUF
+21D1 BD0200           (      testpcf.asm):00274                 JSR     MD_PAGERA
+21D4 BD22FA           (      testpcf.asm):00275                 JSR     RESULT
+                      (      testpcf.asm):00276         
+                      (      testpcf.asm):00277         ; send "R" command
+                      (      testpcf.asm):00278         
+21D7 8E0300           (      testpcf.asm):00279                 LDX     #HSTBUF
+21DA BF24E4           (      testpcf.asm):00280                 STX     POINTER
+21DD 8E24E1           (      testpcf.asm):00281                 LDX     #SDSEND1
+21E0 108E0001         (      testpcf.asm):00282                 LDY     #1
+21E4 BD220E           (      testpcf.asm):00283                 JSR     MOVETOHOST
+                      (      testpcf.asm):00284         
+21E7 8625             (      testpcf.asm):00285                 LDA     #$25
+21E9 108E0001         (      testpcf.asm):00286                 LDY     #1
+21ED 8E0300           (      testpcf.asm):00287                 LDX     #HSTBUF
+21F0 C62A             (      testpcf.asm):00288                 LDB     #42
+21F2 BD0200           (      testpcf.asm):00289                 JSR     MD_PAGERA
+21F5 BD22FA           (      testpcf.asm):00290                 JSR     RESULT
+                      (      testpcf.asm):00291         
+                      (      testpcf.asm):00292         ; get sector
+21F8 8625             (      testpcf.asm):00293                 LDA     #$25
+21FA 108E0200         (      testpcf.asm):00294                 LDY     #512
+21FE 8E0300           (      testpcf.asm):00295                 LDX     #HSTBUF
+2201 C629             (      testpcf.asm):00296                 LDB     #41
+2203 BD0200           (      testpcf.asm):00297                 JSR     MD_PAGERA
+2206 BD22FA           (      testpcf.asm):00298                 JSR     RESULT
+                      (      testpcf.asm):00299         
+2209 39               (      testpcf.asm):00300                 RTS
+                      (      testpcf.asm):00301         
+                      (      testpcf.asm):00302         
+220A                  (      testpcf.asm):00303         NOBB:
+220A BD22EC           (      testpcf.asm):00304                 JSR     PCF_BBERR
+220D 39               (      testpcf.asm):00305                 RTS
+                      (      testpcf.asm):00306         
+220E                  (      testpcf.asm):00307         MOVETOHOST:
+220E A680             (      testpcf.asm):00308                 LDA     ,X+
+2210 3410             (      testpcf.asm):00309                 PSHS    X
+2212 BE24E4           (      testpcf.asm):00310                 LDX     POINTER
+2215 A780             (      testpcf.asm):00311                 STA     ,X+
+2217 BF24E4           (      testpcf.asm):00312                 STX     POINTER
+221A 3510             (      testpcf.asm):00313                 PULS    X
+221C 313F             (      testpcf.asm):00314                 DEY
+221E 108C0000         (      testpcf.asm):00315                 CMPY    #$0000
+2222 26EA             (      testpcf.asm):00316                 BNE     MOVETOHOST
+2224 39               (      testpcf.asm):00317                 RTS
+                      (      testpcf.asm):00318         
+                      (      testpcf.asm):00319         
+                      (      testpcf.asm):00320         ;-----------------------------------------------------------------------------
+2225                  (      testpcf.asm):00321         _i2c_start:
+2225                  (      testpcf.asm):00322         PCF_START:
+2225 86C5             (      testpcf.asm):00323                 LDA     #PCF_START_
+2227 B7DF57           (      testpcf.asm):00324                 STA     PCF_RS1
+222A 39               (      testpcf.asm):00325                 RTS
+222B                  (      testpcf.asm):00326         _i2c_stop:
+222B                  (      testpcf.asm):00327         PCF_STOP:
+222B 86C3             (      testpcf.asm):00328                 LDA     #PCF_STOP_                        ; issue
+222D B7DF57           (      testpcf.asm):00329                 STA     PCF_RS1                           ; stop
+2230 39               (      testpcf.asm):00330                 RTS                                       ; command
+                      (      testpcf.asm):00331         ;
+                      (      testpcf.asm):00332         ;-----------------------------------------------------------------------------
+                      (      testpcf.asm):00333         ;
+                      (      testpcf.asm):00334         ; CONTROL REGISTER BITS
+                      (      testpcf.asm):00335         ;
+     0080             (      testpcf.asm):00336         PCF_PIN         = %10000000
+     0040             (      testpcf.asm):00337         PCF_ES0         = %01000000
+     0020             (      testpcf.asm):00338         PCF_ES1         = %00100000
+     0010             (      testpcf.asm):00339         PCF_ES2         = %00010000
+     0008             (      testpcf.asm):00340         PCF_EN1         = %00001000
+     0004             (      testpcf.asm):00341         PCF_STA         = %00000100
+     0002             (      testpcf.asm):00342         PCF_STO         = %00000010
+     0001             (      testpcf.asm):00343         PCF_ACK         = %00000001
+                      (      testpcf.asm):00344         ;
+                      (      testpcf.asm):00345         ; STATUS REGISTER BITS
+                      (      testpcf.asm):00346         ;
+                      (      testpcf.asm):00347         ;PCF_PIN        .EQU  10000000B
+     0040             (      testpcf.asm):00348         PCF_INI         = %01000000                       ; 1 if not initialized
+     0020             (      testpcf.asm):00349         PCF_STS         = %00100000
+     0010             (      testpcf.asm):00350         PCF_BER         = %00010000
+     0008             (      testpcf.asm):00351         PCF_AD0         = %00001000
+     0008             (      testpcf.asm):00352         PCF_LRB         = %00001000
+     0004             (      testpcf.asm):00353         PCF_AAS         = %00000100
+     0002             (      testpcf.asm):00354         PCF_LAB         = %00000010
+     0001             (      testpcf.asm):00355         PCF_BB          = %00000001
+                      (      testpcf.asm):00356         ;
+     00C5             (      testpcf.asm):00357         PCF_START_      = PCF_PIN|PCF_ES0|PCF_STA|PCF_ACK
+     00C3             (      testpcf.asm):00358         PCF_STOP_       = PCF_PIN|PCF_ES0|PCF_STO|PCF_ACK
+                      (      testpcf.asm):00359         ;
+                      (      testpcf.asm):00360         ; TIMEOUT AND DELAY VALUES (ARBITRARY)
+                      (      testpcf.asm):00361         ;
+     FDE8             (      testpcf.asm):00362         PCF_PINTO       = 65000
+     FDE8             (      testpcf.asm):00363         PCF_ACKTO       = 65000
+     FDE8             (      testpcf.asm):00364         PCF_BBTO        = 65000
+     FDE8             (      testpcf.asm):00365         PCF_LABDLY      = 65000
+                      (      testpcf.asm):00366         ;
+2231                  (      testpcf.asm):00367         PCF_STATUS:
+2231 00               (      testpcf.asm):00368                 FCB     $00
+                      (      testpcf.asm):00369         ;
+                      (      testpcf.asm):00370         ;--------------------------------------------------------------------------------
+                      (      testpcf.asm):00371         ;
+                      (      testpcf.asm):00372         ; RETURN NZ/FF IF TIMEOUT ERROR
+                      (      testpcf.asm):00373         ; RETURN NZ/01 IF FAILED TO RECEIVE ACKNOWLEDGE
+                      (      testpcf.asm):00374         ; RETURN Z/00  IF RECEIVED ACKNOWLEDGE
+                      (      testpcf.asm):00375         ;
+2232                  (      testpcf.asm):00376         PCF_WAIT_FOR_ACK:
+2232 3430             (      testpcf.asm):00377                 PSHS    X,Y
+2234 8E0000           (      testpcf.asm):00378                 LDX     #$0000
+2237 BF23F2           (      testpcf.asm):00379                 STX     ACKWRK
+                      (      testpcf.asm):00380         ;
+223A                  (      testpcf.asm):00381         PCF_WFA0:
+223A B6DF57           (      testpcf.asm):00382                 LDA     PCF_RS1                           ; READ PIN
+223D B72231           (      testpcf.asm):00383                 STA     PCF_STATUS                        ; STATUS
+                      (      testpcf.asm):00384         ;
+2240 3406             (      testpcf.asm):00385                 PSHS    D
+2242 FC23F2           (      testpcf.asm):00386                 LDD     ACKWRK
+2245 C30001           (      testpcf.asm):00387                 ADDD    #$0001
+2248 FD23F2           (      testpcf.asm):00388                 STD     ACKWRK
+224B 1F01             (      testpcf.asm):00389                 TFR     D,X
+224D 3506             (      testpcf.asm):00390                 PULS    D
+224F 8CFDE8           (      testpcf.asm):00391                 CMPX    #PCF_ACKTO
+2252 2717             (      testpcf.asm):00392                 BEQ     PCF_WFA1                          ; WE HAVE
+                      (      testpcf.asm):00393         ;
+2254 8480             (      testpcf.asm):00394                 ANDA    #PCF_PIN                          ; UNTIL WE GET PIN
+2256 8100             (      testpcf.asm):00395                 CMPA    #$00                              ; UNTIL WE GET PIN
+2258 26E0             (      testpcf.asm):00396                 BNE     PCF_WFA0                          ; OR TIMEOUT
+                      (      testpcf.asm):00397         ;
+225A B62231           (      testpcf.asm):00398                 LDA     PCF_STATUS                        ; WE GOT PIN SO NOW
+225D 8408             (      testpcf.asm):00399                 ANDA    #PCF_LRB                          ; CHECK WE HAVE
+225F 8100             (      testpcf.asm):00400                 CMPA    #$00                              ; CHECK WE HAVE
+2261 2704             (      testpcf.asm):00401                 BEQ     >                                 ; RECEIVED ACKNOWLEDGE
+2263 8601             (      testpcf.asm):00402                 LDA     #$01
+2265 2006             (      testpcf.asm):00403                 BRA     PCF_WFA2
+                      (      testpcf.asm):00404         !
+2267 8600             (      testpcf.asm):00405                 LDA     #$00
+2269 2002             (      testpcf.asm):00406                 BRA     PCF_WFA2
+226B                  (      testpcf.asm):00407         PCF_WFA1:
+226B 86FF             (      testpcf.asm):00408                 LDA     #$FF
+226D                  (      testpcf.asm):00409         PCF_WFA2:
+226D 3530             (      testpcf.asm):00410                 PULS    X,Y                               ; EXIT WITH NZ = FF
+226F 39               (      testpcf.asm):00411                 RTS
+                      (      testpcf.asm):00412         ;
+                      (      testpcf.asm):00413         ;-----------------------------------------------------------------------------
+                      (      testpcf.asm):00414         ;
+                      (      testpcf.asm):00415         ; POLL THE BUS BUSY BIT TO DETERMINE IF BUS IS FREE.
+                      (      testpcf.asm):00416         ; RETURN WITH A=00H/Z STATUS IF BUS IS FREE
+                      (      testpcf.asm):00417         ; RETURN WITH A=FFH/NZ STATUS IF BUS
+                      (      testpcf.asm):00418         ;
+                      (      testpcf.asm):00419         ; AFTER RESET THE BUS BUSY BIT WILL BE SET TO 1 I.E. NOT BUSY
+                      (      testpcf.asm):00420         ;
+2270                  (      testpcf.asm):00421         PCF_WAIT_FOR_BB:
+2270 3430             (      testpcf.asm):00422                 PSHS    X,Y
+2272 8E0000           (      testpcf.asm):00423                 LDX     #$0000
+2275 BF23F2           (      testpcf.asm):00424                 STX     ACKWRK
+2278                  (      testpcf.asm):00425         PCF_WFBB0:
+2278 B6DF57           (      testpcf.asm):00426                 LDA     PCF_RS1
+227B 8401             (      testpcf.asm):00427                 ANDA    #PCF_BB
+227D 8101             (      testpcf.asm):00428                 CMPA    #PCF_BB
+227F 2605             (      testpcf.asm):00429                 BNE     >
+2281 8600             (      testpcf.asm):00430                 LDA     #$00
+2283 3530             (      testpcf.asm):00431                 PULS    X,Y
+2285 39               (      testpcf.asm):00432                 RTS
+                      (      testpcf.asm):00433         !
+2286 3406             (      testpcf.asm):00434                 PSHS    D
+2288 FC23F2           (      testpcf.asm):00435                 LDD     ACKWRK
+228B C30001           (      testpcf.asm):00436                 ADDD    #$0001
+228E FD23F2           (      testpcf.asm):00437                 STD     ACKWRK
+2291 1F01             (      testpcf.asm):00438                 TFR     D,X
+2293 3506             (      testpcf.asm):00439                 PULS    D
+2295 8CFDE8           (      testpcf.asm):00440                 CMPX    #PCF_BBTO
+2298 26DE             (      testpcf.asm):00441                 BNE     PCF_WFBB0
+229A 86FF             (      testpcf.asm):00442                 LDA     #$FF
+229C 3530             (      testpcf.asm):00443                 PULS    X,Y
+229E 39               (      testpcf.asm):00444                 RTS
+                      (      testpcf.asm):00445         
+                      (      testpcf.asm):00446         ;
+                      (      testpcf.asm):00447         ;-----------------------------------------------------------------------------
+                      (      testpcf.asm):00448         ; DISPLAY ERROR MESSAGES
+                      (      testpcf.asm):00449         ;
+229F                  (      testpcf.asm):00450         PCF_RDERR:
+229F 3436             (      testpcf.asm):00451                 PSHS    D,X,Y
+22A1 8E239B           (      testpcf.asm):00452                 LDX     #PCF_RDFAIL
+22A4 204D             (      testpcf.asm):00453                 BRA     PCF_PRTERR
+                      (      testpcf.asm):00454         ;
+22A6                  (      testpcf.asm):00455         PCF_INIERR:
+22A6 3436             (      testpcf.asm):00456                 PSHS    D,X,Y
+22A8 8E2319           (      testpcf.asm):00457                 LDX     #PCF_NOPCF
+22AB 2046             (      testpcf.asm):00458                 BRA     PCF_PRTERR
+                      (      testpcf.asm):00459         ;
+22AD                  (      testpcf.asm):00460         PCF_SETERR:
+22AD 3436             (      testpcf.asm):00461                 PSHS    D,X,Y
+22AF 8E2329           (      testpcf.asm):00462                 LDX     #PCF_WRTFAIL
+22B2 203F             (      testpcf.asm):00463                 BRA     PCF_PRTERR
+                      (      testpcf.asm):00464         ;
+22B4                  (      testpcf.asm):00465         PCF_REGERR:
+22B4 3436             (      testpcf.asm):00466                 PSHS    D,X,Y
+22B6 8E2342           (      testpcf.asm):00467                 LDX     #PCF_REGFAIL
+22B9 2038             (      testpcf.asm):00468                 BRA     PCF_PRTERR
+                      (      testpcf.asm):00469         ;
+22BB                  (      testpcf.asm):00470         PCF_CLKERR:
+22BB 3436             (      testpcf.asm):00471                 PSHS    D,X,Y
+22BD 8E235E           (      testpcf.asm):00472                 LDX     #PCF_CLKFAIL
+22C0 2031             (      testpcf.asm):00473                 BRA     PCF_PRTERR
+                      (      testpcf.asm):00474         ;
+22C2                  (      testpcf.asm):00475         PCF_IDLERR:
+22C2 3436             (      testpcf.asm):00476                 PSHS    D,X,Y
+22C4 8E236D           (      testpcf.asm):00477                 LDX     #PCF_IDLFAIL
+22C7 202A             (      testpcf.asm):00478                 BRA     PCF_PRTERR
+                      (      testpcf.asm):00479         ;
+22C9                  (      testpcf.asm):00480         PCF_ACKERR:
+22C9 3436             (      testpcf.asm):00481                 PSHS    D,X,Y
+22CB 8E237D           (      testpcf.asm):00482                 LDX     #PCF_ACKFAIL
+22CE 2023             (      testpcf.asm):00483                 BRA     PCF_PRTERR
+                      (      testpcf.asm):00484         ;
+22D0                  (      testpcf.asm):00485         PCF_RDBERR:
+22D0 3436             (      testpcf.asm):00486                 PSHS    D,X,Y
+22D2 8E23A7           (      testpcf.asm):00487                 LDX     #PCF_RDBFAIL
+22D5 201C             (      testpcf.asm):00488                 BRA     PCF_PRTERR
+                      (      testpcf.asm):00489         ;
+22D7                  (      testpcf.asm):00490         PCF_TOERR:
+22D7 3436             (      testpcf.asm):00491                 PSHS    D,X,Y
+22D9 8E23B8           (      testpcf.asm):00492                 LDX     #PCF_TOFAIL
+22DC 2015             (      testpcf.asm):00493                 BRA     PCF_PRTERR
+                      (      testpcf.asm):00494         ;
+22DE                  (      testpcf.asm):00495         PCF_ARBERR:
+22DE 3436             (      testpcf.asm):00496                 PSHS    D,X,Y
+22E0 8E23C6           (      testpcf.asm):00497                 LDX     #PCF_ARBFAIL
+22E3 200E             (      testpcf.asm):00498                 BRA     PCF_PRTERR
+                      (      testpcf.asm):00499         ;
+22E5                  (      testpcf.asm):00500         PCF_PINERR:
+22E5 3436             (      testpcf.asm):00501                 PSHS    D,X,Y
+22E7 8E23D7           (      testpcf.asm):00502                 LDX     #PCF_PINFAIL
+22EA 2007             (      testpcf.asm):00503                 BRA     PCF_PRTERR
+                      (      testpcf.asm):00504         ;
+22EC                  (      testpcf.asm):00505         PCF_BBERR:
+22EC 3436             (      testpcf.asm):00506                 PSHS    D,X,Y
+22EE 8E23E0           (      testpcf.asm):00507                 LDX     #PCF_BBFAIL
+22F1 2000             (      testpcf.asm):00508                 BRA     PCF_PRTERR
+                      (      testpcf.asm):00509         ;
+22F3                  (      testpcf.asm):00510         PCF_PRTERR:
+22F3 3F               (      testpcf.asm):00511                 SWI
+22F4 17               (      testpcf.asm):00512                 FCB     23
+22F5 3F               (      testpcf.asm):00513                 SWI
+22F6 16               (      testpcf.asm):00514                 FCB     22
+22F7 3536             (      testpcf.asm):00515                 PULS    D,X,Y
+22F9 39               (      testpcf.asm):00516                 RTS
+                      (      testpcf.asm):00517         
+22FA                  (      testpcf.asm):00518         RESULT:
+22FA 3402             (      testpcf.asm):00519                 PSHS    A
+22FC 3F               (      testpcf.asm):00520                 SWI
+22FD 18               (      testpcf.asm):00521                 FCB     24
+22FE 504346204552524F (      testpcf.asm):00522                 FCN     'PCF ERROR REPORTED:'
+     52205245504F5254
+     45443A00
+2312 3502             (      testpcf.asm):00523                 PULS    A
+2314 3F               (      testpcf.asm):00524                 SWI
+2315 1C               (      testpcf.asm):00525                 FCB     28
+2316 3F               (      testpcf.asm):00526                 SWI
+2317 16               (      testpcf.asm):00527                 FCB     22
+2318 39               (      testpcf.asm):00528                 RTS
+                      (      testpcf.asm):00529         
+                      (      testpcf.asm):00530         ;
+2319                  (      testpcf.asm):00531         PCF_NOPCF:
+2319 4E4F204445564943 (      testpcf.asm):00532                 FCN     "NO DEVICE FOUND"
+     4520464F554E4400
+2329                  (      testpcf.asm):00533         PCF_WRTFAIL:
+2329 53455454494E4720 (      testpcf.asm):00534                 FCN     "SETTING DEVICE ID FAILED"
+     4445564943452049
+     44204641494C4544
+     00
+2342                  (      testpcf.asm):00535         PCF_REGFAIL:
+2342 434C4F434B205245 (      testpcf.asm):00536                 FCN     "CLOCK REGISTER SELECT ERROR"
+     4749535445522053
+     454C454354204552
+     524F5200
+235E                  (      testpcf.asm):00537         PCF_CLKFAIL:
+235E 434C4F434B205345 (      testpcf.asm):00538                 FCN     "CLOCK SET FAIL"
+     54204641494C00
+236D                  (      testpcf.asm):00539         PCF_IDLFAIL:
+236D 4255532049444C45 (      testpcf.asm):00540                 FCN     "BUS IDLE FAILED"
+     204641494C454400
+237D                  (      testpcf.asm):00541         PCF_ACKFAIL:
+237D 4641494C45442054 (      testpcf.asm):00542                 FCN     "FAILED TO RECEIVE ACKNOWLEDGE"
+     4F20524543454956
+     452041434B4E4F57
+     4C4544474500
+239B                  (      testpcf.asm):00543         PCF_RDFAIL:
+239B 5245414420464149 (      testpcf.asm):00544                 FCN     "READ FAILED"
+     4C454400
+23A7                  (      testpcf.asm):00545         PCF_RDBFAIL:
+23A7 5245414442595445 (      testpcf.asm):00546                 FCN     "READBYTES FAILED"
+     53204641494C4544
+     00
+23B8                  (      testpcf.asm):00547         PCF_TOFAIL:
+23B8 54494D454F555420 (      testpcf.asm):00548                 FCN     "TIMEOUT ERROR"
+     4552524F5200
+23C6                  (      testpcf.asm):00549         PCF_ARBFAIL:
+23C6 4C4F535420415242 (      testpcf.asm):00550                 FCN     "LOST ARBITRATION"
+     4954524154494F4E
+     00
+23D7                  (      testpcf.asm):00551         PCF_PINFAIL:
+23D7 50494E204641494C (      testpcf.asm):00552                 FCN     "PIN FAIL"
+     00
+23E0                  (      testpcf.asm):00553         PCF_BBFAIL:
+23E0 4255532042555359 (      testpcf.asm):00554                 FCN     "BUS BUSY"
+     00
+                      (      testpcf.asm):00555         
+23E9                  (      testpcf.asm):00556         oprval:
+23E9 00               (      testpcf.asm):00557                 FCB     0
+23EA                  (      testpcf.asm):00558         xaxis:
+23EA 00               (      testpcf.asm):00559                 FCB     0
+23EB                  (      testpcf.asm):00560         yaxis:
+23EB 00               (      testpcf.asm):00561                 FCB     0
+23EC                  (      testpcf.asm):00562         addr:
+23EC 00               (      testpcf.asm):00563                 FCB     0
+23ED                  (      testpcf.asm):00564         rc:
+23ED 00               (      testpcf.asm):00565                 FCB     0
+                      (      testpcf.asm):00566         
+23EE                  (      testpcf.asm):00567         XWORK:
+23EE 0000             (      testpcf.asm):00568                 FCB     0,0
+23F0                  (      testpcf.asm):00569         YWORK:
+23F0 0000             (      testpcf.asm):00570                 FCB     0,0
+23F2                  (      testpcf.asm):00571         ACKWRK:
+23F2 0000             (      testpcf.asm):00572                 FCB     0,0
+                      (      testpcf.asm):00573         
+                      (      testpcf.asm):00574         
+23F4                  (      testpcf.asm):00575         PORT:
+23F4 00               (      testpcf.asm):00576                 FCB     $00
+                      (      testpcf.asm):00577         
+23F5                  (      testpcf.asm):00578         TESTMESSAGECONTROL:
+23F5 80               (      testpcf.asm):00579                 FCB     $80                               ; set command mode
+23F6 AE               (      testpcf.asm):00580                 FCB     $AE                               ; set display off
+23F7 817F             (      testpcf.asm):00581                 FCB     $81,$7F                           ; set contrast
+23F9 A6               (      testpcf.asm):00582                 FCB     $A6                               ; normal display (a7=inverse)
+23FA 2000             (      testpcf.asm):00583                 FCB     $20,00                            ; horizontal addressing mode
+23FC A0               (      testpcf.asm):00584                 FCB     $A0                               ; segment remap (inverse)
+23FD A83F             (      testpcf.asm):00585                 FCB     $A8,$3F                           ; Multiplex ratio (64 pix)
+23FF C8               (      testpcf.asm):00586                 FCB     $C8                               ; set com scan direction
+2400 D300             (      testpcf.asm):00587                 FCB     $D3,$00                           ; set display offset
+2402 DA12             (      testpcf.asm):00588                 FCB     $DA,$12                           ; pin hardware config
+2404 D580             (      testpcf.asm):00589                 FCB     $D5,$80                           ; display clock divisor
+2406 D922             (      testpcf.asm):00590                 FCB     $D9,$22                           ; set pre-charge
+2408 DB20             (      testpcf.asm):00591                 FCB     $DB,$20                           ; set deselect level
+240A 8D14             (      testpcf.asm):00592                 FCB     $8D,$14                           ; set charge pump
+240C A4               (      testpcf.asm):00593                 FCB     $A4                               ; set display RAM on
+240D AF               (      testpcf.asm):00594                 FCB     $AF                               ; set display on
+240E 40               (      testpcf.asm):00595                 FCB     $40                               ; set start line
+240F 2000             (      testpcf.asm):00596                 FCB     $20,00                            ; horizontal addressing mode
+2411 21007F           (      testpcf.asm):00597                 FCB     $21,0,127                         ; set col start/end
+2414 220007           (      testpcf.asm):00598                 FCB     $22,0,7                           ; set page start/end
+2417 AF               (      testpcf.asm):00599                 FCB     $AF                               ; set display on
+2418                  (      testpcf.asm):00600         TESTMESSAGECONTROLEND:
+                      (      testpcf.asm):00601         
+                      (      testpcf.asm):00602         
+2418                  (      testpcf.asm):00603         TESTMESSAGEDATA:
+2418 40               (      testpcf.asm):00604                 FCB     $40
+2419 7E0909097E       (      testpcf.asm):00605                 FCB     $7E,$09,$09,$09,$7E               ; A
+241E 364949497F       (      testpcf.asm):00606                 FCB     $36,$49,$49,$49,$7F               ; B
+2423 224141413E       (      testpcf.asm):00607                 FCB     $22,$41,$41,$41,$3E               ; C
+2428 3E4141417F       (      testpcf.asm):00608                 FCB     $3E,$41,$41,$41,$7F               ; D
+242D 414949497F       (      testpcf.asm):00609                 FCB     $41,$49,$49,$49,$7F               ; E
+2432 010109097F       (      testpcf.asm):00610                 FCB     $01,$01,$09,$09,$7F               ; F
+2437 384949413E       (      testpcf.asm):00611                 FCB     $38,$49,$49,$41,$3E               ; G
+243C 7F0808087F       (      testpcf.asm):00612                 FCB     $7F,$08,$08,$08,$7F               ; H
+2441 00417F4100       (      testpcf.asm):00613                 FCB     $00,$41,$7F,$41,$00               ; I
+2446 3F40404030       (      testpcf.asm):00614                 FCB     $3F,$40,$40,$40,$30               ; J
+244B 412214087F       (      testpcf.asm):00615                 FCB     $41,$22,$14,$08,$7F               ; K
+2450 404040407F       (      testpcf.asm):00616                 FCB     $40,$40,$40,$40,$7F               ; L
+2455 7F0304037F       (      testpcf.asm):00617                 FCB     $7F,$03,$04,$03,$7F               ; M
+245A 7F0804027F       (      testpcf.asm):00618                 FCB     $7F,$08,$04,$02,$7F               ; N
+245F 3E4141413E       (      testpcf.asm):00619                 FCB     $3E,$41,$41,$41,$3E               ; O
+2464 060909097F       (      testpcf.asm):00620                 FCB     $06,$09,$09,$09,$7F               ; P
+2469 7E6151413E       (      testpcf.asm):00621                 FCB     $7E,$61,$51,$41,$3E               ; Q
+246E 064929197F       (      testpcf.asm):00622                 FCB     $06,$49,$29,$19,$7F               ; R
+2473 3049494906       (      testpcf.asm):00623                 FCB     $30,$49,$49,$49,$06               ; S
+2478 01017F0101       (      testpcf.asm):00624                 FCB     $01,$01,$7F,$01,$01               ; T
+247D 3F4040403F       (      testpcf.asm):00625                 FCB     $3F,$40,$40,$40,$3F               ; U
+2482 1F2040201F       (      testpcf.asm):00626                 FCB     $1F,$20,$40,$20,$1F               ; V
+2487 3F4078403F       (      testpcf.asm):00627                 FCB     $3F,$40,$78,$40,$3F               ; W
+248C 4136083641       (      testpcf.asm):00628                 FCB     $41,$36,$08,$36,$41               ; X
+2491 0304780403       (      testpcf.asm):00629                 FCB     $03,$04,$78,$04,$03               ; Y
+2496 4345495262       (      testpcf.asm):00630                 FCB     $43,$45,$49,$52,$62               ; Z
+249B 0000000000       (      testpcf.asm):00631                 FCB     $00,$00,$00,$00,$00               ; _
+24A0 3E415D413E       (      testpcf.asm):00632                 FCB     $3E,$41,$5D,$41,$3E               ; 0
+24A5 00407F4200       (      testpcf.asm):00633                 FCB     $00,$40,$7F,$42,$00               ; 1
+24AA 4245495162       (      testpcf.asm):00634                 FCB     $42,$45,$49,$51,$62               ; 2
+24AF 3649414122       (      testpcf.asm):00635                 FCB     $36,$49,$41,$41,$22               ; 3
+24B4 107F121418       (      testpcf.asm):00636                 FCB     $10,$7F,$12,$14,$18               ; 4
+24B9 1129454547       (      testpcf.asm):00637                 FCB     $11,$29,$45,$45,$47               ; 5
+24BE 304949493E       (      testpcf.asm):00638                 FCB     $30,$49,$49,$49,$3E               ; 6
+24C3 0305091161       (      testpcf.asm):00639                 FCB     $03,$05,$09,$11,$61               ; 7
+24C8 3649494936       (      testpcf.asm):00640                 FCB     $36,$49,$49,$49,$36               ; 8
+24CD 3E49494906       (      testpcf.asm):00641                 FCB     $3E,$49,$49,$49,$06               ; 9
+24D2 1414141414       (      testpcf.asm):00642                 FCB     $14,$14,$14,$14,$14               ; =
+24D7 22147F1402       (      testpcf.asm):00643                 FCB     $22,$14,$7F,$14,$02               ; *
+24DC                  (      testpcf.asm):00644         TESTMESSAGEDATAEND:
+                      (      testpcf.asm):00645         
+24DC                  (      testpcf.asm):00646         SDSEND:
+24DC 5300000002       (      testpcf.asm):00647                 FCB     'S',$00,$00,$00,$02
+                      (      testpcf.asm):00648         
+24E1                  (      testpcf.asm):00649         SDSEND1:
+24E1 52               (      testpcf.asm):00650                 FCB     'R'
+                      (      testpcf.asm):00651         
+24E2                  (      testpcf.asm):00652         SDSEND2:
+24E2 4900             (      testpcf.asm):00653                 FCB     'I',$00
+                      (      testpcf.asm):00654         
+24E4                  (      testpcf.asm):00655         POINTER:
+24E4 FFFF             (      testpcf.asm):00656                 FCB     $FF,$FF
+
+Symbol Table:
+[ G] _i2c_start                       2225
+[ G] _i2c_stop                        222B
+[ G] ACKWRK                           23F2
+[ G] addr                             23EC
+[ G] CPU_CLK                          000C
+[ G] CR                               000D
+[ G] ESCCHR                           001B
+[ G] HSTBUF                           0300
+[ G] I2C_BASE                         DF56
+[ G] LF                               000A
+[ G] lp1                              2036
+[ G] lp2b                             206A
+[ G] lp3b                             2054
+[ G] lp4f                             209F
+[ G] lp5f                             20A7
+[ G] MD_PAGERA                        0200
+[ G] MOVETOHOST                       220E
+[ G] NOBB                             220A
+[ G] oprval                           23E9
+[ G] OSEND                            DBFF
+[ G] OSRAM                            2000
+[ G] OSUTIL                           D000
+[ G] PAGSIZ                           0016
+[ G] PCF_AAS                          0004
+[ G] PCF_ACK                          0001
+[ G] PCF_ACKERR                       22C9
+[ G] PCF_ACKFAIL                      237D
+[ G] PCF_ACKTO                        FDE8
+[ G] PCF_AD0                          0008
+[ G] PCF_ARBERR                       22DE
+[ G] PCF_ARBFAIL                      23C6
+[ G] PCF_BB                           0001
+[ G] PCF_BBERR                        22EC
+[ G] PCF_BBFAIL                       23E0
+[ G] PCF_BBTO                         FDE8
+[ G] PCF_BER                          0010
+[ G] PCF_CLKERR                       22BB
+[ G] PCF_CLKFAIL                      235E
+[ G] PCF_EN1                          0008
+[ G] PCF_ES0                          0040
+[ G] PCF_ES1                          0020
+[ G] PCF_ES2                          0010
+[ G] PCF_ID                           00AA
+[ G] PCF_IDLERR                       22C2
+[ G] PCF_IDLFAIL                      236D
+[ G] PCF_INI                          0040
+[ G] PCF_INIERR                       22A6
+[ G] PCF_LAB                          0002
+[ G] PCF_LABDLY                       FDE8
+[ G] PCF_LRB                          0008
+[ G] PCF_NOPCF                        2319
+[ G] PCF_OWN                          0055
+[ G] PCF_PIN                          0080
+[ G] PCF_PINERR                       22E5
+[ G] PCF_PINFAIL                      23D7
+[ G] PCF_PINTO                        FDE8
+[ G] PCF_PRTERR                       22F3
+[ G] PCF_RDBERR                       22D0
+[ G] PCF_RDBFAIL                      23A7
+[ G] PCF_RDERR                        229F
+[ G] PCF_RDFAIL                       239B
+[ G] PCF_REGERR                       22B4
+[ G] PCF_REGFAIL                      2342
+[ G] PCF_RS0                          DF56
+[ G] PCF_RS1                          DF57
+[ G] PCF_SETERR                       22AD
+[ G] PCF_STA                          0004
+[ G] PCF_START                        2225
+[ G] PCF_START_                       00C5
+[ G] PCF_STATUS                       2231
+[ G] PCF_STO                          0002
+[ G] PCF_STOP                         222B
+[ G] PCF_STOP_                        00C3
+[ G] PCF_STS                          0020
+[ G] PCF_TOERR                        22D7
+[ G] PCF_TOFAIL                       23B8
+[ G] PCF_WAIT_FOR_ACK                 2232
+[ G] PCF_WAIT_FOR_BB                  2270
+[ G] PCF_WFA0                         223A
+[ G] PCF_WFA1                         226B
+[ G] PCF_WFA2                         226D
+[ G] PCF_WFBB0                        2278
+[ G] PCF_WRTFAIL                      2329
+[ G] POINTER                          24E4
+[ G] PORT                             23F4
+[ G] rc                               23ED
+[ G] RESULT                           22FA
+[ G] SDSEND                           24DC
+[ G] SDSEND1                          24E1
+[ G] SDSEND2                          24E2
+[ G] SKP                              2095
+[ G] TAB                              0009
+[ G] TESTMESSAGECONTROL               23F5
+[ G] TESTMESSAGECONTROLEND            2418
+[ G] TESTMESSAGEDATA                  2418
+[ G] TESTMESSAGEDATAEND               24DC
+[ G] xaxis                            23EA
+[ G] XWORK                            23EE
+[ G] yaxis                            23EB
+[ G] YWORK                            23F0

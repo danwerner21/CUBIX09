@@ -33,9 +33,9 @@ DISPATCHTABLE:
         .WORD   RDSER1                            ; FUNCTION 01 - READ SERIAL PORT
         .WORD   SERIALINIT                        ; FUNCTION 02 - SERIAL PORT INIT
 
-        .WORD   drv_noop                          ; FUNCTION 03 - WRITE VIDEO
-        .WORD   drv_noop                          ; FUNCTION 04 - READ KEYBOARD
-        .WORD   drv_noop                          ; FUNCTION 05 - INIT INTERFACE
+        .WORD   ESPVIDEOOUT                       ; FUNCTION 03 - WRITE ESP VIDEO
+        .WORD   ESPPS2IN                          ; FUNCTION 04 - READ ESP KEYBOARD
+        .WORD   ESPINIT                           ; FUNCTION 05 - INIT ESP
 
         .WORD   drv_noop                          ; FUNCTION 06
         .WORD   drv_noop                          ; FUNCTION 07
@@ -109,6 +109,7 @@ DISPATCHTABLE:
         INCLUDE cubix_serial.asm
         INCLUDE cubix_ide.asm
         INCLUDE cubix_multio.asm
+        INCLUDE cubix_esp.asm
 ;        INCLUDE cubix_dskyng.asm
 ;        INCLUDE cubix_floppy.asm
 ;        INCLUDE cubix_fp.asm

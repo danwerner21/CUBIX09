@@ -276,7 +276,6 @@ PARAMS:
         LDX     #POSIT
         LDB     #POSITL
         JSR     DLINE                             ; "GAME ... POSITION 1-7 "
-        JSR     INVERT                            ; FLIP STATUS LINE
 
         LDA     #TRUE
         STA     CFLAG                             ; ENABLE CURSOR

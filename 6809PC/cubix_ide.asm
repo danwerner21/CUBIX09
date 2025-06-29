@@ -53,7 +53,7 @@ XTIDE_INIT:
         ENDIF
 
 
-        IFNDEF   BIOS6809PC
+        IFNDEF  BIOS6809PC
 XTIDETIMEOUT:
         .BYTE   $00,$00
 
@@ -152,7 +152,7 @@ XTIDE_PROBE_FAIL:
 XTIDE_PROBE_SUCCESS:
         RTS                                       ; DONE, NOTE THAT A=0 AND Z IS SET
 
-        IFNDEF   BIOS6809PC
+        IFNDEF  BIOS6809PC
 ;*__IDE_READ_INFO___________________________________________________________________________________
 ;*
 ;*  READ IDE INFORMATION
@@ -231,7 +231,7 @@ IDE_READ_SECTOR:
         JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
         BCS     IDE_READ_SECTOR_ERROR             ; IF TIMEOUT, REPORT NO IDE PRESENT
 IDE_READ_SECTOR_1:
-        IFNDEF   BIOS6809PC
+        IFNDEF  BIOS6809PC
         JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
         ENDIF
         LDA     #XTIDE_CMD_READ
@@ -332,7 +332,7 @@ IDEBUFRD:
 IDE_WRITE_SECTOR:
         JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
         BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
-        IFNDEF   BIOS6809PC
+        IFNDEF  BIOS6809PC
         JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
         ENDIF
         LDA     #XTIDE_CMD_WRITE
@@ -369,7 +369,7 @@ IDEBUFWT:
         RTS                                       ;
 
 
-        IFNDEF   BIOS6809PC
+        IFNDEF  BIOS6809PC
 MESSAGE1
         FCC     "PPIDE :"
         FCB     00

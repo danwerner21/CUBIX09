@@ -52,10 +52,6 @@ WRSER1
 ;________________________________________________________________________________________________________________________________
 ;
 RDSER1
-        JSR     KBD_GETKEY
-        BCS     >
-        RTS
-!
         LDA     UART1STATUS                       ; GET STATUS REGISTER
         ANDA    #%00001000                        ; IS RX READY
         BEQ     >                                 ; No DATA IS READY

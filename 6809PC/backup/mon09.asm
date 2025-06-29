@@ -18,17 +18,21 @@
 ;*   Commands have been removed to conserve
 ;*   ROM space
 
+BIOS6809PC      EQU $01
 
 ;* HARDWARE INFORMATION
 ROM             EQU $F000                         ; MON09 code goes here
 RAM             EQU $BF00                         ; MON09 data goes here
 STACK           EQU RAM+$F0                       ; MON09 Stack (Top of RAM)
+HSTBUF          EQU $0100                         ; DISK BUFFER
+BRKTAB          EQU $0300
 ;*
 IOSPACE         EQU $EF00
 UART1DATA       EQU IOSPACE+$84                   ; SERIAL PORT 1 (I/O Card)
 UART1STATUS     EQU IOSPACE+$85                   ; SERIAL PORT 1 (I/O Card)
 UART1COMMAND    EQU IOSPACE+$86                   ; SERIAL PORT 1 (I/O Card)
 UART1CONTROL    EQU IOSPACE+$87                   ; SERIAL PORT 1 (I/O Card)
+CUBIX_IO_BASE   EQU $E000
 ;*
 ;*
         ORG     RAM                               ;Internal MON09 variables
@@ -73,12 +77,12 @@ INSTYP:
         RMB     1                                 ;DISASSEMBLED INSTRUCTION TYPE
 POSBYT:
         RMB     1                                 ;POSTBYTE STORAGE AREA
-BRKTAB:
-        RMB     24                                ;BREAKPOINT TABLE
-DSPBUF:
-        RMB     50                                ;DISASSEMBLER DISPLAY BUFFER
 INSRAM:
         RMB     7                                 ;INSTRUCTION EXECUTION ADDRESS
+XTIDETIMEOUT:
+        RMB     2                                 ;DISK TIMEOUT
+DISKERROR:
+        RMB     1                                 ;DISK ERROR
 ;*
         ORG     ROM                               ;MONITOR CODE
 ;*
@@ -190,6 +194,10 @@ CMDTAB
         FDB     HEXSUB
         FCB     '?',0                             ;HELP COMMAND
         FDB     HELP
+        FCB     'O','S'                           ;BOOT COMMAND
+        FDB     BOOTOS
+        FCB     'O','W'                           ;WRITE BOOT COMMAND
+        FDB     WRITEOS
         FCB     0                                 ;MARK END OF TABLE
 ;*
 ;* 'F' - FILL MEMORY
@@ -1045,6 +1053,88 @@ SWIHN4
         DECB    REDUCE COUNT
         BNE     SWIHN3      GO AGAIN
         LBRA    MAIN        DO PROMPT
+
+;* Write OS
+WRITEOS:
+        LBSR    WRMSG                             ;OUTPUT MESSAGE
+        FCC     'WRTING OS TO XT-IDE'
+        FCB     $0A,$0D,$FF
+        JSR     XTIDE_INIT
+        LDB     #$E0                              ; E0=MST  F0=SLV
+        STB     XTIDE_DEVICE
+        LDB     #$00
+        STB     XTIDE_LBAHI
+        STB     XTIDE_LBAMID
+        STB     XTIDE_LBALOW
+        STB     SAVA
+        LDB     #$01
+        STB     XTIDE_SEC_CNT
+        LDX     #$2000
+WRITEOS_1:
+        LDY     #$0000
+!
+        LDA     ,X+
+        STA     HSTBUF,Y
+        INY
+        CMPY    #$0200
+        BNE     <
+        PSHS    X
+        JSR     IDE_WRITE_SECTOR
+        PULS    X
+        LDB     #$E0                              ; E0=MST  F0=SLV
+        STB     XTIDE_DEVICE
+        LDB     #$00
+        STB     XTIDE_LBAHI
+        STB     XTIDE_LBAMID
+        STB     XTIDE_LBALOW
+        INC     SAVA
+        LDB     SAVA
+        STB     XTIDE_LBALOW
+        CMPB    #$22
+        BNE     WRITEOS_1
+        JMP     RESET
+;* BOOT OS
+BOOTOS:
+        LBSR    WRMSG                             ;OUTPUT MESSAGE
+        FCC     'BOOTING OS FROM XT-IDE'
+        FCB     $0A,$0D,$FF
+        JSR     XTIDE_INIT
+        LDB     #$E0                              ; E0=MST  F0=SLV
+        STB     XTIDE_DEVICE
+        LDB     #$00
+        STB     XTIDE_LBAHI
+        STB     XTIDE_LBAMID
+        STB     XTIDE_LBALOW
+        STB     SAVA
+        LDB     #$01
+        STB     XTIDE_SEC_CNT
+        LDX     #$2000
+BOOTOS_1:
+        PSHS    X
+        JSR     IDE_READ_SECTOR
+        PULS    X
+        LDY     #$0000
+!
+        LDA     HSTBUF,Y
+        INY
+        STA     ,X+
+        CMPY    #$0200
+        BNE     <
+        LDB     #$E0                              ; E0=MST  F0=SLV
+        STB     XTIDE_DEVICE
+        LDB     #$00
+        STB     XTIDE_LBAHI
+        STB     XTIDE_LBAMID
+        STB     XTIDE_LBALOW
+        INC     SAVA
+        LDB     SAVA
+        STB     XTIDE_LBALOW
+        CMPB    #$22
+        BNE     BOOTOS_1
+        JMP     $2000
+
+;* Drivers
+        INCLUDE cubix_ide.asm
 ;* CONSTANTS
 PCRG
         FCC     ',PCR'
@@ -1098,6 +1188,8 @@ HTEXT:
         FCN     'G [<addr>]|Go (execute program)'
         FCN     'L|Load an image into RAM from uart2'
         FCN     'MM <addr>,<addr> <addr>|Move memory'
+        FCN     'OS|Boot OS from XT-IDE'
+        FCN     'OW|Write OS to XT-IDE'
         FCN     'RR <addr>|Repeating READ access'
         FCN     'RW <addr> <data>|Repeating WRITE access'
         FCN     'W <addr> <data>|Write to memory'

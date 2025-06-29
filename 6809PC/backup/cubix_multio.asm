@@ -4,8 +4,8 @@
 ;
 ;	Entry points:
 ;		MULTIOINIT  - JSR ed during OS init
-;		RDKB	    - read a character from the ps/2 keyboard ('A' POINTS TO BYTE)
-;		SETKB	    -
+;		KBD_GETKEY  - read a character from the ps/2 keyboard ('A' POINTS TO BYTE)
+;		LPT_OUT	    - send a character to the printer
 ;________________________________________________________________________________________________________________________________
 ;
 ;*
@@ -16,6 +16,12 @@ MULTIO_BASE     EQU CUBIX_IO_BASE+$3E0
 KBD_DAT         EQU MULTIO_BASE+$1E               ;
 KBD_ST          EQU MULTIO_BASE+$1F               ;
 KBD_CMD         EQU MULTIO_BASE+$1F               ;
+
+LPT_0           EQU MULTIO_BASE+$10               ;
+LPT_1           EQU MULTIO_BASE+$11               ;
+LPT_2           EQU MULTIO_BASE+$12               ;
+
+
 
 ;__________________________________________________________________________________________________
 ;
@@ -37,9 +43,10 @@ KBD_CAPSLCK     EQU $40                           ; BIT 6, SCROLL LOCK ACTIVE (T
 KBD_NUMPAD      EQU $80                           ; BIT 7, NUM PAD KEY (KEY PRESSED IS ON NUM PAD)
 ;
 KBD_DEFRPT      EQU $40                           ; DEFAULT REPEAT RATE (.5 SEC DELAY, 30CPS)
-KBD_DEFSTATE    EQU KBD_NUMLCK|KBD_CAPSLCK|KBD_SCRLCK                  ; DEFAULT STATE (NUM LOCK ON)
+KBD_DEFSTATE    EQU KBD_NUMLCK|KBD_CAPSLCK|KBD_SCRLCK; DEFAULT STATE (NUM LOCK ON)
 
 KBD_WAITTO      EQU $30FF                         ; DEFAULT TIMEOUT
+LPT_WAITTO      EQU $30FF                         ; DEFAULT TIMEOUT
 ;
 ;__________________________________________________________________________________________________
 ; DATA
@@ -63,6 +70,31 @@ KBD_IDLE
         FCB     0                                 ; IDLE COUNT
 KBD_TEMP
         FCB     0,0                               ; WORKING STORAGE
+
+;
+;  IBM PC STANDARD PARALLEL PORT (SPP):
+;
+;  PORT 0 (OUTPUT):
+;
+;	D7	D6	D5	D4	D3	D2	D1	D0
+;     +-------+-------+-------+-------+-------+-------+-------+-------+
+;     | PD7   | PD6   | PD5   | PD4   | PD3   | PD2   | PD1   | PD0   |
+;     +-------+-------+-------+-------+-------+-------+-------+-------+
+;
+;  PORT 1 (INPUT):
+;
+;	D7	D6	D5	D4	D3	D2	D1	D0
+;     +-------+-------+-------+-------+-------+-------+-------+-------+
+;     | /BUSY | /ACK  | POUT  | SEL   | /ERR  | 0     | 0     | 0     |
+;     +-------+-------+-------+-------+-------+-------+-------+-------+
+;
+;  PORT 2 (OUTPUT):
+;
+;	D7	D6	D5	D4	D3	D2	D1	D0
+;     +-------+-------+-------+-------+-------+-------+-------+-------+
+;     | STAT1 | STAT0 | ENBL  | PINT  | SEL   | RES   | LF    | STB   |
+;     +-------+-------+-------+-------+-------+-------+-------+-------+
+;
 ;
 ;__________________________________________________________________________________________________
 ; MULTI IO INITIALIZATION
@@ -77,13 +109,28 @@ MULTIOINIT:
 ; KEYBOARD INITIALIZATION
         LDX     #MESSAGE2
         JSR     WRSTR                             ; DO PROMPT
-        LDD     #KBD_DAT                          ; GET BASE PORT
+        LDD     #MULTIO_BASE                      ; GET BASE PORT
         JSR     WRHEXW                            ; PRINT BASE PORT
         JSR     LFCR                              ; AND CRLF
 ;
         JSR     KBD_PROBE                         ; DETECT A KEYBOARD, ABORT IF NOT FOUND
         BCS     >
+; LPT INITIALIZATION ROUTINE
+        LDX     #MIOMESSAGE5
+        JSR     WRSTR                             ; DO PROMPT
+        JSR     LFCR                              ; AND CRLF
+
+        LDA     #$00
+        STA     LPT_0                             ; PORT 0 (DATA)
+        LDA     #%00001000                        ; SELECT AND ASSERT RESET, LEDS OFF
+        STA     LPT_2                             ; PORT 2 (STATUS)
+        JSR     LDELAY                            ; HALF SECOND DELAY
+        LDA     #%00001100                        ; SELECT AND DEASSERT RESET, LEDS OFF
+        STA     LPT_2                             ; PORT 2 (STATUS)
+        CLC                                       ; SIGNAL SUCCESS
+        RTS                                       ; RETURN
 !
+        SEC
         RTS                                       ; DONE
 
 
@@ -99,6 +146,7 @@ KBD_PROBE:
         JSR     WRSTR
         JSR     LFCR                              ; AND CRLF
 ;
+KBD_ERROR:
         SEC                                       ; SET ERROR
         RTS                                       ; BAIL OUT
 ;
@@ -110,11 +158,13 @@ KBD_PROBE:
 ;
         LDA     #$60                              ; SET COMMAND REGISTER
         JSR     KBD_PUTCMD                        ; SEND IT
-;	LDA    #$60			          ; XLAT ENABLED, MOUSE DISABLED, NO INTS
+        BCS     KBD_ERROR
         LDA     #$20                              ; XLAT DISABLED, MOUSE DISABLED, NO INTS
         JSR     KBD_PUTDATA                       ; SEND IT
+        BCS     KBD_ERROR
 
         JSR     KBD_GETDATA                       ; GOBBLE UP $AA FROM POWER UP, AS NEEDED
+        BCS     KBD_ERROR
 
         JSR     KBD_RESET                         ; RESET THE KEYBOARD
         JSR     KBD_SETLEDS                       ; UPDATE LEDS BASED ON CURRENT TOGGLE STATE BITS
@@ -216,7 +266,7 @@ KBD_RESET:
         LDA     #$FF                              ; RESET COMMAND
         JSR     KBD_PUTDATA                       ; SEND IT
         JSR     KBD_GETDATA                       ; GET THE ACK
-        LDX     #$F100                             ; SETUP LOOP COUNTER
+        LDX     #$F100                            ; SETUP LOOP COUNTER
 KBD_RESET0:
         PSHS    X                                 ; PRESERVE COUNTER
         JSR     KBD_GETDATA                       ; TRY TO GET THE RESPONSE
@@ -224,7 +274,6 @@ KBD_RESET0:
         BNE     KBD_RESET1                        ; GOT A BYTE?  IF SO, GET OUT OF LOOP
         DEX
         BNE     KBD_RESET0                        ; LOOP TILL COUNTER EXHAUSTED
-
         SEC                                       ; SIGNAL FAILURE
         RTS                                       ; DONE
 KBD_RESET1:
@@ -521,14 +570,14 @@ KBD_DEC5D:
 KBD_DEC6:                                         ; HANDLE MODIFIER KEYS
         LDA     KBD_KEYCODE                       ; MAKE SURE WE HAVE KEYCODE
         CMPA    #$B8                              ; END OF MODIFIER KEYS
-        BHI     KBD_DEC7                          ; BYPASS MODIFIER KEY CHECKING
+        BGE     KBD_DEC7                          ; BYPASS MODIFIER KEY CHECKING
         CMPA    #$B0                              ; START OF MODIFIER KEYS
-        BLS     KBD_DEC7                          ; BYPASS MODIFIER KEY CHECKING
+        BLO     KBD_DEC7                          ; BYPASS MODIFIER KEY CHECKING
 
         LDX     #4                                ; LOOP COUNTER TO LOOP THRU 4 MODIFIER BITS
-        LDB     #$80                              ; SETUP B TO ROATE THROUGH MODIFIER STATE BITS
-        SEC
-        SBCA    #$B0                              ; SETUP A TO DECREMENT THROUGH MODIFIER VALUES
+        SUBA    #$AF                              ; SETUP A TO DECREMENT THROUGH MODIFIER VALUES
+        LDB     #$00                              ; SETUP B TO ROATE THROUGH MODIFIER STATE BITS
+        SEC                                       ; SET CARRY FOR ROTATE
 
 KBD_DEC6A:
         ROLB                                      ; SHIFT TO NEXT MODIFIER STATE BIT
@@ -604,14 +653,14 @@ KBD_DEC9:                                         ; ADJUST KEYCODE FOR CONTROL M
         BEQ     KBD_DEC10                         ; CONTROL KEY NOT PRESSED, MOVE ON
         LDA     KBD_KEYCODE                       ; GET CURRENT KEYCODE IN A
         CMPA    #'a'                              ; COMPARE TO LOWERCASE A
-        BLT     KBD_DEC9A                         ; BELOW IT, BYPASS
-        CMPA    #$7B                              ; COMPARE TO LOWERCASE Z+1
+        BLO     KBD_DEC9A                         ; BELOW IT, BYPASS
+        CMPA    #'z'                              ; COMPARE TO LOWERCASE Z+1
         BHI     KBD_DEC9A                         ; ABOVE IT, BYPASS
         ANDA    #$DF                              ; KEYCODE IN LOWERCASE A-Z RANGE CLEAR BIT 5 TO MAKE IT UPPERCASE
 KBD_DEC9A:
         CMPA    #'@'                              ; COMPARE TO @
-        BLT     KBD_DEC10                         ; BELOW IT, BYPASS
-        CMPA    #$5F                              ; COMPARE TO _+1
+        BLO     KBD_DEC10                         ; BELOW IT, BYPASS
+        CMPA    #'_'                              ; COMPARE TO _+1
         BHI     KBD_DEC10                         ; ABOVE IT, BYPASS
         ANDA    #$BF                              ; CONVERT TO CONTROL VALUE BY CLEARING BIT 6
         STA     KBD_KEYCODE                       ; UPDATE KEYCODE TO CONTROL VALUE
@@ -622,14 +671,14 @@ KBD_DEC10:                                        ; ADJUST KEYCODE FOR CAPS LOCK
         BEQ     KBD_DEC11                         ; CAPS LOCK NOT ACTIVE, MOVE ON
         LDA     KBD_KEYCODE                       ; GET THE CURRENT KEYCODE VALUE
         CMPA    #'a'                              ; COMPARE TO LOWERCASE A
-        BLT     KBD_DEC10A                        ; BELOW IT, BYPASS
-        CMPA    #$7b                              ; COMPARE TO LOWERCASE Z+1
+        BLO     KBD_DEC10A                        ; BELOW IT, BYPASS
+        CMPA    #'z'                              ; COMPARE TO LOWERCASE Z+1
         BHI     KBD_DEC10A                        ; ABOVE IT, BYPASS
         JMP     KBD_DEC10B                        ; IN RANGE LOWERCASE A-Z, GO TO CASE SWAPPING LOGIC
 KBD_DEC10A:
         CMPA    #'A'                              ; COMPARE TO UPPERCASE A
-        BLT     KBD_DEC11                         ; BELOW IT, BYPASS
-        CMPA    #$91                              ; COMPARE TO UPPERCASE Z+1
+        BLO     KBD_DEC11                         ; BELOW IT, BYPASS
+        CMPA    #'Z'                              ; COMPARE TO UPPERCASE Z+1
         BHI     KBD_DEC11                         ; ABOVE IT, BYPASS
         JMP     KBD_DEC10B                        ; IN RANGE UPPERCASE A-Z, GO TO CASE SWAPPING LOGIC
 KBD_DEC10B:
@@ -651,7 +700,7 @@ KBD_DEC11:                                        ; HANDLE NUM PAD KEYS
         ORA     #KBD_NUMPAD                       ; TURN ON THE NUMPAD BIT
         STA     KBD_STATE                         ; SAVE IT
 
-        ANDA    KBD_NUMLCK                        ; IS NUM LOCK BIT SET?
+        ANDA    #KBD_NUMLCK                       ; IS NUM LOCK BIT SET?
         BEQ     KBD_DEC11A                        ; NO, SKIP NUMLOCK PROCESSING
         LDA     KBD_KEYCODE                       ; GET THE KEYCODE
         EORA    #$10                              ; FLIP VALUES FOR NUMLOCK
@@ -659,7 +708,7 @@ KBD_DEC11:                                        ; HANDLE NUM PAD KEYS
 
 KBD_DEC11A:                                       ; APPLY NUMPAD MAPPING
         LDB     KBD_KEYCODE                       ; GET THE CURRENT KEYCODE
-        SBCB    #$C0                              ; KEYCODES START AT $C0
+        SUBB    #$C0                              ; KEYCODES START AT $C0
         LDA     #$00
         STD     KBD_TEMP
         LDD     #KBD_MAPNUMPAD                    ; LOAD THE START OF THE MAPPING TABLE
@@ -723,6 +772,10 @@ MIOMESSAGE3:
 MIOMESSAGE4:
         FCC     "  KBD: INITIALIZED."
         FCB     00
+MIOMESSAGE5:
+        FCC     "  LPT: INITIALIZED."
+        FCB     00
+
 ;
 ; MAPPING
 ;__________________________________________________________________________________________________
@@ -761,8 +814,8 @@ KBD_MAPEXT:                                       ; PAIRS ARE [SCANCODE,KEYCODE]
         FCB     $7D,$F4,$7E,$FD,$00,$00
 ;
 KBD_MAPNUMPAD:                                    ; KEYCODE TRANSLATION FROM NUMPAD RANGE TO STD ASCII/KEYCODES
-        FCB     $F3,$F7,$F5,$F8,$FF,$F9,$F2,$F6,$F4,$F0,$F1,$2F,$2A,$2D,$2B,$0D  ; END, DOWN, PGDN, LEFT, NULL, RIGHT, HOME, UP , PGUP, INS, DEL, '/', '*', '-', '+', CR
-        FCB     $31,$32,$33,$34,$35,$36,$37,$38,$39,$30,$2E,$2F,$2A,$2D,$2B,$0D  ; '1','2','3','4','5','6','7','8','9','0','.','/','*', '-', '+', CR
+        FCB     $F3,$F7,$F5,$F8,$FF,$F9,$F2,$F6,$F4,$F0,$F1,$2F,$2A,$2D,$2B,$0D
+        FCB     $31,$32,$33,$34,$35,$36,$37,$38,$39,$30,$2E,$2F,$2A,$2D,$2B,$0D
 ;
 ;
 ;__________________________________________________________________________________________________
@@ -801,3 +854,36 @@ KBD_MAPNUMPAD:                                    ; KEYCODE TRANSLATION FROM NUM
 ; SLEEP		$FB
 ; WAKE		$FC
 ; BREAK		$FD
+;___________________________________________________________________________________________________________________
+;
+; CENTRONICS (LPT) INTERFACE DRIVER
+;___________________________________________________________________________________________________________________
+;
+; BYTE OUTPUT
+;
+LPT_OUT:
+        LDX     #LPT_WAITTO
+!
+        JSR     LPT_OST                           ; READY TO SEND?
+        BNE     >                                 ; GO IF READY
+        DEX
+        BNE     <                                 ; LOOP IF NOT READY
+        SEC                                       ; SIGNAL ERROR
+        RTS
+!
+        STA     LPT_0                             ; OUTPUT TO PORT 0 (DATA)
+        LDA     #%00001101                        ; SELECT & STROBE, LEDS OFF
+        STA     LPT_2                             ; OUTPUT DATA TO PORT
+        JSR     DELAY
+        LDA     #%00001100                        ; SELECT, LEDS OFF
+        STA     LPT_2                             ; OUTPUT DATA TO PORT
+        JSR     DELAY
+        CLC
+        RTS
+;
+; OUTPUT STATUS
+;
+LPT_OST:
+        LDB     LPT_2                             ; GET STATUS INFO
+        ANDB    #%10000000                        ; ISOLATE /BUSY
+        RTS                                       ; DONE

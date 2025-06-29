@@ -1,0 +1,550 @@
+                      (         help.asm):00001         ;***************************************************************************
+                      (         help.asm):00002         ;*                           CUBIX HELP UTILITY.                           ;*
+                      (         help.asm):00003         ;*-------------------------------------------------------------------------;*
+                      (         help.asm):00004         ;* ACCESSES HELP INFORMATION FROM A HELP LIBRARY, IN THE DIRECTORY [HELP]. ;*
+                      (         help.asm):00005         ;* DEFAULT HELP LIBRARY IS THE FILE [HELP]SYSTEM.HLP. OTHER HELP LIBRARYS  ;*
+                      (         help.asm):00006         ;* CAN BE SPECIFIED USING THE OPERATOR '/'. EG: 'HELP /LIBRARY <OPERANDS>' ;*
+                      (         help.asm):00007         ;* WOULD USE THE FILE [HELP]LIBRARY.HLP AS THE HELP LIBRARY.               ;*
+                      (         help.asm):00008         ;*-------------------------------------------------------------------------;*
+                      (         help.asm):00009         ;* LIBRARY FILE FORMAT IS AS FOLLOWS:                                      ;*
+                      (         help.asm):00010         ;*                                                                         ;*
+                      (         help.asm):00011         ;* ANY TEXT IN THE FILE UP TO THE START OF SUBCLASS CHARACTER '{' IS DISP- ;*
+                      (         help.asm):00012         ;* DISPLAYED FOR HELP WITHOUT OPERANDS (THE BASE NEST LEVEL). THE NAMES OF ;*
+                      (         help.asm):00013         ;* ANY SUBCLASS'S ARE DISPLAYED UNDER 'Additional information available:'  ;*
+                      (         help.asm):00014         ;* A SUBCLASS OF HELP IS A SECTION OF TEXT, ENCLOSED BEWEEN THE CHARACTERS ;*
+                      (         help.asm):00015         ;* '{' AND '}'. THE SUBCLASS NAME IS A SINGLE (UNBROKEN)  WORD  IMMEDIATLY ;*
+                      (         help.asm):00016         ;* FOLLOWING THE '{', AND IS THE NAME  DISPLAYED  UNDER  ADDITIONAL  INFO. ;*
+                      (         help.asm):00017         ;* THE SUBCLASS NAME, AND THE REMAINDER OF THE LINE IT IS ON IS THE  TITLE ;*
+                      (         help.asm):00018         ;* OF THE SUBCLASS, AND IS DISPLAYED WHENEVER IT OR ONE OF IT'S SUBCLASSES ;*
+                      (         help.asm):00019         ;* IS ACCESSED. SUBCLASSES MAY BE CONTAINED WITHIN SUBCLASSES, PROVIDING A ;*
+                      (         help.asm):00020         ;* COMPLETE TREE STRUCTURE FOR HELP INFORMATION.  HELP  FOR  A  PARTICULAR ;*
+                      (         help.asm):00021         ;* SUBCLASS IS OBTAINED BY ADDING THE SUBCLASS NAME TO THE  PARAMETERS  TO ;*
+                      (         help.asm):00022         ;* HELP COMMAND. EG: 'HELP /LIBRARY SUBCLASS1 SUBCLASS1.1 ETC...'          ;*
+                      (         help.asm):00023         ;*-------------------------------------------------------------------------;*
+                      (         help.asm):00024         ;*                       SAMPLE HELP FILE:                                 ;*
+                      (         help.asm):00025         ;* This text is displayed whenever a help command is issued with no  other ;*
+                      (         help.asm):00026         ;* operands (except the library if specified). It  should  contain  simple ;*
+                      (         help.asm):00027         ;* instructions on using HELP etc.                                         ;*
+                      (         help.asm):00028         ;* {SUB1 (First subclass of main help)                                     ;*
+                      (         help.asm):00029         ;*  This information is displayed for 'HELP SUB1'}                         ;*
+                      (         help.asm):00030         ;* {SUB2 (Second subclass of help)                                         ;*
+                      (         help.asm):00031         ;*  This information is displayed for 'HELP SUB2'                          ;*
+                      (         help.asm):00032         ;* {SUB2.1 (First subclass of SUB2)                                        ;*
+                      (         help.asm):00033         ;*  This information is displayed for 'HELP SUB2 SUB2.1'}}                 ;*
+                      (         help.asm):00034         ;* {SUB3 (Third subclass of help)                                          ;*
+                      (         help.asm):00035         ;*  This information is displayed for 'HELP SUB3'.                         ;*
+                      (         help.asm):00036         ;* {SUB3.1 (First subclass of SUB3)                                        ;*
+                      (         help.asm):00037         ;*  This information is displayed for 'HELP SUB3 SUB3.1'                   ;*
+                      (         help.asm):00038         ;* {SUB3.1.1 (First subclass of SUB3.1)                                    ;*
+                      (         help.asm):00039         ;*  This information is displayed for 'HELP SUB3 SUB3.1 SUB3.1.1'.}        ;*
+                      (         help.asm):00040         ;* {SUB3.1.2 (Second subclass of SUB3.1)                                   ;*
+                      (         help.asm):00041         ;*  This information is displayed for 'HELP SUB3 SUB3.1 SUB3.1.2'.}}       ;*
+                      (         help.asm):00042         ;* {SUB3.2 (Second subclass of SUB3)                                       ;*
+                      (         help.asm):00043         ;*  This information is displayed for 'HELP SUB3 SUB3.2'}}                 ;*
+                      (         help.asm):00044         ;***************************************************************************
+                      (         help.asm):00045         ;*                         SAMPLE USAGE:                                   ;*
+                      (         help.asm):00046         ;*  ;*HELP SUB3 SUB3.1          <-- ;*NOTE: DEFAULT LIBRARY [HELP]SYSTEM.HLP ;*
+                      (         help.asm):00047         ;*  SUB3 (Third subclass of help)                                          ;*
+                      (         help.asm):00048         ;*  SUB3.1 (First subclass of SUB3)                                        ;*
+                      (         help.asm):00049         ;*                                                                         ;*
+                      (         help.asm):00050         ;*   This information is displayed for 'HELP SUB3 SUB3.1'                  ;*
+                      (         help.asm):00051         ;*                                                                         ;*
+                      (         help.asm):00052         ;*   Additional information available:                                     ;*
+                      (         help.asm):00053         ;*                                                                         ;*
+                      (         help.asm):00054         ;*   SUB3.1.1           SUB3.1.2                                           ;*
+                      (         help.asm):00055         ;*   ;*                                                                     ;*
+                      (         help.asm):00056         ;*-------------------------------------------------------------------------;*
+                      (         help.asm):00057         ;*                                             D. F. DUNFIELD, JAN 14/1984 ;*
+                      (         help.asm):00058         ;***************************************************************************
+                      (         help.asm):00059         ;*
+     2000             (         help.asm):00060         OSRAM           = $2000                           ;APPLICATION RAM AREA
+     DBFF             (         help.asm):00061         OSEND           = $DBFF                           ;END OF GENERAL RAM
+     D000             (         help.asm):00062         OSUTIL          = $D000                           ;UTILITY ADDRESS SPACE
+     007B             (         help.asm):00063         BTXT            = '{'                             ;BEGINNING OF TEXT CHARACTER
+     007D             (         help.asm):00064         ETXT            = '}'                             ;END OF TEXT CHARACTER
+                      (         help.asm):00065         ;*
+                      (         help.asm):00066                 ORG     0
+0000                  (         help.asm):00067         DPREFIX
+0000                  (         help.asm):00068                 RMB     8
+0008                  (         help.asm):00069         DNAME
+0008                  (         help.asm):00070                 RMB     8
+0010                  (         help.asm):00071         DTYPE
+0010                  (         help.asm):00072                 RMB     3
+0013                  (         help.asm):00073         DDADR
+0013                  (         help.asm):00074                 RMB     2
+0015                  (         help.asm):00075         DRADR
+0015                  (         help.asm):00076                 RMB     2
+0017                  (         help.asm):00077         DATTR
+0017                  (         help.asm):00078                 RMB     1
+                      (         help.asm):00079         ;*
+                      (         help.asm):00080                 ORG     OSUTIL                            ;DOS UTILITY SPACE
+D000                  (         help.asm):00081         HELP
+D000 813F             (         help.asm):00082                 CMPA    #'?'                              ;EXPLAIN R=EST?
+D002 2634             (         help.asm):00083                 BNE     MAIN                              ;NO, TRY MAIN PGM
+D004 3F               (         help.asm):00084                 SWI
+D005 19               (         help.asm):00085                 FCB     25                                ;MESSAGE
+D006 5573653A2048454C (         help.asm):00086                 FCN     'Use: HELP[/<library>] [<topic>] [<subtopic>] ...'
+     505B2F3C6C696272
+     6172793E5D205B3C
+     746F7069633E5D20
+     5B3C737562746F70
+     69633E5D202E2E2E
+     00
+D037 39               (         help.asm):00087                 RTS
+D038                  (         help.asm):00088         MAIN
+D038 10FFD2E5         (         help.asm):00089                 STS     SAVSP                             ;SAVE OUR STACK POINTER
+D03C 10CED5CF         (         help.asm):00090                 LDS     #INPBUF+$7F     SET UP STACK
+D040 3420             (         help.asm):00091                 PSHS    Y                                 ;SAVE COMMAND POINTER
+D042 108ED2D9         (         help.asm):00092                 LDY     #DEFNAM                           ;PT TO DEFAULT
+D046 3F               (         help.asm):00093                 SWI
+D047 0C               (         help.asm):00094                 FCB     12                                ;READ IT IN
+D048 A61F             (         help.asm):00095                 LDA     -1,X                              ;GET SYSTEM DRIVE
+D04A 8ED2D0           (         help.asm):00096                 LDX     #DEFDIR                           ;PT TO IT
+D04D A784             (         help.asm):00097                 STA     ,X                                ;SET DEFAULT TO SYSTEM DRIVE
+D04F 108ED2D9         (         help.asm):00098                 LDY     #DEFNAM                           ;PT TO NAME AGAIN
+D053 3F               (         help.asm):00099                 SWI
+D054 0D               (         help.asm):00100                 FCB     13                                ;GET NAME (WITH PROPER DIR DEFAULT)
+D055 3520             (         help.asm):00101                 PULS    Y                                 ;RESTORE Y
+D057 3F               (         help.asm):00102                 SWI
+D058 04               (         help.asm):00103                 FCB     4                                 ;ADVANCE TO NEXT
+D059 812F             (         help.asm):00104                 CMPA    #'/'                              ;HELP LIBRARY?
+D05B 260B             (         help.asm):00105                 BNE     NOUFIL                            ;NOT A USER SUPPLIED FILE
+D05D 3121             (         help.asm):00106                 LEAY    1,Y                               ;SKIP '/'
+D05F 8ED2D0           (         help.asm):00107                 LDX     #DEFDIR                           ;POINT TO DEFAULT FILENAME
+D062 3F               (         help.asm):00108                 SWI
+D063 0D               (         help.asm):00109                 FCB     13
+D064 1026003D         (         help.asm):00110                 LBNE    ABORT                             ;INVALID, QUIT
+D068                  (         help.asm):00111         NOUFIL
+D068 CC484C           (         help.asm):00112                 LDD     #$484c                            ;'HL'
+D06B ED84             (         help.asm):00113                 STD     ,X
+D06D 8650             (         help.asm):00114                 LDA     #'P'
+D06F A702             (         help.asm):00115                 STA     2,X
+D071                  (         help.asm):00116         HELP1
+D071 CCD300           (         help.asm):00117                 LDD     #OPLIN                            ;POINT TO OPERAND LINE
+D074 FDD2E8           (         help.asm):00118                 STD     OPPOS                             ;SAVE OPERAND POSITION
+D077 7FD2E4           (         help.asm):00119                 CLR     IDENT                             ;DO NOT INDENT
+D07A 7FD2E7           (         help.asm):00120                 CLR     ERRFLG                            ;CLEAR ERROR FLAG
+D07D 3F               (         help.asm):00121                 SWI
+D07E 46               (         help.asm):00122                 FCB     70                                ;LOOKUP FOR READ
+D07F 2624             (         help.asm):00123                 BNE     ABORT                             ;IF NOT THERE, GET UPSET
+D081 EC8813           (         help.asm):00124                 LDD     DDADR,X                           ;GET SECTOR
+D084 FDD2E0           (         help.asm):00125                 STD     >WRKSEC
+D087 8ED350           (         help.asm):00126                 LDX     #WRKSPC                           ;PT TO IT
+D08A BFD2E2           (         help.asm):00127                 STX     >WRKOFF
+D08D 3F               (         help.asm):00128                 SWI
+D08E 5C               (         help.asm):00129                 FCB     92                                ;READ WORK
+D08F 3F               (         help.asm):00130                 SWI
+D090 04               (         help.asm):00131                 FCB     4                                 ;CHECK FOR PARAMETERS
+D091 10260104         (         help.asm):00132                 LBNE    OPRND                             ;OPERAND WAS PRESENT
+                      (         help.asm):00133         ;* GENERAL HELP
+D095                  (         help.asm):00134         GENHLP
+D095 1701BB           (         help.asm):00135                 LBSR    RDCHR                             ;GET CHARACTER FROM SOURCE
+D098 102601FB         (         help.asm):00136                 LBNE    CLOSE                             ;IF ERROR, CLOSE
+D09C 817B             (         help.asm):00137                 CMPA    #BTXT                             ;END OF TEXT?
+D09E 270B             (         help.asm):00138                 BEQ     SUBSUM                            ;SUMMARIZE SUB CLASSES
+D0A0 170196           (         help.asm):00139                 LBSR    OUTCHR                            ;OUTPUT CHARACTER
+D0A3 20F0             (         help.asm):00140                 BRA     GENHLP                            ;KEEP GOING
+                      (         help.asm):00141         ;* ABORT TO DOS
+D0A5                  (         help.asm):00142         ABORT
+D0A5 10FED2E5         (         help.asm):00143                 LDS     SAVSP                             ;RETURN TO DOS
+D0A9 4D               (         help.asm):00144                 TSTA                                      ;     SET RETURN CODE
+D0AA 39               (         help.asm):00145                 RTS
+D0AB                  (         help.asm):00146         SUBSUM
+D0AB 3F               (         help.asm):00147                 SWI
+D0AC 16               (         help.asm):00148                 FCB     22                                ;NEW LINE
+D0AD 3F               (         help.asm):00149                 SWI
+D0AE 19               (         help.asm):00150                 FCB     25                                ;DISPLAY MESSAGE
+D0AF 4164646974696F6E (         help.asm):00151                 FCN     'Additional information available:'
+     616C20696E666F72
+     6D6174696F6E2061
+     7661696C61626C65
+     3A00
+D0D1                  (         help.asm):00152         SUBNEW
+D0D1 8604             (         help.asm):00153                 LDA     #4                                ;FOUR NAMES/LINE
+D0D3 B7D2EA           (         help.asm):00154                 STA     NUMOUT                            ;NUMBER OF NAMES OUTPUT
+D0D6 3F               (         help.asm):00155                 SWI
+D0D7 16               (         help.asm):00156                 FCB     22                                ;NEW LINE
+D0D8                  (         help.asm):00157         DSPNXT
+D0D8 C613             (         help.asm):00158                 LDB     #19                               ;MAX NINTEEN CHARACTERS
+D0DA                  (         help.asm):00159         OUTSUB
+D0DA 170176           (         help.asm):00160                 LBSR    RDCHR                             ;GET CHARACTER FROM SOURCE
+D0DD 260E             (         help.asm):00161                 BNE     ENSUB                             ;END OF SUB
+D0DF 8120             (         help.asm):00162                 CMPA    #' '                              ;TEST FOR TERMINATOR
+D0E1 270A             (         help.asm):00163                 BEQ     ENSUB                             ;END OF SUB
+D0E3 810D             (         help.asm):00164                 CMPA    #$0D                              ;TEST FOR TERMINATOR
+D0E5 2706             (         help.asm):00165                 BEQ     ENSUB                             ;END OF SUB
+D0E7 5A               (         help.asm):00166                 DECB                                      ;     REDUCE COUNT
+D0E8 17014E           (         help.asm):00167                 LBSR    OUTCHR                            ;OUTPUT
+D0EB 20ED             (         help.asm):00168                 BRA     OUTSUB                            ;KEEP GOING
+D0ED                  (         help.asm):00169         ENSUB
+D0ED 3F               (         help.asm):00170                 SWI
+D0EE 15               (         help.asm):00171                 FCB     21                                ;SPACE
+D0EF 5A               (         help.asm):00172                 DECB                                      ;     REDUCE COUNT
+D0F0 26FB             (         help.asm):00173                 BNE     ENSUB                             ;KEEP GOING
+D0F2 170188           (         help.asm):00174                 LBSR    SKPEND                            ;SKIP TO END OF THIS ONE
+D0F5 17014B           (         help.asm):00175                 LBSR    FNDSEC                            ;FIND ANOTHER SECTOR
+D0F8 2607             (         help.asm):00176                 BNE     ASKHLP                            ;GO HOME AND QUIT
+D0FA 7AD2EA           (         help.asm):00177                 DEC     NUMOUT                            ;REDUCE NUMBER OUTPUT
+D0FD 26D9             (         help.asm):00178                 BNE     DSPNXT                            ;DISPLAY NEXT NAME
+D0FF 20D0             (         help.asm):00179                 BRA     SUBNEW                            ;START A NEW LINE
+                      (         help.asm):00180         ;* PROMPT FOR EXTRA INFO
+D101                  (         help.asm):00181         ASKHLP
+D101 3F               (         help.asm):00182                 SWI
+D102 16               (         help.asm):00183                 FCB     22                                ;NEW LINE
+D103                  (         help.asm):00184         NXTCMD
+D103 8ED300           (         help.asm):00185                 LDX     #OPLIN                            ;POINT TO START OF LINE
+D106 3F               (         help.asm):00186                 SWI
+D107 16               (         help.asm):00187                 FCB     22                                ;NEW LINE
+D108 108ED550         (         help.asm):00188                 LDY     #INPBUF                           ;POINT TO INPUT BUFFER
+D10C                  (         help.asm):00189         WRTPI
+D10C BCD2E8           (         help.asm):00190                 CMPX    OPPOS                             ;ARE WE AT END
+D10F 2408             (         help.asm):00191                 BHS     PRMPT                             ;PROMPT FOR INPUT
+D111 A680             (         help.asm):00192                 LDA     ,X+                               ;GET CHARACTER
+D113 A7A0             (         help.asm):00193                 STA     ,Y+                               ;SAVE Y POINTER
+D115 3F               (         help.asm):00194                 SWI
+D116 21               (         help.asm):00195                 FCB     33                                ;OUTPUT
+D117 20F3             (         help.asm):00196                 BRA     WRTPI                             ;KEEP GOING
+D119                  (         help.asm):00197         PRMPT
+D119 8CD300           (         help.asm):00198                 CMPX    #OPLIN                            ;ARE WE AT BEGINNING
+D11C 2706             (         help.asm):00199                 BEQ     PRMP1                             ;IF SO, SKIP PREFIX
+D11E 3F               (         help.asm):00200                 SWI
+D11F 18               (         help.asm):00201                 FCB     24                                ;OUTPUT MESSAGE
+D120 53756200         (         help.asm):00202                 FCN     'Sub'                             ;PREFIX
+D124                  (         help.asm):00203         PRMP1
+D124 3F               (         help.asm):00204                 SWI
+D125 18               (         help.asm):00205                 FCB     24                                ;OUTPUT MESSAGE
+D126 546F7069633F2000 (         help.asm):00206                 FCN     'Topic? '                         ;MESSAGE
+D12E 10BFD2EA         (         help.asm):00207                 STY     NUMOUT                            ;SAVE POINTER TO INPUT BUFFER
+D132 1F21             (         help.asm):00208                 TFR     Y,X                               ;MOVE TO INPUT BUFFER
+D134                  (         help.asm):00209         INPT
+D134 BCD2EA           (         help.asm):00210                 CMPX    NUMOUT                            ;ARE WE BELOW OPERAND?
+D137 25CA             (         help.asm):00211                 BLO     NXTCMD                            ;IF SO, ISSUE AGAIN
+D139 3F               (         help.asm):00212                 SWI
+D13A 22               (         help.asm):00213                 FCB     34                                ;GET KEY
+D13B 817F             (         help.asm):00214                 CMPA    #$7F                              ;DELETE
+D13D 2602             (         help.asm):00215                 BNE     NOTDEL                            ;NOT A DELETE
+D13F 8608             (         help.asm):00216                 LDA     #8                                ;CONVERT TO BS
+D141                  (         help.asm):00217         NOTDEL
+D141 3F               (         help.asm):00218                 SWI
+D142 21               (         help.asm):00219                 FCB     33                                ;OUTPUT
+D143 8103             (         help.asm):00220                 CMPA    #3                                ;CTRL-C?
+D145 1027017F         (         help.asm):00221                 LBEQ    NOERR1                            ;IF SO, EXIT
+D149 8161             (         help.asm):00222                 CMPA    #$61                              ;ARE WE UPPER CASE?
+D14B 2502             (         help.asm):00223                 BLO     UCASE                             ;IF SO, IT'S OK
+D14D 845F             (         help.asm):00224                 ANDA    #$5F                              ;CONVERT TO UPPER
+D14F                  (         help.asm):00225         UCASE
+D14F 301F             (         help.asm):00226                 LEAX    -1,X                              ;BACKUP
+D151 8108             (         help.asm):00227                 CMPA    #8                                ;IS IT DELETE?
+D153 27DF             (         help.asm):00228                 BEQ     INPT                              ;IF SO, TRY AGAIN
+D155 3001             (         help.asm):00229                 LEAX    1,X                               ;FIX MISTAKE
+D157 A780             (         help.asm):00230                 STA     ,X+                               ;AND SAVE CHARACTER
+D159 810D             (         help.asm):00231                 CMPA    #$0D                              ;END OF LINE?
+D15B 26D7             (         help.asm):00232                 BNE     INPT                              ;GET ANOTHER CHARACTER
+D15D 3F               (         help.asm):00233                 SWI
+D15E 04               (         help.asm):00234                 FCB     4                                 ;TEST FOR NULL LINE
+D15F 2719             (         help.asm):00235                 BEQ     BACKUP                            ;IF SO, BACKUP
+D161 ECA4             (         help.asm):00236                 LDD     ,Y                                ;GET CONTENTS OF LINE
+D163 10833F0D         (         help.asm):00237                 CMPD    #$3F0D                            ;IS IT QUERY?
+D167 2602             (         help.asm):00238                 BNE     NOQUE                             ;NO, SKIP
+D169 E7A4             (         help.asm):00239                 STB     ,Y                                ;CHANGE TO NULL LINE
+D16B                  (         help.asm):00240         NOQUE
+D16B 108ED550         (         help.asm):00241                 LDY     #INPBUF                           ;POINT TO LINE
+D16F 3F               (         help.asm):00242                 SWI
+D170 16               (         help.asm):00243                 FCB     22                                ;NEW LINE
+D171 10FED2E5         (         help.asm):00244                 LDS     SAVSP                             ;RESTORE STACK
+D175 16FEF9           (         help.asm):00245                 LBRA    HELP1                             ;TRY AGAIN
+D178                  (         help.asm):00246         BCKSKP
+D178 3F               (         help.asm):00247                 SWI
+D179 16               (         help.asm):00248                 FCB     22                                ;NEW LINE
+D17A                  (         help.asm):00249         BACKUP
+D17A BED2E8           (         help.asm):00250                 LDX     OPPOS                             ;GET OPERAND POSITION
+D17D 8CD300           (         help.asm):00251                 CMPX    #OPLIN                            ;ARE WE AT BEGINNING?
+D180 10230144         (         help.asm):00252                 LBLS    NOERR1                            ;IF SO, STOP NOW
+D184 301F             (         help.asm):00253                 LEAX    -1,X                              ;BACKUP PAST SPACE
+D186                  (         help.asm):00254         BACK1
+D186 8CD300           (         help.asm):00255                 CMPX    #OPLIN                            ;ARE WE AT START OF LINE
+D189 2708             (         help.asm):00256                 BEQ     GONXT                             ;IF SO, QUIT
+D18B A682             (         help.asm):00257                 LDA     ,-X                               ;BACKUP
+D18D 8120             (         help.asm):00258                 CMPA    #' '                              ;IS IT SPACE?
+D18F 26F5             (         help.asm):00259                 BNE     BACK1                             ;NO, TRY AGAIN
+D191 3001             (         help.asm):00260                 LEAX    1,X                               ;SKIP AHEAD SPACE
+D193                  (         help.asm):00261         GONXT
+D193 BFD2E8           (         help.asm):00262                 STX     OPPOS                             ;RESAVE POSITION
+D196 16FF6A           (         help.asm):00263                 LBRA    NXTCMD                            ;TRY AGAIN
+                      (         help.asm):00264         ;*
+                      (         help.asm):00265         ;* OPERAND WAS SUPPLIED
+                      (         help.asm):00266         ;*
+D199                  (         help.asm):00267         OPRND
+D199 7AD2E7           (         help.asm):00268                 DEC     ERRFLG                            ;SET ERROR FINDING FLAG
+D19C 1700A4           (         help.asm):00269                 LBSR    FNDSEC                            ;FIND A SECTION
+D19F 102600F4         (         help.asm):00270                 LBNE    CLOSE                             ;IF NO MORE, STOP
+D1A3 FCD2E0           (         help.asm):00271                 LDD     >WRKSEC
+D1A6 BED2E2           (         help.asm):00272                 LDX     >WRKOFF
+D1A9 3416             (         help.asm):00273                 PSHS    A,B,X                             ;SAVE REGISTERS
+D1AB 1F21             (         help.asm):00274                 TFR     Y,X                               ;COPY TO X
+D1AD CED2EC           (         help.asm):00275                 LDU     #SNGLOP                           ;POINT TO SINGLE OPERAND
+D1B0                  (         help.asm):00276         CHKPRM
+D1B0 A684             (         help.asm):00277                 LDA     ,X                                ;GET CHARACTER
+D1B2 8120             (         help.asm):00278                 CMPA    #' '                              ;SPACE?
+D1B4 2714             (         help.asm):00279                 BEQ     ENDCMP                            ;END OF COMPARE, SUCESS
+D1B6 810D             (         help.asm):00280                 CMPA    #$0D                              ;CARRIAGE RETURN
+D1B8 2710             (         help.asm):00281                 BEQ     ENDCMP                            ;END OF COMPARE, SUCESS
+D1BA 170096           (         help.asm):00282                 LBSR    RDCHR                             ;READ A CHARACTER
+D1BD A7C0             (         help.asm):00283                 STA     ,U+                               ;SAVE IN SINGLE OPERAND
+D1BF A180             (         help.asm):00284                 CMPA    ,X+                               ;IS IT SAME?
+D1C1 27ED             (         help.asm):00285                 BEQ     CHKPRM                            ;IF SO, ALL SET
+D1C3 1700B7           (         help.asm):00286                 LBSR    SKPEND                            ;SKIP TO END
+D1C6 3516             (         help.asm):00287                 PULS    A,B,X                             ;Clean stack
+D1C8 20CF             (         help.asm):00288                 BRA     OPRND                             ;TRY AGAIN
+D1CA                  (         help.asm):00289         ENDCMP
+D1CA 170086           (         help.asm):00290                 LBSR    RDCHR                             ;GET CHARACTER FROM FILE
+D1CD A7C0             (         help.asm):00291                 STA     ,U+                               ;SAVE IN BUFFER
+D1CF 8120             (         help.asm):00292                 CMPA    #' '                              ;IS IT SPACE?
+D1D1 2704             (         help.asm):00293                 BEQ     ENDC1                             ;IF SO, QUIT
+D1D3 810D             (         help.asm):00294                 CMPA    #$0D                              ;IS IT CARRIAGE RETURN
+D1D5 26F3             (         help.asm):00295                 BNE     ENDCMP                            ;IF NOT, KEEP COPYING
+D1D7                  (         help.asm):00296         ENDC1
+D1D7 8620             (         help.asm):00297                 LDA     #' '                              ;GET SPACE
+D1D9 A75F             (         help.asm):00298                 STA     -1,U                              ;RESET END INDICATOR
+D1DB 1F12             (         help.asm):00299                 TFR     X,Y                               ;COPY TO Y
+D1DD BED2E8           (         help.asm):00300                 LDX     OPPOS                             ;POINT TO OPERAND LINE
+D1E0 CED2EC           (         help.asm):00301                 LDU     #SNGLOP                           ;POINT TO OPERAND
+D1E3                  (         help.asm):00302         DMPOP
+D1E3 A6C0             (         help.asm):00303                 LDA     ,U+                               ;GET CHARACTER FROM LINE
+D1E5 A780             (         help.asm):00304                 STA     ,X+                               ;SAVE IN LINE
+D1E7 8120             (         help.asm):00305                 CMPA    #' '                              ;IS IT END OF OPERAND
+D1E9 26F8             (         help.asm):00306                 BNE     DMPOP                             ;IF SO, LET HIM KNOW
+D1EB BFD2E8           (         help.asm):00307                 STX     OPPOS                             ;SAVE OPERAND POSITION
+D1EE 3516             (         help.asm):00308                 PULS    A,B,X                             ;RESTORE REGISTERS
+D1F0 FDD2E0           (         help.asm):00309                 STD     >WRKSEC
+D1F3 BFD2E2           (         help.asm):00310                 STX     >WRKOFF
+D1F6 8ED350           (         help.asm):00311                 LDX     #WRKSPC                           ;PT TO WORK AREA
+D1F9 3F               (         help.asm):00312                 SWI
+D1FA 5C               (         help.asm):00313                 FCB     92                                ;READ WORK SECTOR
+D1FB 3F               (         help.asm):00314                 SWI
+D1FC 16               (         help.asm):00315                 FCB     22                                ;NEW LINE
+D1FD 7CD2E4           (         help.asm):00316                 INC     >IDENT                            ;ADVANCE INDENT POSITION
+D200 B6D2E4           (         help.asm):00317                 LDA     >IDENT                            ;GET INDENT
+D203                  (         help.asm):00318         IND1
+D203 4A               (         help.asm):00319                 DECA                                      ;     REDUCE INDENT COUNT
+D204 2706             (         help.asm):00320                 BEQ     OUTLIN                            ;IF ZERO, THEN ALL SET
+D206 3F               (         help.asm):00321                 SWI
+D207 15               (         help.asm):00322                 FCB     21                                ;INDENT ONE SPACE
+D208 3F               (         help.asm):00323                 SWI
+D209 15               (         help.asm):00324                 FCB     21                                ;INDENT ONE SPACE
+D20A 20F7             (         help.asm):00325                 BRA     IND1                              ;CHECK FOR NEXT INDENT
+D20C                  (         help.asm):00326         OUTLIN
+D20C 170044           (         help.asm):00327                 LBSR    RDCHR                             ;GET LINE
+D20F 10260084         (         help.asm):00328                 LBNE    CLOSE                             ;IF ERROR, CLOSE
+D213 170023           (         help.asm):00329                 LBSR    OUTCHR                            ;DISPLAY
+D216 810D             (         help.asm):00330                 CMPA    #$0D                              ;TEST FOR CARRIAGE RETURN
+D218 26F2             (         help.asm):00331                 BNE     OUTLIN                            ;KEEP DISPLAYING
+D21A 7FD2E7           (         help.asm):00332                 CLR     ERRFLG                            ;CLEAR ERROR FLAG AS WE FOUND
+D21D 3F               (         help.asm):00333                 SWI
+D21E 04               (         help.asm):00334                 FCB     4                                 ;CHECK FOR MORE PARAMETERS
+D21F 1026FF76         (         help.asm):00335                 LBNE    OPRND                             ;IF MORE, TEST THEM
+D223                  (         help.asm):00336         EOCLIN
+D223 3F               (         help.asm):00337                 SWI
+D224 16               (         help.asm):00338                 FCB     22                                ;KEEP GOING, NEW LINE
+D225                  (         help.asm):00339         OUTXT
+D225 17002B           (         help.asm):00340                 LBSR    RDCHR                             ;GET TEXT CHARACTERS
+D228 817D             (         help.asm):00341                 CMPA    #ETXT                             ;END OF TEXT
+D22A 1027FF4A         (         help.asm):00342                 LBEQ    BCKSKP                            ;IF END, CLOSE
+D22E 817B             (         help.asm):00343                 CMPA    #BTXT                             ;START OF TEXT
+D230 1027FE77         (         help.asm):00344                 LBEQ    SUBSUM                            ;SUMMARY OF SUB CLASSES
+D234 170002           (         help.asm):00345                 LBSR    OUTCHR                            ;OUTPUT
+D237 20EC             (         help.asm):00346                 BRA     OUTXT                             ;KEEP GOING
+                      (         help.asm):00347         ;*
+                      (         help.asm):00348         ;* SUBROUTINE TO DISPLAY CHARACTER IN ACCA
+                      (         help.asm):00349         ;*
+D239                  (         help.asm):00350         OUTCHR
+D239 810D             (         help.asm):00351                 CMPA    #$0D                              ;CARRIAGE RETURN?
+D23B 2703             (         help.asm):00352                 BEQ     LFCR                              ;IF SO, USE LFCR PAIR
+D23D 3F               (         help.asm):00353                 SWI
+D23E 21               (         help.asm):00354                 FCB     33                                ;DISPLAY
+D23F 39               (         help.asm):00355                 RTS
+D240                  (         help.asm):00356         LFCR
+D240 3F               (         help.asm):00357                 SWI
+D241 16               (         help.asm):00358                 FCB     22                                ;NEW LINE
+D242 39               (         help.asm):00359                 RTS
+                      (         help.asm):00360         ;*
+                      (         help.asm):00361         ;* SUBROUTINE ADVANCES TO START OF NEXT SECTION
+                      (         help.asm):00362         ;*
+D243                  (         help.asm):00363         FNDSEC
+D243 8D0E             (         help.asm):00364                 BSR     RDCHR                             ;ADVANCE IN SOURCE
+D245 2609             (         help.asm):00365                 BNE     FNC1                              ;IF END, CLOSE FILE AND QUIT
+D247 817D             (         help.asm):00366                 CMPA    #ETXT                             ;END OF TEXT?
+D249 2705             (         help.asm):00367                 BEQ     FNC1                              ;NO MORE DATA
+D24B 817B             (         help.asm):00368                 CMPA    #BTXT                             ;START OF TEXT
+D24D 26F4             (         help.asm):00369                 BNE     FNDSEC                            ;IF NOT, KEEP LOOKING
+D24F                  (         help.asm):00370         FNCL
+D24F 39               (         help.asm):00371                 RTS
+D250                  (         help.asm):00372         FNC1
+D250 86FF             (         help.asm):00373                 LDA     #$FF                              ;CLEAR Z FLAG
+D252 39               (         help.asm):00374                 RTS
+                      (         help.asm):00375         ;*
+                      (         help.asm):00376         ;* READ A CHAR FROM INPUT FILE
+                      (         help.asm):00377         ;*
+D253                  (         help.asm):00378         RDCHR
+D253 3414             (         help.asm):00379                 PSHS    B,X                               ;SAVE REG
+D255 BED2E2           (         help.asm):00380                 LDX     >WRKOFF                           ;GET OFFSET
+D258 8CD550           (         help.asm):00381                 CMPX    #WRKSPC+512     PAST END?
+D25B 250F             (         help.asm):00382                 BLO     RDCH1                             ;ITS OK
+D25D FCD2E0           (         help.asm):00383                 LDD     >WRKSEC                           ;GET SECTOR
+D260 3F               (         help.asm):00384                 SWI
+D261 4D               (         help.asm):00385                 FCB     77                                ;LOOKUP LINK
+D262 2715             (         help.asm):00386                 BEQ     RDCEOF                            ;END
+D264 FDD2E0           (         help.asm):00387                 STD     >WRKSEC                           ;SAVE
+D267 8ED350           (         help.asm):00388                 LDX     #WRKSPC
+D26A 3F               (         help.asm):00389                 SWI
+D26B 5C               (         help.asm):00390                 FCB     92                                ;READ WRK SECT
+D26C                  (         help.asm):00391         RDCH1
+D26C A680             (         help.asm):00392                 LDA     ,X+                               ;GET CHAR
+D26E BFD2E2           (         help.asm):00393                 STX     >WRKOFF                           ;RESAVE
+D271 81FF             (         help.asm):00394                 CMPA    #$FF
+D273 2704             (         help.asm):00395                 BEQ     RDCEOF
+D275 1A04             (         help.asm):00396                 ORCC    #4                                ;SET 'Z'
+D277 3594             (         help.asm):00397                 PULS    B,X,PC
+D279                  (         help.asm):00398         RDCEOF
+D279 86FF             (         help.asm):00399                 LDA     #$FF                              ;END OF FILE
+D27B 3594             (         help.asm):00400                 PULS    B,X,PC
+                      (         help.asm):00401         ;*
+                      (         help.asm):00402         ;* SUBROUTINE TO SKIP TO THE END OF CURRENT SECTION
+                      (         help.asm):00403         ;*
+D27D                  (         help.asm):00404         SKPEND
+D27D 8601             (         help.asm):00405                 LDA     #1                                ;GET A ONE
+D27F B7D2EB           (         help.asm):00406                 STA     TLVL                              ;SET TEMPORARY LEVEL COUNTER
+D282                  (         help.asm):00407         CHKLVL
+D282 8DCF             (         help.asm):00408                 BSR     RDCHR                             ;GET CHARACTER FROM FILE
+D284 2611             (         help.asm):00409                 BNE     CLOSE                             ;CLOSE FILE END EXIT
+D286 817B             (         help.asm):00410                 CMPA    #BTXT                             ;BEGINNING OF TEXT CHARCTER?
+D288 2603             (         help.asm):00411                 BNE     NOBTXT                            ;NOT BEGINNING
+D28A 7CD2EB           (         help.asm):00412                 INC     TLVL                              ;ADVANCE TEMPORARY LEVEL
+D28D                  (         help.asm):00413         NOBTXT
+D28D 817D             (         help.asm):00414                 CMPA    #ETXT                             ;END OF TXT?
+D28F 26F1             (         help.asm):00415                 BNE     CHKLVL                            ;NO, GET NEXT
+D291 7AD2EB           (         help.asm):00416                 DEC     TLVL                              ;REDUCE COUNT
+D294 26EC             (         help.asm):00417                 BNE     CHKLVL                            ;NO, TRY AGAIN
+D296 39               (         help.asm):00418                 RTS                                       ;     RETURN TO CALLER
+                      (         help.asm):00419         ;*
+                      (         help.asm):00420         ;* CLOSE FILE AND EXIT
+                      (         help.asm):00421         ;*
+D297                  (         help.asm):00422         CLOSE
+D297 7DD2E7           (         help.asm):00423                 TST     ERRFLG                            ;CHECK FOR ERROR FLAG
+D29A 272C             (         help.asm):00424                 BEQ     NOERR1                            ;NO ERROR
+D29C 3F               (         help.asm):00425                 SWI
+D29D 18               (         help.asm):00426                 FCB     24                                ;DISPLAY MESSAGE
+D29E 4E6F2068656C7020 (         help.asm):00427                 FCN     'No help available for requested topic.'
+     617661696C61626C
+     6520666F72207265
+     7175657374656420
+     746F7069632E00
+D2C5 16FE3B           (         help.asm):00428                 LBRA    NXTCMD                            ;GET NEXT COMMAND
+D2C8                  (         help.asm):00429         NOERR1
+D2C8 3F               (         help.asm):00430                 SWI
+D2C9 16               (         help.asm):00431                 FCB     22                                ;MOVE TO A NEW LINE
+D2CA 10FED2E5         (         help.asm):00432                 LDS     SAVSP                             ;RESTORE STACK
+D2CE 4F               (         help.asm):00433                 CLRA                                      ;     SET ZERO RC
+D2CF 39               (         help.asm):00434                 RTS
+D2D0                  (         help.asm):00435         DEFDIR
+D2D0 0048454C50000000 (         help.asm):00436                 FCB     0,'H','E','L','P',0,0,0,0
+     00
+D2D9                  (         help.asm):00437         DEFNAM
+D2D9 53595354454D00   (         help.asm):00438                 FCN     'SYSTEM'
+                      (         help.asm):00439         ;*
+D2E0                  (         help.asm):00440         WRKSEC
+D2E0                  (         help.asm):00441                 RMB     2                                 ;SECTOR
+D2E2                  (         help.asm):00442         WRKOFF
+D2E2                  (         help.asm):00443                 RMB     2
+D2E4                  (         help.asm):00444         IDENT
+D2E4                  (         help.asm):00445                 RMB     1                                 ;START WITH IN INDENT OF ZERO
+D2E5                  (         help.asm):00446         SAVSP
+D2E5                  (         help.asm):00447                 RMB     2                                 ;TWO BYTES
+D2E7                  (         help.asm):00448         ERRFLG
+D2E7                  (         help.asm):00449                 RMB     1
+D2E8                  (         help.asm):00450         OPPOS
+D2E8                  (         help.asm):00451                 RMB     2                                 ;POINT TO OPERAND POSITION
+D2EA                  (         help.asm):00452         NUMOUT
+D2EA                  (         help.asm):00453                 RMB     1                                 ;NUMBER OF SUB.S OUTPUT
+D2EB                  (         help.asm):00454         TLVL
+D2EB                  (         help.asm):00455                 RMB     1                                 ;LEVEL POINTER
+D2EC                  (         help.asm):00456         SNGLOP
+D2EC                  (         help.asm):00457                 RMB     20                                ;BUFFER FOR OPERAND STORAGE
+D300                  (         help.asm):00458         OPLIN
+D300                  (         help.asm):00459                 RMB     80                                ;OPERAND BUFFER
+D350                  (         help.asm):00460         WRKSPC
+D350                  (         help.asm):00461                 RMB     512                               ;FILE SECTOR READ BUFFER
+     D550             (         help.asm):00462         INPBUF          = *
+
+Symbol Table:
+[ G] ABORT                            D0A5
+[ G] ASKHLP                           D101
+[ G] BACK1                            D186
+[ G] BACKUP                           D17A
+[ G] BCKSKP                           D178
+[ G] BTXT                             007B
+[ G] CHKLVL                           D282
+[ G] CHKPRM                           D1B0
+[ G] CLOSE                            D297
+[ G] DATTR                            0017
+[ G] DDADR                            0013
+[ G] DEFDIR                           D2D0
+[ G] DEFNAM                           D2D9
+[ G] DMPOP                            D1E3
+[ G] DNAME                            0008
+[ G] DPREFIX                          0000
+[ G] DRADR                            0015
+[ G] DSPNXT                           D0D8
+[ G] DTYPE                            0010
+[ G] ENDC1                            D1D7
+[ G] ENDCMP                           D1CA
+[ G] ENSUB                            D0ED
+[ G] EOCLIN                           D223
+[ G] ERRFLG                           D2E7
+[ G] ETXT                             007D
+[ G] FNC1                             D250
+[ G] FNCL                             D24F
+[ G] FNDSEC                           D243
+[ G] GENHLP                           D095
+[ G] GONXT                            D193
+[ G] HELP                             D000
+[ G] HELP1                            D071
+[ G] IDENT                            D2E4
+[ G] IND1                             D203
+[ G] INPBUF                           D550
+[ G] INPT                             D134
+[ G] LFCR                             D240
+[ G] MAIN                             D038
+[ G] NOBTXT                           D28D
+[ G] NOERR1                           D2C8
+[ G] NOQUE                            D16B
+[ G] NOTDEL                           D141
+[ G] NOUFIL                           D068
+[ G] NUMOUT                           D2EA
+[ G] NXTCMD                           D103
+[ G] OPLIN                            D300
+[ G] OPPOS                            D2E8
+[ G] OPRND                            D199
+[ G] OSEND                            DBFF
+[ G] OSRAM                            2000
+[ G] OSUTIL                           D000
+[ G] OUTCHR                           D239
+[ G] OUTLIN                           D20C
+[ G] OUTSUB                           D0DA
+[ G] OUTXT                            D225
+[ G] PRMP1                            D124
+[ G] PRMPT                            D119
+[ G] RDCEOF                           D279
+[ G] RDCH1                            D26C
+[ G] RDCHR                            D253
+[ G] SAVSP                            D2E5
+[ G] SKPEND                           D27D
+[ G] SNGLOP                           D2EC
+[ G] SUBNEW                           D0D1
+[ G] SUBSUM                           D0AB
+[ G] TLVL                             D2EB
+[ G] UCASE                            D14F
+[ G] WRKOFF                           D2E2
+[ G] WRKSEC                           D2E0
+[ G] WRKSPC                           D350
+[ G] WRTPI                            D10C

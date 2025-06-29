@@ -8,11 +8,16 @@
 ; ENTRY: BREAKPOINT # IN [B]
 
 DOBUG:
-        LDX     #SCREEN+64                        ; BEGINNING OF LINE
         LDA     #'B'                              ; "BUG:"
-        STA     ,X+
+        PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     33                                ;DISPLAY
+        PULS    A,B,X,Y,U,CC
         LDA     #'P'
-        STA     ,X+
+        PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     33                                ;DISPLAY
+        PULS    A,B,X,Y,U,CC
         JSR     COLON
 
         STB     ,X+                               ; SHOW BREAKPOINT ID
@@ -46,14 +51,30 @@ POPE:
         LDA     #'E'
 
 POPC:
-        STA     ,X+                               ; PRINT OP-TYPE
+            PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     33                                ;DISPLAY
+        PULS    A,B,X,Y,U,CC
+
 
         LDA     #'-'                              ; "-OP:"
-        STA     ,X+
+           PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     33                                ;DISPLAY
+        PULS    A,B,X,Y,U,CC
+                       ;DISPLAY
         LDA     #'O'
-        STA     ,X+
+               PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     33                                ;DISPLAY
+        PULS    A,B,X,Y,U,CC
+
         LDA     #'P'
-        STA     ,X+
+               PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     33                                ;DISPLAY
+        PULS    A,B,X,Y,U,CC
+
         BSR     COLON
 
         LDA     OPCODE                            ; SHOW OPCODE
@@ -61,9 +82,17 @@ POPC:
         BSR     BUGSP
 
         LDA     #'P'                              ; "PC:"
-        STA     ,X+
+              PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     33                                ;DISPLAY
+        PULS    A,B,X,Y,U,CC
+
         LDA     #'C'
-        STA     ,X+
+               PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     33                                ;DISPLAY
+        PULS    A,B,X,Y,U,CC
+
         BSR     COLON
 
         TST     ZPCH                              ; IF ZPCH <> 0
@@ -74,7 +103,11 @@ POPC:
 DOBZ:
         LDA     #'0'
 TOPPC:
-        STA     ,X+
+              PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     33                                ;DISPLAY
+        PULS    A,B,X,Y,U,CC
+
 
         LDA     ZPCM                              ; PRINT ZPCM & L
         BSR     INHEX
@@ -82,15 +115,6 @@ TOPPC:
         BSR     INHEX
         BSR     BUGSP
 
-; INVERT THE DEBUG LINE
-
-        LDX     #SCREEN+96
-BUGL2:
-        LDA     ,-X
-        ANDA    #%10111111                        ; CLEAR BIT 6
-        STA     ,X
-        CMPX    #SCREEN+64
-        BHI     BUGL2
         RTS
 
 ; -------------
@@ -132,5 +156,9 @@ IH1:
         ADDA    #$30
 
 POOP:
-        STA     ,X+
+              PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     33                                ;DISPLAY
+        PULS    A,B,X,Y,U,CC
+
         RTS

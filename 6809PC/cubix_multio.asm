@@ -43,7 +43,8 @@ KBD_CAPSLCK     EQU $40                           ; BIT 6, SCROLL LOCK ACTIVE (T
 KBD_NUMPAD      EQU $80                           ; BIT 7, NUM PAD KEY (KEY PRESSED IS ON NUM PAD)
 ;
 KBD_DEFRPT      EQU $40                           ; DEFAULT REPEAT RATE (.5 SEC DELAY, 30CPS)
-KBD_DEFSTATE    EQU KBD_NUMLCK|KBD_CAPSLCK|KBD_SCRLCK ; DEFAULT STATE (NUM LOCK ON)
+KBD_DEFSTATE    EQU KBD_NUMLCK|KBD_CAPSLCK|KBD_SCRLCK
+                                                  ; DEFAULT STATE (NUM LOCK ON)
 
 KBD_WAITTO      EQU $30FF                         ; DEFAULT TIMEOUT
 LPT_WAITTO      EQU $30FF                         ; DEFAULT TIMEOUT
@@ -121,14 +122,14 @@ MULTIOINIT:
         JSR     LFCR                              ; AND CRLF
 
         LDA     #$00
-        STA     LPT_0   		; PORT 0 (DATA)
-	LDA     #%00001000		; SELECT AND ASSERT RESET, LEDS OFF
-        STA     LPT_2   		; PORT 2 (STATUS)
-	JSR	LDELAY			; HALF SECOND DELAY
-	LDA	#%00001100		; SELECT AND DEASSERT RESET, LEDS OFF
-	STA     LPT_2   		; PORT 2 (STATUS)
-	CLC				; SIGNAL SUCCESS
-	RTS				; RETURN
+        STA     LPT_0                             ; PORT 0 (DATA)
+        LDA     #%00001000                        ; SELECT AND ASSERT RESET, LEDS OFF
+        STA     LPT_2                             ; PORT 2 (STATUS)
+        JSR     LDELAY                            ; HALF SECOND DELAY
+        LDA     #%00001100                        ; SELECT AND DEASSERT RESET, LEDS OFF
+        STA     LPT_2                             ; PORT 2 (STATUS)
+        CLC                                       ; SIGNAL SUCCESS
+        RTS                                       ; RETURN
 !
         SEC
         RTS                                       ; DONE
@@ -146,6 +147,7 @@ KBD_PROBE:
         JSR     WRSTR
         JSR     LFCR                              ; AND CRLF
 ;
+KBD_ERROR:
         SEC                                       ; SET ERROR
         RTS                                       ; BAIL OUT
 ;
@@ -157,10 +159,13 @@ KBD_PROBE:
 ;
         LDA     #$60                              ; SET COMMAND REGISTER
         JSR     KBD_PUTCMD                        ; SEND IT
+        BCS     KBD_ERROR
         LDA     #$20                              ; XLAT DISABLED, MOUSE DISABLED, NO INTS
         JSR     KBD_PUTDATA                       ; SEND IT
+        BCS     KBD_ERROR
 
         JSR     KBD_GETDATA                       ; GOBBLE UP $AA FROM POWER UP, AS NEEDED
+        BCS     KBD_ERROR
 
         JSR     KBD_RESET                         ; RESET THE KEYBOARD
         JSR     KBD_SETLEDS                       ; UPDATE LEDS BASED ON CURRENT TOGGLE STATE BITS
@@ -270,7 +275,6 @@ KBD_RESET0:
         BNE     KBD_RESET1                        ; GOT A BYTE?  IF SO, GET OUT OF LOOP
         DEX
         BNE     KBD_RESET0                        ; LOOP TILL COUNTER EXHAUSTED
-
         SEC                                       ; SIGNAL FAILURE
         RTS                                       ; DONE
 KBD_RESET1:
@@ -861,26 +865,26 @@ KBD_MAPNUMPAD:                                    ; KEYCODE TRANSLATION FROM NUM
 LPT_OUT:
         LDX     #LPT_WAITTO
 !
-	JSR	LPT_OST			; READY TO SEND?
-	BNE	>        		; GO IF READY
+        JSR     LPT_OST                           ; READY TO SEND?
+        BNE     >                                 ; GO IF READY
         DEX
-        BNE     <                       ; LOOP IF NOT READY
-        SEC                             ; SIGNAL ERROR
+        BNE     <                                 ; LOOP IF NOT READY
+        SEC                                       ; SIGNAL ERROR
         RTS
 !
-        STA	LPT_0   		; OUTPUT TO PORT 0 (DATA)
-	LDA	#%00001101		; SELECT & STROBE, LEDS OFF
-	STA     LPT_2			; OUTPUT DATA TO PORT
-	JSR	DELAY
-	LDA	#%00001100		; SELECT, LEDS OFF
-	STA     LPT_2			; OUTPUT DATA TO PORT
-	JSR	DELAY
+        STA     LPT_0                             ; OUTPUT TO PORT 0 (DATA)
+        LDA     #%00001101                        ; SELECT & STROBE, LEDS OFF
+        STA     LPT_2                             ; OUTPUT DATA TO PORT
+        JSR     DELAY
+        LDA     #%00001100                        ; SELECT, LEDS OFF
+        STA     LPT_2                             ; OUTPUT DATA TO PORT
+        JSR     DELAY
         CLC
-	RTS
+        RTS
 ;
 ; OUTPUT STATUS
 ;
 LPT_OST:
-	LDB	LPT_2           	; GET STATUS INFO
-	ANDB	#%10000000		; ISOLATE /BUSY
-	RTS				; DONE
+        LDB     LPT_2                             ; GET STATUS INFO
+        ANDB    #%10000000                        ; ISOLATE /BUSY
+        RTS                                       ; DONE

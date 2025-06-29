@@ -45,8 +45,8 @@ HWIN1
         LDB     #02                               ;INIT SERIAL PORT
         JSR     MD_PAGERA
 ;
-;        LDB     #18                               ;INIT Floppy
-;        JSR     MD_PAGERA
+        LDB     #05                               ;INIT ESP IO
+        JSR     MD_PAGERA
 ;
         LDB     #21                               ;INIT IDE
         JSR     MD_PAGERA
@@ -81,6 +81,21 @@ WRSER:
 
 RDSER:
         LDB     #01                               ;READ SERIAL PORT
+        JSR     MD_PAGERA
+        CMPA    #$FF
+        BEQ     >
+        ORCC    #%00000100                        ; SET 'Z'
+        RTS
+!
+        LDA     #$FF                              ; CLEAR 'Z'
+        RTS
+
+WRESPVID:
+        LDB     #03                               ;WRITE ESP VIDEO
+        JMP     MD_PAGERA
+
+RDESPPS2:
+        LDB     #04                               ;READ ESP PS2
         JSR     MD_PAGERA
         CMPA    #$FF
         BEQ     >
@@ -248,8 +263,8 @@ RITAB           EQU *
         FCB     1                                 ;CONSOLE INPUT DEVICE
         FCB     1                                 ;CONSOLE OUTPUT DEVICE
 ;* SERIAL DEVICE DRIVERS
-        FDB     RDNULL,RDSER,RDKYB,0,0,0,0,0
-        FDB     WRNULL,WRSER,WRLPT,0,0,0,0,0
+        FDB     RDNULL,RDSER,RDESPPS2,RDKYB,0,0,0,0
+        FDB     WRNULL,WRSER,WRESPVID,WRLPT,0,0,0,0
 ;* DISK DEVICE DRIVERS
         FDB     DHOME,DRDSEC,DWRSEC,DFORMAT
 ;* 6809 HARDWARE VECTORS

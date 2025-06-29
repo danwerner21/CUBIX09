@@ -32,9 +32,6 @@ HWIN1
         DECB                                      ;REDUCE COUNT
         BNE     HWIN1                             ;MOVE ENTIRE TABLE
 
-        LDA     #00
-        STA     CONSOLEDEVICE                     ; set console device for driver output
-
 ;
         JSR     WRMSG
         FCB     $0A
@@ -48,8 +45,8 @@ HWIN1
         LDB     #02                               ;INIT SERIAL PORT
         JSR     MD_PAGERA
 ;
-;        LDB     #18                               ;INIT Floppy
-;        JSR     MD_PAGERA
+        LDB     #05                               ;INIT ESP IO
+        JSR     MD_PAGERA
 ;
         LDB     #21                               ;INIT IDE
         JSR     MD_PAGERA
@@ -91,7 +88,24 @@ RDSER:
         RTS
 !
         LDA     #$FF                              ; CLEAR 'Z'
-        RTS                                       ;
+        RTS
+
+WRLPT:
+        LDB     #53                               ;WRITE LPT PORT
+        JMP     MD_PAGERA                         ;
+
+RDKYB:
+        LDB     #52                               ;READ KEYBOARD
+        JSR     MD_PAGERA
+        CMPA    #$FF
+        BEQ     >
+        ORCC    #%00000100                        ; SET 'Z'
+        RTS
+!
+        LDA     #$FF                              ; CLEAR 'Z'
+        RTS
+
+
 ;
 
 ;* NULL DEVICE DRIVERS
@@ -226,16 +240,16 @@ RESTAB
 ;*
 RITAB           EQU *
 ;* DEFAULT DRIVE CHARACTISTICS
-        FCB     0,255,1,255,0,0,0                 ;ADR 0, 255 CYL, 1 HEAD, 255 SEC/TRK
-        FCB     1,255,1,255,0,0,0                 ;ADR 1, 255 CYL, 1 HEAD, 255 SEC/TRK
-        FCB     2,255,1,255,0,0,0                 ;ADR 2, 255 CYL, 1 HEAD, 255 SEC/TRK
-        FCB     3,255,1,255,0,0,0                 ;ADR 3, 80 CYL, 2 HEAD, 9 SEC/TRK
+        FCB     0,254,1,255,0,0,0                 ;ADR 0, 254 CYL, 1 HEAD, 255 SEC/TRK   - CYL 0 unusable by OS
+        FCB     1,254,1,255,0,0,0                 ;ADR 1, 254 CYL, 1 HEAD, 255 SEC/TRK   - CYL 0 unusable by OS
+        FCB     2,254,1,255,0,0,0                 ;ADR 2, 254 CYL, 1 HEAD, 255 SEC/TRK   - CYL 0 unusable by OS
+        FCB     3,254,1,255,0,0,0                 ;ADR 3, 254 CYL, 1 HEAD, 255 SEC/TRK   - CYL 0 unusable by OS
 ;* CONSOLE DEVICE ASSIGNMENTS
         FCB     1                                 ;CONSOLE INPUT DEVICE
         FCB     1                                 ;CONSOLE OUTPUT DEVICE
 ;* SERIAL DEVICE DRIVERS
-        FDB     RDNULL,RDSER,0,0,0,0,0,0
-        FDB     WRNULL,WRSER,0,0,0,0,0,0
+        FDB     RDNULL,RDSER,RDKYB,0,0,0,0,0
+        FDB     WRNULL,WRSER,WRLPT,0,0,0,0,0
 ;* DISK DEVICE DRIVERS
         FDB     DHOME,DRDSEC,DWRSEC,DFORMAT
 ;* 6809 HARDWARE VECTORS
