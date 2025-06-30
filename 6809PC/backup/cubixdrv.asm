@@ -100,9 +100,22 @@ DISPATCHTABLE:
         .WORD   MULTIOINIT                        ; FUNCTION 51 - INIT MULTI IO CARD
         .WORD   KBD_GETKEY                        ; FUNCTION 52 - KEYBOARD INPUT
         .WORD   LPT_OUT                           ; FUNCTION 53 - LPT OUTPUT
-        .WORD   drv_noop                          ; FUNCTION 54 -
 ;
-
+        .WORD   ESPPS2BUFL                        ; FUNCTION 54 - return number of characters in the keyboard buffer in 'A'
+        .WORD   ESPCURSORV                        ; FUNCTION 55 - Set Cursor Visibility (A=0 cursor off, A=1 cursor on)
+        .WORD   ESPSER0OUT                        ; FUNCTION 56 - OUTPUT A CHARACTER TO Serial 0 ('A' POINTS TO BYTE)
+        .WORD   ESPSER0IN                         ; FUNCTION 57 - read a character from Serial 0 ('A' POINTS TO BYTE)
+        .WORD   ESPSER0BUFL                       ; FUNCTION 58 - return number of characters in the Serial 0 buffer in 'A'
+        .WORD   ESPSER1OUT                        ; FUNCTION 59 - OUTPUT A CHARACTER TO Serial 1 ('A' POINTS TO BYTE)
+        .WORD   ESPSER1IN                         ; FUNCTION 60 - read a character from Serial 1 ('A' POINTS TO BYTE)
+        .WORD   ESPSER1BUFL                       ; FUNCTION 61 - return number of characters in the Serial 1 buffer in 'A'
+        .WORD   ESPNETCOUT                        ; FUNCTION 62 - OUTPUT A CHARACTER TO Network Console Connection ('A' POINTS TO BYTE)
+        .WORD   ESPNETCIN                         ; FUNCTION 63 - read a character from Network Console Connection ('A' POINTS TO BYTE)
+        .WORD   ESPNETCBUFL                       ; FUNCTION 64 - return number of characters in the Network Connection buffer in 'A'
+        .WORD   PUTESP0                           ; FUNCTION 65 - put opcode/data to ESP0
+        .WORD   PUTESP1                           ; FUNCTION 66 - put opcode/data to ESP1
+        .WORD   GETESP0                           ; FUNCTION 67 - get opcode/data from ESP0
+        .WORD   GETESP1                           ; FUNCTION 68 - get opcode/data from ESP1
 
 ;__DRIVERS___________________________________________________________________________________________
 ;
@@ -183,6 +196,9 @@ HOUT
         BRA     PUTCHR                            ;OUTPUT
 PUTCHR:
 ;       NOTE THAT EVENTUALLY THIS NEEDS TO BE THE SYSTEM SSR NOT A DIRECT CALL
+        PSHS    A
+        JSR     ESPVIDEOOUT
+        PULS    A
         JMP     WRSER1
 
         END

@@ -1530,6 +1530,12 @@ SSRTAB
         FDB     DNLDEV                            ;110-DOWNLOAD FROM DEVICE
         FDB     GETDRVTBL                         ;111-GET DRIVE TABLE
         FDB     GETDRVPTBL                        ;112-GET DRIVE PARAMETER TABLE
+        IFDEF   6809PC
+        FDB     WRESPRAW0                         ;113-WRITE ESP0 value
+        FDB     WRESPRAW1                         ;114-WRITE ESP0 value
+        FDB     RDESPRAW0                         ;115-READ ESP0 value
+        FDB     RDESPRAW1                         ;116-READ ESP1 value
+        ENDIF
 NUMSSR          EQU (*-SSRTAB)/2                  ;# SSR'S IMPLEMENTED
 ;*
 ;* HARDWARE DEPENDANT I/O DRIVERS

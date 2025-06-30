@@ -47,7 +47,10 @@ Included applications:
 New SSRs
 * 111 get drive table
 * 112 get drive parameters table
-
+* 113 WRITE ESP0 value
+* 114 WRITE ESP1 value
+* 115 READ ESP0 value
+* 116 READ ESP1 value
 ---
 To Do List for this port:
 * add support for front panel display (Duodyne)

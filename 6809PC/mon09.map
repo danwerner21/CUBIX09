@@ -44,6 +44,7 @@ Symbol: ESP1_DAT (mon09.s) = E101
 Symbol: ESP1_RDY (mon09.s) = 0008
 Symbol: ESP_BASE (mon09.s) = E100
 Symbol: ESP_STAT (mon09.s) = E102
+Symbol: ESPCHIN (mon09.s) = FC94
 Symbol: ESPEXISTS (mon09.s) = BF29
 Symbol: ESPPS2IN (mon09.s) = FC92
 Symbol: ESPVIDEOOUT (mon09.s) = FC85

@@ -3841,15 +3841,21 @@ F98F E08A             (        cubix.asm):01529                 FDB     DMPREG  
 F991 EFA8             (        cubix.asm):01530                 FDB     DNLDEV                            ;110-DOWNLOAD FROM DEVICE
 F993 F6E8             (        cubix.asm):01531                 FDB     GETDRVTBL                         ;111-GET DRIVE TABLE
 F995 F6EC             (        cubix.asm):01532                 FDB     GETDRVPTBL                        ;112-GET DRIVE PARAMETER TABLE
-     0071             (        cubix.asm):01533         NUMSSR          EQU (*-SSRTAB)/2                  ;# SSR'S IMPLEMENTED
-                      (        cubix.asm):01534         ;*
-                      (        cubix.asm):01535         ;* HARDWARE DEPENDANT I/O DRIVERS
-                      (        cubix.asm):01536         ;*
-                      (        cubix.asm):01537                 IFDEF   nhyodyne
-                      (        cubix.asm):01538                 INCLUDE ../nhyodyne/drivers.asm
-                      (        cubix.asm):01539                 ENDIF
-                      (        cubix.asm):01540                 IFDEF   duodyne
-                      (        cubix.asm):01541                 INCLUDE ../duodyne/drivers.asm
+                      (        cubix.asm):01533                 IFDEF   6809PC
+                      (        cubix.asm):01534                 FDB     WRESPRAW0                         ;113-WRITE ESP0 value
+                      (        cubix.asm):01535                 FDB     WRESPRAW1                         ;114-WRITE ESP0 value
+                      (        cubix.asm):01536                 FDB     RDESPRAW0                         ;115-READ ESP0 value
+                      (        cubix.asm):01537                 FDB     RDESPRAW1                         ;116-READ ESP1 value
+                      (        cubix.asm):01538                 ENDIF
+     0071             (        cubix.asm):01539         NUMSSR          EQU (*-SSRTAB)/2                  ;# SSR'S IMPLEMENTED
+                      (        cubix.asm):01540         ;*
+                      (        cubix.asm):01541         ;* HARDWARE DEPENDANT I/O DRIVERS
+                      (        cubix.asm):01542         ;*
+                      (        cubix.asm):01543                 IFDEF   nhyodyne
+                      (        cubix.asm):01544                 INCLUDE ../nhyodyne/drivers.asm
+                      (        cubix.asm):01545                 ENDIF
+                      (        cubix.asm):01546                 IFDEF   duodyne
+                      (        cubix.asm):01547                 INCLUDE ../duodyne/drivers.asm
                       (../duodyne/driver):00001         ;       TITLE   I/O DRIVERS
                       (../duodyne/driver):00002         ;***************************************************************
                       (../duodyne/driver):00003         ;*     I/O drivers for the CUBIX operating system.             *
@@ -4285,24 +4291,24 @@ FF76 2103             (../duodyne/driver):00285                 FCB     $21,$03
                       (../duodyne/driver):00286         ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
      006F             (../duodyne/driver):00287         RISIZ           EQU *-RITAB                       ;SIZE OF INITILAIZED RAM
                       (../duodyne/driver):00288         ;
-                      (        cubix.asm):01542                 ENDIF
-                      (        cubix.asm):01543                 IFDEF   6809PC
-                      (        cubix.asm):01544                 INCLUDE ../6809PC/drivers.asm
-                      (        cubix.asm):01545                 ENDIF
-                      (        cubix.asm):01546         
-                      (        cubix.asm):01547         ;*
-                      (        cubix.asm):01548         ;* INTERRUPT VECTORS
-                      (        cubix.asm):01549         ;*
-                      (        cubix.asm):01550                 IFNDEF  test
-                      (        cubix.asm):01551                 ORG     $FFF2                             ;VECTORS GO HERE
-FFF2 F751             (        cubix.asm):01552                 FDB     SWI3
-FFF4 F74D             (        cubix.asm):01553                 FDB     SWI2
-FFF6 F759             (        cubix.asm):01554                 FDB     FIRQ
-FFF8 F755             (        cubix.asm):01555                 FDB     IRQ
-FFFA F749             (        cubix.asm):01556                 FDB     SWI
-FFFC F75D             (        cubix.asm):01557                 FDB     NMI
-FFFE E108             (        cubix.asm):01558                 FDB     BEGIN                             ;RESET - COLD START OF SYSTEM
-                      (        cubix.asm):01559                 ENDIF
+                      (        cubix.asm):01548                 ENDIF
+                      (        cubix.asm):01549                 IFDEF   6809PC
+                      (        cubix.asm):01550                 INCLUDE ../6809PC/drivers.asm
+                      (        cubix.asm):01551                 ENDIF
+                      (        cubix.asm):01552         
+                      (        cubix.asm):01553         ;*
+                      (        cubix.asm):01554         ;* INTERRUPT VECTORS
+                      (        cubix.asm):01555         ;*
+                      (        cubix.asm):01556                 IFNDEF  test
+                      (        cubix.asm):01557                 ORG     $FFF2                             ;VECTORS GO HERE
+FFF2 F751             (        cubix.asm):01558                 FDB     SWI3
+FFF4 F74D             (        cubix.asm):01559                 FDB     SWI2
+FFF6 F759             (        cubix.asm):01560                 FDB     FIRQ
+FFF8 F755             (        cubix.asm):01561                 FDB     IRQ
+FFFA F749             (        cubix.asm):01562                 FDB     SWI
+FFFC F75D             (        cubix.asm):01563                 FDB     NMI
+FFFE E108             (        cubix.asm):01564                 FDB     BEGIN                             ;RESET - COLD START OF SYSTEM
+                      (        cubix.asm):01565                 ENDIF
 
 Symbol Table:
 [ G] ATRTAB                           F0DF

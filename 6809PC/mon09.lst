@@ -1266,91 +1266,91 @@ F860                  (    cubix_ide.asm):00085         IDE_PRINT_INFO:
                       (    cubix_ide.asm):00093                 LDA     #$01
                       (    cubix_ide.asm):00094                 JSR     IDE_READ_INFO                     ; GET DRIVE INFO, ABORT IF ERROR
 F860                  (    cubix_ide.asm):00095         IDE_INITA:
-                      (    cubix_ide.asm):00096                 JSR     LFCR                              ; AND CRLF
-                      (    cubix_ide.asm):00097                 RTS                                       ; DONE
-                      (    cubix_ide.asm):00098                 ENDIF
-                      (    cubix_ide.asm):00099         ;
-                      (    cubix_ide.asm):00100         ;__XTIDE_PROBE_______________________________________________________________________________________
-                      (    cubix_ide.asm):00101         ;
-                      (    cubix_ide.asm):00102         ;  XTPROBE FOR IDE HARDWARE
-                      (    cubix_ide.asm):00103         ;____________________________________________________________________________________________________
-                      (    cubix_ide.asm):00104         ;
-F860                  (    cubix_ide.asm):00105         XTIDE_PROBE:
-                      (    cubix_ide.asm):00106         ;
-                      (    cubix_ide.asm):00107         ; BELOW TESTS FOR EXISTENCE OF AN IDE CONTROLLER ON THE
-                      (    cubix_ide.asm):00108         ; PPIDE INTERFACE.  WE WRITE A VALUE OF ZERO FIRST SO THAT
-                      (    cubix_ide.asm):00109         ; THE PPI BUS HOLD WILL RETURN A VALUE OF ZERO IF THERE IS
-                      (    cubix_ide.asm):00110         ; NOTHING CONNECTED TO PPI PORT A.  THEN WE READ THE STATUS
-                      (    cubix_ide.asm):00111         ; REGISTER.  IF AN IDE CONTROLLER IS THERE, IT SHOULD ALWAYS
-                      (    cubix_ide.asm):00112         ; RETURN SOMETHING OTHER THAN ZERO.  IF AN IDE CONTROLLER IS
-                      (    cubix_ide.asm):00113         ; THERE, THEN THE VALUE WRITTEN TO PPI PORT A IS IGNORED
-                      (    cubix_ide.asm):00114         ; BECAUSE THE WRITE SIGNAL IS NEVER PULSED.
-                      (    cubix_ide.asm):00115         
-                      (    cubix_ide.asm):00116         ; CHECK SIGNATURE
-                      (    cubix_ide.asm):00117         
-F860 8E0000           (    cubix_ide.asm):00118                 LDX     #$0000
-                      (    cubix_ide.asm):00119         ;       SOMETIMES THE CF-XTIDE WILL ONLY READ 80, THIS CAN BE RESET BY WRITING ZEROS UNTIL VALUES ARE PROPERLY READ
-                      (    cubix_ide.asm):00120         !
-F863 F6E300           (    cubix_ide.asm):00121                 LDB     XTIDE_DATA_LO
-F866 C180             (    cubix_ide.asm):00122                 CMPB    #$80
-F868 262B             (    cubix_ide.asm):00123                 BNE     >
-F86A C600             (    cubix_ide.asm):00124                 LDB     #$00
-F86C F7E300           (    cubix_ide.asm):00125                 STB     XTIDE_DATA_LO
-F86F 12               (    cubix_ide.asm):00126                 NOP
-F870 F7E301           (    cubix_ide.asm):00127                 STB     XTIDE_DATA_HI
-F873 12               (    cubix_ide.asm):00128                 NOP
-F874 F7E306           (    cubix_ide.asm):00129                 STB     XTIDE_LBALOW
-F877 12               (    cubix_ide.asm):00130                 NOP
-F878 F7E308           (    cubix_ide.asm):00131                 STB     XTIDE_LBAMID
-F87B 12               (    cubix_ide.asm):00132                 NOP
-F87C F7E30A           (    cubix_ide.asm):00133                 STB     XTIDE_LBAHI
-F87F 12               (    cubix_ide.asm):00134                 NOP
-F880 F7E30C           (    cubix_ide.asm):00135                 STB     XTIDE_DEVICE
-F883 12               (    cubix_ide.asm):00136                 NOP
-F884 F7E30E           (    cubix_ide.asm):00137                 STB     XTIDE_COMMAND
-F887 12               (    cubix_ide.asm):00138                 NOP
-F888 F7E30E           (    cubix_ide.asm):00139                 STB     XTIDE_STATUS
-F88B 12               (    cubix_ide.asm):00140                 NOP
-F88C 3001             (    cubix_ide.asm):00141                 INX
-F88E 8C0300           (    cubix_ide.asm):00142                 CPX     #$0300
-F891 26D0             (    cubix_ide.asm):00143                 BNE     <
-F893 200A             (    cubix_ide.asm):00144                 BRA     XTIDE_PROBE_FAIL                  ; TIMED OUT
-                      (    cubix_ide.asm):00145         !
-F895 BDF8BF           (    cubix_ide.asm):00146                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
-F898 2505             (    cubix_ide.asm):00147                 BCS     XTIDE_PROBE_FAIL
-F89A 1CFE             (    cubix_ide.asm):00148                 CLC
-F89C 7EF8A1           (    cubix_ide.asm):00149                 JMP     XTIDE_PROBE_SUCCESS
-F89F                  (    cubix_ide.asm):00150         XTIDE_PROBE_FAIL:
-F89F 1A01             (    cubix_ide.asm):00151                 SEC
-F8A1                  (    cubix_ide.asm):00152         XTIDE_PROBE_SUCCESS:
-F8A1 39               (    cubix_ide.asm):00153                 RTS                                       ; DONE, NOTE THAT A=0 AND Z IS SET
-                      (    cubix_ide.asm):00154         
-                      (    cubix_ide.asm):00155                 IFNDEF  BIOS6809PC
-                      (    cubix_ide.asm):00156         ;*__IDE_READ_INFO___________________________________________________________________________________
-                      (    cubix_ide.asm):00157         ;*
-                      (    cubix_ide.asm):00158         ;*  READ IDE INFORMATION
-                      (    cubix_ide.asm):00159         ;*      CARRY SET ON ERROR
-                      (    cubix_ide.asm):00160         ;*      A=MST/SLV
-                      (    cubix_ide.asm):00161         ;*____________________________________________________________________________________________________
-F8A2                  (    cubix_ide.asm):00162         IDE_READ_INFO:
-                      (    cubix_ide.asm):00163         ; SET DRIVE BIT
-                      (    cubix_ide.asm):00164                 ANDA    #$01                              ; ONLY WANT THE 1 BIT (MST/SLV)
-                      (    cubix_ide.asm):00165                 ASLA                                      ; SHIFT 4
+                      (    cubix_ide.asm):00096                 RTS                                       ; DONE
+                      (    cubix_ide.asm):00097                 ENDIF
+                      (    cubix_ide.asm):00098         ;
+                      (    cubix_ide.asm):00099         ;__XTIDE_PROBE_______________________________________________________________________________________
+                      (    cubix_ide.asm):00100         ;
+                      (    cubix_ide.asm):00101         ;  XTPROBE FOR IDE HARDWARE
+                      (    cubix_ide.asm):00102         ;____________________________________________________________________________________________________
+                      (    cubix_ide.asm):00103         ;
+F860                  (    cubix_ide.asm):00104         XTIDE_PROBE:
+                      (    cubix_ide.asm):00105         ;
+                      (    cubix_ide.asm):00106         ; BELOW TESTS FOR EXISTENCE OF AN IDE CONTROLLER ON THE
+                      (    cubix_ide.asm):00107         ; PPIDE INTERFACE.  WE WRITE A VALUE OF ZERO FIRST SO THAT
+                      (    cubix_ide.asm):00108         ; THE PPI BUS HOLD WILL RETURN A VALUE OF ZERO IF THERE IS
+                      (    cubix_ide.asm):00109         ; NOTHING CONNECTED TO PPI PORT A.  THEN WE READ THE STATUS
+                      (    cubix_ide.asm):00110         ; REGISTER.  IF AN IDE CONTROLLER IS THERE, IT SHOULD ALWAYS
+                      (    cubix_ide.asm):00111         ; RETURN SOMETHING OTHER THAN ZERO.  IF AN IDE CONTROLLER IS
+                      (    cubix_ide.asm):00112         ; THERE, THEN THE VALUE WRITTEN TO PPI PORT A IS IGNORED
+                      (    cubix_ide.asm):00113         ; BECAUSE THE WRITE SIGNAL IS NEVER PULSED.
+                      (    cubix_ide.asm):00114         
+                      (    cubix_ide.asm):00115         ; CHECK SIGNATURE
+                      (    cubix_ide.asm):00116         
+F860 8E0000           (    cubix_ide.asm):00117                 LDX     #$0000
+                      (    cubix_ide.asm):00118         ;       SOMETIMES THE CF-XTIDE WILL ONLY READ 80, THIS CAN BE RESET BY WRITING ZEROS UNTIL VALUES ARE PROPERLY READ
+                      (    cubix_ide.asm):00119         !
+F863 F6E300           (    cubix_ide.asm):00120                 LDB     XTIDE_DATA_LO
+F866 C180             (    cubix_ide.asm):00121                 CMPB    #$80
+F868 262B             (    cubix_ide.asm):00122                 BNE     >
+F86A C600             (    cubix_ide.asm):00123                 LDB     #$00
+F86C F7E300           (    cubix_ide.asm):00124                 STB     XTIDE_DATA_LO
+F86F 12               (    cubix_ide.asm):00125                 NOP
+F870 F7E301           (    cubix_ide.asm):00126                 STB     XTIDE_DATA_HI
+F873 12               (    cubix_ide.asm):00127                 NOP
+F874 F7E306           (    cubix_ide.asm):00128                 STB     XTIDE_LBALOW
+F877 12               (    cubix_ide.asm):00129                 NOP
+F878 F7E308           (    cubix_ide.asm):00130                 STB     XTIDE_LBAMID
+F87B 12               (    cubix_ide.asm):00131                 NOP
+F87C F7E30A           (    cubix_ide.asm):00132                 STB     XTIDE_LBAHI
+F87F 12               (    cubix_ide.asm):00133                 NOP
+F880 F7E30C           (    cubix_ide.asm):00134                 STB     XTIDE_DEVICE
+F883 12               (    cubix_ide.asm):00135                 NOP
+F884 F7E30E           (    cubix_ide.asm):00136                 STB     XTIDE_COMMAND
+F887 12               (    cubix_ide.asm):00137                 NOP
+F888 F7E30E           (    cubix_ide.asm):00138                 STB     XTIDE_STATUS
+F88B 12               (    cubix_ide.asm):00139                 NOP
+F88C 3001             (    cubix_ide.asm):00140                 INX
+F88E 8C0300           (    cubix_ide.asm):00141                 CPX     #$0300
+F891 26D0             (    cubix_ide.asm):00142                 BNE     <
+F893 200A             (    cubix_ide.asm):00143                 BRA     XTIDE_PROBE_FAIL                  ; TIMED OUT
+                      (    cubix_ide.asm):00144         !
+F895 BDF8BF           (    cubix_ide.asm):00145                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
+F898 2505             (    cubix_ide.asm):00146                 BCS     XTIDE_PROBE_FAIL
+F89A 1CFE             (    cubix_ide.asm):00147                 CLC
+F89C 7EF8A1           (    cubix_ide.asm):00148                 JMP     XTIDE_PROBE_SUCCESS
+F89F                  (    cubix_ide.asm):00149         XTIDE_PROBE_FAIL:
+F89F 1A01             (    cubix_ide.asm):00150                 SEC
+F8A1                  (    cubix_ide.asm):00151         XTIDE_PROBE_SUCCESS:
+F8A1 39               (    cubix_ide.asm):00152                 RTS                                       ; DONE, NOTE THAT A=0 AND Z IS SET
+                      (    cubix_ide.asm):00153         
+                      (    cubix_ide.asm):00154                 IFNDEF  BIOS6809PC
+                      (    cubix_ide.asm):00155         ;*__IDE_READ_INFO___________________________________________________________________________________
+                      (    cubix_ide.asm):00156         ;*
+                      (    cubix_ide.asm):00157         ;*  READ IDE INFORMATION
+                      (    cubix_ide.asm):00158         ;*      CARRY SET ON ERROR
+                      (    cubix_ide.asm):00159         ;*      A=MST/SLV
+                      (    cubix_ide.asm):00160         ;*____________________________________________________________________________________________________
+F8A2                  (    cubix_ide.asm):00161         IDE_READ_INFO:
+                      (    cubix_ide.asm):00162         ; SET DRIVE BIT
+                      (    cubix_ide.asm):00163                 ANDA    #$01                              ; ONLY WANT THE 1 BIT (MST/SLV)
+                      (    cubix_ide.asm):00164                 ASLA                                      ; SHIFT 4
+                      (    cubix_ide.asm):00165                 ASLA                                      ;
                       (    cubix_ide.asm):00166                 ASLA                                      ;
                       (    cubix_ide.asm):00167                 ASLA                                      ;
-                      (    cubix_ide.asm):00168                 ASLA                                      ;
-                      (    cubix_ide.asm):00169                 ORA     #$E0                              ; E0=MST  F0=SLV
-                      (    cubix_ide.asm):00170                 STA     XTIDE_DEVICE
-                      (    cubix_ide.asm):00171         
-                      (    cubix_ide.asm):00172                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
-                      (    cubix_ide.asm):00173                 BCS     IDE_READ_INFO_ABORT
-                      (    cubix_ide.asm):00174         
-                      (    cubix_ide.asm):00175                 LDA     #$01                              ; ENABLE 8-BIT MODE (XT-CF-LITE)
-                      (    cubix_ide.asm):00176                 STA     XTIDE_FECODE
-                      (    cubix_ide.asm):00177                 LDA     #XTIDE_CMD_FEAT
-                      (    cubix_ide.asm):00178                 STA     XTIDE_COMMAND
-                      (    cubix_ide.asm):00179         
-                      (    cubix_ide.asm):00180                 NOP                                       ; TINY DELAY, JUST IN CASE
+                      (    cubix_ide.asm):00168                 ORA     #$E0                              ; E0=MST  F0=SLV
+                      (    cubix_ide.asm):00169                 STA     XTIDE_DEVICE
+                      (    cubix_ide.asm):00170         
+                      (    cubix_ide.asm):00171                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
+                      (    cubix_ide.asm):00172                 BCS     IDE_READ_INFO_ABORT
+                      (    cubix_ide.asm):00173         
+                      (    cubix_ide.asm):00174                 LDA     #$01                              ; ENABLE 8-BIT MODE (XT-CF-LITE)
+                      (    cubix_ide.asm):00175                 STA     XTIDE_FECODE
+                      (    cubix_ide.asm):00176                 LDA     #XTIDE_CMD_FEAT
+                      (    cubix_ide.asm):00177                 STA     XTIDE_COMMAND
+                      (    cubix_ide.asm):00178         
+                      (    cubix_ide.asm):00179                 NOP                                       ; TINY DELAY, JUST IN CASE
+                      (    cubix_ide.asm):00180                 NOP
                       (    cubix_ide.asm):00181                 NOP
                       (    cubix_ide.asm):00182                 NOP
                       (    cubix_ide.asm):00183                 NOP
@@ -1360,240 +1360,239 @@ F8A2                  (    cubix_ide.asm):00162         IDE_READ_INFO:
                       (    cubix_ide.asm):00187                 NOP
                       (    cubix_ide.asm):00188                 NOP
                       (    cubix_ide.asm):00189                 NOP
-                      (    cubix_ide.asm):00190                 NOP
+                      (    cubix_ide.asm):00190         
                       (    cubix_ide.asm):00191         
-                      (    cubix_ide.asm):00192         
-                      (    cubix_ide.asm):00193                 LDA     #XTIDE_CMD_ID                     ; ID COMMAND
-                      (    cubix_ide.asm):00194                 STA     XTIDE_COMMAND
-                      (    cubix_ide.asm):00195         
-                      (    cubix_ide.asm):00196                 JSR     IDE_WAIT_DRQ                      ;WAIT UNTIL IT'S GOT THE DATA
-                      (    cubix_ide.asm):00197                 BCS     IDE_READ_INFO_ABORT
-                      (    cubix_ide.asm):00198         
-                      (    cubix_ide.asm):00199                 JSR     IDE_READ_BUFFER                   ; GRAB THE 256 WORDS FROM THE BUFFER
-                      (    cubix_ide.asm):00200         
-                      (    cubix_ide.asm):00201                 LDX     #MESSAGE6
-                      (    cubix_ide.asm):00202                 JSR     WRSTR
-                      (    cubix_ide.asm):00203                 LDA     HSTBUF+123
-                      (    cubix_ide.asm):00204                 JSR     WRHEX
-                      (    cubix_ide.asm):00205                 LDA     HSTBUF+122
-                      (    cubix_ide.asm):00206                 JSR     WRHEX
-                      (    cubix_ide.asm):00207                 LDA     HSTBUF+121
-                      (    cubix_ide.asm):00208                 JSR     WRHEX
-                      (    cubix_ide.asm):00209                 LDA     HSTBUF+120
-                      (    cubix_ide.asm):00210                 JSR     WRHEX
-                      (    cubix_ide.asm):00211                 JMP     IDE_READ_INFO_OK
-F8A2                  (    cubix_ide.asm):00212         IDE_READ_INFO_ABORT:
-                      (    cubix_ide.asm):00213                 LDX     #MESSAGE3
-                      (    cubix_ide.asm):00214                 JSR     WRSTR                             ;DO PROMPT
-                      (    cubix_ide.asm):00215                 JSR     LFCR                              ;AND CRLF
-                      (    cubix_ide.asm):00216                 SEC
-                      (    cubix_ide.asm):00217                 RTS                                       ;
-F8A2                  (    cubix_ide.asm):00218         IDE_READ_INFO_OK:
-                      (    cubix_ide.asm):00219                 JSR     LFCR                              ; AND CRLF
-                      (    cubix_ide.asm):00220                 CLC
-                      (    cubix_ide.asm):00221                 RTS
-                      (    cubix_ide.asm):00222                 ENDIF
+                      (    cubix_ide.asm):00192                 LDA     #XTIDE_CMD_ID                     ; ID COMMAND
+                      (    cubix_ide.asm):00193                 STA     XTIDE_COMMAND
+                      (    cubix_ide.asm):00194         
+                      (    cubix_ide.asm):00195                 JSR     IDE_WAIT_DRQ                      ;WAIT UNTIL IT'S GOT THE DATA
+                      (    cubix_ide.asm):00196                 BCS     IDE_READ_INFO_ABORT
+                      (    cubix_ide.asm):00197         
+                      (    cubix_ide.asm):00198                 JSR     IDE_READ_BUFFER                   ; GRAB THE 256 WORDS FROM THE BUFFER
+                      (    cubix_ide.asm):00199         
+                      (    cubix_ide.asm):00200                 LDX     #MESSAGE6
+                      (    cubix_ide.asm):00201                 JSR     WRSTR
+                      (    cubix_ide.asm):00202                 LDA     HSTBUF+123
+                      (    cubix_ide.asm):00203                 JSR     WRHEX
+                      (    cubix_ide.asm):00204                 LDA     HSTBUF+122
+                      (    cubix_ide.asm):00205                 JSR     WRHEX
+                      (    cubix_ide.asm):00206                 LDA     HSTBUF+121
+                      (    cubix_ide.asm):00207                 JSR     WRHEX
+                      (    cubix_ide.asm):00208                 LDA     HSTBUF+120
+                      (    cubix_ide.asm):00209                 JSR     WRHEX
+                      (    cubix_ide.asm):00210                 JMP     IDE_READ_INFO_OK
+F8A2                  (    cubix_ide.asm):00211         IDE_READ_INFO_ABORT:
+                      (    cubix_ide.asm):00212                 LDX     #MESSAGE3
+                      (    cubix_ide.asm):00213                 JSR     WRSTR                             ;DO PROMPT
+                      (    cubix_ide.asm):00214                 JSR     LFCR                              ;AND CRLF
+                      (    cubix_ide.asm):00215                 SEC
+                      (    cubix_ide.asm):00216                 RTS                                       ;
+F8A2                  (    cubix_ide.asm):00217         IDE_READ_INFO_OK:
+                      (    cubix_ide.asm):00218                 JSR     LFCR                              ; AND CRLF
+                      (    cubix_ide.asm):00219                 CLC
+                      (    cubix_ide.asm):00220                 RTS
+                      (    cubix_ide.asm):00221                 ENDIF
+                      (    cubix_ide.asm):00222         
                       (    cubix_ide.asm):00223         
-                      (    cubix_ide.asm):00224         
-                      (    cubix_ide.asm):00225         ;*__IDE_READ_SECTOR___________________________________________________________________________________
-                      (    cubix_ide.asm):00226         ;*
-                      (    cubix_ide.asm):00227         ;*  READ IDE SECTOR (IN LBA) INTO BUFFER
-                      (    cubix_ide.asm):00228         ;*
-                      (    cubix_ide.asm):00229         ;*____________________________________________________________________________________________________
-F8A2                  (    cubix_ide.asm):00230         IDE_READ_SECTOR:
-F8A2 BDF8BF           (    cubix_ide.asm):00231                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
-F8A5 2512             (    cubix_ide.asm):00232                 BCS     IDE_READ_SECTOR_ERROR             ; IF TIMEOUT, REPORT NO IDE PRESENT
-F8A7                  (    cubix_ide.asm):00233         IDE_READ_SECTOR_1:
-                      (    cubix_ide.asm):00234                 IFNDEF  BIOS6809PC
-                      (    cubix_ide.asm):00235                 JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
-                      (    cubix_ide.asm):00236                 ENDIF
-F8A7 8620             (    cubix_ide.asm):00237                 LDA     #XTIDE_CMD_READ
-F8A9 B7E30E           (    cubix_ide.asm):00238                 STA     XTIDE_COMMAND
-                      (    cubix_ide.asm):00239         
-F8AC BDF8E3           (    cubix_ide.asm):00240                 JSR     IDE_WAIT_DRQ                      ; WAIT UNTIL IT'S GOT THE DATA
-F8AF 2508             (    cubix_ide.asm):00241                 BCS     IDE_READ_SECTOR_ERROR             ; IF TIMEOUT, REPORT NO IDE PRESENT
-F8B1 BDF90F           (    cubix_ide.asm):00242                 JSR     IDE_READ_BUFFER                   ; GRAB THE 256 WORDS FROM THE BUFFER
-F8B4 4F               (    cubix_ide.asm):00243                 CLRA                                      ; ZERO = 1 ON RETURN = OPERATION OK
-F8B5 B7BF28           (    cubix_ide.asm):00244                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
-F8B8 39               (    cubix_ide.asm):00245                 RTS
-F8B9                  (    cubix_ide.asm):00246         IDE_READ_SECTOR_ERROR:
-F8B9 8602             (    cubix_ide.asm):00247                 LDA     #$02                              ; SET ERROR CONDITION
-F8BB B7BF28           (    cubix_ide.asm):00248                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
-F8BE 39               (    cubix_ide.asm):00249                 RTS
+                      (    cubix_ide.asm):00224         ;*__IDE_READ_SECTOR___________________________________________________________________________________
+                      (    cubix_ide.asm):00225         ;*
+                      (    cubix_ide.asm):00226         ;*  READ IDE SECTOR (IN LBA) INTO BUFFER
+                      (    cubix_ide.asm):00227         ;*
+                      (    cubix_ide.asm):00228         ;*____________________________________________________________________________________________________
+F8A2                  (    cubix_ide.asm):00229         IDE_READ_SECTOR:
+F8A2 BDF8BF           (    cubix_ide.asm):00230                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
+F8A5 2512             (    cubix_ide.asm):00231                 BCS     IDE_READ_SECTOR_ERROR             ; IF TIMEOUT, REPORT NO IDE PRESENT
+F8A7                  (    cubix_ide.asm):00232         IDE_READ_SECTOR_1:
+                      (    cubix_ide.asm):00233                 IFNDEF  BIOS6809PC
+                      (    cubix_ide.asm):00234                 JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
+                      (    cubix_ide.asm):00235                 ENDIF
+F8A7 8620             (    cubix_ide.asm):00236                 LDA     #XTIDE_CMD_READ
+F8A9 B7E30E           (    cubix_ide.asm):00237                 STA     XTIDE_COMMAND
+                      (    cubix_ide.asm):00238         
+F8AC BDF8E3           (    cubix_ide.asm):00239                 JSR     IDE_WAIT_DRQ                      ; WAIT UNTIL IT'S GOT THE DATA
+F8AF 2508             (    cubix_ide.asm):00240                 BCS     IDE_READ_SECTOR_ERROR             ; IF TIMEOUT, REPORT NO IDE PRESENT
+F8B1 BDF90F           (    cubix_ide.asm):00241                 JSR     IDE_READ_BUFFER                   ; GRAB THE 256 WORDS FROM THE BUFFER
+F8B4 4F               (    cubix_ide.asm):00242                 CLRA                                      ; ZERO = 1 ON RETURN = OPERATION OK
+F8B5 B7BF28           (    cubix_ide.asm):00243                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
+F8B8 39               (    cubix_ide.asm):00244                 RTS
+F8B9                  (    cubix_ide.asm):00245         IDE_READ_SECTOR_ERROR:
+F8B9 8602             (    cubix_ide.asm):00246                 LDA     #$02                              ; SET ERROR CONDITION
+F8BB B7BF28           (    cubix_ide.asm):00247                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
+F8BE 39               (    cubix_ide.asm):00248                 RTS
+                      (    cubix_ide.asm):00249         
                       (    cubix_ide.asm):00250         
-                      (    cubix_ide.asm):00251         
-                      (    cubix_ide.asm):00252         ;*__IDE_WAIT_NOT_BUSY_______________________________________________________________________________
-                      (    cubix_ide.asm):00253         ;*
-                      (    cubix_ide.asm):00254         ;*  WAIT FOR IDE CHANNEL TO BECOME READY
-                      (    cubix_ide.asm):00255         ;*
-                      (    cubix_ide.asm):00256         ;*____________________________________________________________________________________________________
-F8BF                  (    cubix_ide.asm):00257         IDE_WAIT_NOT_BUSY:
-F8BF 3406             (    cubix_ide.asm):00258                 PSHS    A,B
-F8C1 8600             (    cubix_ide.asm):00259                 LDA     #$00
-F8C3 B7BF26           (    cubix_ide.asm):00260                 STA     XTIDETIMEOUT
-F8C6 B7BF27           (    cubix_ide.asm):00261                 STA     XTIDETIMEOUT+1
-F8C9                  (    cubix_ide.asm):00262         IDE_WAIT_NOT_BUSY1:
-F8C9 F6E30E           (    cubix_ide.asm):00263                 LDB     XTIDE_STATUS                      ;WAIT FOR RDY BIT TO BE SET
-F8CC C480             (    cubix_ide.asm):00264                 ANDB    #$80
-F8CE 270F             (    cubix_ide.asm):00265                 BEQ     IDE_WAIT_NOT_BUSY2
-F8D0 7CBF26           (    cubix_ide.asm):00266                 INC     XTIDETIMEOUT
-F8D3 26F4             (    cubix_ide.asm):00267                 BNE     IDE_WAIT_NOT_BUSY1
-F8D5 7CBF27           (    cubix_ide.asm):00268                 INC     XTIDETIMEOUT+1
-F8D8 26EF             (    cubix_ide.asm):00269                 BNE     IDE_WAIT_NOT_BUSY1
-F8DA 1A01             (    cubix_ide.asm):00270                 SEC
-F8DC 7EF8E1           (    cubix_ide.asm):00271                 JMP     IDE_WAIT_NOT_BUSY3
-F8DF                  (    cubix_ide.asm):00272         IDE_WAIT_NOT_BUSY2:
-F8DF 1CFE             (    cubix_ide.asm):00273                 CLC
-F8E1                  (    cubix_ide.asm):00274         IDE_WAIT_NOT_BUSY3:
-F8E1 3586             (    cubix_ide.asm):00275                 PULS    PC,A,B
-                      (    cubix_ide.asm):00276         
-                      (    cubix_ide.asm):00277         ;*__IDE_WAIT_DRQ______________________________________________________________________________________
-                      (    cubix_ide.asm):00278         ;*
-                      (    cubix_ide.asm):00279         ;*      WAIT FOR THE DRIVE TO BE READY TO TRANSFER DATA.
-                      (    cubix_ide.asm):00280         ;*
-                      (    cubix_ide.asm):00281         ;*____________________________________________________________________________________________________
-F8E3                  (    cubix_ide.asm):00282         IDE_WAIT_DRQ:
-F8E3 3426             (    cubix_ide.asm):00283                 PSHS    A,B,Y
-F8E5 8600             (    cubix_ide.asm):00284                 LDA     #$00
-F8E7 B7BF26           (    cubix_ide.asm):00285                 STA     XTIDETIMEOUT
-F8EA B7BF27           (    cubix_ide.asm):00286                 STA     XTIDETIMEOUT+1
-F8ED                  (    cubix_ide.asm):00287         IDE_WAIT_DRQ1:
-F8ED F6E30E           (    cubix_ide.asm):00288                 LDB     XTIDE_STATUS                      ;WAIT FOR DRQ BIT TO BE SET
-F8F0 C488             (    cubix_ide.asm):00289                 ANDB    #%10001000                        ; MASK OFF BUSY(7) AND DRQ(3)
-F8F2 C108             (    cubix_ide.asm):00290                 CMPB    #%00001000                        ; WE WANT BUSY(7) TO BE 0 AND DRQ (3) TO BE 1
-F8F4 2715             (    cubix_ide.asm):00291                 BEQ     IDE_WAIT_DRQ2
-F8F6 C401             (    cubix_ide.asm):00292                 ANDB    #%00000001                        ; IS ERROR?
-F8F8 C101             (    cubix_ide.asm):00293                 CMPB    #%00000001                        ;
-F8FA 270A             (    cubix_ide.asm):00294                 BEQ     IDE_WAIT_DRQE
-F8FC 7CBF26           (    cubix_ide.asm):00295                 INC     XTIDETIMEOUT
-F8FF 26EC             (    cubix_ide.asm):00296                 BNE     IDE_WAIT_DRQ1
-F901 7CBF27           (    cubix_ide.asm):00297                 INC     XTIDETIMEOUT+1
-F904 26E7             (    cubix_ide.asm):00298                 BNE     IDE_WAIT_DRQ1
-F906                  (    cubix_ide.asm):00299         IDE_WAIT_DRQE:
-F906 1A01             (    cubix_ide.asm):00300                 SEC
-F908 7EF90D           (    cubix_ide.asm):00301                 JMP     IDE_WAIT_DRQ3
-F90B                  (    cubix_ide.asm):00302         IDE_WAIT_DRQ2:
-F90B 1CFE             (    cubix_ide.asm):00303                 CLC
-F90D                  (    cubix_ide.asm):00304         IDE_WAIT_DRQ3:
-F90D 35A6             (    cubix_ide.asm):00305                 PULS    PC,A,B,Y
+                      (    cubix_ide.asm):00251         ;*__IDE_WAIT_NOT_BUSY_______________________________________________________________________________
+                      (    cubix_ide.asm):00252         ;*
+                      (    cubix_ide.asm):00253         ;*  WAIT FOR IDE CHANNEL TO BECOME READY
+                      (    cubix_ide.asm):00254         ;*
+                      (    cubix_ide.asm):00255         ;*____________________________________________________________________________________________________
+F8BF                  (    cubix_ide.asm):00256         IDE_WAIT_NOT_BUSY:
+F8BF 3406             (    cubix_ide.asm):00257                 PSHS    A,B
+F8C1 8600             (    cubix_ide.asm):00258                 LDA     #$00
+F8C3 B7BF26           (    cubix_ide.asm):00259                 STA     XTIDETIMEOUT
+F8C6 B7BF27           (    cubix_ide.asm):00260                 STA     XTIDETIMEOUT+1
+F8C9                  (    cubix_ide.asm):00261         IDE_WAIT_NOT_BUSY1:
+F8C9 F6E30E           (    cubix_ide.asm):00262                 LDB     XTIDE_STATUS                      ;WAIT FOR RDY BIT TO BE SET
+F8CC C480             (    cubix_ide.asm):00263                 ANDB    #$80
+F8CE 270F             (    cubix_ide.asm):00264                 BEQ     IDE_WAIT_NOT_BUSY2
+F8D0 7CBF26           (    cubix_ide.asm):00265                 INC     XTIDETIMEOUT
+F8D3 26F4             (    cubix_ide.asm):00266                 BNE     IDE_WAIT_NOT_BUSY1
+F8D5 7CBF27           (    cubix_ide.asm):00267                 INC     XTIDETIMEOUT+1
+F8D8 26EF             (    cubix_ide.asm):00268                 BNE     IDE_WAIT_NOT_BUSY1
+F8DA 1A01             (    cubix_ide.asm):00269                 SEC
+F8DC 7EF8E1           (    cubix_ide.asm):00270                 JMP     IDE_WAIT_NOT_BUSY3
+F8DF                  (    cubix_ide.asm):00271         IDE_WAIT_NOT_BUSY2:
+F8DF 1CFE             (    cubix_ide.asm):00272                 CLC
+F8E1                  (    cubix_ide.asm):00273         IDE_WAIT_NOT_BUSY3:
+F8E1 3586             (    cubix_ide.asm):00274                 PULS    PC,A,B
+                      (    cubix_ide.asm):00275         
+                      (    cubix_ide.asm):00276         ;*__IDE_WAIT_DRQ______________________________________________________________________________________
+                      (    cubix_ide.asm):00277         ;*
+                      (    cubix_ide.asm):00278         ;*      WAIT FOR THE DRIVE TO BE READY TO TRANSFER DATA.
+                      (    cubix_ide.asm):00279         ;*
+                      (    cubix_ide.asm):00280         ;*____________________________________________________________________________________________________
+F8E3                  (    cubix_ide.asm):00281         IDE_WAIT_DRQ:
+F8E3 3426             (    cubix_ide.asm):00282                 PSHS    A,B,Y
+F8E5 8600             (    cubix_ide.asm):00283                 LDA     #$00
+F8E7 B7BF26           (    cubix_ide.asm):00284                 STA     XTIDETIMEOUT
+F8EA B7BF27           (    cubix_ide.asm):00285                 STA     XTIDETIMEOUT+1
+F8ED                  (    cubix_ide.asm):00286         IDE_WAIT_DRQ1:
+F8ED F6E30E           (    cubix_ide.asm):00287                 LDB     XTIDE_STATUS                      ;WAIT FOR DRQ BIT TO BE SET
+F8F0 C488             (    cubix_ide.asm):00288                 ANDB    #%10001000                        ; MASK OFF BUSY(7) AND DRQ(3)
+F8F2 C108             (    cubix_ide.asm):00289                 CMPB    #%00001000                        ; WE WANT BUSY(7) TO BE 0 AND DRQ (3) TO BE 1
+F8F4 2715             (    cubix_ide.asm):00290                 BEQ     IDE_WAIT_DRQ2
+F8F6 C401             (    cubix_ide.asm):00291                 ANDB    #%00000001                        ; IS ERROR?
+F8F8 C101             (    cubix_ide.asm):00292                 CMPB    #%00000001                        ;
+F8FA 270A             (    cubix_ide.asm):00293                 BEQ     IDE_WAIT_DRQE
+F8FC 7CBF26           (    cubix_ide.asm):00294                 INC     XTIDETIMEOUT
+F8FF 26EC             (    cubix_ide.asm):00295                 BNE     IDE_WAIT_DRQ1
+F901 7CBF27           (    cubix_ide.asm):00296                 INC     XTIDETIMEOUT+1
+F904 26E7             (    cubix_ide.asm):00297                 BNE     IDE_WAIT_DRQ1
+F906                  (    cubix_ide.asm):00298         IDE_WAIT_DRQE:
+F906 1A01             (    cubix_ide.asm):00299                 SEC
+F908 7EF90D           (    cubix_ide.asm):00300                 JMP     IDE_WAIT_DRQ3
+F90B                  (    cubix_ide.asm):00301         IDE_WAIT_DRQ2:
+F90B 1CFE             (    cubix_ide.asm):00302                 CLC
+F90D                  (    cubix_ide.asm):00303         IDE_WAIT_DRQ3:
+F90D 35A6             (    cubix_ide.asm):00304                 PULS    PC,A,B,Y
+                      (    cubix_ide.asm):00305         
                       (    cubix_ide.asm):00306         
                       (    cubix_ide.asm):00307         
-                      (    cubix_ide.asm):00308         
-                      (    cubix_ide.asm):00309         ;*__IDE_READ_BUFFER___________________________________________________________________________________
-                      (    cubix_ide.asm):00310         ;*
-                      (    cubix_ide.asm):00311         ;*  READ IDE BUFFER LITTLE ENDIAN
-                      (    cubix_ide.asm):00312         ;*
-                      (    cubix_ide.asm):00313         ;*____________________________________________________________________________________________________
-F90F                  (    cubix_ide.asm):00314         IDE_READ_BUFFER:
-F90F 108E0000         (    cubix_ide.asm):00315                 LDY     #$0000                            ; INDEX
-F913                  (    cubix_ide.asm):00316         IDEBUFRD:
-F913 F6E300           (    cubix_ide.asm):00317                 LDB     XTIDE_DATA_LO
-F916 E7A90100         (    cubix_ide.asm):00318                 STB     HSTBUF,Y                          ;
-F91A 3121             (    cubix_ide.asm):00319                 INY
-F91C F6E301           (    cubix_ide.asm):00320                 LDB     XTIDE_DATA_HI
-F91F E7A90100         (    cubix_ide.asm):00321                 STB     HSTBUF,Y                          ;
-F923 3121             (    cubix_ide.asm):00322                 INY
-F925 108C0200         (    cubix_ide.asm):00323                 CMPY    #$0200                            ;
-F929 26E8             (    cubix_ide.asm):00324                 BNE     IDEBUFRD                          ;
-F92B 39               (    cubix_ide.asm):00325                 RTS                                       ;
-                      (    cubix_ide.asm):00326         
-                      (    cubix_ide.asm):00327         ;*__IDE_WRITE_SECTOR__________________________________________________________________________________
-                      (    cubix_ide.asm):00328         ;*
-                      (    cubix_ide.asm):00329         ;*  WRITE IDE SECTOR (IN LBA) FROM BUFFER
-                      (    cubix_ide.asm):00330         ;*
-                      (    cubix_ide.asm):00331         ;*____________________________________________________________________________________________________
-F92C                  (    cubix_ide.asm):00332         IDE_WRITE_SECTOR:
-F92C BDF8BF           (    cubix_ide.asm):00333                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
-F92F 2517             (    cubix_ide.asm):00334                 BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
-                      (    cubix_ide.asm):00335                 IFNDEF  BIOS6809PC
-                      (    cubix_ide.asm):00336                 JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
-                      (    cubix_ide.asm):00337                 ENDIF
-F931 8630             (    cubix_ide.asm):00338                 LDA     #XTIDE_CMD_WRITE
-F933 B7E30E           (    cubix_ide.asm):00339                 STA     XTIDE_COMMAND
-F936 BDF8E3           (    cubix_ide.asm):00340                 JSR     IDE_WAIT_DRQ                      ;WAIT UNIT IT WANTS THE DATA
-F939 250D             (    cubix_ide.asm):00341                 BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
-F93B BDF94E           (    cubix_ide.asm):00342                 JSR     IDE_WRITE_BUFFER                  ;GIVE THE DATA TO THE DRIVE
-F93E BDF8BF           (    cubix_ide.asm):00343                 JSR     IDE_WAIT_NOT_BUSY                 ;WAIT UNTIL THE WRITE IS COMPLETE
-F941 2505             (    cubix_ide.asm):00344                 BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
-F943 4F               (    cubix_ide.asm):00345                 CLRA                                      ; ZERO = 1 ON RETURN = OPERATION OK
-F944 B7BF28           (    cubix_ide.asm):00346                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
-F947 39               (    cubix_ide.asm):00347                 RTS
-F948                  (    cubix_ide.asm):00348         IDE_WRITE_SECTOR_ERROR:
-F948 8602             (    cubix_ide.asm):00349                 LDA     #$02
-F94A B7BF28           (    cubix_ide.asm):00350                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
-F94D 39               (    cubix_ide.asm):00351                 RTS
-                      (    cubix_ide.asm):00352         
-                      (    cubix_ide.asm):00353         ;*__IDE_WRITE_BUFFER___________________________________________________________________________________
-                      (    cubix_ide.asm):00354         ;*
-                      (    cubix_ide.asm):00355         ;*  WRITE IDE BUFFER LITTLE ENDIAN
-                      (    cubix_ide.asm):00356         ;*
-                      (    cubix_ide.asm):00357         ;*____________________________________________________________________________________________________
-F94E                  (    cubix_ide.asm):00358         IDE_WRITE_BUFFER:
-F94E 108E0000         (    cubix_ide.asm):00359                 LDY     #$0000                            ; INDEX
-F952                  (    cubix_ide.asm):00360         IDEBUFWT:
-F952 E6A90100         (    cubix_ide.asm):00361                 LDB     HSTBUF,Y                          ;
-F956 F7E300           (    cubix_ide.asm):00362                 STB     XTIDE_DATA_LO
-F959 3121             (    cubix_ide.asm):00363                 INY
-F95B E6A90100         (    cubix_ide.asm):00364                 LDB     HSTBUF,Y                          ;
-F95F F7E301           (    cubix_ide.asm):00365                 STB     XTIDE_DATA_HI
-F962 3121             (    cubix_ide.asm):00366                 INY
-F964 108C0200         (    cubix_ide.asm):00367                 CMPY    #$0200                            ;
-F968 26E8             (    cubix_ide.asm):00368                 BNE     IDEBUFWT                          ;
-F96A 39               (    cubix_ide.asm):00369                 RTS                                       ;
+                      (    cubix_ide.asm):00308         ;*__IDE_READ_BUFFER___________________________________________________________________________________
+                      (    cubix_ide.asm):00309         ;*
+                      (    cubix_ide.asm):00310         ;*  READ IDE BUFFER LITTLE ENDIAN
+                      (    cubix_ide.asm):00311         ;*
+                      (    cubix_ide.asm):00312         ;*____________________________________________________________________________________________________
+F90F                  (    cubix_ide.asm):00313         IDE_READ_BUFFER:
+F90F 108E0000         (    cubix_ide.asm):00314                 LDY     #$0000                            ; INDEX
+F913                  (    cubix_ide.asm):00315         IDEBUFRD:
+F913 F6E300           (    cubix_ide.asm):00316                 LDB     XTIDE_DATA_LO
+F916 E7A90100         (    cubix_ide.asm):00317                 STB     HSTBUF,Y                          ;
+F91A 3121             (    cubix_ide.asm):00318                 INY
+F91C F6E301           (    cubix_ide.asm):00319                 LDB     XTIDE_DATA_HI
+F91F E7A90100         (    cubix_ide.asm):00320                 STB     HSTBUF,Y                          ;
+F923 3121             (    cubix_ide.asm):00321                 INY
+F925 108C0200         (    cubix_ide.asm):00322                 CMPY    #$0200                            ;
+F929 26E8             (    cubix_ide.asm):00323                 BNE     IDEBUFRD                          ;
+F92B 39               (    cubix_ide.asm):00324                 RTS                                       ;
+                      (    cubix_ide.asm):00325         
+                      (    cubix_ide.asm):00326         ;*__IDE_WRITE_SECTOR__________________________________________________________________________________
+                      (    cubix_ide.asm):00327         ;*
+                      (    cubix_ide.asm):00328         ;*  WRITE IDE SECTOR (IN LBA) FROM BUFFER
+                      (    cubix_ide.asm):00329         ;*
+                      (    cubix_ide.asm):00330         ;*____________________________________________________________________________________________________
+F92C                  (    cubix_ide.asm):00331         IDE_WRITE_SECTOR:
+F92C BDF8BF           (    cubix_ide.asm):00332                 JSR     IDE_WAIT_NOT_BUSY                 ;MAKE SURE DRIVE IS READY
+F92F 2517             (    cubix_ide.asm):00333                 BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
+                      (    cubix_ide.asm):00334                 IFNDEF  BIOS6809PC
+                      (    cubix_ide.asm):00335                 JSR     IDE_SETUP_LBA                     ;TELL IT WHICH SECTOR WE WANT
+                      (    cubix_ide.asm):00336                 ENDIF
+F931 8630             (    cubix_ide.asm):00337                 LDA     #XTIDE_CMD_WRITE
+F933 B7E30E           (    cubix_ide.asm):00338                 STA     XTIDE_COMMAND
+F936 BDF8E3           (    cubix_ide.asm):00339                 JSR     IDE_WAIT_DRQ                      ;WAIT UNIT IT WANTS THE DATA
+F939 250D             (    cubix_ide.asm):00340                 BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
+F93B BDF94E           (    cubix_ide.asm):00341                 JSR     IDE_WRITE_BUFFER                  ;GIVE THE DATA TO THE DRIVE
+F93E BDF8BF           (    cubix_ide.asm):00342                 JSR     IDE_WAIT_NOT_BUSY                 ;WAIT UNTIL THE WRITE IS COMPLETE
+F941 2505             (    cubix_ide.asm):00343                 BCS     IDE_WRITE_SECTOR_ERROR            ; IF TIMEOUT, REPORT NO IDE PRESENT
+F943 4F               (    cubix_ide.asm):00344                 CLRA                                      ; ZERO = 1 ON RETURN = OPERATION OK
+F944 B7BF28           (    cubix_ide.asm):00345                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
+F947 39               (    cubix_ide.asm):00346                 RTS
+F948                  (    cubix_ide.asm):00347         IDE_WRITE_SECTOR_ERROR:
+F948 8602             (    cubix_ide.asm):00348                 LDA     #$02
+F94A B7BF28           (    cubix_ide.asm):00349                 STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
+F94D 39               (    cubix_ide.asm):00350                 RTS
+                      (    cubix_ide.asm):00351         
+                      (    cubix_ide.asm):00352         ;*__IDE_WRITE_BUFFER___________________________________________________________________________________
+                      (    cubix_ide.asm):00353         ;*
+                      (    cubix_ide.asm):00354         ;*  WRITE IDE BUFFER LITTLE ENDIAN
+                      (    cubix_ide.asm):00355         ;*
+                      (    cubix_ide.asm):00356         ;*____________________________________________________________________________________________________
+F94E                  (    cubix_ide.asm):00357         IDE_WRITE_BUFFER:
+F94E 108E0000         (    cubix_ide.asm):00358                 LDY     #$0000                            ; INDEX
+F952                  (    cubix_ide.asm):00359         IDEBUFWT:
+F952 E6A90100         (    cubix_ide.asm):00360                 LDB     HSTBUF,Y                          ;
+F956 F7E300           (    cubix_ide.asm):00361                 STB     XTIDE_DATA_LO
+F959 3121             (    cubix_ide.asm):00362                 INY
+F95B E6A90100         (    cubix_ide.asm):00363                 LDB     HSTBUF,Y                          ;
+F95F F7E301           (    cubix_ide.asm):00364                 STB     XTIDE_DATA_HI
+F962 3121             (    cubix_ide.asm):00365                 INY
+F964 108C0200         (    cubix_ide.asm):00366                 CMPY    #$0200                            ;
+F968 26E8             (    cubix_ide.asm):00367                 BNE     IDEBUFWT                          ;
+F96A 39               (    cubix_ide.asm):00368                 RTS                                       ;
+                      (    cubix_ide.asm):00369         
                       (    cubix_ide.asm):00370         
-                      (    cubix_ide.asm):00371         
-                      (    cubix_ide.asm):00372                 IFNDEF  BIOS6809PC
-F96B                  (    cubix_ide.asm):00373         MESSAGE1
-                      (    cubix_ide.asm):00374                 FCC     "PPIDE :"
-                      (    cubix_ide.asm):00375                 FCB     00
-F96B                  (    cubix_ide.asm):00376         MESSAGE2
-                      (    cubix_ide.asm):00377                 FCC     " IO=0x"
-                      (    cubix_ide.asm):00378                 FCB     00
-F96B                  (    cubix_ide.asm):00379         MESSAGE3
-                      (    cubix_ide.asm):00380                 FCC     " NOT PRESENT"
-                      (    cubix_ide.asm):00381                 FCB     00
-F96B                  (    cubix_ide.asm):00382         MESSAGE4
-                      (    cubix_ide.asm):00383                 FCC     " PPIDE0: BLOCKS="
-                      (    cubix_ide.asm):00384                 FCB     00
-F96B                  (    cubix_ide.asm):00385         MESSAGE5
-                      (    cubix_ide.asm):00386                 FCC     " PPIDE1: BLOCKS="
-                      (    cubix_ide.asm):00387                 FCB     00
-F96B                  (    cubix_ide.asm):00388         MESSAGE6
-                      (    cubix_ide.asm):00389                 FCC     "0x"
-                      (    cubix_ide.asm):00390                 FCB     00
+                      (    cubix_ide.asm):00371                 IFNDEF  BIOS6809PC
+F96B                  (    cubix_ide.asm):00372         MESSAGE1
+                      (    cubix_ide.asm):00373                 FCC     "XT-IDE:"
+                      (    cubix_ide.asm):00374                 FCB     00
+F96B                  (    cubix_ide.asm):00375         MESSAGE2
+                      (    cubix_ide.asm):00376                 FCC     " IO=0x"
+                      (    cubix_ide.asm):00377                 FCB     00
+F96B                  (    cubix_ide.asm):00378         MESSAGE3
+                      (    cubix_ide.asm):00379                 FCC     " NOT PRESENT"
+                      (    cubix_ide.asm):00380                 FCB     00
+F96B                  (    cubix_ide.asm):00381         MESSAGE4
+                      (    cubix_ide.asm):00382                 FCC     " XT-IDE0: BLOCKS="
+                      (    cubix_ide.asm):00383                 FCB     00
+F96B                  (    cubix_ide.asm):00384         MESSAGE5
+                      (    cubix_ide.asm):00385                 FCC     " XT-IDE1: BLOCKS="
+                      (    cubix_ide.asm):00386                 FCB     00
+F96B                  (    cubix_ide.asm):00387         MESSAGE6
+                      (    cubix_ide.asm):00388                 FCC     "0x"
+                      (    cubix_ide.asm):00389                 FCB     00
+                      (    cubix_ide.asm):00390         
                       (    cubix_ide.asm):00391         
-                      (    cubix_ide.asm):00392         
-                      (    cubix_ide.asm):00393         ;*__IDE_SETUP_LBA_____________________________________________________________________________________
+                      (    cubix_ide.asm):00392         ;*__IDE_SETUP_LBA_____________________________________________________________________________________
+                      (    cubix_ide.asm):00393         ;*
                       (    cubix_ide.asm):00394         ;*
-                      (    cubix_ide.asm):00395         ;*
-                      (    cubix_ide.asm):00396         ;        SETUP   LBA DATA
-                      (    cubix_ide.asm):00397         ;*____________________________________________________________________________________________________
-F96B                  (    cubix_ide.asm):00398         IDE_SETUP_LBA:
-                      (    cubix_ide.asm):00399                 PSHS    D
-                      (    cubix_ide.asm):00400                 LDB     CURRENTDEVICE
-                      (    cubix_ide.asm):00401                 ANDB    #$01                              ; only want drive cfg
-                      (    cubix_ide.asm):00402                 ASLB                                      ; SHIFT 4
+                      (    cubix_ide.asm):00395         ;        SETUP   LBA DATA
+                      (    cubix_ide.asm):00396         ;*____________________________________________________________________________________________________
+F96B                  (    cubix_ide.asm):00397         IDE_SETUP_LBA:
+                      (    cubix_ide.asm):00398                 PSHS    D
+                      (    cubix_ide.asm):00399                 LDB     CURRENTDEVICE
+                      (    cubix_ide.asm):00400                 ANDB    #$01                              ; only want drive cfg
+                      (    cubix_ide.asm):00401                 ASLB                                      ; SHIFT 4
+                      (    cubix_ide.asm):00402                 ASLB                                      ;
                       (    cubix_ide.asm):00403                 ASLB                                      ;
                       (    cubix_ide.asm):00404                 ASLB                                      ;
-                      (    cubix_ide.asm):00405                 ASLB                                      ;
-                      (    cubix_ide.asm):00406                 ORB     #$E0                              ; E0=MST  F0=SLV
-                      (    cubix_ide.asm):00407                 STB     XTIDE_DEVICE
-                      (    cubix_ide.asm):00408         
-                      (    cubix_ide.asm):00409                 LDB     CURRENTSLICE
-                      (    cubix_ide.asm):00410                 STB     XTIDE_LBAHI
-                      (    cubix_ide.asm):00411         
-                      (    cubix_ide.asm):00412                 LDB     CURRENTCYL                        ;
-                      (    cubix_ide.asm):00413                 INCB                                      ; CYL 0 reserved for boot image
-                      (    cubix_ide.asm):00414                 STB     XTIDE_LBAMID
-                      (    cubix_ide.asm):00415         
-                      (    cubix_ide.asm):00416                 LDB     CURRENTSEC                        ;
-                      (    cubix_ide.asm):00417                 STB     XTIDE_LBALOW
-                      (    cubix_ide.asm):00418         
-                      (    cubix_ide.asm):00419                 LDB     #$01
-                      (    cubix_ide.asm):00420                 STB     XTIDE_SEC_CNT
-                      (    cubix_ide.asm):00421         
-                      (    cubix_ide.asm):00422                 PULS    D,PC
-                      (    cubix_ide.asm):00423                 ENDIF
+                      (    cubix_ide.asm):00405                 ORB     #$E0                              ; E0=MST  F0=SLV
+                      (    cubix_ide.asm):00406                 STB     XTIDE_DEVICE
+                      (    cubix_ide.asm):00407         
+                      (    cubix_ide.asm):00408                 LDB     CURRENTSLICE
+                      (    cubix_ide.asm):00409                 STB     XTIDE_LBAHI
+                      (    cubix_ide.asm):00410         
+                      (    cubix_ide.asm):00411                 LDB     CURRENTCYL                        ;
+                      (    cubix_ide.asm):00412                 INCB                                      ; CYL 0 reserved for boot image
+                      (    cubix_ide.asm):00413                 STB     XTIDE_LBAMID
+                      (    cubix_ide.asm):00414         
+                      (    cubix_ide.asm):00415                 LDB     CURRENTSEC                        ;
+                      (    cubix_ide.asm):00416                 STB     XTIDE_LBALOW
+                      (    cubix_ide.asm):00417         
+                      (    cubix_ide.asm):00418                 LDB     #$01
+                      (    cubix_ide.asm):00419                 STB     XTIDE_SEC_CNT
+                      (    cubix_ide.asm):00420         
+                      (    cubix_ide.asm):00421                 PULS    D,PC
+                      (    cubix_ide.asm):00422                 ENDIF
                       (        mon09.asm):01143         ;* CONSTANTS
 F96B                  (        mon09.asm):01144         PCRG
 F96B 2C504352         (        mon09.asm):01145                 FCC     ',PCR'
@@ -1780,305 +1779,483 @@ FC84 39               (        mon09.asm):01252                 RTS
                       (    cubix_esp.asm):00006         ;               ESPINIT     - INIT HARDWARE
                       (    cubix_esp.asm):00007         ;               ESPVIDEOOUT - OUTPUT A CHARACTER TO VIDEO (ANSI)
                       (    cubix_esp.asm):00008         ;               ESPPS2IN    - read a character from the ps/2 keyboard ('A' POINTS TO BYTE)
-                      (    cubix_esp.asm):00009         ;               LPT_OUT     - send a character to the printer
-                      (    cubix_esp.asm):00010         ;________________________________________________________________________________________________________________________________
-                      (    cubix_esp.asm):00011         ;
-                      (    cubix_esp.asm):00012         ;*
-                      (    cubix_esp.asm):00013         ;*        HARDWARE I/O ADDRESSES
-                      (    cubix_esp.asm):00014         ;*
-                      (    cubix_esp.asm):00015         ;
-     E100             (    cubix_esp.asm):00016         ESP_BASE        EQU CUBIX_IO_BASE+$100
-     E100             (    cubix_esp.asm):00017         ESP0_DAT        EQU ESP_BASE                      ;
-     E101             (    cubix_esp.asm):00018         ESP1_DAT        EQU ESP_BASE+1                    ;
-     E102             (    cubix_esp.asm):00019         ESP_STAT        EQU ESP_BASE+2                    ;
-                      (    cubix_esp.asm):00020         
-                      (    cubix_esp.asm):00021         
-                      (    cubix_esp.asm):00022         
-                      (    cubix_esp.asm):00023         ;__________________________________________________________________________________________________
-                      (    cubix_esp.asm):00024         ;
-                      (    cubix_esp.asm):00025         ; STATUS BITS (FOR KBD_STATUS)
-                      (    cubix_esp.asm):00026         ;
-     0001             (    cubix_esp.asm):00027         ESP0_RDY        EQU $01                           ; BIT 0, ESP0 READY
-     0002             (    cubix_esp.asm):00028         ESP0_BUSY       EQU $02                           ; BIT 1, ESP0 BUSY
-     0008             (    cubix_esp.asm):00029         ESP1_RDY        EQU $08                           ; BIT 3, ESP1 READY
-     0010             (    cubix_esp.asm):00030         ESP1_BUSY       EQU $10                           ; BIT 4, ESP1 BUSY
-                      (    cubix_esp.asm):00031         ;
-                      (    cubix_esp.asm):00032         ;__________________________________________________________________________________________________
-                      (    cubix_esp.asm):00033         ; DATA
-                      (    cubix_esp.asm):00034         ;__________________________________________________________________________________________________
-                      (    cubix_esp.asm):00035         ;
-                      (    cubix_esp.asm):00036         ;
+                      (    cubix_esp.asm):00009         ;               ESPPS2BUFL  - return number of characters in the keyboard buffer in 'A'
+                      (    cubix_esp.asm):00010         ;               ESPCURSORV  - Set Cursor Visibility (A=0 cursor off, A=1 cursor on)
+                      (    cubix_esp.asm):00011         ;               ESPSER0OUT  - OUTPUT A CHARACTER TO Serial 0 ('A' POINTS TO BYTE)
+                      (    cubix_esp.asm):00012         ;               ESPSER0IN   - read a character from Serial 0 ('A' POINTS TO BYTE)
+                      (    cubix_esp.asm):00013         ;               ESPSER0BUFL - return number of characters in the Serial 0 buffer in 'A'
+                      (    cubix_esp.asm):00014         ;               ESPSER1OUT  - OUTPUT A CHARACTER TO Serial 1 ('A' POINTS TO BYTE)
+                      (    cubix_esp.asm):00015         ;               ESPSER1IN   - read a character from Serial 1 ('A' POINTS TO BYTE)
+                      (    cubix_esp.asm):00016         ;               ESPSER1BUFL - return number of characters in the Serial 1 buffer in 'A'
+                      (    cubix_esp.asm):00017         ;               ESPNETCOUT  - OUTPUT A CHARACTER TO Network Console Connection ('A' POINTS TO BYTE)
+                      (    cubix_esp.asm):00018         ;               ESPNETCIN   - read a character from Network Console Connection ('A' POINTS TO BYTE)
+                      (    cubix_esp.asm):00019         ;               ESPNETCBUFL - return number of characters in the Network Connection buffer in 'A'
+                      (    cubix_esp.asm):00020         ;               PUTESP0     - put opcode/data to ESP0
+                      (    cubix_esp.asm):00021         ;               PUTESP1     - put opcode/data to ESP1
+                      (    cubix_esp.asm):00022         ;               GETESP0     - get opcode/data from ESP0
+                      (    cubix_esp.asm):00023         ;               GETESP1     - get opcode/data from ESP1
+                      (    cubix_esp.asm):00024         ;________________________________________________________________________________________________________________________________
+                      (    cubix_esp.asm):00025         ;
+                      (    cubix_esp.asm):00026         ;*
+                      (    cubix_esp.asm):00027         ;*        HARDWARE I/O ADDRESSES
+                      (    cubix_esp.asm):00028         ;*
+                      (    cubix_esp.asm):00029         ;
+     E100             (    cubix_esp.asm):00030         ESP_BASE        EQU CUBIX_IO_BASE+$100
+     E100             (    cubix_esp.asm):00031         ESP0_DAT        EQU ESP_BASE                      ;
+     E101             (    cubix_esp.asm):00032         ESP1_DAT        EQU ESP_BASE+1                    ;
+     E102             (    cubix_esp.asm):00033         ESP_STAT        EQU ESP_BASE+2                    ;
+                      (    cubix_esp.asm):00034         
+                      (    cubix_esp.asm):00035         
+                      (    cubix_esp.asm):00036         
                       (    cubix_esp.asm):00037         ;__________________________________________________________________________________________________
-                      (    cubix_esp.asm):00038         ; ESP IO INITIALIZATION
-                      (    cubix_esp.asm):00039         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00038         ;
+                      (    cubix_esp.asm):00039         ; STATUS BITS (FOR KBD_STATUS)
                       (    cubix_esp.asm):00040         ;
-                      (    cubix_esp.asm):00041                 IFNDEF  BIOS6809PC
-FC85                  (    cubix_esp.asm):00042         ESPINIT:
-                      (    cubix_esp.asm):00043         ;
-                      (    cubix_esp.asm):00044                 JSR     LFCR                              ; AND CRLF
-                      (    cubix_esp.asm):00045                 LDX     #ESPMESSAGE1
-                      (    cubix_esp.asm):00046                 JSR     WRSTR                             ; DO PROMPT
-                      (    cubix_esp.asm):00047                 JSR     LFCR                              ; AND CRLF
-                      (    cubix_esp.asm):00048         ; KEYBOARD INITIALIZATION
-                      (    cubix_esp.asm):00049                 LDX     #MESSAGE2
-                      (    cubix_esp.asm):00050                 JSR     WRSTR                             ; DO PROMPT
-                      (    cubix_esp.asm):00051                 LDD     #ESP_BASE                         ; GET BASE PORT
-                      (    cubix_esp.asm):00052                 JSR     WRHEXW                            ; PRINT BASE PORT
-                      (    cubix_esp.asm):00053                 JSR     LFCR                              ; AND CRLF
+     0001             (    cubix_esp.asm):00041         ESP0_RDY        EQU $01                           ; BIT 0, ESP0 READY
+     0002             (    cubix_esp.asm):00042         ESP0_BUSY       EQU $02                           ; BIT 1, ESP0 BUSY
+     0008             (    cubix_esp.asm):00043         ESP1_RDY        EQU $08                           ; BIT 3, ESP1 READY
+     0010             (    cubix_esp.asm):00044         ESP1_BUSY       EQU $10                           ; BIT 4, ESP1 BUSY
+                      (    cubix_esp.asm):00045         ;
+                      (    cubix_esp.asm):00046         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00047         ; DATA
+                      (    cubix_esp.asm):00048         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00049         ;
+                      (    cubix_esp.asm):00050         ;
+                      (    cubix_esp.asm):00051         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00052         ; ESP IO INITIALIZATION
+                      (    cubix_esp.asm):00053         ;__________________________________________________________________________________________________
                       (    cubix_esp.asm):00054         ;
-                      (    cubix_esp.asm):00055                 JSR     ESP0_PROBE                        ; DETECT ESP0
-                      (    cubix_esp.asm):00056                 JSR     LFCR                              ; AND CRLF
-                      (    cubix_esp.asm):00057                 JSR     ESP1_PROBE                        ; DETECT ESP1
+                      (    cubix_esp.asm):00055                 IFNDEF  BIOS6809PC
+FC85                  (    cubix_esp.asm):00056         ESPINIT:
+                      (    cubix_esp.asm):00057         ;
                       (    cubix_esp.asm):00058                 JSR     LFCR                              ; AND CRLF
-                      (    cubix_esp.asm):00059                 RTS                                       ; DONE
-                      (    cubix_esp.asm):00060         
-                      (    cubix_esp.asm):00061         
-FC85                  (    cubix_esp.asm):00062         ESP0_PROBE:
-                      (    cubix_esp.asm):00063         ;
-                      (    cubix_esp.asm):00064                 LDX     #ESPMESSAGE2                      ; PRINT 'ESP0'
-                      (    cubix_esp.asm):00065                 JSR     WRSTR
-                      (    cubix_esp.asm):00066         
-                      (    cubix_esp.asm):00067                 LDA     #$FF                              ; ESP IDENTITY PROBE
-                      (    cubix_esp.asm):00068                 JSR     PUTESP0                           ; SEND IT
-                      (    cubix_esp.asm):00069                 BCS     ESP_ERROR
-                      (    cubix_esp.asm):00070         
-                      (    cubix_esp.asm):00071                 JSR     GETESP0
-                      (    cubix_esp.asm):00072                 BCS     ESP_ERROR
-                      (    cubix_esp.asm):00073                 CMPA    #'E'
-                      (    cubix_esp.asm):00074                 BNE     ESP_ERROR
-                      (    cubix_esp.asm):00075                 JSR     GETESP0
-                      (    cubix_esp.asm):00076                 BCS     ESP_ERROR
-                      (    cubix_esp.asm):00077                 CMPA    #'S'
-                      (    cubix_esp.asm):00078                 BNE     ESP_ERROR
-                      (    cubix_esp.asm):00079                 JSR     GETESP0
-                      (    cubix_esp.asm):00080                 BCS     ESP_ERROR
-                      (    cubix_esp.asm):00081                 CMPA    #'P'
-                      (    cubix_esp.asm):00082                 BNE     ESP_ERROR
-                      (    cubix_esp.asm):00083                 JSR     GETESP0
-                      (    cubix_esp.asm):00084                 BCS     ESP_ERROR
-                      (    cubix_esp.asm):00085                 CMPA    #'3'
-                      (    cubix_esp.asm):00086                 BNE     ESP_ERROR
-                      (    cubix_esp.asm):00087                 JSR     GETESP0
-                      (    cubix_esp.asm):00088                 BCS     ESP_ERROR
-                      (    cubix_esp.asm):00089                 CMPA    #'2'
-                      (    cubix_esp.asm):00090                 BNE     ESP_ERROR
-                      (    cubix_esp.asm):00091                 JSR     GETESP0
-                      (    cubix_esp.asm):00092                 BCS     ESP_ERROR
-                      (    cubix_esp.asm):00093                 CMPA    #'V'
-                      (    cubix_esp.asm):00094                 BNE     ESP_ERROR
-                      (    cubix_esp.asm):00095                 JSR     GETESP0
-                      (    cubix_esp.asm):00096                 BCS     ESP_ERROR
-                      (    cubix_esp.asm):00097                 CMPA    #'1'
-                      (    cubix_esp.asm):00098                 BNE     ESP_ERROR
-                      (    cubix_esp.asm):00099                 LDX     #ESPMESSAGE5                      ; PRINT 'FOUND'
-                      (    cubix_esp.asm):00100                 JSR     WRSTR
-                      (    cubix_esp.asm):00101                 CLC
-                      (    cubix_esp.asm):00102                 RTS
-                      (    cubix_esp.asm):00103         ;
-                      (    cubix_esp.asm):00104         ;
-FC85                  (    cubix_esp.asm):00105         ESP_ERROR:
-                      (    cubix_esp.asm):00106                 LDX     #ESPMESSAGE4                      ; PRINT NOT FOUND
-                      (    cubix_esp.asm):00107                 JSR     WRSTR
-                      (    cubix_esp.asm):00108                 JSR     LFCR                              ; AND CRLF
-                      (    cubix_esp.asm):00109                 RTS
-                      (    cubix_esp.asm):00110         
-                      (    cubix_esp.asm):00111         ;
-FC85                  (    cubix_esp.asm):00112         ESP1_PROBE:
-                      (    cubix_esp.asm):00113         ;
-                      (    cubix_esp.asm):00114                 LDX     #ESPMESSAGE3                      ; PRINT 'ESP1'
-                      (    cubix_esp.asm):00115                 JSR     WRSTR
-                      (    cubix_esp.asm):00116         
-                      (    cubix_esp.asm):00117                 LDA     #$FF                              ; ESP IDENTITY PROBE
-                      (    cubix_esp.asm):00118                 JSR     PUTESP1                           ; SEND IT
-                      (    cubix_esp.asm):00119                 BCS     ESP_ERROR
-                      (    cubix_esp.asm):00120         
-                      (    cubix_esp.asm):00121                 JSR     GETESP1
-                      (    cubix_esp.asm):00122                 BCS     ESP_ERROR
-                      (    cubix_esp.asm):00123                 CMPA    #'E'
-                      (    cubix_esp.asm):00124                 BNE     ESP_ERROR
-                      (    cubix_esp.asm):00125                 JSR     GETESP1
-                      (    cubix_esp.asm):00126                 BCS     ESP_ERROR
-                      (    cubix_esp.asm):00127                 CMPA    #'S'
-                      (    cubix_esp.asm):00128                 BNE     ESP_ERROR
-                      (    cubix_esp.asm):00129                 JSR     GETESP1
-                      (    cubix_esp.asm):00130                 BCS     ESP_ERROR
-                      (    cubix_esp.asm):00131                 CMPA    #'P'
-                      (    cubix_esp.asm):00132                 BNE     ESP_ERROR
-                      (    cubix_esp.asm):00133                 JSR     GETESP1
-                      (    cubix_esp.asm):00134                 BCS     ESP_ERROR
-                      (    cubix_esp.asm):00135                 CMPA    #'3'
-                      (    cubix_esp.asm):00136                 BNE     ESP_ERROR
-                      (    cubix_esp.asm):00137                 JSR     GETESP1
-                      (    cubix_esp.asm):00138                 BCS     ESP_ERROR
-                      (    cubix_esp.asm):00139                 CMPA    #'2'
-                      (    cubix_esp.asm):00140                 BNE     ESP_ERROR
+                      (    cubix_esp.asm):00059                 LDX     #ESPMESSAGE1
+                      (    cubix_esp.asm):00060                 JSR     WRSTR                             ; DO PROMPT
+                      (    cubix_esp.asm):00061                 JSR     LFCR                              ; AND CRLF
+                      (    cubix_esp.asm):00062         ; KEYBOARD INITIALIZATION
+                      (    cubix_esp.asm):00063                 LDX     #MESSAGE2
+                      (    cubix_esp.asm):00064                 JSR     WRSTR                             ; DO PROMPT
+                      (    cubix_esp.asm):00065                 LDD     #ESP_BASE                         ; GET BASE PORT
+                      (    cubix_esp.asm):00066                 JSR     WRHEXW                            ; PRINT BASE PORT
+                      (    cubix_esp.asm):00067                 JSR     LFCR                              ; AND CRLF
+                      (    cubix_esp.asm):00068         ;
+                      (    cubix_esp.asm):00069                 JSR     ESP0_PROBE                        ; DETECT ESP0
+                      (    cubix_esp.asm):00070                 JSR     LFCR                              ; AND CRLF
+                      (    cubix_esp.asm):00071                 JSR     ESP1_PROBE                        ; DETECT ESP1
+                      (    cubix_esp.asm):00072                 JSR     LFCR                              ; AND CRLF
+                      (    cubix_esp.asm):00073                 RTS                                       ; DONE
+                      (    cubix_esp.asm):00074         
+                      (    cubix_esp.asm):00075         
+FC85                  (    cubix_esp.asm):00076         ESP0_PROBE:
+                      (    cubix_esp.asm):00077         ;
+                      (    cubix_esp.asm):00078                 LDX     #ESPMESSAGE2                      ; PRINT 'ESP0'
+                      (    cubix_esp.asm):00079                 JSR     WRSTR
+                      (    cubix_esp.asm):00080         
+                      (    cubix_esp.asm):00081                 LDA     #$FF                              ; ESP IDENTITY PROBE
+                      (    cubix_esp.asm):00082                 JSR     PUTESP0                           ; SEND IT
+                      (    cubix_esp.asm):00083                 BCS     ESP_ERROR
+                      (    cubix_esp.asm):00084         
+                      (    cubix_esp.asm):00085                 JSR     GETESP0
+                      (    cubix_esp.asm):00086                 BCS     ESP_ERROR
+                      (    cubix_esp.asm):00087                 CMPA    #'E'
+                      (    cubix_esp.asm):00088                 BNE     ESP_ERROR
+                      (    cubix_esp.asm):00089                 JSR     GETESP0
+                      (    cubix_esp.asm):00090                 BCS     ESP_ERROR
+                      (    cubix_esp.asm):00091                 CMPA    #'S'
+                      (    cubix_esp.asm):00092                 BNE     ESP_ERROR
+                      (    cubix_esp.asm):00093                 JSR     GETESP0
+                      (    cubix_esp.asm):00094                 BCS     ESP_ERROR
+                      (    cubix_esp.asm):00095                 CMPA    #'P'
+                      (    cubix_esp.asm):00096                 BNE     ESP_ERROR
+                      (    cubix_esp.asm):00097                 JSR     GETESP0
+                      (    cubix_esp.asm):00098                 BCS     ESP_ERROR
+                      (    cubix_esp.asm):00099                 CMPA    #'3'
+                      (    cubix_esp.asm):00100                 BNE     ESP_ERROR
+                      (    cubix_esp.asm):00101                 JSR     GETESP0
+                      (    cubix_esp.asm):00102                 BCS     ESP_ERROR
+                      (    cubix_esp.asm):00103                 CMPA    #'2'
+                      (    cubix_esp.asm):00104                 BNE     ESP_ERROR
+                      (    cubix_esp.asm):00105                 JSR     GETESP0
+                      (    cubix_esp.asm):00106                 BCS     ESP_ERROR
+                      (    cubix_esp.asm):00107                 CMPA    #'V'
+                      (    cubix_esp.asm):00108                 BNE     ESP_ERROR
+                      (    cubix_esp.asm):00109                 JSR     GETESP0
+                      (    cubix_esp.asm):00110                 BCS     ESP_ERROR
+                      (    cubix_esp.asm):00111                 CMPA    #'1'
+                      (    cubix_esp.asm):00112                 BNE     ESP_ERROR
+                      (    cubix_esp.asm):00113                 LDX     #ESPMESSAGE5                      ; PRINT 'FOUND'
+                      (    cubix_esp.asm):00114                 JSR     WRSTR
+                      (    cubix_esp.asm):00115                 LDX     #$20
+                      (    cubix_esp.asm):00116         !
+                      (    cubix_esp.asm):00117                 LDA     #00
+                      (    cubix_esp.asm):00118                 JSR     PUTESP0
+                      (    cubix_esp.asm):00119                 LEAX    -1,X
+                      (    cubix_esp.asm):00120                 BNE     <
+                      (    cubix_esp.asm):00121                 CLC
+                      (    cubix_esp.asm):00122                 RTS
+                      (    cubix_esp.asm):00123         ;
+                      (    cubix_esp.asm):00124         ;
+FC85                  (    cubix_esp.asm):00125         ESP_ERROR:
+                      (    cubix_esp.asm):00126                 LDX     #ESPMESSAGE4                      ; PRINT NOT FOUND
+                      (    cubix_esp.asm):00127                 JSR     WRSTR
+                      (    cubix_esp.asm):00128                 JSR     LFCR                              ; AND CRLF
+                      (    cubix_esp.asm):00129                 RTS
+                      (    cubix_esp.asm):00130         
+                      (    cubix_esp.asm):00131         ;
+FC85                  (    cubix_esp.asm):00132         ESP1_PROBE:
+                      (    cubix_esp.asm):00133         ;
+                      (    cubix_esp.asm):00134                 LDX     #ESPMESSAGE3                      ; PRINT 'ESP1'
+                      (    cubix_esp.asm):00135                 JSR     WRSTR
+                      (    cubix_esp.asm):00136         
+                      (    cubix_esp.asm):00137                 LDA     #$FF                              ; ESP IDENTITY PROBE
+                      (    cubix_esp.asm):00138                 JSR     PUTESP1                           ; SEND IT
+                      (    cubix_esp.asm):00139                 BCS     ESP_ERROR
+                      (    cubix_esp.asm):00140         
                       (    cubix_esp.asm):00141                 JSR     GETESP1
                       (    cubix_esp.asm):00142                 BCS     ESP_ERROR
-                      (    cubix_esp.asm):00143                 CMPA    #'V'
+                      (    cubix_esp.asm):00143                 CMPA    #'E'
                       (    cubix_esp.asm):00144                 BNE     ESP_ERROR
                       (    cubix_esp.asm):00145                 JSR     GETESP1
                       (    cubix_esp.asm):00146                 BCS     ESP_ERROR
-                      (    cubix_esp.asm):00147                 CMPA    #'1'
+                      (    cubix_esp.asm):00147                 CMPA    #'S'
                       (    cubix_esp.asm):00148                 BNE     ESP_ERROR
-                      (    cubix_esp.asm):00149                 LDX     #ESPMESSAGE5                      ; PRINT 'FOUND'
-                      (    cubix_esp.asm):00150                 JSR     WRSTR
-                      (    cubix_esp.asm):00151                 CLC
-                      (    cubix_esp.asm):00152                 RTS
-                      (    cubix_esp.asm):00153                 ENDIF
-                      (    cubix_esp.asm):00154         
-FC85                  (    cubix_esp.asm):00155         ESPVIDEOOUT:
-FC85 3402             (    cubix_esp.asm):00156                 PSHS    A
-FC87 8601             (    cubix_esp.asm):00157                 LDA     #01                               ; ESP OUT TO SCREEN
-FC89 BDFCA6           (    cubix_esp.asm):00158                 JSR     PUTESP0                           ; SEND IT
-FC8C 3502             (    cubix_esp.asm):00159                 PULS    A
-FC8E BDFCA6           (    cubix_esp.asm):00160                 JSR     PUTESP0                           ; SEND IT
-FC91 39               (    cubix_esp.asm):00161                 RTS
-                      (    cubix_esp.asm):00162         
-FC92                  (    cubix_esp.asm):00163         ESPPS2IN:
-FC92 8603             (    cubix_esp.asm):00164                 LDA     #03                               ; ESP IN FROM PS2
-FC94 BDFCA6           (    cubix_esp.asm):00165                 JSR     PUTESP0                           ; SEND IT
-FC97 250A             (    cubix_esp.asm):00166                 BCS     >
-FC99 BDFCC3           (    cubix_esp.asm):00167                 JSR     GETESP0                           ; GET IT
-FC9C 2505             (    cubix_esp.asm):00168                 BCS     >
-FC9E 8100             (    cubix_esp.asm):00169                 CMPA    #$00
-FCA0 2701             (    cubix_esp.asm):00170                 BEQ     >
-                      (    cubix_esp.asm):00171                 IFNDEF  BIOS6809PC
-                      (    cubix_esp.asm):00172                 STA     >PAGER_D                          ; SAVE 'D'
-                      (    cubix_esp.asm):00173                 ENDIF
-FCA2 39               (    cubix_esp.asm):00174                 RTS
-                      (    cubix_esp.asm):00175         !
-FCA3 86FF             (    cubix_esp.asm):00176                 LDA     #$FF
-                      (    cubix_esp.asm):00177                 IFNDEF  BIOS6809PC
-                      (    cubix_esp.asm):00178                 STA     >PAGER_D                          ; SAVE 'D'
-                      (    cubix_esp.asm):00179                 ENDIF
-FCA5 39               (    cubix_esp.asm):00180                 RTS
-                      (    cubix_esp.asm):00181         
-                      (    cubix_esp.asm):00182         
+                      (    cubix_esp.asm):00149                 JSR     GETESP1
+                      (    cubix_esp.asm):00150                 BCS     ESP_ERROR
+                      (    cubix_esp.asm):00151                 CMPA    #'P'
+                      (    cubix_esp.asm):00152                 BNE     ESP_ERROR
+                      (    cubix_esp.asm):00153                 JSR     GETESP1
+                      (    cubix_esp.asm):00154                 BCS     ESP_ERROR
+                      (    cubix_esp.asm):00155                 CMPA    #'3'
+                      (    cubix_esp.asm):00156                 BNE     ESP_ERROR
+                      (    cubix_esp.asm):00157                 JSR     GETESP1
+                      (    cubix_esp.asm):00158                 BCS     ESP_ERROR
+                      (    cubix_esp.asm):00159                 CMPA    #'2'
+                      (    cubix_esp.asm):00160                 BNE     ESP_ERROR
+                      (    cubix_esp.asm):00161                 JSR     GETESP1
+                      (    cubix_esp.asm):00162                 BCS     ESP_ERROR
+                      (    cubix_esp.asm):00163                 CMPA    #'V'
+                      (    cubix_esp.asm):00164                 BNE     ESP_ERROR
+                      (    cubix_esp.asm):00165                 JSR     GETESP1
+                      (    cubix_esp.asm):00166                 BCS     ESP_ERROR
+                      (    cubix_esp.asm):00167                 CMPA    #'1'
+                      (    cubix_esp.asm):00168                 BNE     ESP_ERROR
+                      (    cubix_esp.asm):00169                 LDX     #ESPMESSAGE5                      ; PRINT 'FOUND'
+                      (    cubix_esp.asm):00170                 JSR     WRSTR
+                      (    cubix_esp.asm):00171                 LDX     #$20
+                      (    cubix_esp.asm):00172         !
+                      (    cubix_esp.asm):00173                 LDA     #00
+                      (    cubix_esp.asm):00174                 JSR     PUTESP1
+                      (    cubix_esp.asm):00175                 LEAX    -1,X
+                      (    cubix_esp.asm):00176                 BNE     <
+                      (    cubix_esp.asm):00177                 CLC
+                      (    cubix_esp.asm):00178                 RTS
+                      (    cubix_esp.asm):00179         
+                      (    cubix_esp.asm):00180         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00181         ; ESPCURSORV  - Set Cursor Visibility (A=0 cursor off, A=1 cursor on)
+                      (    cubix_esp.asm):00182         ;__________________________________________________________________________________________________
                       (    cubix_esp.asm):00183         ;
-                      (    cubix_esp.asm):00184         ;__________________________________________________________________________________________________
-                      (    cubix_esp.asm):00185         ; HARDWARE INTERFACE
-                      (    cubix_esp.asm):00186         ;__________________________________________________________________________________________________
-                      (    cubix_esp.asm):00187         ;
-                      (    cubix_esp.asm):00188         ; a=VALUE AND RETURN
-                      (    cubix_esp.asm):00189         ; Carry set on timeout
-                      (    cubix_esp.asm):00190         ;
+FC85                  (    cubix_esp.asm):00184         ESPCURSORV:
+                      (    cubix_esp.asm):00185                 PSHS    A
+                      (    cubix_esp.asm):00186                 LDA     #05                               ; ESP OPCODE
+                      (    cubix_esp.asm):00187                 JSR     PUTESP0                           ; SEND IT
+                      (    cubix_esp.asm):00188                 PULS    A
+                      (    cubix_esp.asm):00189                 JSR     PUTESP0                           ; SEND IT
+                      (    cubix_esp.asm):00190                 RTS
                       (    cubix_esp.asm):00191         ;__________________________________________________________________________________________________
-FCA6                  (    cubix_esp.asm):00192         PUTESP0:
-FCA6 3414             (    cubix_esp.asm):00193                 PSHS    X,B
-FCA8 8E2500           (    cubix_esp.asm):00194                 LDX     #$2500
-                      (    cubix_esp.asm):00195         !
-FCAB F6E102           (    cubix_esp.asm):00196                 LDB     ESP_STAT
-FCAE C402             (    cubix_esp.asm):00197                 ANDB    #ESP0_BUSY
-FCB0 2709             (    cubix_esp.asm):00198                 BEQ     >
-FCB2 301F             (    cubix_esp.asm):00199                 DEX
-FCB4 26F5             (    cubix_esp.asm):00200                 BNE     <
-FCB6 3514             (    cubix_esp.asm):00201                 PULS    X,B
-FCB8 1A01             (    cubix_esp.asm):00202                 SEC
-FCBA 39               (    cubix_esp.asm):00203                 RTS
-                      (    cubix_esp.asm):00204         !
-FCBB B7E100           (    cubix_esp.asm):00205                 STA     ESP0_DAT
-FCBE 3514             (    cubix_esp.asm):00206                 PULS    X,B
-FCC0 1CFE             (    cubix_esp.asm):00207                 CLC
-FCC2 39               (    cubix_esp.asm):00208                 RTS
-                      (    cubix_esp.asm):00209         
-FCC3                  (    cubix_esp.asm):00210         GETESP0:
-FCC3 3414             (    cubix_esp.asm):00211                 PSHS    X,B
-FCC5 8EFF00           (    cubix_esp.asm):00212                 LDX     #$FF00
-                      (    cubix_esp.asm):00213         !
-FCC8 F6E102           (    cubix_esp.asm):00214                 LDB     ESP_STAT
-FCCB C402             (    cubix_esp.asm):00215                 ANDB    #ESP0_BUSY
-FCCD 2709             (    cubix_esp.asm):00216                 BEQ     >
-FCCF 301F             (    cubix_esp.asm):00217                 DEX
-FCD1 26F5             (    cubix_esp.asm):00218                 BNE     <
-FCD3 3514             (    cubix_esp.asm):00219                 PULS    X,B
-FCD5 1A01             (    cubix_esp.asm):00220                 SEC
-FCD7 39               (    cubix_esp.asm):00221                 RTS
-                      (    cubix_esp.asm):00222         !
-FCD8 8EFF00           (    cubix_esp.asm):00223                 LDX     #$FF00
-                      (    cubix_esp.asm):00224         !
-FCDB F6E102           (    cubix_esp.asm):00225                 LDB     ESP_STAT
-FCDE C401             (    cubix_esp.asm):00226                 ANDB    #ESP0_RDY
-FCE0 2609             (    cubix_esp.asm):00227                 BNE     >
-FCE2 301F             (    cubix_esp.asm):00228                 DEX
-FCE4 26F5             (    cubix_esp.asm):00229                 BNE     <
-FCE6 3514             (    cubix_esp.asm):00230                 PULS    X,B
-FCE8 1A01             (    cubix_esp.asm):00231                 SEC
-FCEA 39               (    cubix_esp.asm):00232                 RTS
-                      (    cubix_esp.asm):00233         !
-FCEB B6E100           (    cubix_esp.asm):00234                 LDA     ESP0_DAT
-FCEE 3514             (    cubix_esp.asm):00235                 PULS    X,B
-FCF0 1CFE             (    cubix_esp.asm):00236                 CLC
-FCF2 39               (    cubix_esp.asm):00237                 RTS
-                      (    cubix_esp.asm):00238         
-FCF3                  (    cubix_esp.asm):00239         PUTESP1:
-FCF3 3414             (    cubix_esp.asm):00240                 PSHS    X,B
-FCF5 8E2500           (    cubix_esp.asm):00241                 LDX     #$2500
-                      (    cubix_esp.asm):00242         !
-FCF8 F6E102           (    cubix_esp.asm):00243                 LDB     ESP_STAT
-FCFB C410             (    cubix_esp.asm):00244                 ANDB    #ESP1_BUSY
-FCFD 2709             (    cubix_esp.asm):00245                 BEQ     >
-FCFF 301F             (    cubix_esp.asm):00246                 DEX
-FD01 26F5             (    cubix_esp.asm):00247                 BNE     <
-FD03 3514             (    cubix_esp.asm):00248                 PULS    X,B
-FD05 1A01             (    cubix_esp.asm):00249                 SEC
-FD07 39               (    cubix_esp.asm):00250                 RTS
-                      (    cubix_esp.asm):00251         !
-FD08 B7E101           (    cubix_esp.asm):00252                 STA     ESP1_DAT
-FD0B 3514             (    cubix_esp.asm):00253                 PULS    X,B
-FD0D 1CFE             (    cubix_esp.asm):00254                 CLC
-FD0F 39               (    cubix_esp.asm):00255                 RTS
-                      (    cubix_esp.asm):00256         
-FD10                  (    cubix_esp.asm):00257         GETESP1:
-FD10 3414             (    cubix_esp.asm):00258                 PSHS    X,B
-FD12 8EFF00           (    cubix_esp.asm):00259                 LDX     #$FF00
-                      (    cubix_esp.asm):00260         !
-FD15 F6E102           (    cubix_esp.asm):00261                 LDB     ESP_STAT
-FD18 C410             (    cubix_esp.asm):00262                 ANDB    #ESP1_BUSY
-FD1A 2709             (    cubix_esp.asm):00263                 BEQ     >
-FD1C 301F             (    cubix_esp.asm):00264                 DEX
-FD1E 26F5             (    cubix_esp.asm):00265                 BNE     <
-FD20 3514             (    cubix_esp.asm):00266                 PULS    X,B
-FD22 1A01             (    cubix_esp.asm):00267                 SEC
-FD24 39               (    cubix_esp.asm):00268                 RTS
-                      (    cubix_esp.asm):00269         !
-FD25 8EFF00           (    cubix_esp.asm):00270                 LDX     #$FF00
-                      (    cubix_esp.asm):00271         !
-FD28 F6E102           (    cubix_esp.asm):00272                 LDB     ESP_STAT
-FD2B C408             (    cubix_esp.asm):00273                 ANDB    #ESP1_RDY
-FD2D 2609             (    cubix_esp.asm):00274                 BNE     >
-FD2F 301F             (    cubix_esp.asm):00275                 DEX
-FD31 26F5             (    cubix_esp.asm):00276                 BNE     <
-FD33 3514             (    cubix_esp.asm):00277                 PULS    X,B
-FD35 1A01             (    cubix_esp.asm):00278                 SEC
-FD37 39               (    cubix_esp.asm):00279                 RTS
-                      (    cubix_esp.asm):00280         !
-FD38 B6E101           (    cubix_esp.asm):00281                 LDA     ESP1_DAT
-FD3B 3514             (    cubix_esp.asm):00282                 PULS    X,B
-FD3D 1CFE             (    cubix_esp.asm):00283                 CLC
-FD3F 39               (    cubix_esp.asm):00284                 RTS
-                      (    cubix_esp.asm):00285         
-                      (    cubix_esp.asm):00286         
-                      (    cubix_esp.asm):00287                 IFNDEF  BIOS6809PC
-                      (    cubix_esp.asm):00288         ;
-                      (    cubix_esp.asm):00289         ; DRIVER DATA
-                      (    cubix_esp.asm):00290         ;__________________________________________________________________________________________________
-                      (    cubix_esp.asm):00291         ; MESSAGES
-                      (    cubix_esp.asm):00292         ;__________________________________________________________________________________________________
-FD40                  (    cubix_esp.asm):00293         ESPMESSAGE1:
-                      (    cubix_esp.asm):00294                 FCC     "DUAL ESP IO:"
-                      (    cubix_esp.asm):00295                 FCB     00
-FD40                  (    cubix_esp.asm):00296         ESPMESSAGE2:
-                      (    cubix_esp.asm):00297                 FCC     "  ESP0: "
-                      (    cubix_esp.asm):00298                 FCB     00
-FD40                  (    cubix_esp.asm):00299         ESPMESSAGE3:
-                      (    cubix_esp.asm):00300                 FCC     "  ESP1: "
-                      (    cubix_esp.asm):00301                 FCB     00
-FD40                  (    cubix_esp.asm):00302         ESPMESSAGE4:
-                      (    cubix_esp.asm):00303                 FCC     "NOT "
-FD40                  (    cubix_esp.asm):00304         ESPMESSAGE5:
-                      (    cubix_esp.asm):00305                 FCC     "FOUND."
-                      (    cubix_esp.asm):00306                 FCB     00
-                      (    cubix_esp.asm):00307                 ENDIF
+                      (    cubix_esp.asm):00192         ; ESPSER0OUT  - OUTPUT A CHARACTER TO Serial 0 ('A' POINTS TO BYTE)
+                      (    cubix_esp.asm):00193         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00194         ;
+FC85                  (    cubix_esp.asm):00195         ESPSER0OUT:
+                      (    cubix_esp.asm):00196                 PSHS    A
+                      (    cubix_esp.asm):00197                 LDA     #08                               ; ESP OPCODE
+                      (    cubix_esp.asm):00198                 JSR     PUTESP0                           ; SEND IT
+                      (    cubix_esp.asm):00199                 PULS    A
+                      (    cubix_esp.asm):00200                 JSR     PUTESP0                           ; SEND IT
+                      (    cubix_esp.asm):00201                 RTS
+                      (    cubix_esp.asm):00202         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00203         ; ESPSER0IN   - read a character from Serial 0 ('A' POINTS TO BYTE)
+                      (    cubix_esp.asm):00204         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00205         ;
+FC85                  (    cubix_esp.asm):00206         ESPSER0IN:
+                      (    cubix_esp.asm):00207                 LDA     #10                               ; ESP IN FROM Serial 0
+                      (    cubix_esp.asm):00208                 JMP     ESPCHIN
+                      (    cubix_esp.asm):00209         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00210         ; ESPSER1OUT  - OUTPUT A CHARACTER TO Serial 1 ('A' POINTS TO BYTE)
+                      (    cubix_esp.asm):00211         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00212         ;
+FC85                  (    cubix_esp.asm):00213         ESPSER1OUT:
+                      (    cubix_esp.asm):00214                 PSHS    A
+                      (    cubix_esp.asm):00215                 LDA     #08                               ; ESP OPCODE
+                      (    cubix_esp.asm):00216                 JSR     PUTESP1                           ; SEND IT
+                      (    cubix_esp.asm):00217                 PULS    A
+                      (    cubix_esp.asm):00218                 JSR     PUTESP1                           ; SEND IT
+                      (    cubix_esp.asm):00219                 RTS
+                      (    cubix_esp.asm):00220         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00221         ; ESPSER1IN   - read a character from Serial 1 ('A' POINTS TO BYTE)
+                      (    cubix_esp.asm):00222         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00223         ;
+FC85                  (    cubix_esp.asm):00224         ESPSER1IN:
+                      (    cubix_esp.asm):00225                 LDA     #10                               ; ESP IN FROM Serial 1
+FC85                  (    cubix_esp.asm):00226         ESPCH1IN:
+                      (    cubix_esp.asm):00227                 JSR     PUTESP1                           ; SEND IT
+                      (    cubix_esp.asm):00228                 BCS     >
+                      (    cubix_esp.asm):00229                 JSR     GETESP1                           ; GET IT
+                      (    cubix_esp.asm):00230                 BCS     >
+                      (    cubix_esp.asm):00231                 CMPA    #$00
+                      (    cubix_esp.asm):00232                 BEQ     >
+                      (    cubix_esp.asm):00233                 STA     >PAGER_D                          ; SAVE 'D'
+                      (    cubix_esp.asm):00234                 RTS
+                      (    cubix_esp.asm):00235         !
+                      (    cubix_esp.asm):00236                 LDA     #$FF
+                      (    cubix_esp.asm):00237                 STA     >PAGER_D                          ; SAVE 'D'
+                      (    cubix_esp.asm):00238                 RTS
+                      (    cubix_esp.asm):00239         
+                      (    cubix_esp.asm):00240         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00241         ; ESPNETCOUT  - OUTPUT A CHARACTER TO Network Console Connection ('A' POINTS TO BYTE)
+                      (    cubix_esp.asm):00242         ;               Connection Stored in 'consoleConnect' value
+                      (    cubix_esp.asm):00243         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00244         ;
+FC85                  (    cubix_esp.asm):00245         ESPNETCOUT:
+                      (    cubix_esp.asm):00246                 PSHS    A
+                      (    cubix_esp.asm):00247                 LDA     #25                               ; ESP OPCODE
+                      (    cubix_esp.asm):00248                 JSR     PUTESP0                           ; SEND IT
+                      (    cubix_esp.asm):00249                 LDA     consoleConnect
+                      (    cubix_esp.asm):00250                 JSR     PUTESP0                           ; SEND IT
+                      (    cubix_esp.asm):00251                 PULS    A
+                      (    cubix_esp.asm):00252                 JSR     PUTESP0                           ; SEND IT
+                      (    cubix_esp.asm):00253                 RTS
+                      (    cubix_esp.asm):00254         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00255         ; ESPNETCIN   - read a character from Network Console Connection ('A' POINTS TO BYTE)
+                      (    cubix_esp.asm):00256         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00257         ;
+FC85                  (    cubix_esp.asm):00258         ESPNETCIN:
+                      (    cubix_esp.asm):00259                 LDA     #26                               ; ESP OPCODE
+                      (    cubix_esp.asm):00260                 JSR     PUTESP0                           ; SEND IT
+                      (    cubix_esp.asm):00261                 LDA     consoleConnect
+                      (    cubix_esp.asm):00262                 JMP     ESPCH1IN
+                      (    cubix_esp.asm):00263         
+                      (    cubix_esp.asm):00264         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00265         ; ESPPS2BUFL - Return number of characters in keyboard buffer
+                      (    cubix_esp.asm):00266         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00267         ;
+FC85                  (    cubix_esp.asm):00268         ESPPS2BUFL:
+                      (    cubix_esp.asm):00269                 LDA     #04                               ; opcode to get buffer length
+                      (    cubix_esp.asm):00270                 JSR     PUTESP0                           ; SEND IT
+                      (    cubix_esp.asm):00271                 BCS     >
+                      (    cubix_esp.asm):00272                 JSR     GETESP0                           ; GET IT
+                      (    cubix_esp.asm):00273                 BCS     >
+                      (    cubix_esp.asm):00274                 STA     >PAGER_D                          ; SAVE 'D'
+                      (    cubix_esp.asm):00275                 RTS
+                      (    cubix_esp.asm):00276         !
+                      (    cubix_esp.asm):00277                 LDA     #$00
+                      (    cubix_esp.asm):00278                 STA     >PAGER_D                          ; SAVE 'D'
+                      (    cubix_esp.asm):00279                 RTS
+                      (    cubix_esp.asm):00280         
+                      (    cubix_esp.asm):00281         
+                      (    cubix_esp.asm):00282         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00283         ; ESPSER0BUFL - return number of characters in the Serial 0 buffer in 'A'
+                      (    cubix_esp.asm):00284         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00285         ;
+FC85                  (    cubix_esp.asm):00286         ESPSER0BUFL:
+                      (    cubix_esp.asm):00287                 LDA     #11                               ; opcode to get buffer length
+                      (    cubix_esp.asm):00288                 JSR     PUTESP0                           ; SEND IT
+                      (    cubix_esp.asm):00289                 BCS     >
+                      (    cubix_esp.asm):00290                 JSR     GETESP0                           ; GET IT
+                      (    cubix_esp.asm):00291                 BCS     >
+                      (    cubix_esp.asm):00292                 STA     >PAGER_D                          ; SAVE 'D'
+                      (    cubix_esp.asm):00293                 RTS
+                      (    cubix_esp.asm):00294         !
+                      (    cubix_esp.asm):00295                 LDA     #$00
+                      (    cubix_esp.asm):00296                 STA     >PAGER_D                          ; SAVE 'D'
+                      (    cubix_esp.asm):00297                 RTS
+                      (    cubix_esp.asm):00298         
+                      (    cubix_esp.asm):00299         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00300         ; ESPSER1BUFL - return number of characters in the Serial 1 buffer in 'A'
+                      (    cubix_esp.asm):00301         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00302         ;
+FC85                  (    cubix_esp.asm):00303         ESPSER1BUFL:
+                      (    cubix_esp.asm):00304                 LDA     #11                               ; opcode to get buffer length
+FC85                  (    cubix_esp.asm):00305         ESP1BUFL:
+                      (    cubix_esp.asm):00306                 JSR     PUTESP1                           ; SEND IT
+                      (    cubix_esp.asm):00307                 BCS     >
+                      (    cubix_esp.asm):00308                 JSR     GETESP1                           ; GET IT
+                      (    cubix_esp.asm):00309                 BCS     >
+                      (    cubix_esp.asm):00310                 STA     >PAGER_D                          ; SAVE 'D'
+                      (    cubix_esp.asm):00311                 RTS
+                      (    cubix_esp.asm):00312         !
+                      (    cubix_esp.asm):00313                 LDA     #$00
+                      (    cubix_esp.asm):00314                 STA     >PAGER_D                          ; SAVE 'D'
+                      (    cubix_esp.asm):00315                 RTS
+                      (    cubix_esp.asm):00316         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00317         ; ESPNETCBUFL - return number of characters in the Network Connection buffer in 'A'
+                      (    cubix_esp.asm):00318         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00319         ;
+FC85                  (    cubix_esp.asm):00320         ESPNETCBUFL:
+                      (    cubix_esp.asm):00321                 LDA     #28                               ; opcode to get buffer length
+                      (    cubix_esp.asm):00322                 JMP     ESP1BUFL
+                      (    cubix_esp.asm):00323         
+                      (    cubix_esp.asm):00324                 ENDIF
+                      (    cubix_esp.asm):00325         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00326         ; ESPVIDEOOUT - output character in 'A' to CRT (ANSI terminal emulation)
+                      (    cubix_esp.asm):00327         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00328         ;
+FC85                  (    cubix_esp.asm):00329         ESPVIDEOOUT:
+FC85 3402             (    cubix_esp.asm):00330                 PSHS    A
+FC87 8601             (    cubix_esp.asm):00331                 LDA     #01                               ; ESP OUT TO SCREEN
+FC89 BDFCA6           (    cubix_esp.asm):00332                 JSR     PUTESP0                           ; SEND IT
+FC8C 3502             (    cubix_esp.asm):00333                 PULS    A
+FC8E BDFCA6           (    cubix_esp.asm):00334                 JSR     PUTESP0                           ; SEND IT
+FC91 39               (    cubix_esp.asm):00335                 RTS
+                      (    cubix_esp.asm):00336         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00337         ; ESPPS2IN - Fetch character out of Keyboard Buffer into 'A'  ($FF is no characters waiting)
+                      (    cubix_esp.asm):00338         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00339         ;
+FC92                  (    cubix_esp.asm):00340         ESPPS2IN:
+FC92 8603             (    cubix_esp.asm):00341                 LDA     #03                               ; ESP IN FROM PS2
+FC94                  (    cubix_esp.asm):00342         ESPCHIN:
+FC94 BDFCA6           (    cubix_esp.asm):00343                 JSR     PUTESP0                           ; SEND IT
+FC97 250A             (    cubix_esp.asm):00344                 BCS     >
+FC99 BDFCC3           (    cubix_esp.asm):00345                 JSR     GETESP0                           ; GET IT
+FC9C 2505             (    cubix_esp.asm):00346                 BCS     >
+FC9E 8100             (    cubix_esp.asm):00347                 CMPA    #$00
+FCA0 2701             (    cubix_esp.asm):00348                 BEQ     >
+                      (    cubix_esp.asm):00349                 IFNDEF  BIOS6809PC
+                      (    cubix_esp.asm):00350                 STA     >PAGER_D                          ; SAVE 'D'
+                      (    cubix_esp.asm):00351                 ENDIF
+FCA2 39               (    cubix_esp.asm):00352                 RTS
+                      (    cubix_esp.asm):00353         !
+FCA3 86FF             (    cubix_esp.asm):00354                 LDA     #$FF
+                      (    cubix_esp.asm):00355                 IFNDEF  BIOS6809PC
+                      (    cubix_esp.asm):00356                 STA     >PAGER_D                          ; SAVE 'D'
+                      (    cubix_esp.asm):00357                 ENDIF
+FCA5 39               (    cubix_esp.asm):00358                 RTS
+                      (    cubix_esp.asm):00359         
+                      (    cubix_esp.asm):00360         
+                      (    cubix_esp.asm):00361         ;
+                      (    cubix_esp.asm):00362         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00363         ; HARDWARE INTERFACE
+                      (    cubix_esp.asm):00364         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00365         ;
+                      (    cubix_esp.asm):00366         ; a=VALUE AND RETURN
+                      (    cubix_esp.asm):00367         ; Carry set on timeout
+                      (    cubix_esp.asm):00368         ;
+                      (    cubix_esp.asm):00369         ;__________________________________________________________________________________________________
+FCA6                  (    cubix_esp.asm):00370         PUTESP0:
+FCA6 3414             (    cubix_esp.asm):00371                 PSHS    X,B
+FCA8 8E2500           (    cubix_esp.asm):00372                 LDX     #$2500
+                      (    cubix_esp.asm):00373         !
+FCAB F6E102           (    cubix_esp.asm):00374                 LDB     ESP_STAT
+FCAE C402             (    cubix_esp.asm):00375                 ANDB    #ESP0_BUSY
+FCB0 2709             (    cubix_esp.asm):00376                 BEQ     >
+FCB2 301F             (    cubix_esp.asm):00377                 DEX
+FCB4 26F5             (    cubix_esp.asm):00378                 BNE     <
+FCB6 3514             (    cubix_esp.asm):00379                 PULS    X,B
+FCB8 1A01             (    cubix_esp.asm):00380                 SEC
+FCBA 39               (    cubix_esp.asm):00381                 RTS
+                      (    cubix_esp.asm):00382         !
+FCBB B7E100           (    cubix_esp.asm):00383                 STA     ESP0_DAT
+FCBE 3514             (    cubix_esp.asm):00384                 PULS    X,B
+FCC0 1CFE             (    cubix_esp.asm):00385                 CLC
+FCC2 39               (    cubix_esp.asm):00386                 RTS
+                      (    cubix_esp.asm):00387         
+FCC3                  (    cubix_esp.asm):00388         GETESP0:
+FCC3 3414             (    cubix_esp.asm):00389                 PSHS    X,B
+FCC5 8EFF00           (    cubix_esp.asm):00390                 LDX     #$FF00
+                      (    cubix_esp.asm):00391         !
+FCC8 F6E102           (    cubix_esp.asm):00392                 LDB     ESP_STAT
+FCCB C402             (    cubix_esp.asm):00393                 ANDB    #ESP0_BUSY
+FCCD 2709             (    cubix_esp.asm):00394                 BEQ     >
+FCCF 301F             (    cubix_esp.asm):00395                 DEX
+FCD1 26F5             (    cubix_esp.asm):00396                 BNE     <
+FCD3 3514             (    cubix_esp.asm):00397                 PULS    X,B
+FCD5 1A01             (    cubix_esp.asm):00398                 SEC
+FCD7 39               (    cubix_esp.asm):00399                 RTS
+                      (    cubix_esp.asm):00400         !
+FCD8 8EFF00           (    cubix_esp.asm):00401                 LDX     #$FF00
+                      (    cubix_esp.asm):00402         !
+FCDB F6E102           (    cubix_esp.asm):00403                 LDB     ESP_STAT
+FCDE C401             (    cubix_esp.asm):00404                 ANDB    #ESP0_RDY
+FCE0 2609             (    cubix_esp.asm):00405                 BNE     >
+FCE2 301F             (    cubix_esp.asm):00406                 DEX
+FCE4 26F5             (    cubix_esp.asm):00407                 BNE     <
+FCE6 3514             (    cubix_esp.asm):00408                 PULS    X,B
+FCE8 1A01             (    cubix_esp.asm):00409                 SEC
+FCEA 39               (    cubix_esp.asm):00410                 RTS
+                      (    cubix_esp.asm):00411         !
+FCEB B6E100           (    cubix_esp.asm):00412                 LDA     ESP0_DAT
+FCEE 3514             (    cubix_esp.asm):00413                 PULS    X,B
+FCF0 1CFE             (    cubix_esp.asm):00414                 CLC
+FCF2 39               (    cubix_esp.asm):00415                 RTS
+                      (    cubix_esp.asm):00416         
+FCF3                  (    cubix_esp.asm):00417         PUTESP1:
+FCF3 3414             (    cubix_esp.asm):00418                 PSHS    X,B
+FCF5 8E2500           (    cubix_esp.asm):00419                 LDX     #$2500
+                      (    cubix_esp.asm):00420         !
+FCF8 F6E102           (    cubix_esp.asm):00421                 LDB     ESP_STAT
+FCFB C410             (    cubix_esp.asm):00422                 ANDB    #ESP1_BUSY
+FCFD 2709             (    cubix_esp.asm):00423                 BEQ     >
+FCFF 301F             (    cubix_esp.asm):00424                 DEX
+FD01 26F5             (    cubix_esp.asm):00425                 BNE     <
+FD03 3514             (    cubix_esp.asm):00426                 PULS    X,B
+FD05 1A01             (    cubix_esp.asm):00427                 SEC
+FD07 39               (    cubix_esp.asm):00428                 RTS
+                      (    cubix_esp.asm):00429         !
+FD08 B7E101           (    cubix_esp.asm):00430                 STA     ESP1_DAT
+FD0B 3514             (    cubix_esp.asm):00431                 PULS    X,B
+FD0D 1CFE             (    cubix_esp.asm):00432                 CLC
+FD0F 39               (    cubix_esp.asm):00433                 RTS
+                      (    cubix_esp.asm):00434         
+FD10                  (    cubix_esp.asm):00435         GETESP1:
+FD10 3414             (    cubix_esp.asm):00436                 PSHS    X,B
+FD12 8EFF00           (    cubix_esp.asm):00437                 LDX     #$FF00
+                      (    cubix_esp.asm):00438         !
+FD15 F6E102           (    cubix_esp.asm):00439                 LDB     ESP_STAT
+FD18 C410             (    cubix_esp.asm):00440                 ANDB    #ESP1_BUSY
+FD1A 2709             (    cubix_esp.asm):00441                 BEQ     >
+FD1C 301F             (    cubix_esp.asm):00442                 DEX
+FD1E 26F5             (    cubix_esp.asm):00443                 BNE     <
+FD20 3514             (    cubix_esp.asm):00444                 PULS    X,B
+FD22 1A01             (    cubix_esp.asm):00445                 SEC
+FD24 39               (    cubix_esp.asm):00446                 RTS
+                      (    cubix_esp.asm):00447         !
+FD25 8EFF00           (    cubix_esp.asm):00448                 LDX     #$FF00
+                      (    cubix_esp.asm):00449         !
+FD28 F6E102           (    cubix_esp.asm):00450                 LDB     ESP_STAT
+FD2B C408             (    cubix_esp.asm):00451                 ANDB    #ESP1_RDY
+FD2D 2609             (    cubix_esp.asm):00452                 BNE     >
+FD2F 301F             (    cubix_esp.asm):00453                 DEX
+FD31 26F5             (    cubix_esp.asm):00454                 BNE     <
+FD33 3514             (    cubix_esp.asm):00455                 PULS    X,B
+FD35 1A01             (    cubix_esp.asm):00456                 SEC
+FD37 39               (    cubix_esp.asm):00457                 RTS
+                      (    cubix_esp.asm):00458         !
+FD38 B6E101           (    cubix_esp.asm):00459                 LDA     ESP1_DAT
+FD3B 3514             (    cubix_esp.asm):00460                 PULS    X,B
+FD3D 1CFE             (    cubix_esp.asm):00461                 CLC
+FD3F 39               (    cubix_esp.asm):00462                 RTS
+                      (    cubix_esp.asm):00463         
+                      (    cubix_esp.asm):00464         
+                      (    cubix_esp.asm):00465                 IFNDEF  BIOS6809PC
+                      (    cubix_esp.asm):00466         ;
+                      (    cubix_esp.asm):00467         ; DRIVER DATA
+                      (    cubix_esp.asm):00468         ;__________________________________________________________________________________________________
+                      (    cubix_esp.asm):00469         ; MESSAGES
+                      (    cubix_esp.asm):00470         ;__________________________________________________________________________________________________
+FD40                  (    cubix_esp.asm):00471         ESPMESSAGE1:
+                      (    cubix_esp.asm):00472                 FCC     "DUAL ESP IO:"
+                      (    cubix_esp.asm):00473                 FCB     00
+FD40                  (    cubix_esp.asm):00474         ESPMESSAGE2:
+                      (    cubix_esp.asm):00475                 FCC     "  ESP0: "
+                      (    cubix_esp.asm):00476                 FCB     00
+FD40                  (    cubix_esp.asm):00477         ESPMESSAGE3:
+                      (    cubix_esp.asm):00478                 FCC     "  ESP1: "
+                      (    cubix_esp.asm):00479                 FCB     00
+FD40                  (    cubix_esp.asm):00480         ESPMESSAGE4:
+                      (    cubix_esp.asm):00481                 FCC     "NOT "
+FD40                  (    cubix_esp.asm):00482         ESPMESSAGE5:
+                      (    cubix_esp.asm):00483                 FCC     "FOUND."
+                      (    cubix_esp.asm):00484                 FCB     00
+                      (    cubix_esp.asm):00485                 ENDIF
                       (        mon09.asm):01255         
                       (        mon09.asm):01256         ;*
                       (        mon09.asm):01257         ;* MACHINE VECTORS
@@ -2139,6 +2316,7 @@ Symbol Table:
 [ G] ESP1_RDY                         0008
 [ G] ESP_BASE                         E100
 [ G] ESP_STAT                         E102
+[ G] ESPCHIN                          FC94
 [ G] ESPEXISTS                        BF29
 [ G] ESPPS2IN                         FC92
 [ G] ESPVIDEOOUT                      FC85

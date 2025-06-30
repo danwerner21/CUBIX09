@@ -6,6 +6,7 @@
 ;________________________________________________________________________________________________________________________________
 ; $0000-$00FF DRIVER/PAGER STACK
 ; $0100-$01FF OS Driver Storage
+consoleConnect  = $0100
 farpointer      = $0101
 DISKERROR       = $0103
 CURRENTDEVICE   = $0104

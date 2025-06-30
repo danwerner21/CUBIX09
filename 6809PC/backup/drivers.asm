@@ -90,6 +90,21 @@ RDSER:
         LDA     #$FF                              ; CLEAR 'Z'
         RTS
 
+WRESPVID:
+        LDB     #03                               ;WRITE ESP VIDEO
+        JMP     MD_PAGERA
+
+RDESPPS2:
+        LDB     #04                               ;READ ESP PS2
+        JSR     MD_PAGERA
+        CMPA    #$FF
+        BEQ     >
+        ORCC    #%00000100                        ; SET 'Z'
+        RTS
+!
+        LDA     #$FF                              ; CLEAR 'Z'
+        RTS
+
 WRLPT:
         LDB     #53                               ;WRITE LPT PORT
         JMP     MD_PAGERA                         ;
@@ -104,6 +119,57 @@ RDKYB:
 !
         LDA     #$FF                              ; CLEAR 'Z'
         RTS
+
+WRSERESP0:
+        LDB     #56                               ;WRITE ESP SERIAL PORT 0
+        JMP     MD_PAGERA
+
+WRSERESP1:
+        LDB     #59                               ;WRITE ESP SERIAL PORT 1
+        JMP     MD_PAGERA
+
+WRNETCONN:
+        LDB     #62                               ;WRITE TO Network Console Connection
+        JMP     MD_PAGERA
+
+RDESP0:
+        LDB     #57                               ;READ ESP SERIAL PORT 0
+RDESP:
+        JSR     MD_PAGERA
+        CMPA    #$FF
+        BEQ     >
+        ORCC    #%00000100                        ; SET 'Z'
+        RTS
+!
+        LDA     #$FF                              ; CLEAR 'Z'
+        RTS
+
+RDESP1:
+        LDB     #60                               ;READ ESP SERIAL PORT 1
+        BRA     RDESP
+
+RDNETCONN:
+        LDB     #63                               ;READ Network Console Connection
+        BRA     RDESP
+
+
+WRESPRAW0:
+        LDB     #65                               ;WRITE ESP0 value
+        JMP     MD_PAGERA
+
+WRESPRAW1:
+        LDB     #66                               ;WRITE ESP1 value
+        JMP     MD_PAGERA
+
+RDESPRAW0:
+        LDB     #67                               ;READ ESP0 value
+        JMP     MD_PAGERA
+
+RDESPRAW1:
+        LDB     #68                               ;READ ESP1 value
+        JMP     MD_PAGERA
+
+
 
 
 ;
@@ -245,11 +311,12 @@ RITAB           EQU *
         FCB     2,254,1,255,0,0,0                 ;ADR 2, 254 CYL, 1 HEAD, 255 SEC/TRK   - CYL 0 unusable by OS
         FCB     3,254,1,255,0,0,0                 ;ADR 3, 254 CYL, 1 HEAD, 255 SEC/TRK   - CYL 0 unusable by OS
 ;* CONSOLE DEVICE ASSIGNMENTS
-        FCB     1                                 ;CONSOLE INPUT DEVICE
-        FCB     1                                 ;CONSOLE OUTPUT DEVICE
+        FCB     2                                 ;CONSOLE INPUT DEVICE
+        FCB     2                                 ;CONSOLE OUTPUT DEVICE
 ;* SERIAL DEVICE DRIVERS
-        FDB     RDNULL,RDSER,RDKYB,0,0,0,0,0
-        FDB     WRNULL,WRSER,WRLPT,0,0,0,0,0
+        FDB     RDNULL,RDSER,RDESPPS2,RDKYB,WRSERESP0,WRSERESP1,WRNETCONN,0
+        FDB     WRNULL,WRSER,WRESPVID,WRLPT,RDESP0,RDESP1,RDNETCONN,0
+
 ;* DISK DEVICE DRIVERS
         FDB     DHOME,DRDSEC,DWRSEC,DFORMAT
 ;* 6809 HARDWARE VECTORS

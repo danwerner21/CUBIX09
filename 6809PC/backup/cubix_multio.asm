@@ -43,7 +43,8 @@ KBD_CAPSLCK     EQU $40                           ; BIT 6, SCROLL LOCK ACTIVE (T
 KBD_NUMPAD      EQU $80                           ; BIT 7, NUM PAD KEY (KEY PRESSED IS ON NUM PAD)
 ;
 KBD_DEFRPT      EQU $40                           ; DEFAULT REPEAT RATE (.5 SEC DELAY, 30CPS)
-KBD_DEFSTATE    EQU KBD_NUMLCK|KBD_CAPSLCK|KBD_SCRLCK; DEFAULT STATE (NUM LOCK ON)
+KBD_DEFSTATE    EQU KBD_NUMLCK|KBD_CAPSLCK|KBD_SCRLCK
+                                                  ; DEFAULT STATE (NUM LOCK ON)
 
 KBD_WAITTO      EQU $30FF                         ; DEFAULT TIMEOUT
 LPT_WAITTO      EQU $30FF                         ; DEFAULT TIMEOUT

@@ -93,7 +93,6 @@ IDE_PRINT_INFO:
         LDA     #$01
         JSR     IDE_READ_INFO                     ; GET DRIVE INFO, ABORT IF ERROR
 IDE_INITA:
-        JSR     LFCR                              ; AND CRLF
         RTS                                       ; DONE
         ENDIF
 ;
@@ -371,7 +370,7 @@ IDEBUFWT:
 
         IFNDEF  BIOS6809PC
 MESSAGE1
-        FCC     "PPIDE :"
+        FCC     "XT-IDE:"
         FCB     00
 MESSAGE2
         FCC     " IO=0x"
@@ -380,10 +379,10 @@ MESSAGE3
         FCC     " NOT PRESENT"
         FCB     00
 MESSAGE4
-        FCC     " PPIDE0: BLOCKS="
+        FCC     " XT-IDE0: BLOCKS="
         FCB     00
 MESSAGE5
-        FCC     " PPIDE1: BLOCKS="
+        FCC     " XT-IDE1: BLOCKS="
         FCB     00
 MESSAGE6
         FCC     "0x"
