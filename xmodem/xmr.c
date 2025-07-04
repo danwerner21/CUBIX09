@@ -40,7 +40,7 @@ unsigned char _inbyte(unsigned int timeout)
         i = chkchr();
         if (i > 0)
         {
-            return (unsigned char)i;
+            return (unsigned char)(i & 0xFF);
         }
     }
     return 0;
@@ -61,10 +61,10 @@ static unsigned int check_checksum(const unsigned char *buf, int sz)
     cks = 0;
     for (i = 0; i < sz; ++i)
     {
-        cks += buf[i];
+        cks += (unsigned char)buf[i];
     }
 
-    return (cks == buf[sz]) ? 1 : 0;
+    return (cks == (unsigned char)buf[sz]) ? 1 : 0;
 }
 
 static void flushinput(void)
