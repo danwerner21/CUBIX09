@@ -22,10 +22,17 @@ COLD:
         CLR     SCRIPT                            ; DISABLE SCRIPTING
 LUKE:
         JSR     CLS                               ; A CLEAN SLATE
+        JSR     BOLD
+        LDX     #LOADM                            ;
+        LDB     #LOADML
         JSR     DLINE                             ; "LOADING GAME ..."
+        JSR     UNBOLD
+        JSR     MOVECURSOR
         JMP     START                             ; AND DO A WARMSTART
 
 LOADM:
+        FCB     27
+        FCC     "[10;10H "
         FCC     "THE STORY IS LOADING ..."
 loadlen:
 LOADML          EQU loadlen-LOADM
@@ -64,9 +71,10 @@ ZQUIT:
         LDX     #ENDSES
         LDB     #ENDSL
         JSR     LINE                              ; "END OF SESSION"
-        CLR     MOTOR                             ; SHUT DOWN DRIVE MOTOR
 
-;	JSR	ROMIN		; MAKE SURE ROM'S ACTIVE [ASK 5/15/85]
+        SWI
+        FCB     00
+
 
 FREEZE:
         BRA     FREEZE                            ; STOP DEAD
@@ -82,7 +90,7 @@ ENDSL           EQU endseslen-ENDSES
 ; DISPLAY ZIP VERSION NUMBER
 ; --------------------------
 
-        FCC     "COCO 2 VERSION C"
+        FCC     "6809 CUBIX VERSION"
         FCB     EOL
 vcodelen:
 VCODEL          EQU vcodelen-VCODE
@@ -97,57 +105,21 @@ VERNUM:
 ; -----------------
 
 COUT:
-        LDX     #BUFFER                           ; POINT TO I/O BUFFER
-        LDB     CHRPNT                            ; GET LINE INDEX
         CMPA    #EOL                              ; IF THIS IS A CR,
         BEQ     ZCRLF                             ; HANDLE AS SUCH
-        CMPA    #SPACE                            ; IGNORE OTHER CONTROLS
-        BLO     COUT1
-
-        STA     B,X                               ; SEND CHAR TO BUFFER
-        CMPB    #31                               ; END OF SCREEN LINE?
-        BHS     FLUSH                             ; YES, SO FLUSH CURRENT BUFFER
-        INC     CHRPNT                            ; ELSE UPDATE INDEX
-COUT1:
-        RTS                                       ; AND LEAVE
-
-; FLUSH CONTENTS OF [BUFFER]
-
-FLUSH:
-        LDA     #SPACE
-FLUSH1:
-        CMPA    B,X                               ; FIND LAST SPACE CHAR
-        BEQ     FLUSH2                            ; IN CURRENT LINE
-        DECB
-        BNE     FLUSH1                            ; KEEP SCANNING
-        LDB     #31                               ; SEND ENTIRE LINE IF NONE FOUND
-
-FLUSH2:
-        STB     CPSAV                             ; SAVE
-        STB     CHRPNT                            ; # CHARS IN LINE
-        JSR     ZCRLF                             ; OUTPUT 1ST PART OF LINE
-
-; START NEW LINE WITH REMAINDER OF OLD
-
-FLUSH3:
-        INC     CPSAV                             ; GET 1ST CHAR
-        LDB     CPSAV                             ; OF REMAINDER
-        CMPB    #31                               ; END OF LINE YET?
-        BLS     FLUSH4                            ; NO, MOVE IT FORWARD
-        RTS                                       ; ELSE WE'RE DONE HERE
-
-FLUSH4:
-        LDX     #BUFFER                           ; POINT TO BUFFER
-        LDA     B,X                               ; GET OLD CHAR
-        LDB     CHRPNT                            ; THIS WAS RESET BY CRLF
-        STA     B,X                               ; MOVE TO START OF BUFFER
-        INC     CHRPNT                            ; NEXT POSITION
-        BRA     FLUSH3                            ; KEEP MOVING
+        JMP     OUTCHR
 
 MORES:
         FCC     "[more]"
 morlen:
 MOREL           EQU morlen-MORES
+MCLR:
+        FCB     08,08,08,08,08,08
+        FCC     "      "
+        FCB     08,08,08,08,08,08
+mclrlen:
+MCLRL           EQU mclrlen-MCLR
+
 
 ; ---------------
 ; CARRIAGE RETURN
@@ -159,39 +131,28 @@ ZCRLF:
         CMPA    #13                               ; 13 LINES SENT YET?
         BLO     CR1                               ; NO, KEEP GOING
 
-        BSR     ZUSL                              ; UPDATE STATUS LINE
 
+        LDA     #$0D
+        JSR     CHAR
+
+        JSR     BOLD
         LDX     #MORES                            ; "[MORE]"
         LDB     #MOREL
         JSR     DLINE
+        JSR     UNBOLD
 
-        CLR     CFLAG                             ; NO CURSOR!
+        BSR     ZUSL                              ; UPDATE STATUS LINE
         JSR     GETKEY                            ; GET A KEYPRESS
 
-
-        LDA     #SPACE                            ; ERASE "MORE" MESSAGE
-        LDB     #MOREL                            ; WITH SPACES
-SPCS:
-        JSR     OUTCHR
-        DECB
-        BNE     SPCS
+        LDX     #MCLR                             ; CLEAR LINE
+        LDB     #MCLRL
+        JSR     DLINE
 
         CLR     LINCNT                            ; RESET LINE COUNTER
 
 CR1:
-        LDB     CHRPNT
-        LDX     #BUFFER
-        LDA     #EOL                              ; INSTALL AN EOL
-        STA     B,X                               ; AT END OF CURRENT LINE
-        INC     CHRPNT                            ; ADD IT TO CHAR COUNT
-
-LINOUT:
-        TST     CHRPNT                            ; IF NO CHARS IN BUFFER
-        BEQ     SCDONE                            ; DON'T PRINT ANYTHING
-OUTPUT:
-        JSR     BUFOUT                            ; ELSE DISPLAY BUFFER
-        CLR     CHRPNT                            ; RESET CHAR INDEX
-SCDONE:
+        LDA     #$0D
+        JSR     CHAR
         RTS                                       ; AND RETURN
 
 ; ------------------
@@ -209,29 +170,28 @@ ZUSL:
         LDY     CSTEMP                            ; TEMP & PERM TOGETHER!
         PSHS    X,Y,D
 
-        LDY     #BUFSAV                           ; MOVE OUTPUT BUFFER
-        LDX     #BUFFER                           ; TO TEMPORARY STORAGE
-        LDB     #SPACE                            ; CLEAR [BUFFER] WITH SPACES
-ZUSL1:
-        LDA     ,X
-        STB     ,X+
-        STA     ,Y+
-        CMPX    #BUFFER+32
-        BLO     ZUSL1
-
-
 ; DISPLAY ROOM NAME
 
         CLR     CHRPNT                            ; RESET CHAR INDEX
         CLR     SCRIPT                            ; DISABLE SCRIPTING
+        JSR     HOME
+        JSR     REVERSE
+
+        LDX     #79                               ;
+!
+        LDA     #SPACE                            ; PRINT A REVERSED LINE
+        JSR     COUT                              ; TO SEPARATE THINGS (BM 12/6/84)
+        DEX
+        BNE     <
+        JSR     HOME
 
         LDA     #$10                              ; GLOBAL VAR #0 (ROOM #)
         JSR     VARGET
         LDA     TEMP+1
         JSR     PRNTDC                            ; GET SHORT DESC INTO [BUFFER]
 
-        LDA     #22                               ; ADVANCE BUFFER INDEX
-        STA     CHRPNT                            ; INTO SCORING POSITION
+        LDA     #SPACE                            ; PRINT A SPACE
+        JSR     COUT                              ; TO SEPARATE THINGS (BM 12/6/84)
         LDA     #SPACE                            ; PRINT A SPACE
         JSR     COUT                              ; TO SEPARATE THINGS (BM 12/6/84)
 
@@ -305,15 +265,7 @@ PNUM:
 
 AHEAD:
         JSR     CR1                               ; DUMP BUFFER
-        BSR     INVERT                            ; INVERT STATUS LINE
 
-        LDY     #BUFSAV                           ; POINT TO "SAVE" BUFFER
-        LDX     #BUFFER                           ; POINT TO OUTPUT BUFFER
-USLEND:
-        LDA     ,Y+
-        STA     ,X+                               ; RESTORE PREVIOUS CONTENTS
-        CMPX    #BUFFER+32
-        BLO     USLEND
 
         PULS    X,Y,D                             ; RESTORE EVERYTHING
         STY     CSTEMP
@@ -326,11 +278,6 @@ USLEND:
         STA     CHRPNT
         COM     SCRIPT                            ; RE-ENABLE SCRIPTING
         CLR     MPCFLG                            ; MPC NO LONGER VALID
-        RTS
-
-; ------------------
-; INVERT STATUS LINE
-; ------------------
-
-INVERT:
+        JSR     UNBOLD
+        JSR     MOVECURSOR
         RTS

@@ -16,8 +16,10 @@ SPACE           EQU $20                           ; SPACE CHARACTER
 
 
 OUTCHR:
- 	SWI
+        PSHS    A,B,X,Y,U,CC
+        SWI
         FCB     33                                ;DISPLAY
+        PULS    A,B,X,Y,U,CC
         RTS
 
 ; -----------------
@@ -31,21 +33,19 @@ BADKEY:
         BRA     GK                                ; AND TRY AGAIN
 
 GETKEY:
-        PSHS    U,X,Y,B                           ; SAVE THESE
+        PSHS    U,X,Y,B,CC                        ; SAVE THESE
 
 
 GK:
-	SWI
-	FCB 	35
-	BEQ 	KTEST				  ; got a key
+        SWI
+        FCB     35
+        BEQ     KTEST                             ; got a key
         INC     RAND1                             ; GENERATE RANDOMNESS
         BNE     >
         INC     RAND2
 !
-	BRA 	GK
+        BRA     GK
 KTEST:
-	SWI
-	FCB 	34
         STA     IOCHAR                            ; STORE THE KEYPRESS
 
 
@@ -73,7 +73,7 @@ PKICK:
 ; "CLICK" SOUND FOR KEYS
 
 CLICK:
-        PULS    U,X,Y,B                           ; RESTORE THINGS
+        PULS    U,X,Y,B,CC                        ; RESTORE THINGS
         LDA     IOCHAR                            ; RETRIEVE THE KEYPRESS
         RTS
 
@@ -96,7 +96,6 @@ CDEL:
 ; EXIT:	# CHARS READ IN [A]
 
 INPUT:
-        JSR     LINOUT                            ; FLUSH OUTPUT BUFFER
         CLR     LINCNT                            ; RESET LINE COUNTER
         LDX     ARG1                              ; GET ADDRESS OF INPUT BUFFER
         LDB     ,X+                               ; GET MAX # CHARS
@@ -176,8 +175,10 @@ TOPRIN:
 
 SCROUT:
         LDA     ,X+                               ; GRAB A CHAR FROM BUFFER
+        PSHS    A,B,X,Y,U,CC
         SWI
         FCB     33                                ;DISPLAY
+        PULS    A,B,X,Y,U,CC
         DECB
         BNE     SCROUT
 INPEX:
@@ -197,18 +198,24 @@ SFLAG
 
 CHAR:
         STA     IOCHAR                            ; SAVE CHAR HERE
-	SWI
-	FCB 	33
+        CMPA    #$0D
+        BEQ     >
+        PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     33
+        PULS    A,B,X,Y,U,CC
+        RTS
+!
+        PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     33
+        LDA     #$0A
+        SWI
+        FCB     33
+        PULS    A,B,X,Y,U,CC
         RTS
 
 
-; --------------------------
-; PRINT CONTENTS OF [BUFFER]
-; --------------------------
-
-BUFOUT:
-        LDB     CHRPNT                            ; # CHARS IN BUFFER
-        LDX     #BUFFER                           ; BUFFER ADDRESS
 
 ; FALL THROUGH TO ...
 
@@ -236,13 +243,60 @@ LN:
 ; ----------------
 
 CLS:
+        PSHS    A,B,X,Y,U,CC
         SWI
         FCB     24                                ;String to OS
-	FCB     27
-        FCC     '[2J'
-        FCB     00
+        FCB     27
+        FCN     '[2J'
+        PULS    A,B,X,Y,U,CC
         RTS
 
+
+
+BOLD:
+        PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     24                                ;String to OS
+        FCB     27
+        FCN     '[1m'
+        PULS    A,B,X,Y,U,CC
+        RTS
+
+UNBOLD:
+        PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     24                                ;String to OS
+        FCB     27
+        FCN     '[0m'
+        PULS    A,B,X,Y,U,CC
+        RTS
+
+REVERSE:
+        PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     24                                ;String to OS
+        FCB     27
+        FCN     '[7m'
+        PULS    A,B,X,Y,U,CC
+        RTS
+
+HOME:
+        PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     24                                ;String to OS
+        FCB     27
+        FCN     '[00;00H'
+        PULS    A,B,X,Y,U,CC
+        RTS
+
+MOVECURSOR:
+        PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     24                                ;String to OS
+        FCB     27
+        FCN     '[24;02H'
+        PULS    A,B,X,Y,U,CC
+        RTS
 ; --------------
 ; SOUND HANDLERS
 ; --------------

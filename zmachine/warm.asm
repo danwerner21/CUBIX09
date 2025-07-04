@@ -55,7 +55,7 @@ ST1B:
         CMPX    #LRUMAP+$A0
         BLO     ST1B
 
-        JSR     OPENGAMEDSK                     ; open the game file -- needs to be selected by now
+        JSR     OPENGAMEDSK                       ; open the game file -- needs to be selected by now
         LDD     #0
         STD     DBLOCK
 
@@ -88,9 +88,9 @@ NORAM:
 ; [B] HAS # FREE SWAPPING PAGES
 
 SETNP:
-        CMPB    #$A0                              ; MAKE SURE # PAGES
+        CMPB    #$90                              ; MAKE SURE # PAGES
         BLO     SETA0                             ; DOESN'T EXCEED
-        LDB     #$A0                              ; $A0 (BM 11/24/84)
+        LDB     #$90                              ; $90
 SETA0:
         STB     PMAX                              ; SET MAXIMUM # FREE PAGES
         LDX     #PTABLE                           ; ADD BASE ADDR OF P-TABLE
@@ -99,7 +99,7 @@ SETA0:
         STX     TABTOP                            ; TO GET ADDR OF HIGHEST TABLE ENTRY
 
         LDA     ZCODE+ZMODE                       ; GET MODE BYTE
-        ORA     #%00001000                        ; SET THE "TANDY" ID BIT
+        ORA     #%00001000                        ;
         STA     ZCODE+ZMODE                       ; (WE DON'T WANT ANY DIRTY WORDS)
         ANDA    #%00000010                        ; ISOLATE STAT-LINE FORMAT BIT
         STA     TIMEFL                            ; 0=SCORE/MOVES, NZ=HOURS/MINUTES

@@ -51,26 +51,26 @@ POPE:
         LDA     #'E'
 
 POPC:
-            PSHS    A,B,X,Y,U,CC
+        PSHS    A,B,X,Y,U,CC
         SWI
         FCB     33                                ;DISPLAY
         PULS    A,B,X,Y,U,CC
 
 
         LDA     #'-'                              ; "-OP:"
-           PSHS    A,B,X,Y,U,CC
+        PSHS    A,B,X,Y,U,CC
         SWI
         FCB     33                                ;DISPLAY
         PULS    A,B,X,Y,U,CC
-                       ;DISPLAY
+;DISPLAY
         LDA     #'O'
-               PSHS    A,B,X,Y,U,CC
+        PSHS    A,B,X,Y,U,CC
         SWI
         FCB     33                                ;DISPLAY
         PULS    A,B,X,Y,U,CC
 
         LDA     #'P'
-               PSHS    A,B,X,Y,U,CC
+        PSHS    A,B,X,Y,U,CC
         SWI
         FCB     33                                ;DISPLAY
         PULS    A,B,X,Y,U,CC
@@ -82,13 +82,13 @@ POPC:
         BSR     BUGSP
 
         LDA     #'P'                              ; "PC:"
-              PSHS    A,B,X,Y,U,CC
+        PSHS    A,B,X,Y,U,CC
         SWI
         FCB     33                                ;DISPLAY
         PULS    A,B,X,Y,U,CC
 
         LDA     #'C'
-               PSHS    A,B,X,Y,U,CC
+        PSHS    A,B,X,Y,U,CC
         SWI
         FCB     33                                ;DISPLAY
         PULS    A,B,X,Y,U,CC
@@ -103,7 +103,7 @@ POPC:
 DOBZ:
         LDA     #'0'
 TOPPC:
-              PSHS    A,B,X,Y,U,CC
+        PSHS    A,B,X,Y,U,CC
         SWI
         FCB     33                                ;DISPLAY
         PULS    A,B,X,Y,U,CC
@@ -156,7 +156,7 @@ IH1:
         ADDA    #$30
 
 POOP:
-              PSHS    A,B,X,Y,U,CC
+        PSHS    A,B,X,Y,U,CC
         SWI
         FCB     33                                ;DISPLAY
         PULS    A,B,X,Y,U,CC

@@ -8,7 +8,7 @@
 
 ; COMPANY PRIVATE -- NOT FOR DISTRIBUTION
 
-DEBUG           = 1                               ; ASSEMBLY FLAG
+DEBUG           = 0                               ; ASSEMBLY FLAG
 
 ; -----------
 ; ERROR CODES

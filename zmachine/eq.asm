@@ -22,8 +22,9 @@ BUFSAV          = MSTART+$640                     ; I/O AUX BUFFER (32 BYTES)
 ZIP             = MSTART+$700                     ; START OF EXECUTABLE CODE
 ZCODE           = ZIP+$1700                       ; START OF Z-CODE (ASSUME 5.75K ZIP)
 ZCODEHIGH       = (ZIP+$1700)/256                 ; START OF Z-CODE (ASSUME 5.75K ZIP)
-MEMTOP          = $DC                             ; TOP PAGE OF AVAILABLE RAM
-INFCB           = $DD00
+MEMTOP          = $CF                             ; TOP PAGE OF AVAILABLE RAM
+SAVFCB          = $D000
+INFCB           = $DC00
 
 ; Z-CODE HEADER OFFSETS
 

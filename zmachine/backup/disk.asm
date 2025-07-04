@@ -9,68 +9,78 @@
 ; ENTRY: DRIVE # (0 OR 1) IN [DRIVE]
 ;        BLOCK # IN [DBLOCK]
 ;        BUFFER ADDRESS IN [DBUFF]
-INFILE:
-                FCC     "A:[ZIP]ZIPTEST.Z3"		; FSDIR(8)   DIRECTORY PREFIX
-                FCB     00       		; FSDRIVE(1) Drive Index (0-3)
-
-
 OPENGAMEDSK:
-	LDY 	#INFILE			; SET FILE NAME
-	SWI
-	FCB 	10
-  	LDU     #INFCB			; OPEN FILE
+        SWI
+        FCB     10
+        LBNE    DERR2                             ; FILE ERROR
+        LDU     #INFCB                            ; OPEN FILE
         SWI
         FCB     55
-	RTS
-
+        RTS
 GETDSK:
-	PSHS    X,Y,U,D                               ; SAVE VARIABLES
-  	LDU     #INFCB			; REWIND FILE
+        PSHS    X,Y,U,D                           ; SAVE VARIABLES
+        LDU     #INFCB                            ; REWIND FILE
         SWI
         FCB     62
-	LDD 	DBLOCK			; GO TO DBLOCK POSITION
-	STA 	TEMP
+        LDD     DBLOCK                            ; GO TO DBLOCK POSITION
+        STA     DTEMP
 !
-	CMPA 	#$00			; HOW MANY BLOCKS OF $10000 DO WE NEED TO GET
-	BEQ 	GETDSK1			; NONE, SKIP
-	LDD 	#$FFFF
-	LDU     #INFCB			;
-	SWI
-	FCB 	63
-	LDD 	#1
-	LDU     #INFCB			;
-	SWI
-	FCB 	63
-	DEC	TEMP
-	LDA 	TEMP
-	BRA 	<
+        CMPA    #$00                              ; HOW MANY BLOCKS OF $10000 DO WE NEED TO GET
+        BEQ     GETDSK1                           ; NONE, SKIP
+        LDD     #$FFFF
+        LDU     #INFCB                            ;
+        SWI
+        FCB     63
+        LDD     #1
+        LDU     #INFCB                            ;
+        SWI
+        FCB     63
+        DEC     DTEMP
+        LDA     DTEMP
+        BRA     <
 GETDSK1:
-	LDD 	DBLOCK			; HOW MANY BLOCKS OF <$10000 DO WE NEED TO GET
-	TFR 	B,A
-	LDB 	#$00
-	LDU     #INFCB			;
-	SWI
-	FCB 	63
-					; READ 256 BYTES
-	LDX 	DBUFF
-	LDB 	$00
+        LDD     DBLOCK                            ; HOW MANY BLOCKS OF <$10000 DO WE NEED TO GET
+        TFR     B,A
+        LDB     #$00
+        LDU     #INFCB                            ;
+        SWI
+        FCB     63
+        SWI
+        FCB     59
+; READ 256 BYTES
+        LDD     DBLOCK
+        ANDB    #01
+        TFR     B,A
+        LDB     #$00
+        STB     DTEMP
+        ADDD    #INFCB+10
+        TFR     D,Y                               ; D SHOULD CONTAIN START ADDRESS IN BUFFER
 !
-	PSHS 	B,X
-	SWI
-	FCB 59
-	PULS 	B,X
-	STA	,X+
-	DECB
-	CMPB 	#$00
-	BNE 	<
+        TFR     Y,X
+        LDA     ,X+                               ; GET BYTE
+        TFR     X,Y
+        LDX     DBUFF
+        STA     ,X
+        INC     DBUFF+1
+        BNE     BUFINC
+        INC     DBUFF
+BUFINC:
+        DEC     DTEMP
+        LDB     DTEMP
+        CMPB    #$00
+        BNE     <
         INC     DBLOCK+1                          ; POINT TO NEXT Z-BLOCK
         BNE     REND
         INC     DBLOCK
 REND:
-        PULS    X,Y,U,D                               ; RESTORE VARIABLES
-        STX     VAL
-        STD     TEMP
+        PULS    X,Y,U,D                           ; RESTORE VARIABLES
+;        STX     VAL
+;        STD     TEMP
         RTS
+
+DTEMP
+        FCB     00
+
 
 ; -----------------
 ; SAVE/RESTORE INIT
@@ -79,8 +89,6 @@ REND:
 SAVRES:
         JSR     ZCRLF                             ; FLUSH OUTPUT BUFFER
         JSR     CLS
-        LDD     #SCREEN
-        STD     CURSOR                            ; MOVE CURSOR TO STATUS LINE
         CLR     SCRIPT                            ; DISABLE SCRIPTING
         RTS
 
@@ -90,16 +98,27 @@ SAVRES:
 
 ZSAVE:
         BSR     SAVRES                            ; INIT THINGS
-        LDX     #SAV
-        LDB     #SAVL
-        JSR     DLINE                             ; "SAVE POSITION"
 
-        JSR     PARAMS                            ; GET POSITION AND DRIVE
+        FCB     24                                ;String to OS
+        FCB     13
+        FCN     'ENTER FILENAME:'
+        SWI
+        FCB     3                                 ; GET FILENAME
+        SWI
+        FCB     9
+        LDA     'S'
+        STA     ,X+
+        LDA     'A'
+        STA     ,X+
+        LDA     'V'
+        STA     ,X+
+        LDU     #SAVFCB                            ; OPEN FILE FOR WRITE/CREATE
+        SWI
+        FCB     71
 
         LDX     #SING
         LDB     #SINGL
         JSR     DLINE                             ; "SAVING"
-        JSR     TIONP                             ; "POSITION X ..."
 
         LDX     #BUFSAV                           ; POINT TO AUX BUFFER
         LDD     ZCODE+ZID                         ; GET GAME ID CODE
@@ -112,27 +131,39 @@ ZSAVE:
         LDD     ZPCM                              ; LOW ZPC BYTES
         STD     ,X
 
-        LDD     #LOCALS
-        STD     DBUFF
-        BSR     DWRITE                            ; WRITE LOCAL/BUFFER PAGE
+        LDX     #LOCALS                           ; (SAVE 512 BYTES -- MORE THAN NEEDED, BUT  . . .)
+        LDU     #SAVFCB
+        SWI
+        FCB     60
 
-        LDD     #ZSTACK                           ; SAVE CONTENTS
-        STD     DBUFF                             ; OF Z-STACK (2 PAGES)
-        BSR     DWRITE                            ; FIRST HALF
-        BSR     DWRITE                            ; 2ND HALF
+        LDX     #ZSTACK                           ; SAVE CONTENTS OF STACK (512 BYTES)
+        LDU     #SAVFCB
+        SWI
+        FCB     60
 
 ; SAVE GAME PRELOAD
 
-        LDD     #ZCODE                            ; START OF PRELOAD
-        STD     DBUFF
+        LDX     #ZCODE                            ; START OF PRELOAD
         LDA     ZCODE+ZPURBT                      ; SIZE OF PRELOAD (MSB, # PAGES)
+        CLC                                       ; DIVIDE BY 2
+        RORA                                      ;
         INCA                                      ; ROUND UP
         STA     TEMP                              ; USE [TEMP] AS INDEX
 
 LSAVE:
-        BSR     DWRITE                            ; SAVE A PAGE
+        PSHS    X
+        LDU     #SAVFCB
+        SWI
+        FCB     60
+        PULS    X
+        TFR     X,D
+        ADDD    #$200
+        TFR     D,X
         DEC     TEMP                              ; SAVED ENTIRE PRELOAD YET?
         BNE     LSAVE                             ; NO, KEEP SAVING
+        LDU     #SAVFCB
+        SWI
+        FCB     57                                ; CLOSE FILE
         JMP     RESUME
 
 ; *** ERROR #12: DISK ADDRESS RANGE ***
@@ -149,96 +180,39 @@ DSKEX:
         JSR     ZERROR
 
 ; ------------
-; ACCESS DRIVE
-; ------------
-
-; ENTRY: [DBUFF] HOLDS BUFFER ADDRESS
-;        [TRACK] HOLDS TRACK, SECTOR ADDRESS
-;        [DRIVE] HOLDS DRIVE #
-
-DWRITE:
-        LDX     #IOBUFF                           ; POINT TO DISK I/O BUFFER
-        LDY     DBUFF                             ; AND RAM PAGE TO BE WRITTEN
-DRLOOP:
-        LDD     ,Y++                              ; GRAB A WORD OUT OF RAM
-        STD     ,X++                              ; MOVE IT INTO THE BUFFER
-        CMPX    #IOBUFF+$100                      ; BUFFER FILLED YET?
-        BLO     DRLOOP                            ; NO, KEEP MOVING
-        LDA     #3                                ; "WRITE SECTOR" COMMAND
-        BRA     DIO
-
-DREAD:
-        LDA     #2                                ; "READ SECTOR" COMMAND
-
-DIO:
-
-        LDX     #DCB                              ; GET ADDR OF DCB
-        LDB     DRIVE                             ; DRIVE # (0 OR 1)
-        STD     ,X                                ; PASS TO [DSKCON]
-        LDD     TRACK                             ; TRACK & SECTOR ADDRESSES
-        CMPA    #35
-        BHS     DSKERR                            ; NO TRACKS HIGHER THAN 34
-        CMPB    #19
-        BHS     DSKERR                            ; OR SECTORS HIGHER THAN 18
-        STD     2,X                               ; PASS IT
-        LDD     #IOBUFF                           ; BUFFER ADDRESS
-        STD     4,X
-
-; ACCESS THE DRIVE
-
-
-; CHECK FOR ACCESS ERRORS
-
-        LDA     6,X                               ; GET STATUS BYTE
-        BITA    #%01000000                        ; WRITE-PROTECT ERROR?
-        BNE     WPERR                             ; YES, GO REPORT IT
-        TSTA                                      ; ANY OTHER ERRORS?
-        BNE     DERR2                             ; ERROR IF ANY BIT SET
-
-        LDX     #IOBUFF                           ; MOVE CONTENTS OF I/O BUFFER
-        LDY     DBUFF                             ; TO DESIRED RAM ADDRESS
-QLOOP:
-        LDD     ,X++
-        STD     ,Y++
-        CMPX    #IOBUFF+$100
-        BLO     QLOOP
-
-        INC     DBUFF                             ; POINT TO NEXT PAGE OF RAM
-        LDD     TRACK                             ; AND NEXT SECTOR
-        INCB
-        CMPB    #19
-        BLO     DIOEX
-        LDB     #1
-        INCA
-DIOEX:
-        STD     TRACK
-        RTS
-
-; -------------------
-; WRITE-PROTECT ERROR
-; -------------------
-
-WPERR:
-        PULS    D                                 ; PULL RETURN ADDRESS OFF STACK
-        BRA     ERRWP                             ; PROMPT FOR GAME DISK
-
-; ------------
 ; RESTORE GAME
 ; ------------
 
 ZREST:
         JSR     SAVRES
 
-        LDX     #RES
-        LDB     #RESL
-        JSR     DLINE                             ; "RESTORE POSITION"
-
-        JSR     PARAMS
-
+        FCB     24                                ;String to OS
+        FCB     13
+        FCN     'ENTER FILENAME:'
+        SWI
+        FCB     3                                 ; GET FILENAME
+        SWI
+        FCB     9
+        LDA     'S'
+        STA     ,X+
+        LDA     'A'
+        STA     ,X+
+        LDA     'V'
+        STA     ,X+
+        BEQ     >                                 ; NO FILE ERROR
+        FCB     24                                ;String to OS
+        FCB     13
+        FCN     'UNABLE TO RESTORE.'
+        JMP     DSKERR
+!
+        LDU     #SAVFCB                            ; OPEN FILE
+        SWI
+        FCB     55
+        SWI
+        FCB     59
         LDX     #RING
         LDB     #RINGL
         JSR     DLINE                             ; "RESTORING"
-        JSR     TIONP                             ; "POSITION X ..."
 
 ; SAVE LOCALS ON MACHINE STACK
 ; IN CASE OF ERROR
@@ -251,7 +225,14 @@ LOCLP:
         CMPX    #LOCALS+30                        ; SAVED 15 LOCALS YET?
         BLO     LOCLP                             ; NO, KEEP PUSHING
 
-        JSR     DREAD                             ; RETRIEVE LOCALS/BUFFER PAGE
+        LDX    #SAVFCB+10                                                    ; RETRIEVE LOCALS/BUFFER PAGE
+        LDY    #LOCALS
+        LDB    #00
+!
+        LDA    ,X+
+        STA    ,Y+
+        INCB
+        BNE    <
 
         LDD     BUFSAV                            ; READ SAVED GAME ID
         CMPD    ZCODE+ZID                         ; IF IT MATCHES CURRENT GAME ID,
@@ -270,25 +251,43 @@ ERRWP:
         JMP     PREDF                             ; PREDICATE FAILS
 
 VERSOK:
+        LDD     #$200                             ; begin game load
+        LDU     #SAVFCB
+        SWI
+        FCB     64
+
         LEAS    +30,S                             ; POP OLD LOCALS OFF STACK
         LDD     ZCODE+ZSCRIP
         STD     VAL                               ; SAVE FLAGS
 
-        LDD     #ZSTACK                           ; RETRIEVE
-        STD     DBUFF                             ; CONTENTS OF Z-STACK
-        JSR     DREAD
-        JSR     DREAD
+        LDX     #ZSTACK                           ; RETRIEVE
+        STD     DBUFF                             ; CONTENTS OF Z-STACK (512 bytes)
+        LDU     #SAVFCB
+        SWI
+        FCB     58
 
 DOREST:
-        LDD     #ZCODE                            ; NOW RETRIEVE
-        STD     DBUFF                             ; 1ST PAGE OF PRELOAD
-        JSR     DREAD
+        LDX     #ZCODE                            ; NOW RETRIEVE
+        STD     DBUFF                             ; 1ST TWO PAGES OF PRELOAD
+        LDU     #SAVFCB
+        SWI
+        FCB     58
 
         LDA     ZCODE+ZPURBT                      ; DETERMINE # PAGES
+        CLC
+        RORA
+        INCA
         STA     TEMP                              ; TO RETRIEVE
 
 LREST:
-        JSR     DREAD                             ; FETCH REMAINDER OF PRELOAD
+        PSHS    X
+        LDU     #SAVFCB
+        SWI
+        FCB     58
+        PULS    X
+        TFR     X,D
+        ADDD    #$200
+        TFR     D,X
         DEC     TEMP
         BNE     LREST
 
@@ -314,10 +313,6 @@ RESUME:
         JMP     PREDS                             ; PREDICATE SUCCEEDS
 
 TOBOOT:
-        CLR     DRIVE                             ; BACK TO BOOT DRIVE
-        LDX     #GAME
-        LDB     #GAMEL
-        JSR     DLINE                             ; "INSERT STORY DISK IN DRIVE 0,"
         JSR     ENTER                             ; "PRESS <ENTER> TO CONTINUE"
         COM     SCRIPT                            ; RE-ENABLE SCRIPTING
         JMP     CLS                               ; CLEAR SCREEN AND RETURN
@@ -336,92 +331,7 @@ ENTER:
         LDA     #EOL
         JMP     COUT                              ; DO EOL AND RETURN
 
-; --------------------------------
-; PROMPT SEQUENCE FOR SAVE/RESTORE
-; --------------------------------
 
-PARAMS:
-        LDX     #POSIT
-        LDB     #POSITL
-        JSR     DLINE                             ; "GAME ... POSITION 1-7 "
-        JSR     INVERT                            ; FLIP STATUS LINE
-
-        LDA     #TRUE
-        STA     CFLAG                             ; ENABLE CURSOR
-
-; GET POSITION
-
-        LDA     GPOSIT                            ; GET DEFAULT POSITION
-        INCA                                      ; 1-ALIGN IT
-        JSR     DODEF
-
-GETPOS:
-        JSR     GETKEY
-        CMPA    #EOL
-        BEQ     SETPOS
-        SUBA    #$31                              ; CONVERT "1-7" TO 0-6
-        CMPA    #7                                ; IF LOWER THAN "7"
-        BLO     POSSET                            ; SET NEW POSITION
-        JSR     BOOP                              ; ELSE RAZZ
-        BRA     GETPOS                            ; AND TRY AGAIN
-
-SETPOS:
-        LDA     GPOSIT                            ; USE DEFAULT
-POSSET:
-        STA     GPOSIT                            ; TEMP DEFAULT
-        ADDA    #$31                              ; CONVERT TO ASCII
-        STA     PDO                               ; HERE TOO
-        JSR     OUTCHR                            ; AND SHOW CHOICE
-
-; GET DRIVE #
-
-        LDX     #WDRIV
-        LDB     #WDRIVL
-        JSR     DLINE                             ; "DRIVE 0 OR 1 "
-
-        LDA     GDRIVE
-        BSR     DODEF                             ; SHOW DEFAULT
-
-GETDRV:
-        JSR     GETKEY
-        CMPA    #EOL
-        BEQ     DRVSET
-        SUBA    #$30                              ; CONVERT TO ASCII
-        CMPA    #2
-        BLO     SETDRV
-        JSR     BOOP
-        BRA     GETDRV                            ; DRIVE # NO GOOD
-
-DRVSET:
-        LDA     GDRIVE
-SETDRV:
-        STA     DRIVE                             ; NEW DEFAULT
-        ADDA    #$30                              ; CONVERT TO ASCII
-        STA     GAMDRI                            ; FOR PROMPT
-        JSR     OUTCHR                            ; SHOW CHOICE
-
-        LDA     GPOSIT                            ; MAKE IT THE NEW DEFAULT
-        LDB     #5                                ; CALC BLOCK OFFSET (5 TRACKS/GAME)
-        MUL
-        STB     TRACK                             ; TRACK ADDRESS
-        LDB     #1                                ; START ON SECTOR 1
-        STB     TRACK+1                           ; SECTOR ADDRESS
-
-        LDX     #INSERM
-        LDB     #INSERML
-        JSR     DLINE                             ; "INSERT SAVE DISK IN DRIVE X,"
-        JMP     ENTER                             ; ETC.
-
-; ------------
-; SHOW DEFAULT
-; ------------
-
-DODEF:
-        ADDA    #$30                              ; CONVERT # TO ASCII
-        STA     DEFNUM                            ; INSERT IN STRING
-        LDX     #DEFALT
-        LDB     #DEFALL
-        STB     CFLAG                             ; ENABLE CURSOR
 
 ; FALL THROUGH TO ...
 
@@ -438,14 +348,6 @@ DLINE:
         BNE     DLINE
         RTS
 
-; ----------------------
-; PRINT "POSITION X ..."
-; ----------------------
-
-TIONP:
-        LDX     #PTION
-        LDB     #PTIONL
-        BRA     DLINE
 
 ; ---------------------
 ; TEXT FOR SAVE/RESTORE
@@ -461,22 +363,6 @@ SAV:
 savlen:
 SAVL            EQU savlen-SAV
 
-INSERM:
-        FCB     EOL
-        FCB     EOL
-        FCC     "INSERT SAVE DISK IN DRIVE "
-GAMDRI:
-        FCC     "0."
-        FCB     EOL
-insermlen:
-INSERML         EQU insermlen-INSERM
-
-GAME:
-        FCB     EOL
-        FCC     "INSERT STORY DISK IN DRIVE 0."
-        FCB     EOL
-gamelen:
-GAMEL           EQU gamelen-GAME
 
 PRESS:
         FCC     "PRESS <ENTER> TO CONTINUE."
@@ -485,26 +371,6 @@ PRESS:
 presslen:
 PRESSL          EQU presslen-PRESS
 
-POSIT:
-        FCC     " POSITION"
-        FCB     EOL
-        FCB     EOL
-        FCC     "POSITION 1-7 "
-positlen:
-POSITL          EQU positlen-POSIT
-
-WDRIV:
-        FCB     EOL
-        FCC     "DRIVE 0 OR 1 "
-wdrivlen:
-WDRIVL          EQU wdrivlen-WDRIV
-
-DEFALT:
-        FCC     "(DEFAULT IS "
-DEFNUM:
-        FCC     "0) >"
-defalullen:
-DEFALL          EQU defalullen-DEFALT
 
 SING:
         FCB     EOL
@@ -517,14 +383,6 @@ RING:
         FCC     "RESTORING"
 ringlen:
 RINGL           EQU ringlen-RING
-
-PTION:
-        FCC     " POSITION "
-PDO:
-        FCC     "1 ..."
-        FCB     EOL
-ptionlen:
-PTIONL          EQU ptionlen-PTION
 
 ENDTST:
         FCC     "END"

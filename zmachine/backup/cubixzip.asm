@@ -34,12 +34,16 @@ DEBUG           = 0                               ; ASSEMBLY FLAG
 
         ORG     $2000
 
+RS1:
         CLRA                                      ; USE PAGE ZERO
         TFR     A,DP                              ; AS THE DIRECT PAGE
         LDS     #MSTACK                           ; GIVE THE STACK A NEW HOME
         JMP     COLD                              ; PERFORM ONE-TIME INITIALIZATION
+RS1E:
+        RMB     $100-(RS1E-RS1)
 
-MSTART:                                           ; START OF FREE PROGRAM RAM
+
+MSTART: ; START OF FREE PROGRAM RAM
 
         INCLUDE eq.asm
         INCLUDE warm.asm

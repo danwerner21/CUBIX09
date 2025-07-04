@@ -18,13 +18,13 @@ TOPSTA          = (2*ZSTAKL)+ZSTACK               ; TOP OF Z-STACK
 PTABLE          = MSTART+$400                     ; PAGING TABLE ($140 BYTES/$A0 WORDS)
 LRUMAP          = MSTART+$550                     ; TIMESTAMP MAP ($A0 BYTES)
 LOCALS          = MSTART+$600                     ; LOCAL VARIABLE STORAGE (32 BYTES)
-BUFFER          = MSTART+$620                     ; I/O LINE BUFFER (32 BYTES)
 BUFSAV          = MSTART+$640                     ; I/O AUX BUFFER (32 BYTES)
 ZIP             = MSTART+$700                     ; START OF EXECUTABLE CODE
 ZCODE           = ZIP+$1700                       ; START OF Z-CODE (ASSUME 5.75K ZIP)
 ZCODEHIGH       = (ZIP+$1700)/256                 ; START OF Z-CODE (ASSUME 5.75K ZIP)
-MEMTOP          = $DD00                           ; TOP PAGE OF AVAILABLE RAM
-INFCB           = $DE00
+MEMTOP          = $CF                             ; TOP PAGE OF AVAILABLE RAM
+SAVFCB          = $D000
+INFCB           = $DC00
 
 ; Z-CODE HEADER OFFSETS
 

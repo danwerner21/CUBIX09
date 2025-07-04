@@ -22,12 +22,17 @@ COLD:
         CLR     SCRIPT                            ; DISABLE SCRIPTING
 LUKE:
         JSR     CLS                               ; A CLEAN SLATE
-	LDX     #LOADM                            ;
+        JSR     BOLD
+        LDX     #LOADM                            ;
         LDB     #LOADML
         JSR     DLINE                             ; "LOADING GAME ..."
+        JSR     UNBOLD
+        JSR     MOVECURSOR
         JMP     START                             ; AND DO A WARMSTART
 
 LOADM:
+        FCB     27
+        FCC     "[10;10H "
         FCC     "THE STORY IS LOADING ..."
 loadlen:
 LOADML          EQU loadlen-LOADM
@@ -67,8 +72,8 @@ ZQUIT:
         LDB     #ENDSL
         JSR     LINE                              ; "END OF SESSION"
 
-	SWI
-	FCB 	00
+        SWI
+        FCB     00
 
 
 FREEZE:
@@ -85,7 +90,7 @@ ENDSL           EQU endseslen-ENDSES
 ; DISPLAY ZIP VERSION NUMBER
 ; --------------------------
 
-        FCC     "COCO 2 VERSION C"
+        FCC     "6809 CUBIX VERSION"
         FCB     EOL
 vcodelen:
 VCODEL          EQU vcodelen-VCODE
@@ -108,6 +113,13 @@ MORES:
         FCC     "[more]"
 morlen:
 MOREL           EQU morlen-MORES
+MCLR:
+        FCB     08,08,08,08,08,08
+        FCC     "      "
+        FCB     08,08,08,08,08,08
+mclrlen:
+MCLRL           EQU mclrlen-MCLR
+
 
 ; ---------------
 ; CARRIAGE RETURN
@@ -116,25 +128,25 @@ MOREL           EQU morlen-MORES
 ZCRLF:
         INC     LINCNT                            ; NEW LINE GOING OUT
         LDA     LINCNT
-        CMPA    #20                               ; 13 LINES SENT YET? (CHANGED TO 20)
+        CMPA    #13                               ; 13 LINES SENT YET?
         BLO     CR1                               ; NO, KEEP GOING
 
-        BSR     ZUSL                              ; UPDATE STATUS LINE
 
+        LDA     #$0D
+        JSR     CHAR
+
+        JSR     BOLD
         LDX     #MORES                            ; "[MORE]"
         LDB     #MOREL
         JSR     DLINE
+        JSR     UNBOLD
 
-        CLR     CFLAG                             ; NO CURSOR!
+        BSR     ZUSL                              ; UPDATE STATUS LINE
         JSR     GETKEY                            ; GET A KEYPRESS
 
-
-        LDA     #SPACE                            ; ERASE "MORE" MESSAGE
-        LDB     #MOREL                            ; WITH SPACES
-SPCS:
-        JSR     OUTCHR
-        DECB
-        BNE     SPCS
+        LDX     #MCLR                             ; CLEAR LINE
+        LDB     #MCLRL
+        JSR     DLINE
 
         CLR     LINCNT                            ; RESET LINE COUNTER
 
@@ -148,139 +160,124 @@ CR1:
 ; ------------------
 
 ZUSL:
-        RTS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;ADDED DDW
-;       LDA     CHRPNT                            ; SAVE ALL Z-STRING VARS
-;       LDB     STBYTF
-;       LDY     ZSTWRD
-;       PSHS    X,Y,D
-;       LDA     MPCH                              ; HIGH BIT OF MPC
-;       LDB     BINDEX
-;       LDX     MPCM                              ; LOW BYTES OF MPC
-;       LDY     CSTEMP                            ; TEMP & PERM TOGETHER!
-;       PSHS    X,Y,D
-
-;       LDY     #BUFSAV                           ; MOVE OUTPUT BUFFER
-;       LDX     #BUFFER                           ; TO TEMPORARY STORAGE
-;       LDB     #SPACE                            ; CLEAR [BUFFER] WITH SPACES
-;USL1:
-;       LDA     ,X
-;       STB     ,X+
-;       STA     ,Y+
-;       CMPX    #BUFFER+32
-;       BLO     ZUSL1
-
+        LDA     CHRPNT                            ; SAVE ALL Z-STRING VARS
+        LDB     STBYTF
+        LDY     ZSTWRD
+        PSHS    X,Y,D
+        LDA     MPCH                              ; HIGH BIT OF MPC
+        LDB     BINDEX
+        LDX     MPCM                              ; LOW BYTES OF MPC
+        LDY     CSTEMP                            ; TEMP & PERM TOGETHER!
+        PSHS    X,Y,D
 
 ; DISPLAY ROOM NAME
 
-;       CLR     CHRPNT                            ; RESET CHAR INDEX
-;       CLR     SCRIPT                            ; DISABLE SCRIPTING
+        CLR     CHRPNT                            ; RESET CHAR INDEX
+        CLR     SCRIPT                            ; DISABLE SCRIPTING
+        JSR     HOME
+        JSR     REVERSE
 
-;       LDA     #$10                              ; GLOBAL VAR #0 (ROOM #)
- ;      JSR     VARGET
- ;      LDA     TEMP+1
- ;      JSR     PRNTDC                            ; GET SHORT DESC INTO [BUFFER]
+        LDX     #79                               ;
+!
+        LDA     #SPACE                            ; PRINT A REVERSED LINE
+        JSR     COUT                              ; TO SEPARATE THINGS (BM 12/6/84)
+        DEX
+        BNE     <
+        JSR     HOME
 
- ;      LDA     #22                               ; ADVANCE BUFFER INDEX
- ;      STA     CHRPNT                            ; INTO SCORING POSITION
- ;      LDA     #SPACE                            ; PRINT A SPACE
- ;      JSR     COUT                              ; TO SEPARATE THINGS (BM 12/6/84)
+        LDA     #$10                              ; GLOBAL VAR #0 (ROOM #)
+        JSR     VARGET
+        LDA     TEMP+1
+        JSR     PRNTDC                            ; GET SHORT DESC INTO [BUFFER]
 
-  ;     LDA     #$11                              ; FETCH GLOBAL VARIABLE
-  ;     JSR     VARGET                            ; #1 (SCORE/HOURS)
-  ;     TST     TIMEFL                            ; TIME MODE?
-  ;     BNE     PTIME                             ; YES IF NZ
+        LDA     #SPACE                            ; PRINT A SPACE
+        JSR     COUT                              ; TO SEPARATE THINGS (BM 12/6/84)
+        LDA     #SPACE                            ; PRINT A SPACE
+        JSR     COUT                              ; TO SEPARATE THINGS (BM 12/6/84)
+
+        LDA     #$11                              ; FETCH GLOBAL VARIABLE
+        JSR     VARGET                            ; #1 (SCORE/HOURS)
+        TST     TIMEFL                            ; TIME MODE?
+        BNE     PTIME                             ; YES IF NZ
 
 ; PRINT SCORE
 
-   ;    JSR     NUMBER                            ; PRINT THE VALUE
-   ;    LDA     #$2F                              ; ASCII SLASH
-   ;    BRA     MOVEP
+        JSR     NUMBER                            ; PRINT THE VALUE
+        LDA     #$2F                              ; ASCII SLASH
+        BRA     MOVEP
 
 ; PRINT TIME (HOURS)
 
-;PTIME:
-;       LDA     TEMP+1
-;       BNE     PTIME1                            ; 00 IS REALLY 24
-;       LDA     #24
-;PTIME1:
-;       CMPA    #12
-;       BLE     PTIME2                            ; IF HOURS IS GREATER THAN 12,
-;       SUBA    #12                               ; CONVERT TO 12-HOUR TIME
-;       STA     TEMP+1
-;PTIME2:
-;        JSR     NUMBER                            ; SHOW HOURS VALUE
-;        LDA     #$3A                              ; ASCII COLON
-;
-;MOVEP:
-;        JSR     COUT                              ; SEND COLON (OR SLASH)
-;        LDA     #$12                              ; GLOBAL VAR #2 (MOVES/MINUTES)
-;        JSR     VARGET
-;        TST     TIMEFL                            ; TIME MODE?
-;        BEQ     PNUM                              ; NO, DO MOVES
+PTIME:
+        LDA     TEMP+1
+        BNE     PTIME1                            ; 00 IS REALLY 24
+        LDA     #24
+PTIME1:
+        CMPA    #12
+        BLE     PTIME2                            ; IF HOURS IS GREATER THAN 12,
+        SUBA    #12                               ; CONVERT TO 12-HOUR TIME
+        STA     TEMP+1
+PTIME2:
+        JSR     NUMBER                            ; SHOW HOURS VALUE
+        LDA     #$3A                              ; ASCII COLON
+
+MOVEP:
+        JSR     COUT                              ; SEND COLON (OR SLASH)
+        LDA     #$12                              ; GLOBAL VAR #2 (MOVES/MINUTES)
+        JSR     VARGET
+        TST     TIMEFL                            ; TIME MODE?
+        BEQ     PNUM                              ; NO, DO MOVES
 
 ; PRINT MINUTES
 
-;        LDA     TEMP+1
-;        CMPA    #10                               ; IF LESS THAN 10 MINUTES,
-;        BHS     MOVEP1
-;        LDA     #$30                              ; ADD ASCII ZERO FOR PADDING
-;        JSR     COUT
+        LDA     TEMP+1
+        CMPA    #10                               ; IF LESS THAN 10 MINUTES,
+        BHS     MOVEP1
+        LDA     #$30                              ; ADD ASCII ZERO FOR PADDING
+        JSR     COUT
 
-;MOVEP1:
-;        JSR     NUMBER                            ; SHOW MINUTES
+MOVEP1:
+        JSR     NUMBER                            ; SHOW MINUTES
 
 ; PRINT "AM/PM"
 
-;        LDA     #SPACE                            ; SEPARATE TIMING
-;        JSR     COUT                              ; FROM "AM/PM"
-;        LDA     #$11                              ; GLOBAL #1 AGAIN
-;        JSR     VARGET
-;        LDA     TEMP+1
-;        CMPA    #12                               ; PAST NOON?
-;        BHS     USEPM                             ; YES, IT'S PM
-;        LDA     #$41                              ; "A"
-;        BRA     DOM
-;USEPM:
-;        LDA     #$50                              ; "P"
-;DOM:
-;        JSR     COUT
-;        LDA     #$4D                              ; "M"
-;        JSR     COUT
-;        BRA     AHEAD                             ; DONE!
+        LDA     #SPACE                            ; SEPARATE TIMING
+        JSR     COUT                              ; FROM "AM/PM"
+        LDA     #$11                              ; GLOBAL #1 AGAIN
+        JSR     VARGET
+        LDA     TEMP+1
+        CMPA    #12                               ; PAST NOON?
+        BHS     USEPM                             ; YES, IT'S PM
+        LDA     #$41                              ; "A"
+        BRA     DOM
+USEPM:
+        LDA     #$50                              ; "P"
+DOM:
+        JSR     COUT
+        LDA     #$4D                              ; "M"
+        JSR     COUT
+        BRA     AHEAD                             ; DONE!
 
 ; PRINT # MOVES
 
-;PNUM:
-;        JSR     NUMBER                            ; SIMPLE, EH?
-;
-;AHEAD:
-;        JSR     CR1                               ; DUMP BUFFER
-;        BSR     INVERT                            ; INVERT STATUS LINE
+PNUM:
+        JSR     NUMBER                            ; SIMPLE, EH?
 
-;        LDY     #BUFSAV                           ; POINT TO "SAVE" BUFFER
-;        LDX     #BUFFER                           ; POINT TO OUTPUT BUFFER
-;USLEND:
-;        LDA     ,Y+
-;        STA     ,X+                               ; RESTORE PREVIOUS CONTENTS
-;        CMPX    #BUFFER+32
-;        BLO     USLEND
+AHEAD:
+        JSR     CR1                               ; DUMP BUFFER
 
-;        PULS    X,Y,D                             ; RESTORE EVERYTHING
-;        STY     CSTEMP
-;        STX     MPCM
-;        STB     BINDEX
-;        STA     MPCH
-;        PULS    X,Y,D
-;        STY     ZSTWRD
-;        STB     STBYTF
-;        STA     CHRPNT
-;        COM     SCRIPT                            ; RE-ENABLE SCRIPTING
-;        CLR     MPCFLG                            ; MPC NO LONGER VALID
-;        RTS
 
-; ------------------
-; INVERT STATUS LINE
-; ------------------
-
-;INVERT:
-;        RTS
+        PULS    X,Y,D                             ; RESTORE EVERYTHING
+        STY     CSTEMP
+        STX     MPCM
+        STB     BINDEX
+        STA     MPCH
+        PULS    X,Y,D
+        STY     ZSTWRD
+        STB     STBYTF
+        STA     CHRPNT
+        COM     SCRIPT                            ; RE-ENABLE SCRIPTING
+        CLR     MPCFLG                            ; MPC NO LONGER VALID
+        JSR     UNBOLD
+        JSR     MOVECURSOR
+        RTS

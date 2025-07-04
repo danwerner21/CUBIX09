@@ -46,8 +46,6 @@ GK:
 !
         BRA     GK
 KTEST:
-        SWI
-        FCB     34
         STA     IOCHAR                            ; STORE THE KEYPRESS
 
 
@@ -253,6 +251,52 @@ CLS:
         PULS    A,B,X,Y,U,CC
         RTS
 
+
+
+BOLD:
+        PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     24                                ;String to OS
+        FCB     27
+        FCN     '[1m'
+        PULS    A,B,X,Y,U,CC
+        RTS
+
+UNBOLD:
+        PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     24                                ;String to OS
+        FCB     27
+        FCN     '[0m'
+        PULS    A,B,X,Y,U,CC
+        RTS
+
+REVERSE:
+        PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     24                                ;String to OS
+        FCB     27
+        FCN     '[7m'
+        PULS    A,B,X,Y,U,CC
+        RTS
+
+HOME:
+        PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     24                                ;String to OS
+        FCB     27
+        FCN     '[00;00H'
+        PULS    A,B,X,Y,U,CC
+        RTS
+
+MOVECURSOR:
+        PSHS    A,B,X,Y,U,CC
+        SWI
+        FCB     24                                ;String to OS
+        FCB     27
+        FCN     '[24;02H'
+        PULS    A,B,X,Y,U,CC
+        RTS
 ; --------------
 ; SOUND HANDLERS
 ; --------------
