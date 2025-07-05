@@ -99,7 +99,6 @@ SETA0:
         STX     TABTOP                            ; TO GET ADDR OF HIGHEST TABLE ENTRY
 
         LDA     ZCODE+ZMODE                       ; GET MODE BYTE
-        ORA     #%00001000                        ;
         STA     ZCODE+ZMODE                       ; (WE DON'T WANT ANY DIRTY WORDS)
         ANDA    #%00000010                        ; ISOLATE STAT-LINE FORMAT BIT
         STA     TIMEFL                            ; 0=SCORE/MOVES, NZ=HOURS/MINUTES
@@ -131,7 +130,6 @@ LDPRE:
         LDU     #TOPSTA                           ; INIT THE ZSP
         STU     OZSTAK                            ; REMEMBER ITS POSITION
 
-        JSR     CLS                               ; CLEAR THE SCREEN
         COM     SCRIPT                            ; ENABLE SCRIPTING
 
         LDA     SFLAG                             ; SCRIPTING FLAG

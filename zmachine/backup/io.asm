@@ -34,8 +34,6 @@ BADKEY:
 
 GETKEY:
         PSHS    U,X,Y,B,CC                        ; SAVE THESE
-
-
 GK:
         SWI
         FCB     35
@@ -47,7 +45,6 @@ GK:
         BRA     GK
 KTEST:
         STA     IOCHAR                            ; STORE THE KEYPRESS
-
 
 ; KEYCODE IN [A]
 
@@ -62,6 +59,7 @@ QKEY:
         CMPA    #$7B                              ; NOTHING ABOVE "z" IS LEGAL
         BHS     BADKEY
         SUBA    #$20                              ; CONVERT TO UPPER-CASE ALPHA
+        STA     IOCHAR                            ; STORE THE KEYPRESS
         BRA     CLICK
 
 PKICK:
@@ -215,6 +213,13 @@ CHAR:
         PULS    A,B,X,Y,U,CC
         RTS
 
+; --------------------------
+; PRINT CONTENTS OF [BUFFER]
+; --------------------------
+
+        BUFOUT:
+        LDB     CHRPNT                            ; # CHARS IN BUFFER
+        LDX     #BUFFER                           ; BUFFER ADDRESS
 
 
 ; FALL THROUGH TO ...

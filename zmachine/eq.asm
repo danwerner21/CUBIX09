@@ -24,6 +24,8 @@ ZCODE           = ZIP+$1700                       ; START OF Z-CODE (ASSUME 5.75
 ZCODEHIGH       = (ZIP+$1700)/256                 ; START OF Z-CODE (ASSUME 5.75K ZIP)
 MEMTOP          = $CF                             ; TOP PAGE OF AVAILABLE RAM
 SAVFCB          = $D000
+BUFFER          = $DBB0
+OBUFSAV         = $DB60
 INFCB           = $DC00
 
 ; Z-CODE HEADER OFFSETS

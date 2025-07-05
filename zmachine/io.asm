@@ -94,6 +94,7 @@ CDEL:
 ; EXIT:	# CHARS READ IN [A]
 
 INPUT:
+        JSR     LINOUT                            ; FLUSH OUTPUT BUFFER
         CLR     LINCNT                            ; RESET LINE COUNTER
         LDX     ARG1                              ; GET ADDRESS OF INPUT BUFFER
         LDB     ,X+                               ; GET MAX # CHARS
@@ -213,6 +214,13 @@ CHAR:
         PULS    A,B,X,Y,U,CC
         RTS
 
+; --------------------------
+; PRINT CONTENTS OF [BUFFER]
+; --------------------------
+
+        BUFOUT:
+        LDB     CHRPNT                            ; # CHARS IN BUFFER
+        LDX     #BUFFER                           ; BUFFER ADDRESS
 
 
 ; FALL THROUGH TO ...
@@ -247,6 +255,9 @@ CLS:
         FCB     27
         FCN     '[2J'
         PULS    A,B,X,Y,U,CC
+        JSR     MOVECURSOR
+        CLR     LINCNT          ; RESET LINE COUNTER
+        CLR     CHRPNT          ; AND CHAR INDEX
         RTS
 
 
@@ -292,7 +303,7 @@ MOVECURSOR:
         SWI
         FCB     24                                ;String to OS
         FCB     27
-        FCN     '[24;02H'
+        FCN     '[24;00H'
         PULS    A,B,X,Y,U,CC
         RTS
 ; --------------
