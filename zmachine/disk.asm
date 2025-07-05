@@ -88,7 +88,6 @@ DTEMP
 
 SAVRES:
         JSR     ZCRLF                             ; FLUSH OUTPUT BUFFER
-        JSR     CLS
         CLR     SCRIPT                            ; DISABLE SCRIPTING
         RTS
 
@@ -98,23 +97,25 @@ SAVRES:
 
 ZSAVE:
         BSR     SAVRES                            ; INIT THINGS
-
+        SWI
         FCB     24                                ;String to OS
         FCB     13
         FCN     'ENTER FILENAME:'
         SWI
         FCB     3                                 ; GET FILENAME
         SWI
-        FCB     9
-        LDA     'S'
-        STA     ,X+
-        LDA     'A'
-        STA     ,X+
-        LDA     'V'
-        STA     ,X+
+        FCB     11
+        BNE     DSKABORT
+        LDD     #$5341                            ;'SA' GET FIRST PORTION
+        STD     ,X                                ;SAVE IT
+        LDA     #'V'                              ;LAST CHAR
+        STA     2,X                               ;WRITE IT
         LDU     #SAVFCB                           ; OPEN FILE FOR WRITE/CREATE
         SWI
         FCB     71
+        LDU     #SAVFCB                           ; OPEN FILE FOR WRITE/CREATE
+        SWI
+        FCB     56
 
         LDX     #SING
         LDB     #SINGL
@@ -164,6 +165,15 @@ LSAVE:
         LDU     #SAVFCB
         SWI
         FCB     57                                ; CLOSE FILE
+
+        JMP     RESUME
+
+
+DSKABORT:
+        SWI
+        FCB     24                                ;String to OS
+        FCB     13
+        FCN     'OPERATION ABORTED.'
         JMP     RESUME
 
 ; *** ERROR #12: DISK ADDRESS RANGE ***
@@ -185,29 +195,23 @@ DSKEX:
 
 ZREST:
         JSR     SAVRES
-
+        SWI
         FCB     24                                ;String to OS
         FCB     13
         FCN     'ENTER FILENAME:'
         SWI
         FCB     3                                 ; GET FILENAME
         SWI
-        FCB     9
-        LDA     'S'
-        STA     ,X+
-        LDA     'A'
-        STA     ,X+
-        LDA     'V'
-        STA     ,X+
-        BEQ     >                                 ; NO FILE ERROR
-        FCB     24                                ;String to OS
-        FCB     13
-        FCN     'UNABLE TO RESTORE.'
-        JMP     DSKERR
-!
+        FCB     11
+        BNE     DSKABORT
+        LDD     #$5341                            ;'SA' GET FIRST PORTION
+        STD     ,X                                ;SAVE IT
+        LDA     #'V'                              ;LAST CHAR
+        STA     2,X                               ;WRITE IT
         LDU     #SAVFCB                           ; OPEN FILE
         SWI
         FCB     55
+        BNE     DSKABORT
         SWI
         FCB     59
         LDX     #RING
@@ -251,20 +255,23 @@ ERRWP:
         JMP     PREDF                             ; PREDICATE FAILS
 
 VERSOK:
-        LDD     #$200                             ; begin game load
-        LDU     #SAVFCB
-        SWI
-        FCB     64
 
         LEAS    +30,S                             ; POP OLD LOCALS OFF STACK
         LDD     ZCODE+ZSCRIP
         STD     VAL                               ; SAVE FLAGS
+
+        LDD     #$200                             ; begin game load
+        LDU     #SAVFCB
+        SWI
+        FCB     64
+        LBNE    DSKABORT
 
         LDX     #ZSTACK                           ; RETRIEVE
         STD     DBUFF                             ; CONTENTS OF Z-STACK (512 bytes)
         LDU     #SAVFCB
         SWI
         FCB     58
+        LBNE    DSKABORT
 
 DOREST:
         LDX     #ZCODE                            ; NOW RETRIEVE
@@ -272,7 +279,10 @@ DOREST:
         LDU     #SAVFCB
         SWI
         FCB     58
-
+        LBNE    DSKABORT
+        TFR     X,D
+        ADDD    #$200
+        TFR     D,X
         LDA     ZCODE+ZPURBT                      ; DETERMINE # PAGES
         CLC
         RORA
@@ -315,8 +325,7 @@ RESUME:
 TOBOOT:
         JSR     ENTER                             ; "PRESS <ENTER> TO CONTINUE"
         COM     SCRIPT                            ; RE-ENABLE SCRIPTING
-        JMP     CLS                               ; CLEAR SCREEN AND RETURN
-
+        RTS
 ; ---------------------------
 ; "PRESS <ENTER> TO CONTINUE"
 ; ---------------------------
@@ -375,12 +384,14 @@ PRESSL          EQU presslen-PRESS
 SING:
         FCB     EOL
         FCC     "SAVING"
+        FCB     EOL
 sinlen:
 SINGL           EQU sinlen-SING
 
 RING:
         FCB     EOL
         FCC     "RESTORING"
+        FCB     EOL
 ringlen:
 RINGL           EQU ringlen-RING
 

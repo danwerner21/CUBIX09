@@ -32,18 +32,30 @@ FILE *writer;
 /* Buffer for xmodem packets: 128 bytes data + 3 header bytes + 1 checksum */
 unsigned char xbuff[132];
 
-unsigned char _inbyte(unsigned int timeout)
+
+int _inbyte(unsigned int timeout)
 {
     int i;
     while (timeout--)
     {
-        i = chkchr();
-        if (i > 0)
+        i = asm {
+        LDA     $1F85
+        ANDA    #$08
+        BEQ     ?inbyt01
+        LDA     #$00
+        LDB     $1F84
+        JMP     ?inbyt02
+?inbyt01 NOP
+        LDA     #$FF
+        LDB     #$F1
+?inbyt02 NOP
+        };
+        if (i >= 0)
         {
             return (unsigned char)i;
         }
     }
-    return 0;
+    return -1;
 }
 
 void xmemcpy(unsigned char *dst, unsigned char *src, unsigned int count)
@@ -53,24 +65,22 @@ void xmemcpy(unsigned char *dst, unsigned char *src, unsigned int count)
 }
 
 /* Simple checksum calculation for xmodem */
-static unsigned int check_checksum(const unsigned char *buf, int sz)
+unsigned int check_checksum(unsigned char *buf, int sz)
 {
     unsigned int i;
-    unsigned int cks;
+    unsigned char cks;
 
     cks = 0;
     for (i = 0; i < sz; ++i)
     {
-        cks += (unsigned int)buf[i];
+        cks += buf[i];
     }
-    cks = cks % 256;  /* Modulo 256 as per XModem specification */
-
-    return (cks == (unsigned int)buf[sz]) ? 1 : 0;
+    return (cks == buf[sz]) ? 1 : 0;
 }
 
-static void flushinput(void)
+void flushinput(void)
 {
-    while (_inbyte(DLY_1S) > 0)
+    while (_inbyte(DLY_1S) >= 0)
         continue;
 }
 
@@ -79,7 +89,7 @@ int xmodemReceive()
     unsigned char *p;
     unsigned char packetno;
     unsigned int i, len;
-    unsigned char c;
+    int c;
     unsigned int retry, retrans;
 
     packetno = 1;
@@ -91,7 +101,7 @@ int xmodemReceive()
     { /* approx 30 seconds allowed to make connection */
         putchr(NAK);  /* Request checksum mode */
         c = _inbyte(DLY_1S);
-        if (c > 0)
+        if (c >= 0)
         {
             switch (c)
             {
@@ -131,9 +141,9 @@ start_recv:
     for (i = 0; i < 131; ++i)  /* 1 + 1 + 128 + 1 = 131 more bytes */
     {
         c = _inbyte(DLY_1S);
-        if (c == 0)  /* timeout */
+        if (c < 0)  /* timeout */
             goto reject;
-        *p++ = c;
+        *p++ = (unsigned char)c;
     }
 
     /* Verify packet structure and checksum */
@@ -164,7 +174,7 @@ start_recv:
         for (;;)
         {
             c = _inbyte(DLY_1S);
-            if (c > 0)
+            if (c >= 0)
             {
                 switch (c)
                 {
@@ -203,7 +213,7 @@ reject:
     for (;;)
     {
         c = _inbyte(DLY_1S);
-        if (c > 0)
+        if (c >= 0)
         {
             switch (c)
             {

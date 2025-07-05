@@ -70,19 +70,31 @@ static const unsigned int crc16tab[256] = {
     0xef1f, 0xff3e, 0xcf5d, 0xdf7c, 0xaf9b, 0xbfba, 0x8fd9, 0x9ff8,
     0x6e17, 0x7e36, 0x4e55, 0x5e74, 0x2e93, 0x3eb2, 0x0ed1, 0x1ef0};
 
-unsigned char _inbyte(unsigned int timeout)
+int _inbyte(unsigned int timeout)
 {
     int i;
     while (timeout--)
     {
-        i = chkchr();
-        if (i > 0)
+        i = asm {
+        LDA     $1F85
+        ANDA    #$08
+        BEQ     ?inbyt01
+        LDA     #$00
+        LDB     $1F84
+        JMP     ?inbyt02
+?inbyt01 NOP
+        LDA     #$FF
+        LDB     #$F1
+?inbyt02 NOP
+        };
+        if (i >= 0)
         {
             return (unsigned char)i;
         }
     }
-    return 0;
+    return -1;
 }
+
 
 unsigned int crc16_ccitt(const unsigned char *buf, unsigned int len)
 {

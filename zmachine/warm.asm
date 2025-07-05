@@ -131,7 +131,6 @@ LDPRE:
         LDU     #TOPSTA                           ; INIT THE ZSP
         STU     OZSTAK                            ; REMEMBER ITS POSITION
 
-        JSR     CLS                               ; CLEAR THE SCREEN
         COM     SCRIPT                            ; ENABLE SCRIPTING
 
         LDA     SFLAG                             ; SCRIPTING FLAG
