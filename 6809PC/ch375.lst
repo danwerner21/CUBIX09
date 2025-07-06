@@ -1,0 +1,396 @@
+                      (        ch375.asm):00001         ;*
+                      (        ch375.asm):00002         ;* CH375 Test
+                      (        ch375.asm):00003         ;*
+                      (        ch375.asm):00004         ;*
+                      (        ch375.asm):00005         ;*
+                      (        ch375.asm):00006         ;*
+     2000             (        ch375.asm):00007         OSRAM           = $2000                           ;APPLICATION RAM AREA
+     DBFF             (        ch375.asm):00008         OSEND           = $DBFF                           ;END OF GENERAL RAM
+     D000             (        ch375.asm):00009         OSUTIL          = $D000                           ;UTILITY ADDRESS SPACE
+     0016             (        ch375.asm):00010         PAGSIZ          = 22                              ;PAGE SIZE
+     001B             (        ch375.asm):00011         ESCCHR          = $1B                             ;ESCAPE CHARACTER
+     0009             (        ch375.asm):00012         TAB             = $09                             ;TAB CHARACTER
+     000D             (        ch375.asm):00013         CR              = $0D                             ;CARRIAGE RETURN
+     000A             (        ch375.asm):00014         LF              = $0A                             ;LINE-FEED
+                      (        ch375.asm):00015         
+                      (        ch375.asm):00016         ; CH375 HARDWARE ADDRESS
+     1260             (        ch375.asm):00017         CH0BASE         = $1260
+     1260             (        ch375.asm):00018         CH0DATA         = CH0BASE
+     1261             (        ch375.asm):00019         CH0COMMAND      = CH0BASE+1
+                      (        ch375.asm):00020         
+                      (        ch375.asm):00021         ;
+                      (        ch375.asm):00022         ; CH375/376 COMMANDS
+                      (        ch375.asm):00023         ;
+     0001             (        ch375.asm):00024         CH_CMD_VER      = $01                             ; GET IC VER
+     0005             (        ch375.asm):00025         CH_CMD_RESET    = $05                             ; FULL CH37X RESET
+     0006             (        ch375.asm):00026         CH_CMD_EXIST    = $06                             ; CHECK EXISTS
+     000A             (        ch375.asm):00027         CH_CMD_MAXLUN   = $0A                             ; GET MAX LUN NUMBER
+     000B             (        ch375.asm):00028         CH_CMD_PKTSEC   = $0B                             ; SET PACKETS PER SECTOR
+     000B             (        ch375.asm):00029         CH_CMD_SETRETRY = $0B                             ; SET RETRIES
+     0015             (        ch375.asm):00030         CH_CMD_MODE     = $15                             ; SET USB MODE
+     0016             (        ch375.asm):00031         CH_CMD_TSTCON   = $16                             ; TEST CONNECT
+     0017             (        ch375.asm):00032         CH_CMD_ABRTNAK  = $17                             ; ABORT DEVICE NAK RETRIES
+     0022             (        ch375.asm):00033         CH_CMD_STAT     = $22                             ; GET STATUS
+     0028             (        ch375.asm):00034         CH_CMD_RD5      = $28                             ; READ USB DATA (375)
+     002B             (        ch375.asm):00035         CH_CMD_WR5      = $2B                             ; WRITE USB DATA (375)
+     0031             (        ch375.asm):00036         CH_CMD_DSKMNT   = $31                             ; DISK MOUNT
+     0039             (        ch375.asm):00037         CH_CMD_BYTE_LOC = $39                             ; BYTE LOCATE
+     003A             (        ch375.asm):00038         CH_CMD_BYTERD   = $3A                             ; BYTE READ
+     003B             (        ch375.asm):00039         CH_CMD_BYTERDGO = $3B                             ; BYTE READ GO
+     003C             (        ch375.asm):00040         CH_CMD_BYTEWR   = $3C                             ; BYTE WRITE
+     003D             (        ch375.asm):00041         CH_CMD_BYTEWRGO = $3D                             ; BYTE WRITE GO
+     003E             (        ch375.asm):00042         CH_CMD_DSKCAP   = $3E                             ; DISK CAPACITY
+     004D             (        ch375.asm):00043         CH_CMD_AUTOSET  = $4D                             ; USB AUTO SETUP
+     0051             (        ch375.asm):00044         CH_CMD_DSKINIT  = $51                             ; DISK INIT
+     0052             (        ch375.asm):00045         CH_CMD_DSKRES   = $52                             ; DISK RESET
+     0053             (        ch375.asm):00046         CH_CMD_DSKSIZ   = $53                             ; DISK SIZE
+     0054             (        ch375.asm):00047         CH_CMD_DSKRD    = $54                             ; DISK READ
+     0055             (        ch375.asm):00048         CH_CMD_DSKRDGO  = $55                             ; CONTINUE DISK READ
+     0056             (        ch375.asm):00049         CH_CMD_DSKWR    = $56                             ; DISK WRITE
+     0057             (        ch375.asm):00050         CH_CMD_DSKWRGO  = $57                             ; CONTINUE DISK WRITE
+     0058             (        ch375.asm):00051         CH_CMD_DSKINQ   = $58                             ; DISK INQUIRY
+     0059             (        ch375.asm):00052         CH_CMD_DSKRDY   = $59                             ; DISK READY
+                      (        ch375.asm):00053         
+                      (        ch375.asm):00054         ;* vars
+                      (        ch375.asm):00055                 ORG     0
+0000                  (        ch375.asm):00056         USBCAPACITY:
+0000                  (        ch375.asm):00057                 RMB     8                                 ; USB CAPACITY
+                      (        ch375.asm):00058         
+                      (        ch375.asm):00059         ;*
+                      (        ch375.asm):00060                 ORG     OSUTIL                            ;DOS UTILITY RUN AREA
+D000                  (        ch375.asm):00061         CH375:
+D000 3F               (        ch375.asm):00062                 SWI
+D001 19               (        ch375.asm):00063                 FCB     25                                ;DISPLAY MESSAGE
+D002 5445535420434833 (        ch375.asm):00064                 FCN     'TEST CH375 USB CARD'
+     3735205553422043
+     41524400
+D016 3F               (        ch375.asm):00065                 SWI
+D017 16               (        ch375.asm):00066                 FCB     22
+                      (        ch375.asm):00067         
+D018 BDD098           (        ch375.asm):00068                 JSR     CH_DETECT
+D01B 2662             (        ch375.asm):00069                 BNE     NOTDETECTED
+                      (        ch375.asm):00070         
+D01D 3F               (        ch375.asm):00071                 SWI
+D01E 19               (        ch375.asm):00072                 FCB     25                                ;DISPLAY MESSAGE
+D01F 2020434833373520 (        ch375.asm):00073                 FCN     '  CH375 DETECTED.'
+     4445544543544544
+     2E00
+                      (        ch375.asm):00074         
+D031 BDD125           (        ch375.asm):00075                 JSR     CH_DISKINIT
+D034 2531             (        ch375.asm):00076                 BCS     >
+                      (        ch375.asm):00077         
+D036 3F               (        ch375.asm):00078                 SWI
+D037 18               (        ch375.asm):00079                 FCB     24                                ;DISPLAY MESSAGE
+D038 2020434833373520 (        ch375.asm):00080                 FCN     '  CH375 MEDIA SIZE: 0x'
+     4D45444941205349
+     5A453A20307800
+                      (        ch375.asm):00081         
+D04F DC00             (        ch375.asm):00082                 LDD     USBCAPACITY
+D051 3F               (        ch375.asm):00083                 SWI
+D052 1B               (        ch375.asm):00084                 FCB     27
+                      (        ch375.asm):00085         
+D053 DC02             (        ch375.asm):00086                 LDD     USBCAPACITY+2
+D055 3F               (        ch375.asm):00087                 SWI
+D056 1B               (        ch375.asm):00088                 FCB     27
+                      (        ch375.asm):00089         
+D057 3F               (        ch375.asm):00090                 SWI
+D058 19               (        ch375.asm):00091                 FCB     25                                ;DISPLAY MESSAGE
+D059 20534543544F5253 (        ch375.asm):00092                 FCN     ' SECTORS.'
+     2E00
+                      (        ch375.asm):00093         
+D063 CC0000           (        ch375.asm):00094                 LDD     #0000
+D066 39               (        ch375.asm):00095                 RTS
+                      (        ch375.asm):00096         !
+D067 3F               (        ch375.asm):00097                 SWI
+D068 19               (        ch375.asm):00098                 FCB     25                                ;DISPLAY MESSAGE
+D069 2020434833373520 (        ch375.asm):00099                 FCN     '  CH375 MEDIA ERROR.'
+     4D45444941204552
+     524F522E00
+D07E 39               (        ch375.asm):00100                 RTS
+                      (        ch375.asm):00101         
+                      (        ch375.asm):00102         
+D07F                  (        ch375.asm):00103         NOTDETECTED:
+D07F 3F               (        ch375.asm):00104                 SWI
+D080 19               (        ch375.asm):00105                 FCB     25                                ;DISPLAY MESSAGE
+D081 2020434833373520 (        ch375.asm):00106                 FCN     '  CH375 NOT DETECTED.'
+     4E4F542044455445
+     435445442E00
+D097 39               (        ch375.asm):00107                 RTS
+                      (        ch375.asm):00108         
+D098                  (        ch375.asm):00109         CH_DETECT:
+D098 BDD0E0           (        ch375.asm):00110                 JSR     CH_RESET
+D09B 3F               (        ch375.asm):00111                 SWI
+D09C 19               (        ch375.asm):00112                 FCB     25                                ;DISPLAY MESSAGE
+D09D 4348333735205553 (        ch375.asm):00113                 FCN     'CH375 USB:'
+     423A00
+D0A8                  (        ch375.asm):00114         CH_DETECT1:
+D0A8 8606             (        ch375.asm):00115                 LDA     #CH_CMD_EXIST                     ; LOAD COMMAND
+D0AA BDD0BB           (        ch375.asm):00116                 JSR     CH_CMD                            ; SEND COMMAND
+D0AD 86AA             (        ch375.asm):00117                 LDA     #$AA                              ; LOAD CHECK PATTERN
+D0AF BDD0CA           (        ch375.asm):00118                 JSR     CH_WR                             ; SEND IT
+D0B2 BDD0CE           (        ch375.asm):00119                 JSR     CH_NAP                            ; SMALL DELAY
+D0B5 BDD0C6           (        ch375.asm):00120                 JSR     CH_RD                             ; GET ECHO
+D0B8 8155             (        ch375.asm):00121                 CMPA    #$55                              ; SHOULD BE INVERTED
+D0BA 39               (        ch375.asm):00122                 RTS                                       ; RETURN
+                      (        ch375.asm):00123         
+D0BB                  (        ch375.asm):00124         CH_CMD:
+D0BB B71261           (        ch375.asm):00125                 STA     CH0COMMAND                        ; SEND COMMAND
+D0BE BDD0CE           (        ch375.asm):00126                 JSR     CH_NAP                            ;
+D0C1 39               (        ch375.asm):00127                 RTS
+                      (        ch375.asm):00128         ;
+                      (        ch375.asm):00129         ; GET STATUS
+                      (        ch375.asm):00130         ;
+D0C2                  (        ch375.asm):00131         CH_STAT:
+D0C2 B61261           (        ch375.asm):00132                 LDA     CH0COMMAND                        ; READ STATUS
+D0C5 39               (        ch375.asm):00133                 RTS
+                      (        ch375.asm):00134         ;
+                      (        ch375.asm):00135         ; READ A BYTE FROM DATA PORT
+                      (        ch375.asm):00136         ;
+D0C6                  (        ch375.asm):00137         CH_RD:
+D0C6 B61260           (        ch375.asm):00138                 LDA     CH0DATA                           ; READ BYTE
+D0C9 39               (        ch375.asm):00139                 RTS
+                      (        ch375.asm):00140         ;
+                      (        ch375.asm):00141         ; WRITE A BYTE TO DATA PORT
+                      (        ch375.asm):00142         ;
+D0CA                  (        ch375.asm):00143         CH_WR:
+D0CA B71260           (        ch375.asm):00144                 STA     CH0DATA                           ; WRITE BYTE
+D0CD 39               (        ch375.asm):00145                 RTS
+                      (        ch375.asm):00146         
+D0CE                  (        ch375.asm):00147         CH_NAP:
+D0CE 12               (        ch375.asm):00148                 NOP
+D0CF 12               (        ch375.asm):00149                 NOP
+D0D0 12               (        ch375.asm):00150                 NOP
+D0D1 12               (        ch375.asm):00151                 NOP
+D0D2 12               (        ch375.asm):00152                 NOP
+D0D3 12               (        ch375.asm):00153                 NOP
+D0D4 39               (        ch375.asm):00154                 RTS
+D0D5 3410             (        ch375.asm):00155                 PSHS    X
+D0D7 8E0500           (        ch375.asm):00156                 LDX     #$500
+                      (        ch375.asm):00157         !
+D0DA 301F             (        ch375.asm):00158                 DEX
+D0DC 26FC             (        ch375.asm):00159                 BNE     <
+D0DE 3590             (        ch375.asm):00160                 PULS    X,PC
+                      (        ch375.asm):00161         
+D0E0                  (        ch375.asm):00162         CH_RESET:
+D0E0 3430             (        ch375.asm):00163                 PSHS    X,Y
+D0E2 8605             (        ch375.asm):00164                 LDA     #CH_CMD_RESET
+D0E4 BDD0BB           (        ch375.asm):00165                 JSR     CH_CMD                            ; SEND COMMAND
+D0E7 108E000F         (        ch375.asm):00166                 LDY     #$0F
+D0EB                  (        ch375.asm):00167         CH_RES1:
+D0EB 8EFFFF           (        ch375.asm):00168                 LDX     #$FFFF
+                      (        ch375.asm):00169         !
+D0EE 301F             (        ch375.asm):00170                 DEX
+D0F0 26FC             (        ch375.asm):00171                 BNE     <
+D0F2 313F             (        ch375.asm):00172                 DEY
+D0F4 26F5             (        ch375.asm):00173                 BNE     CH_RES1
+D0F6 35B0             (        ch375.asm):00174                 PULS    X,Y,PC
+                      (        ch375.asm):00175         
+                      (        ch375.asm):00176         
+                      (        ch375.asm):00177         ;
+                      (        ch375.asm):00178         ; POLL WAITING FOR INTERRUPT
+                      (        ch375.asm):00179         ;
+D0F8                  (        ch375.asm):00180         CH_POLL:
+D0F8 3434             (        ch375.asm):00181                 PSHS    B,X,Y
+D0FA 108E0030         (        ch375.asm):00182                 LDY     #$0030
+D0FE                  (        ch375.asm):00183         CH_POLL0:
+D0FE 8E8000           (        ch375.asm):00184                 LDX     #$8000                            ; PRIMARY LOOP COUNTER
+D101                  (        ch375.asm):00185         CH_POLL1:
+D101 BDD0C2           (        ch375.asm):00186                 JSR     CH_STAT                           ; GET INT STATUS
+D104 8480             (        ch375.asm):00187                 ANDA    #%10000000
+D106 270D             (        ch375.asm):00188                 BEQ     CH_POLL2                          ; CHECK BIT
+D108 301F             (        ch375.asm):00189                 DEX
+D10A 26F5             (        ch375.asm):00190                 BNE     CH_POLL1                          ; INNER LOOP AS NEEDED
+D10C 313F             (        ch375.asm):00191                 DEY
+D10E 26EE             (        ch375.asm):00192                 BNE     CH_POLL0                          ; OUTER LOOP AS NEEDED
+D110 3534             (        ch375.asm):00193                 PULS    B,X,Y
+D112 1A01             (        ch375.asm):00194                 SEC
+D114 39               (        ch375.asm):00195                 RTS                                       ; AND RETURN
+D115                  (        ch375.asm):00196         CH_POLL2:
+D115 8622             (        ch375.asm):00197                 LDA     #CH_CMD_STAT                      ; GET STATUS
+D117 BDD0BB           (        ch375.asm):00198                 JSR     CH_CMD                            ; SEND IT
+D11A BDD0CE           (        ch375.asm):00199                 JSR     CH_NAP                            ; SMALL DELAY
+D11D BDD0C6           (        ch375.asm):00200                 JSR     CH_RD                             ; GET RESULT
+D120 3534             (        ch375.asm):00201                 PULS    B,X,Y
+D122 1CFE             (        ch375.asm):00202                 CLC
+D124 39               (        ch375.asm):00203                 RTS                                       ; AND RETURN
+                      (        ch375.asm):00204         
+D125                  (        ch375.asm):00205         CH_DISKINIT:
+D125 3430             (        ch375.asm):00206                 PSHS    X,Y
+                      (        ch375.asm):00207         
+                      (        ch375.asm):00208                 ; RESET THE BUS
+D127 8615             (        ch375.asm):00209                 LDA     #CH_CMD_MODE            ; SET MODE COMMAND
+D129 BDD0BB           (        ch375.asm):00210                 JSR     CH_CMD                  ; SEND IT
+D12C 8607             (        ch375.asm):00211                 LDA     #7                      ; RESET BUS
+D12E BDD0CA           (        ch375.asm):00212                 JSR     CH_WR                   ; SEND IT
+D131 BDD0CE           (        ch375.asm):00213                 JSR     CH_NAP                  ; SMALL WAIT
+D134 BDD0C6           (        ch375.asm):00214                 JSR     CH_RD                   ; GET RESULT
+D137 BDD0CE           (        ch375.asm):00215                 JSR     CH_NAP                  ; SMALL WAIT
+                      (        ch375.asm):00216         ;
+                      (        ch375.asm):00217                 ; ACTIVATE USB MODE
+D13A 8615             (        ch375.asm):00218                 LDA     #CH_CMD_MODE            ; SET MODE COMMAND
+D13C BDD0BB           (        ch375.asm):00219                 JSR     CH_CMD                  ; SEND IT
+D13F 8606             (        ch375.asm):00220                 LDA     #6                      ; USB ENABLED, SEND SOF
+D141 BDD0CA           (        ch375.asm):00221                 JSR     CH_WR                   ; SEND IT
+D144 BDD0CE           (        ch375.asm):00222                 JSR     CH_NAP                  ; SMALL WAIT
+D147 BDD0C6           (        ch375.asm):00223                 JSR     CH_RD                   ; GET RESULT
+D14A BDD0CE           (        ch375.asm):00224                 JSR     CH_NAP                  ; SMALL WAIT
+                      (        ch375.asm):00225         ;
+D14D 108E0020         (        ch375.asm):00226                 LDY     #$20
+D151                  (        ch375.asm):00227         CH_DISKINIT1:
+D151 8651             (        ch375.asm):00228                 LDA     #CH_CMD_DSKINIT
+D153 BDD0BB           (        ch375.asm):00229                 JSR     CH_CMD                            ; SEND COMMAND
+                      (        ch375.asm):00230         
+D156 8E5000           (        ch375.asm):00231                 LDX     #$5000
+                      (        ch375.asm):00232         !
+D159 301F             (        ch375.asm):00233                 DEX
+D15B 26FC             (        ch375.asm):00234                 BNE     <
+                      (        ch375.asm):00235         
+D15D BDD0F8           (        ch375.asm):00236                 JSR     CH_POLL
+D160 3F               (        ch375.asm):00237                 SWI
+D161 1C               (        ch375.asm):00238                 FCB     28                                ; OUTPUT A
+D162 3F               (        ch375.asm):00239                 SWI
+D163 15               (        ch375.asm):00240                 FCB     21                                ; OUTPUT SPACE
+                      (        ch375.asm):00241         
+D164 8114             (        ch375.asm):00242                 CMPA    #$14                              ; SUCCESS?
+D166 270E             (        ch375.asm):00243                 BEQ     CHUSB_RESET1A                     ; IF SO, CHECK READY
+D168 8116             (        ch375.asm):00244                 CMPA    #$16                              ; NO MEDIA
+D16A 2713             (        ch375.asm):00245                 BEQ     CHUSB_NOMEDIA                     ; HANDLE IT
+D16C BDD0CE           (        ch375.asm):00246                 JSR     CH_NAP                            ; SMALL DELAY
+D16F 313F             (        ch375.asm):00247                 DEY
+D171 26DE             (        ch375.asm):00248                 BNE     CH_DISKINIT1                      ; LOOP AS NEEDED
+D173 7ED17B           (        ch375.asm):00249                 JMP     CH_DISKINIT_TO                    ; HANDLE TIMEOUT
+                      (        ch375.asm):00250         
+D176                  (        ch375.asm):00251         CHUSB_RESET1A:
+D176 BDD197           (        ch375.asm):00252                 JSR     CH_DSKSIZ                         ; GET AND RECORD DISK SIZE
+D179 35B0             (        ch375.asm):00253                 PULS    X,Y,PC
+                      (        ch375.asm):00254         
+D17B                  (        ch375.asm):00255         CH_DISKINIT_TO:
+D17B 1A01             (        ch375.asm):00256                 SEC
+D17D 35B0             (        ch375.asm):00257                 PULS    X,Y,PC
+                      (        ch375.asm):00258         
+D17F                  (        ch375.asm):00259         CHUSB_NOMEDIA:
+D17F 3F               (        ch375.asm):00260                 SWI
+D180 19               (        ch375.asm):00261                 FCB     25                                ;DISPLAY MESSAGE
+D181 2020434833373520 (        ch375.asm):00262                 FCN     '  CH375 NO MEDIA.'
+     4E4F204D45444941
+     2E00
+D193 1A01             (        ch375.asm):00263                 SEC
+D195 35B0             (        ch375.asm):00264                 PULS    X,Y,PC
+                      (        ch375.asm):00265         
+D197                  (        ch375.asm):00266         CH_DSKSIZ:
+D197 8653             (        ch375.asm):00267                 LDA     #CH_CMD_DSKSIZ                    ; DISK SIZE COMMAND
+D199 BDD0BB           (        ch375.asm):00268                 JSR     CH_CMD                            ; SEND IT
+D19C BDD0F8           (        ch375.asm):00269                 JSR     CH_POLL                           ; WAIT FOR RESULT
+                      (        ch375.asm):00270         
+D19F 8114             (        ch375.asm):00271                 CMPA    #$14                              ; SUCCESS?
+D1A1 2631             (        ch375.asm):00272                 BNE     CHUSB_CMDERR                      ; HANDLE CMD ERROR
+D1A3 BDD1D7           (        ch375.asm):00273                 JSR     CH_CMD_RD                         ; SEND READ USB DATA CMD
+D1A6 BDD0C6           (        ch375.asm):00274                 JSR     CH_RD                             ; GET RD DATA LEN
+                      (        ch375.asm):00275         
+D1A9 3F               (        ch375.asm):00276                 SWI
+D1AA 1C               (        ch375.asm):00277                 FCB     28                                ; OUTPUT A
+D1AB 3F               (        ch375.asm):00278                 SWI
+D1AC 15               (        ch375.asm):00279                 FCB     21                                ; OUTPUT SPACE
+                      (        ch375.asm):00280         
+D1AD 8108             (        ch375.asm):00281                 CMPA    #$08                              ; MAKE SURE IT IS 8
+D1AF 2623             (        ch375.asm):00282                 BNE     CHUSB_CMDERR                      ; HANDLE CMD ERROR
+                      (        ch375.asm):00283         
+D1B1 BDD0C6           (        ch375.asm):00284                 JSR     CH_RD
+D1B4 9700             (        ch375.asm):00285                 STA     USBCAPACITY
+D1B6 BDD0C6           (        ch375.asm):00286                 JSR     CH_RD
+D1B9 9701             (        ch375.asm):00287                 STA     USBCAPACITY+1
+D1BB BDD0C6           (        ch375.asm):00288                 JSR     CH_RD
+D1BE 9702             (        ch375.asm):00289                 STA     USBCAPACITY+2
+D1C0 BDD0C6           (        ch375.asm):00290                 JSR     CH_RD
+D1C3 9703             (        ch375.asm):00291                 STA     USBCAPACITY+3
+D1C5 BDD0C6           (        ch375.asm):00292                 JSR     CH_RD
+D1C8 BDD0C6           (        ch375.asm):00293                 JSR     CH_RD
+D1CB BDD0C6           (        ch375.asm):00294                 JSR     CH_RD
+D1CE BDD0C6           (        ch375.asm):00295                 JSR     CH_RD
+D1D1 1CFE             (        ch375.asm):00296                 CLC
+D1D3 39               (        ch375.asm):00297                 RTS                                       ; AND DONE
+D1D4                  (        ch375.asm):00298         CHUSB_CMDERR:
+D1D4 1A01             (        ch375.asm):00299                 SEC
+D1D6 39               (        ch375.asm):00300                 RTS                                       ; AND DONE
+                      (        ch375.asm):00301         
+                      (        ch375.asm):00302         
+                      (        ch375.asm):00303         ; SEND READ USB DATA COMMAND
+                      (        ch375.asm):00304         ; USING BEST OPCODE FOR DEVICE
+                      (        ch375.asm):00305         ;
+D1D7                  (        ch375.asm):00306         CH_CMD_RD:
+D1D7 8628             (        ch375.asm):00307                 LDA     #CH_CMD_RD5
+D1D9 7ED0BB           (        ch375.asm):00308                 JMP     CH_CMD
+                      (        ch375.asm):00309         ;
+                      (        ch375.asm):00310         ; SEND WRITE USB DATA COMMAND
+                      (        ch375.asm):00311         ; USING BEST OPCODE FOR DEVICE
+                      (        ch375.asm):00312         ;
+D1DC                  (        ch375.asm):00313         CH_CMD_WR:
+D1DC 862B             (        ch375.asm):00314                 LDA     #CH_CMD_WR5
+D1DE 7ED0BB           (        ch375.asm):00315                 JMP     CH_CMD
+
+Symbol Table:
+[ G] CH0BASE                          1260
+[ G] CH0COMMAND                       1261
+[ G] CH0DATA                          1260
+[ G] CH375                            D000
+[ G] CH_CMD                           D0BB
+[ G] CH_CMD_ABRTNAK                   0017
+[ G] CH_CMD_AUTOSET                   004D
+[ G] CH_CMD_BYTE_LOC                  0039
+[ G] CH_CMD_BYTERD                    003A
+[ G] CH_CMD_BYTERDGO                  003B
+[ G] CH_CMD_BYTEWR                    003C
+[ G] CH_CMD_BYTEWRGO                  003D
+[ G] CH_CMD_DSKCAP                    003E
+[ G] CH_CMD_DSKINIT                   0051
+[ G] CH_CMD_DSKINQ                    0058
+[ G] CH_CMD_DSKMNT                    0031
+[ G] CH_CMD_DSKRD                     0054
+[ G] CH_CMD_DSKRDGO                   0055
+[ G] CH_CMD_DSKRDY                    0059
+[ G] CH_CMD_DSKRES                    0052
+[ G] CH_CMD_DSKSIZ                    0053
+[ G] CH_CMD_DSKWR                     0056
+[ G] CH_CMD_DSKWRGO                   0057
+[ G] CH_CMD_EXIST                     0006
+[ G] CH_CMD_MAXLUN                    000A
+[ G] CH_CMD_MODE                      0015
+[ G] CH_CMD_PKTSEC                    000B
+[ G] CH_CMD_RD                        D1D7
+[ G] CH_CMD_RD5                       0028
+[ G] CH_CMD_RESET                     0005
+[ G] CH_CMD_SETRETRY                  000B
+[ G] CH_CMD_STAT                      0022
+[ G] CH_CMD_TSTCON                    0016
+[ G] CH_CMD_VER                       0001
+[ G] CH_CMD_WR                        D1DC
+[ G] CH_CMD_WR5                       002B
+[ G] CH_DETECT                        D098
+[ G] CH_DETECT1                       D0A8
+[ G] CH_DISKINIT                      D125
+[ G] CH_DISKINIT1                     D151
+[ G] CH_DISKINIT_TO                   D17B
+[ G] CH_DSKSIZ                        D197
+[ G] CH_NAP                           D0CE
+[ G] CH_POLL                          D0F8
+[ G] CH_POLL0                         D0FE
+[ G] CH_POLL1                         D101
+[ G] CH_POLL2                         D115
+[ G] CH_RD                            D0C6
+[ G] CH_RES1                          D0EB
+[ G] CH_RESET                         D0E0
+[ G] CH_STAT                          D0C2
+[ G] CH_WR                            D0CA
+[ G] CHUSB_CMDERR                     D1D4
+[ G] CHUSB_NOMEDIA                    D17F
+[ G] CHUSB_RESET1A                    D176
+[ G] CR                               000D
+[ G] ESCCHR                           001B
+[ G] LF                               000A
+[ G] NOTDETECTED                      D07F
+[ G] OSEND                            DBFF
+[ G] OSRAM                            2000
+[ G] OSUTIL                           D000
+[ G] PAGSIZ                           0016
+[ G] TAB                              0009
+[ G] USBCAPACITY                      0000

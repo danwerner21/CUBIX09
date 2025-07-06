@@ -112,6 +112,12 @@ ESP0_PROBE:
         BNE     ESP_ERROR
         LDX     #ESPMESSAGE5                      ; PRINT 'FOUND'
         JSR     WRSTR
+        LDX     #$20
+!
+        LDA     #00
+        JSR     PUTESP0
+        LEAX    -1,X
+        BNE     <
         CLC
         RTS
 ;
@@ -162,6 +168,12 @@ ESP1_PROBE:
         BNE     ESP_ERROR
         LDX     #ESPMESSAGE5                      ; PRINT 'FOUND'
         JSR     WRSTR
+        LDX     #$20
+!
+        LDA     #00
+        JSR     PUTESP1
+        LEAX    -1,X
+        BNE     <
         CLC
         RTS
 
