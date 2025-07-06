@@ -1,8 +1,9 @@
 Symbol: OSEND (showdrv.s) = DBFF
 Symbol: OSRAM (showdrv.s) = 2000
 Symbol: OSUTIL (showdrv.s) = D000
-Symbol: SHOWDRIVESLICE (showdrv.s) = D0AC
+Symbol: SHOWDRIVESLICE (showdrv.s) = D0BE
 Symbol: SHOWDRIVETYPE (showdrv.s) = D05F
 Symbol: SHOWDRIVETYPE1 (showdrv.s) = D099
 Symbol: SHOWDRIVETYPE2 (showdrv.s) = D09E
+Symbol: SHOWDRIVETYPE3 (showdrv.s) = D0B0
 Symbol: SHOWDRV (showdrv.s) = D000

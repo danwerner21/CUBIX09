@@ -1,130 +1,17 @@
-;*
-;* CH375 Test
-;*
-;*
-;*
-;*
-OSRAM           = $2000                           ;APPLICATION RAM AREA
-OSEND           = $DBFF                           ;END OF GENERAL RAM
-OSUTIL          = $D000                           ;UTILITY ADDRESS SPACE
-PAGSIZ          = 22                              ;PAGE SIZE
-ESCCHR          = $1B                             ;ESCAPE CHARACTER
-TAB             = $09                             ;TAB CHARACTER
-CR              = $0D                             ;CARRIAGE RETURN
-LF              = $0A                             ;LINE-FEED
-HSTBUF          = $5000
-CURRENTSEC      = $50
-CURRENTCYL      = $51
-CURRENTSLICE    = $52
-
-;*
-        ORG     OSUTIL                            ;DOS UTILITY RUN AREA
-CH375:
-        SWI
-        FCB     25                                ;DISPLAY MESSAGE
-        FCN     'TEST CH375 USB CARD'
-        SWI
-        FCB     22
-        JSR     CH375INIT
-        BCS     >
-
-        LDA     #$01
-        STA     CURRENTSEC
-        STA     CURRENTCYL
-        STA     CURRENTSLICE
-
-        LDA     #$AA
-        JSR     FILLSEC
-        SWI
-        FCB     25                                ;DISPLAY MESSAGE
-        FCN     'READ ONE:'
-        SWI
-        FCB     22
-        JSR     CH_READSEC
-        JSR     DUMPSEC
-
-        LDA     #$AA
-        JSR     FILLSEC
-        SWI
-        FCB     25                                ;DISPLAY MESSAGE
-        FCN     'READ TWO:'
-        SWI
-        FCB     22
-        JSR     CH_READSEC
-        JSR     DUMPSEC
-
-
-        LDA     #$55
-        JSR     FILLSEC
-        SWI
-        FCB     25                                ;DISPLAY MESSAGE
-        FCN     'WRITE ONE:'
-        SWI
-        FCB     22
-        JSR     CH_WRITESEC
-        JSR     DUMPSEC
-
-
-        LDA     #$AA
-        JSR     FILLSEC
-        SWI
-        FCB     25                                ;DISPLAY MESSAGE
-        FCN     'READ THREE:'
-        SWI
-        FCB     22
-        JSR     CH_READSEC
-        JSR     DUMPSEC
-
-        LDD     #0000
-        RTS
-!
-        LDD     #$FFFF
-        RTS
-
-FILLSEC:
-        LDX     #HSTBUF
-FILLSEC1:
-        STA     ,X+
-        CPX     #HSTBUF+$201
-        BNE     FILLSEC1
-        RTS
-
-
-DUMPSEC:
-        LDX     #HSTBUF
-DUMPSEC1:
-        TFR     X,D
-        SWI
-        FCB     27
-        LDA     #':'
-        SWI
-        FCB     33
-        LDB     #16
-DUMPSEC2:
-        LDA     ,X+
-        SWI
-        FCB     28
-        SWI
-        FCB     21
-        DECB
-        BNE     DUMPSEC2
-        SWI
-        FCB     22
-        CPX     #HSTBUF+$200
-        BLO     DUMPSEC1
-        SWI
-        FCB     22
-        RTS
-
-
-;--------------------------------------------------------------------------------------------------------------------
-; DRIVER FOLLOWS
-;--------------------------------------------------------------------------------------------------------------------
+;__IDE DRIVERS___________________________________________________________________________________________________________________
+;
+; 	CUBIX IDE disk drivers 6809PC - CH375 USB STORAGE
+;
+;	Entry points:
+;		CH375INIT      	 - CALLED DURING OS INIT
+;		CH_READSEC       - read a sector from drive
+;		CH_WRITESEC      - write a sector to drive
+;________________________________________________________________________________________________________________________________
+;
 ; CH375 HARDWARE ADDRESS
 CH0BASE         = $1260
 CH0DATA         = CH0BASE
 CH0COMMAND      = CH0BASE+1
-
 ;
 ; CH375/376 COMMANDS
 ;
@@ -159,56 +46,51 @@ CH_CMD_DSKINQ   = $58                             ; DISK INQUIRY
 CH_CMD_DSKRDY   = $59                             ; DISK READY
 
 CH375INIT:
+        JSR     LFCR
         JSR     CH_DETECT
         BNE     NOTDETECTED
 
-        SWI
-        FCB     25                                ;DISPLAY MESSAGE
-        FCN     '  CH375 DETECTED.'
+        LDX     #CHMESSAGE2
+        JSR     WRSTR                             ; DO PROMPT
+        JSR     LFCR                              ; AND CRLF
 
         JSR     CH_DISKINIT
         BCS     >
 
-        SWI
-        FCB     24                                ;DISPLAY MESSAGE
-        FCN     '  CH375 MEDIA SIZE: 0x'
+        LDX     #CHMESSAGE3
+        JSR     WRSTR                             ; DO PROMPT
 
         LDD     HSTBUF
-        SWI
-        FCB     27
+        JSR     WRHEXW                            ; PRINT BASE PORT
 
         LDD     HSTBUF+2
-        SWI
-        FCB     27
+        JSR     WRHEXW                            ; PRINT BASE PORT
 
-        SWI
-        FCB     25                                ;DISPLAY MESSAGE
-        FCN     ' SECTORS.'
+        JSR     LFCR                              ; AND CRLF
         CLC
         RTS
 !
-        SWI
-        FCB     25                                ;DISPLAY MESSAGE
-        FCN     '  CH375 MEDIA ERROR.'
+        LDX     #CHMESSAGE5
+        JSR     WRSTR                             ; DO PROMPT
+        JSR     LFCR                              ; AND CRLF
         SEC
         RTS
 NOTDETECTED:
-        SWI
-        FCB     25                                ;DISPLAY MESSAGE
-        FCN     '  CH375 NOT DETECTED.'
+        LDX     #CHMESSAGE6
+        JSR     WRSTR                             ; DO PROMPT
+        JSR     LFCR                              ; AND CRLF
         SEC
         RTS
 
 CH_DETECT:
-        SWI
-        FCB     25                                ;DISPLAY MESSAGE
-        FCN     'CH375 USB:'
-        SWI
-        FCB     24                                ;DISPLAY MESSAGE
-        FCN     '  IO=0x'
-        ldd     #CH0BASE
-        SWI
-        FCB     27
+        LDX     #CHMESSAGE1
+        JSR     WRSTR                             ; DO PROMPT
+        JSR     LFCR                              ; AND CRLF
+
+        LDX     #MESSAGE2
+        JSR     WRSTR                             ; DO PROMPT
+        LDD     #CH0BASE                          ; GET BASE PORT
+        JSR     WRHEXW                            ; PRINT BASE PORT
         JSR     CH_RESET
 
 CH_DETECT1:
@@ -356,9 +238,9 @@ CH_DISKINIT_TO:
         PULS    X,Y,PC
 
 CHUSB_NOMEDIA:
-        SWI
-        FCB     25                                ;DISPLAY MESSAGE
-        FCN     '  CH375 NO MEDIA.'
+        LDX     #CHMESSAGE7
+        JSR     WRSTR                             ; DO PROMPT
+        JSR     LFCR                              ; AND CRLF
         SEC
         PULS    X,Y,PC
 
@@ -390,10 +272,14 @@ CH_DSKSIZ:
         CLC
         RTS                                       ; AND DONE
 CHUSB_CMDERR:
-CHUSB_IOERR:
         SEC
         RTS                                       ; AND DONE
 
+CHUSB_IOERR:
+        LDA     #$02                              ; SET ERROR CONDITION
+        STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
+        SEC
+        RTS                                       ; AND DONE
 
 
 ; SEND READ USB DATA COMMAND
@@ -446,6 +332,8 @@ CHUSB_READ2:
 	CMPA	#$14			; SUCCESS?
 	BNE     CHUSB_IOERR		; IF NOT, HANDLE ERROR
 ;
+        lda     #$00
+        STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
 	CLC 				; SIGNAL SUCCESS
 	RTS
 ;
@@ -485,8 +373,10 @@ CHUSB_WRITE2:
 	; FINAL CHECK FOR COMPLETION & SUCCESS
 	JSR	CH_POLL			; WAIT FOR COMPLETION
 	CMPA	#$14			; SUCCESS?
-	BNE	CHUSB_IOERR		; IF NOT, HANDLE ERROR
+	LBNE	CHUSB_IOERR		; IF NOT, HANDLE ERROR
 ;
+        lda     #$00
+        STA     DISKERROR                         ; SAVE ERROR CONDITION FOR OS
 	CLC	        		; SIGNAL SUCCESS
 	RTS
 ;
@@ -511,3 +401,15 @@ CHUSB_RWSTART:
 	JSR	CH_WR			; SEND BYTE
 	RTS
 ;
+CHMESSAGE1:
+        FCN     'CH375 USB:'
+CHMESSAGE2:
+        FCN     '  CH375 DETECTED.'
+CHMESSAGE3:
+        FCN     '  CH375: BLOCKS=0x'
+CHMESSAGE5:
+        FCN     '  CH375 MEDIA ERROR.'
+CHMESSAGE6:
+        FCN     '  CH375 NOT DETECTED.'
+CHMESSAGE7:
+        FCN     '  CH375 NO MEDIA.'

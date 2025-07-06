@@ -157,10 +157,13 @@ void prtdevice(char dev)
     printf("FD");
     break;
   case 0x20:
-    printf("PPIDE");
+    printf("IDE");
     break;
   case 0x30:
     printf("FPSD");
+    break;
+    case 0x40:
+    printf("USB");
     break;
   default:
     printf("UNKNOWN");
@@ -196,8 +199,9 @@ void prtusage()
   printf("          FPSDx:  FRONT PANEL SD DISK (ADDR 0x2x)\n\r");
   printf("          FD0:    FLOPPY DISK UNIT 0\n\r");
   printf("          FD1:    FLOPPY DISK UNIT 1\n\r");
-  printf("          PPIDE0: PRIMARY PPIDE FIXED DISK\n\r");
-  printf("          PPIDE1: SECONDARY PPIDE FIXED DISK\n\r");
+  printf("          IDE0:   PRIMARY PPIDE FIXED DISK\n\r");
+  printf("          IDE1:   SECONDARY PPIDE FIXED DISK\n\r");
+  printf("          USB:    USB BASS STORAGE\n\r");
   printf("\n\r POSSIBLE FLAGS:\n\r");
   printf("          /35     3.5 INCH FLOPPY (DEFAULT)\n\r");
   printf("          /525    5.25 INCH FLOPPY\n\r");
@@ -276,16 +280,21 @@ void mapdrive(char *bytes, char *token1, char *token2, char *flags)
       updatedosmap(drive,floppy525360dcb);
     }
    }
-  if (!strncmp(token2, "PPIDE0:", 7))
+  if (!strncmp(token2, "IDE0:", 7))
    {
     newdevice = 0x20;
     updatedosmap(drive,hdddcb);
    }
-  if (!strncmp(token2, "PPIDE1:", 7))
+  if (!strncmp(token2, "IDE1:", 7))
   {
     newdevice = 0x21;
     updatedosmap(drive,hdddcb);
   }
+  if (!strncmp(token2, "USB:", 7))
+   {
+    newdevice = 0x40;
+    updatedosmap(drive,hdddcb);
+   }
   if (newdevice == 0xFF)
   {
     printf("Unkown device assignment. \n\r");

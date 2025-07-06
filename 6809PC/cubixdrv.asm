@@ -61,9 +61,9 @@ DISPATCHTABLE:
         .WORD   IDE_READ_SECTOR                   ; FUNCTION 22 - read a sector from XT IDE device
         .WORD   IDE_WRITE_SECTOR                  ; FUNCTION 23 - write a sector to XT IDE device
 ;
-        .WORD   drv_noop                          ;FPSD_INIT                         ; FUNCTION 24 - init PPIDE device
-        .WORD   drv_noop                          ;FPSD_READ_SECTOR                  ; FUNCTION 25 - read a sector from PPIDE device
-        .WORD   drv_noop                          ;FPSD_WRITE_SECTOR                 ; FUNCTION 26 - write a sector to PPIDE device
+        .WORD   CH375INIT                         ; FUNCTION 24 - init CH375 USB device
+        .WORD   CH_READSEC                        ; FUNCTION 25 - read a sector from CH375 USB device
+        .WORD   CH_WRITESEC                       ; FUNCTION 26 - write a sector to CH375 USB device
 ;
         .WORD   drv_noop                          ; FUNCTION 27 -
         .WORD   drv_noop                          ; FUNCTION 28 -
@@ -123,12 +123,7 @@ DISPATCHTABLE:
         INCLUDE cubix_ide.asm
         INCLUDE cubix_multio.asm
         INCLUDE cubix_esp.asm
-;        INCLUDE cubix_dskyng.asm
-;        INCLUDE cubix_floppy.asm
-;        INCLUDE cubix_fp.asm
-;        INCLUDE cubix_i2c.asm
-;        INCLUDE cubix_esp32.asm
-;        INCLUDE cubix_dsky.asm
+        INCLUDE cubix_ch375.asm
 
 
 
@@ -201,4 +196,10 @@ PUTCHR:
         PULS    A
         JMP     WRSER1
 
+
+
+        fcb     00,00,00,00,00,00,00,00,00,00,00,00
+        fcb     00,00,00,00,00,00,00,00,00,00,00,00
+        fcb     00,00,00,00,00,00,00,00,00,00,00,00
+        fcb     00,00,00,00,00,00,00,00,00,00,00,00
         END

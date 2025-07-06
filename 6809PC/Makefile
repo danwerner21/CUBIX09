@@ -6,7 +6,7 @@ ch375.s19: ch375.asm
 	srec_cat ch375.s -o ch375.s19 -data-only
 	sed -i -e '$$aS9' ch375.s19
 
-cubixdrv.s19: cubixdrv.asm cubix_serial.asm cubix_ide.asm cubix_values.asm cubix_multio.asm cubix_esp.asm
+cubixdrv.s19: cubixdrv.asm cubix_serial.asm cubix_ide.asm cubix_values.asm cubix_multio.asm cubix_esp.asm cubix_ch375.asm
 	lwasm --6809   --6800compat cubixdrv.asm -s --list=cubixdrv.lst --map=cubixdrv.map --output=cubixdrv.s --format=srec
 	srec_cat  cubixdrv.s -exclude 0x0000 0xc100 -o cubixdrv.s19
 	@rm cubixdrv.s

@@ -50,24 +50,12 @@ HWIN1
 ;
         LDB     #21                               ;INIT IDE
         JSR     MD_PAGERA
-
-        LDB     #51                               ;INIT MULTI IO
+;
+        LDB     #24                               ;INIT CH375
         JSR     MD_PAGERA
 ;
-;        LDB     #37                               ;INIT FRONT PANEL
-;        JSR     MD_PAGERA
-;
-;        LDB     #40                               ;INIT I2C
-;        JSR     MD_PAGERA
-;
-;       LDB     #24                               ;INIT FP SD
-;       JSR     MD_PAGERA
-;
-;       LDB     #44                               ;Init Front Panel Display
-;       JSR     MD_PAGERA
-;
-;       LDB     #45                               ;Clear Front Panel Display
-;       JSR     MD_PAGERA
+        LDB     #51                               ;INIT MULTI IO
+        JSR     MD_PAGERA
 ;
         JSR     WRMSG
         FCC     '______________________________________________________________________'
@@ -204,9 +192,9 @@ DHOME
 DRDSEC
         JSR     DECODEDRIVE
         ANDA    #$F0
-        CMPA    #$10                              ; FLOPPY?
+        CMPA    #$40                              ; USB?
         BNE     >                                 ;
-        LDB     #19                               ;Floppy_READ_SECTOR
+        LDB     #25                               ;USB_READ_SECTOR
         JSR     MD_PAGERA
         BSR     CPYHOSTBUF
         LDA     DISKERROR                         ; GET ERROR CONDITION
@@ -253,9 +241,9 @@ DWRSEC
 ; NOW DO SOME DRIVE MAGIC
         JSR     DECODEDRIVE
         ANDA    #$F0
-        CMPA    #$10                              ; FLOPPY?
+        CMPA    #$40                              ; USB?
         BNE     >                                 ;
-        LDB     #20                               ;floppy_WRITE_SECTOR
+        LDB     #26                               ; USB_WRITE_SECTOR
         JSR     MD_PAGERA
         LDA     DISKERROR                         ; GET ERROR CONDITION
         CMPA    #$00
@@ -338,9 +326,9 @@ RITAB           EQU *
         FCB     0,0                               ;(FILLER)
 ; DRIVE MAPPING TABLE
         FCB     $20,$00                           ; TABLE IS DRIVE TYPE, SLICE OFFSET
-        FCB     $20,$01                           ; DRIVE IDS ARE $00=NONE, $1x=FLOPPY, $2X=xt-CF-IDE
+        FCB     $20,$01                           ; DRIVE IDS ARE $00=NONE, $2X=xt-CF-IDE, $4x=CH375 USB
         FCB     $20,$02                           ; LOW NIBBLE IS DEVICE ADDRESS (Device address+$20 for FPSD)
-        FCB     $20,$03                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
+        FCB     $40,$00                           ; SLICE OFFSET IS THE UPPER 8 BITS OF THE DRIVE LBA ADDRESS
 ; ALLOWING IDE DRIVES TO HOST UP TO 256 VIRTUAL DRIVES PER PHYSICAL DRIVE
 RISIZ           EQU *-RITAB                       ;SIZE OF INITILAIZED RAM
 ;
