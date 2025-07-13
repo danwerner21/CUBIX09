@@ -4,8 +4,7 @@ This is a port of the excellent CUBIX operating system by Dave Dunfield for vari
 
 Supported SBCs include:
 * Andrew Lynch's   Nhyodyne and Duodyne systems
-* Retrobrewcomputers.org's   6x0x system (todo)
-* Dan Werner's 6809PC
+* Dan Werner's 6809PC https://github.com/danwerner21/6809PC
 
 ---
 More information about Dunfield Development services is included in the dunfield_cubix_info folder in this repo.
@@ -205,3 +204,8 @@ Cubix can also be started by uploading the cubix.s19 file located in the bin fol
 In order for the front panel SD interface to be used, the front panel ATTINY chip needs to be flashed with the "Duodyne SD card I2C to SD" firmware with the I2C address set to 0x25.  Note that if there is more than one Front Panel in the system (attached to different processor cards), each I2C address must be unique.   Cubix can be configured to use any front panel in the 0x25-0x27 range.
 See the instructions with the firmware for more information on how to configure the firmware and setup image files for use on the SD card.
 
+
+## Contact Information
+```
+ I can be contacted at vic2020dan <at> gmail <dot> com
+```
