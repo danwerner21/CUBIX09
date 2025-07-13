@@ -71,7 +71,15 @@ SHOWDRIVETYPE1:
         FCB     29
         PULS    A
         RTS
+!
 SHOWDRIVETYPE2:
+        CMPB    #$40
+        BNE     SHOWDRIVETYPE3
+        SWI
+        FCB     24
+        FCN     'USB UNIT '
+        BRA     SHOWDRIVETYPE1
+SHOWDRIVETYPE3:
         SWI
         FCB     24
         FCN     'UNKNOWN.'

@@ -42,6 +42,8 @@ Included applications:
   -  Micro C compiler.
   -  Micro FORTH compiler.
   -  Intel 8080 simulator with integrated debugger.
+  -  Infocom Z-Machine game interpreter
+  -  Extended Basic
 
 ---
 New SSRs
@@ -59,17 +61,14 @@ To Do List for this port:
 * add support for ROMRAM flash (Duodyne)
 * add support for MultiIO card (Duodyne) (USB/Serial/Parallel/SD/Keyboard/Mouse)
 * Enable Cubix FLOPPY Format Function (Duodyne/Nhyodyne)
-* convert Xmodem EXEs to S19s
-* convert Assign EXE to S19s
 * DSKY V1 support (Duodyne/Nhyodyne)
 * DSKY functions should abort if no DSKY is there.
-* ESP32 support  (Duodyne/Nhyodyne/6809PC)
+* ESP32 support  (Duodyne/Nhyodyne)
 * TMS VDP support  (Duodyne/Nhyodyne)
 * color VDU support  (Duodyne/Nhyodyne)
 * RTC and NVRAM support  (Duodyne/Nhyodyne)
 * add support for DiskIO ethernet (Duodyne)
 * ADD FLOPPY DRIVE SUPPORT (Nhyodyne)
-* Microsoft Basic
 ---
 
 ```

@@ -206,7 +206,7 @@ CH_DETECT:
         SWI
         FCB     24                                ;DISPLAY MESSAGE
         FCN     '  IO=0x'
-        ldd     #CH0BASE
+        LDD     #CH0BASE
         SWI
         FCB     27
         JSR     CH_RESET
@@ -307,23 +307,23 @@ CH_POLL2:
 CH_DISKINIT:
         PSHS    X,Y
 
-	; RESET THE BUS
-	LDA	#CH_CMD_MODE		; SET MODE COMMAND
-	JSR	CH_CMD			; SEND IT
-	LDA	#7			; RESET BUS
-	JSR	CH_WR			; SEND IT
-	JSR	CH_NAP			; SMALL WAIT
-	JSR	CH_RD			; GET RESULT
-	JSR	CH_NAP			; SMALL WAIT
+; RESET THE BUS
+        LDA     #CH_CMD_MODE                      ; SET MODE COMMAND
+        JSR     CH_CMD                            ; SEND IT
+        LDA     #7                                ; RESET BUS
+        JSR     CH_WR                             ; SEND IT
+        JSR     CH_NAP                            ; SMALL WAIT
+        JSR     CH_RD                             ; GET RESULT
+        JSR     CH_NAP                            ; SMALL WAIT
 ;
-	; ACTIVATE USB MODE
-	LDA	#CH_CMD_MODE		; SET MODE COMMAND
-	JSR	CH_CMD			; SEND IT
-	LDA	#6			; USB ENABLED, SEND SOF
-	JSR	CH_WR			; SEND IT
-	JSR	CH_NAP			; SMALL WAIT
-	JSR	CH_RD			; GET RESULT
-	JSR	CH_NAP			; SMALL WAIT
+; ACTIVATE USB MODE
+        LDA     #CH_CMD_MODE                      ; SET MODE COMMAND
+        JSR     CH_CMD                            ; SEND IT
+        LDA     #6                                ; USB ENABLED, SEND SOF
+        JSR     CH_WR                             ; SEND IT
+        JSR     CH_NAP                            ; SMALL WAIT
+        JSR     CH_RD                             ; GET RESULT
+        JSR     CH_NAP                            ; SMALL WAIT
 
 ;
         LDY     #$100
@@ -411,103 +411,103 @@ CH_CMD_WR:
         JMP     CH_CMD
 
 CH_READSEC:
-	LDA	#CH_CMD_DSKRD		; DISK READ COMMAND
-	JSR	CHUSB_RWSTART		; SEND CMD AND LBA
+        LDA     #CH_CMD_DSKRD                     ; DISK READ COMMAND
+        JSR     CHUSB_RWSTART                     ; SEND CMD AND LBA
 ;
-	; READ THE SECTOR IN 64 BYTE CHUNKS
+; READ THE SECTOR IN 64 BYTE CHUNKS
         LDX     #HSTBUF
-	LDB	#8			; 8 CHUNKS OF 64 FOR 512 BYTE SECTOR
+        LDB     #8                                ; 8 CHUNKS OF 64 FOR 512 BYTE SECTOR
 CHUSB_READ1:
-	JSR	CH_POLL			; WAIT FOR DATA READY
-	CMPA	#$1D			; DATA READY TO READ?
-	BNE	CHUSB_IOERR		; HANDLE IO ERROR
-	JSR	CH_CMD_RD		; SEND READ USB DATA CMD
-	JSR	CH_RD			; READ DATA BLOCK LENGTH
-	CMPA	#64			; AS EXPECTED?
-	BNE	CHUSB_IOERR		; IF NOT, HANDLE ERROR
-	; BYTE READ LOOP
+        JSR     CH_POLL                           ; WAIT FOR DATA READY
+        CMPA    #$1D                              ; DATA READY TO READ?
+        BNE     CHUSB_IOERR                       ; HANDLE IO ERROR
+        JSR     CH_CMD_RD                         ; SEND READ USB DATA CMD
+        JSR     CH_RD                             ; READ DATA BLOCK LENGTH
+        CMPA    #64                               ; AS EXPECTED?
+        BNE     CHUSB_IOERR                       ; IF NOT, HANDLE ERROR
+; BYTE READ LOOP
         PSHS    B
-	LDB	#64			; READ 64 BYTES
+        LDB     #64                               ; READ 64 BYTES
 CHUSB_READ2:
-	JSR	CH_RD			; GET NEXT BYTE
-	STA	,X+	        	; SAVE IT
+        JSR     CH_RD                             ; GET NEXT BYTE
+        STA     ,X+                               ; SAVE IT
         DECB
-        BNE 	CHUSB_READ2		; LOOP AS NEEDED
-	PULS    B			; RESTORE LOOP CONTROL
+        BNE     CHUSB_READ2                       ; LOOP AS NEEDED
+        PULS    B                                 ; RESTORE LOOP CONTROL
 ;
-	; PREPARE FOR NEXT CHUNK
-	LDA	#CH_CMD_DSKRDGO	        ; CONTINUE DISK READ
-	JSR	CH_CMD			; SEND IT
+; PREPARE FOR NEXT CHUNK
+        LDA     #CH_CMD_DSKRDGO                   ; CONTINUE DISK READ
+        JSR     CH_CMD                            ; SEND IT
         DECB
-	BNE	CHUSB_READ1		; LOOP TILL DONE
+        BNE     CHUSB_READ1                       ; LOOP TILL DONE
 ;
-	; FINAL CHECK FOR COMPLETION & SUCCESS
-	JSR	CH_POLL			; WAIT FOR COMPLETION
-	CMPA	#$14			; SUCCESS?
-	BNE     CHUSB_IOERR		; IF NOT, HANDLE ERROR
+; FINAL CHECK FOR COMPLETION & SUCCESS
+        JSR     CH_POLL                           ; WAIT FOR COMPLETION
+        CMPA    #$14                              ; SUCCESS?
+        BNE     CHUSB_IOERR                       ; IF NOT, HANDLE ERROR
 ;
-	CLC 				; SIGNAL SUCCESS
-	RTS
+        CLC                                       ; SIGNAL SUCCESS
+        RTS
 ;
 ;
 ;
 CH_WRITESEC:
-	LDA	#CH_CMD_DSKWR		; DISK WRITE COMMAND
-	JSR	CHUSB_RWSTART		; SEND CMD AND LBA
+        LDA     #CH_CMD_DSKWR                     ; DISK WRITE COMMAND
+        JSR     CHUSB_RWSTART                     ; SEND CMD AND LBA
 ;
-	; WRITE THE SECTOR IN 64 BYTE CHUNKS
+; WRITE THE SECTOR IN 64 BYTE CHUNKS
         LDX     #HSTBUF
-	LDB	#8			; 8 CHUNKS OF 64 FOR 512 BYTE SECTOR
+        LDB     #8                                ; 8 CHUNKS OF 64 FOR 512 BYTE SECTOR
 CHUSB_WRITE1:
-	JSR	CH_POLL			; WAIT FOR DATA READY
-	CMPA	#$1E			; DATA READY TO WRITE
-	BNE	CHUSB_IOERR		; HANDLE IO ERROR
-	JSR	CH_CMD_WR		; SEND WRITE USB DATA CMD
-	LDA	#64			; 64 BYTE CHUNK
-	JSR	CH_WR			; SEND DATA BLOCK LENGTH
+        JSR     CH_POLL                           ; WAIT FOR DATA READY
+        CMPA    #$1E                              ; DATA READY TO WRITE
+        BNE     CHUSB_IOERR                       ; HANDLE IO ERROR
+        JSR     CH_CMD_WR                         ; SEND WRITE USB DATA CMD
+        LDA     #64                               ; 64 BYTE CHUNK
+        JSR     CH_WR                             ; SEND DATA BLOCK LENGTH
 ;
-	; BYTE WRITE LOOP
-	PSHS	B			; SAVE LOOP CONTROL
-	LDB     #64			; WRITE 64 BYTES
+; BYTE WRITE LOOP
+        PSHS    B                                 ; SAVE LOOP CONTROL
+        LDB     #64                               ; WRITE 64 BYTES
 CHUSB_WRITE2:
-	LDA	,X+	        	; GET NEXT BYTE
-	JSR	CH_WR			; WRITE NEXT BYTE
-	DECB
-        BNE	CHUSB_WRITE2		; LOOP AS NEEDED
-	PULS	B			; RESTORE LOOP CONTROL
-;
-	; PREPARE FOR NEXT CHUNK
-	LDA	#CH_CMD_DSKWRGO	        ; CONTINUE DISK READ
-	JSR	CH_CMD			; SEND IT
+        LDA     ,X+                               ; GET NEXT BYTE
+        JSR     CH_WR                             ; WRITE NEXT BYTE
         DECB
-	BNE	CHUSB_WRITE1		; LOOP TILL DONE
+        BNE     CHUSB_WRITE2                      ; LOOP AS NEEDED
+        PULS    B                                 ; RESTORE LOOP CONTROL
 ;
-	; FINAL CHECK FOR COMPLETION & SUCCESS
-	JSR	CH_POLL			; WAIT FOR COMPLETION
-	CMPA	#$14			; SUCCESS?
-	BNE	CHUSB_IOERR		; IF NOT, HANDLE ERROR
+; PREPARE FOR NEXT CHUNK
+        LDA     #CH_CMD_DSKWRGO                   ; CONTINUE DISK READ
+        JSR     CH_CMD                            ; SEND IT
+        DECB
+        BNE     CHUSB_WRITE1                      ; LOOP TILL DONE
 ;
-	CLC	        		; SIGNAL SUCCESS
-	RTS
+; FINAL CHECK FOR COMPLETION & SUCCESS
+        JSR     CH_POLL                           ; WAIT FOR COMPLETION
+        CMPA    #$14                              ; SUCCESS?
+        BNE     CHUSB_IOERR                       ; IF NOT, HANDLE ERROR
+;
+        CLC                                       ; SIGNAL SUCCESS
+        RTS
 ;
 ; INITIATE A DISK SECTOR READ/WRITE OPERATION
 ; A: READ OR WRITE OPCODE
 ;
 CHUSB_RWSTART:
-	JSR	CH_CMD			; SEND R/W COMMAND
+        JSR     CH_CMD                            ; SEND R/W COMMAND
 ;
 ; SEND LBA, 4 BYTES, LITTLE ENDIAN
         LDA     CURRENTSEC
-	JSR	CH_WR			; SEND BYTE
+        JSR     CH_WR                             ; SEND BYTE
         LDA     CURRENTCYL
         INCA                                      ; CYL 0 reserved for boot image
-	JSR	CH_WR			; SEND BYTE
-        LDA     CURRENTSLICE                        ;
-	JSR	CH_WR			; SEND BYTE
-        LDA     #0              ;
-	JSR	CH_WR			; SEND BYTE
+        JSR     CH_WR                             ; SEND BYTE
+        LDA     CURRENTSLICE                      ;
+        JSR     CH_WR                             ; SEND BYTE
+        LDA     #0                                ;
+        JSR     CH_WR                             ; SEND BYTE
 ; REQUEST 1 SECTOR
-        LDA     #1                      ;
-	JSR	CH_WR			; SEND BYTE
-	RTS
+        LDA     #1                                ;
+        JSR     CH_WR                             ; SEND BYTE
+        RTS
 ;

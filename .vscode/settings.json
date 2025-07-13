@@ -5,5 +5,6 @@
         "MCPraw.C": "cpp",
         "SLIB.C": "cpp",
         "COM2EXE.C": "cpp"
-    }
+    },
+    "editor.fontSize": 24
 }

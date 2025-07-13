@@ -1,3 +1,8 @@
+TODO:
+     ADD GRAPHICS AND SOUND COMMANDS?
+     ADD DISK COMMANDS?
+     
+
 This is a port of Microsoft Extended BASIC, as used in the Tandy
 Color Computer 2, modified for the SBC with all I/O via serial.
 
@@ -31,3 +36,15 @@ The command does not allow you to specify a prompt string to be
 displayed, as many other versions of BASIC do. You can work around
 this by using a PRINT statement to display the prompt before calling
 INPUT.
+
+EXIT command:
+
+This command returns you to the os.
+
+SAVE command:
+
+This saves the BASIC program you have in memory to disk.
+
+LOAD command:
+
+This command loads a BASIC program from disk into memory.
