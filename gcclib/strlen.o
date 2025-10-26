@@ -1,0 +1,31 @@
+XH2
+H 3 areas 2 global symbols 2 banks 1 modes
+M strlen.c
+G 00 00 80 81 82 83 84 85 86 87 88 89 8A 8B 8C 8D 8E 8F
+B _CSEG base 0 size 0 map 0 flags 0
+B _DSEG base 0 size 0 map 0 flags 4 fsfx _DS
+S .__.ABS. Def0000
+A _CODE size 0 flags CC80 bank 0
+A _DATA size 0 flags CCC0 bank 1
+A .text size 38 flags D00
+S _strlen Def0000
+T 00 00
+R 00 00 00 02
+T 00 00 34 40 32 7A 33 E4 AF 42 8E 00 00 AF 44
+R 00 00 00 02
+T 00 0D 20 07
+R 00 00 00 02
+T 00 0F
+R 00 00 00 02
+T 00 0F EC 44 C3 00 01 ED 44
+R 00 00 00 02
+T 00 16
+R 00 00 00 02
+T 00 16 E6 D8 02 E7 41 6D 41 27 04 C6 01 E7 41
+R 00 00 00 02
+T 00 23
+R 00 00 00 02
+T 00 23 E6 41 E7 C4 EC 42 C3 00 01 ED 42 6D C4
+R 00 00 00 02
+T 00 30 26 DD AE 44 32 66 35 C0
+R 00 00 00 02

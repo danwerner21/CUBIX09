@@ -197,7 +197,7 @@ more information on Cubix drives and directories can be found in the Cubix user 
 
 Cubix can be started from CP/M by launching the cubix.com file located in the bin folder for each respective system.  
 
-Cubix can also be started by uploading the cubix.s19 file located in the bin folder for each respective system. Then transferring control to $1000.
+Cubix can also be started by uploading the cubix.s19 file located in the bin folder for each respective system. Then transferring control to $1000.  The MON09 Rom software in the 6809PC can additionally write this image to storage with the "OW" command.  The "OS" command will then boot that image.
 
 ## Using the DUODYNE Front Panel SD interface
 

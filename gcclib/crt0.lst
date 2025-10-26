@@ -1,0 +1,137 @@
+ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 1
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:05 2025
+
+
+
+                              1 
+                              2 	.module crt0.S
+                              3 
+                              4 	.globl _main
+                              5 
+                              6 
+                              7 ;The startup is heavily dependent on the type of machine and
+                              8 ;OS environment that is available at the start point.
+                              9 ;For the most part, the general idea is the same across machines,
+                             10 ;but the implementation is vastly different.  This is managed via
+                             11 ;conditional compiles throughout the startup code for each of the
+                             12 ;supported machines.
+                             13 
+                             14 ;             $2000-$DFFF - Application Random Access Memory.
+                     DFFF    16 __STACK_TOP = 0xdfff
+                             17 
+                             18 
+                             19 	;; Declare all linker sections, and combine them into a single bank
+                             20         .area .startup
+                             21         .area .text
+                             22         .area .direct
+                             23 	.area .base
+                             24 	.area .romcall
+                             25 	.area .rodata
+                             26 	.area .data
+                             27 	.area .ctors
+                             28 	.area .dtors
+                             29 	.area .gcc_except_table
+                             30 	.area .bss
+                             31 	.area .noinit
+                             32 	.area .vector
+                             33 
+                             34 	.area	.startup
+                             35 
+                             36 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                             37 ;;;
+                             38 ;;; __start : Entry point to the program
+                             39 ;;;
+                             40 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                             41 	.globl	__start
+   0000                      42 __start:
+                             43 
+                             44 	;; Initialize the stack
+   0000 10 CE DF FF   [ 4]   45 	lds	#__STACK_TOP
+   0004 1F 21         [ 6]   46         tfr     y,x
+                             47 ;	;; Call any initializer functions
+                             48 ;	ldy	#l_.ctors
+                             49 ;	beq	__ctors_done
+                             50 ;	LEA	(u,s_.ctors)
+                             51 ;__ctors_loop:
+                             52 ;	jsr	[,u++]
+                             53 ;	leay	-2,y
+                             54 ;	bne	__ctors_loop
+                             55 ;__ctors_done:
+                             56 
+ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 2
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:05 2025
+
+
+
+                             57 	;; Set up the environment
+                             58 	;/* TODO */
+                             59 
+                             60 	;; Set up argc/argv
+   0006 34 10         [ 6]   61 	pshs	x
+                             62 	;ldx	MEM(__argc)
+                             63 
+                             64 	;; Call the main function.  The exit code will
+                             65 	;; be returned in the X register, unless compiled
+                             66 	;; with -mdret, in which case it comes back in D.
+   0008 BD 00 00      [ 8]   67 	jsr	_main
+                             68 
+                             69 ;	ldy	#l_.dtors
+                             70 ;	beq	__dtors_done
+                             71 ;	LEA	(u,s_.dtors)
+                             72 ;__dtors_loop:
+                             73 ;	jsr	[,u++]
+                             74 ;	leay	-2,y
+                             75 ;	bne	__dtors_loop
+                             76 ;__dtors_done:
+                             77 
+                             78 	;; If main returns, then invoke exit() to stop the program
+   000B 7E 00 0E      [ 4]   79 	jmp	__exit
+                             80 
+                             81 	;; Set up the entry point for the linked binary
+                     0000    82 	.end	__start
+                             83 
+                             84 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                             85 ;;;
+                             86 ;;; __exit : Exit point from the program
+                             87 ;;; For simulation, this writes to a special I/O register that
+                             88 ;;; the simulator interprets as end-of-program.
+                             89 ;;;
+                             90 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                             91 	.globl	__exit
+   000E                      92 __exit:
+   000E 3F            [19]   93         swi
+   000F 00                   94         .byte 00
+ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 3
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:05 2025
+
+Symbol Table
+
+    .__.$$$.       =   2710 L   |     .__.ABS.       =   0000 G
+    .__.CPU.       =   0000 L   |   2 .__.END.       =   0000 GR
+    .__.H$L.       =   0001 L   |     __STACK_TOP    =   DFFF 
+  2 __exit             000E GR  |   2 __start            0000 GR
+    _main              **** GX
+
+ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 4
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:05 2025
+
+Area Table
+
+[_CSEG]
+   0 _CODE            size    0   flags C080
+   2 .startup         size   10   flags  100
+   3 .text            size    0   flags    0
+   4 .direct          size    0   flags    0
+   5 .base            size    0   flags    0
+   6 .romcall         size    0   flags    0
+   7 .rodata          size    0   flags    0
+   8 .data            size    0   flags    0
+   9 .ctors           size    0   flags    0
+   A .dtors           size    0   flags    0
+   B .gcc_except_ta   size    0   flags    0
+   C .bss             size    0   flags    0
+   D .noinit          size    0   flags    0
+   E .vector          size    0   flags    0
+[_DSEG]
+   1 _DATA            size    0   flags C0C0
+

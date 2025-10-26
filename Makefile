@@ -5,6 +5,8 @@ all:
 	$(MAKE) --directory 6809PC
 	$(MAKE) --directory nhyodyne
 	$(MAKE) --directory cubix_util
+	$(MAKE) --directory basic
+	$(MAKE) --directory zmachine
 
 pretty:
 	$(MAKE) --directory monitor pretty
@@ -13,6 +15,8 @@ pretty:
 	$(MAKE) --directory cubix_os pretty
 	$(MAKE) --directory cubix_util pretty
 	$(MAKE) --directory 6809PC pretty
+	$(MAKE) --directory basic pretty
+	$(MAKE) --directory zmachine pretty
 
 clean:
 	$(MAKE) --directory monitor clean
@@ -21,3 +25,5 @@ clean:
 	$(MAKE) --directory cubix_os clean
 	$(MAKE) --directory cubix_util clean
 	$(MAKE) --directory 6809PC clean
+	$(MAKE) --directory basic clean
+	$(MAKE) --directory zmachine clean

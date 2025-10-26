@@ -1,0 +1,105 @@
+ASxxxx Linker V05.11 (GCC6809)                                          Page 1
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:05 2025
+
+Area                       Addr        Size        Decimal Bytes (Attributes)
+--------------------       ----        ----        ------- ----- ------------
+.  .ABS.                   0000        0000 =           0. bytes (ABS,OVR,CSEG)
+
+   Value  Global      Value  Global      Value  Global      Value  Global   
+   -----  ------      -----  ------      -----  ------      -----  ------   
+    0000  s__CODE  |   0000  l_.dtors |   0000  l_.noini |   0000  l_.vecto
+    0000  l_.gcc_e |   0000  l_.romca |   0000  l_.base  |   0000  l__DATA 
+    0000  l_.ctors |   0000  l__CODE  |   0000  l_.rodat |   0000  l_.bss  
+    0000  s__DATA  |   0000  .__.ABS. |   000C  l_.data  |   0010  l_.start
+    0018  l_.direc |   1403  l_.text  |   2000  s_.start |   2010  s_.gcc_e
+    2010  s_.noini |   2010  s_.vecto |   2010  s_.bss   |   2010  s_.romca
+    2010  s_.dtors |   2010  s_.ctors |   2010  s_.rodat |   2010  s_.base 
+    2020  s_.text  |   3423  s_.data  |   342F  s_.direc
+ASxxxx Linker V05.11 (GCC6809)                                          Page 2
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:05 2025
+
+Area                       Addr        Size        Decimal Bytes (Attributes)
+--------------------       ----        ----        ------- ----- ------------
+.text                      2020        1403 =        5123. bytes (REL,CON,CSEG)
+
+   Value  Global      Value  Global      Value  Global      Value  Global   
+   -----  ------      -----  ------      -----  ------      -----  ------   
+    2215  _main    |   259F  _randsee |   25B0  _gettime |   2683  _getdate
+    274B  _getch   |   275F  _OutStri |   279C  _SetCurs |   27B2  _SetReso
+    27C8  _LoadFon |   27DE  _ClearDi |   27E9  _CopyRec |   2818  _DrawBit
+    2854  _DrawCha |   287B  _DrawEll |   28A0  _DrawGly |   28DB  _DrawLin
+    2900  _DrawRec |   2925  _DrawFil |   294A  _DrawFil |   296F  _GetPixe
+    299D  _InvertR |   29C2  _DrawLin |   29DD  _MoveCur |   29F8  _ScrollD
+    2A13  _SetBrus |   2A29  _SetLine |   2A3F  _SetPenC |   2A55  _SetPenW
+    2A6B  _SetPixe |   2A86  _SetGlyp |   2ABA  _SetPall |   2ADF  _SetMous
+    2AF5  _SetMous |   2B10  _ClearSp |   2B1B  _SetSpri |   2B52  _SetSpri
+    2B74  _SetSpri |   2B8F  _esp0_ou |   2BD4  _esp1_ou |   2C19  _esp0_in
+    2C58  _esp1_in |   2C97  _esp0_ou |   2CCD  _esp0_ou |   2CFD  _esp0_ou
+    2D19  _esp1_ou |   2D4F  _esp1_ou |   2D7F  _esp1_ou |   3241  _printf 
+    325D  _sprintf |   327C  _outhex  |   328C  _ashlhi3 |   329B  _ashrhi3
+    32AA  _lshrhi3 |   32B9  _ashlsi3 |   32C2  _ashlsi3 |   32ED  _lshrsi3
+    32F6  ___clzhi |   3317  ___clzsi |   3326  ___ctzhi |   3346  ___ctzsi
+    3355  _mulhi3  |   3374  _divhi3  |   337F  _modhi3  |   338D  _udivhi3
+    3398  _umodhi3 |   33A6  _euclid  |   33D8  _seuclid |   3413  _outbyte
+ASxxxx Linker V05.11 (GCC6809)                                          Page 3
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:05 2025
+
+Area                       Addr        Size        Decimal Bytes (Attributes)
+--------------------       ----        ----        ------- ----- ------------
+.data                      3423        000C =          12. bytes (REL,CON,CSEG)
+
+   Value  Global      Value  Global      Value  Global      Value  Global   
+   -----  ------      -----  ------      -----  ------      -----  ------   
+    3429  _ESP0Ptr |   342B  _ESP1Ptr |   342D  _ESPStat
+ASxxxx Linker V05.11 (GCC6809)                                          Page 4
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:05 2025
+
+Area                       Addr        Size        Decimal Bytes (Attributes)
+--------------------       ----        ----        ------- ----- ------------
+.direct                    342F        0018 =          24. bytes (REL,CON,CSEG)
+
+   Value  Global      Value  Global      Value  Global      Value  Global   
+   -----  ------      -----  ------      -----  ------      -----  ------   
+    342F  m0       |   3430  m1       |   3431  m2       |   3432  m3      
+    3433  m4       |   3434  m5       |   3435  m6       |   3436  m7      
+    3437  im0      |   3438  im1      |   3439  im2      |   343A  im3     
+    343B  im4      |   343C  im5      |   343D  im6      |   343E  im7     
+    343F  fm0      |   3440  fm1      |   3441  fm2      |   3442  fm3     
+    3443  fm4      |   3444  fm5      |   3445  fm6      |   3446  fm7     
+ASxxxx Linker V05.11 (GCC6809)                                          Page 5
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:05 2025
+
+Area                       Addr        Size        Decimal Bytes (Attributes)
+--------------------       ----        ----        ------- ----- ------------
+.startup                   2000        0010 =          16. bytes (REL,CON,CSEG)
+
+   Value  Global      Value  Global      Value  Global      Value  Global   
+   -----  ------      -----  ------      -----  ------      -----  ------   
+    2000  __start  |   2000  .__.END. |   200E  __exit  
+ASxxxx Linker V05.11 (GCC6809)                                          Page 6
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:05 2025
+
+Files Linked                              [ module(s) ]
+
+test.o                                    [ test.c ]
+
+
+Libraries Linked                          [ object file ]
+
+libcubix.a                                [ gettim.o ]
+libcubix.a                                [ getch.o ]
+libcubix.a                                [ graphics.o ]
+libcubix.a                                [ esplowlevel.o ]
+libcubix.a                                [ printf.o ]
+libcubix.a                                [ libgcc1.o ]
+libcubix.a                                [ outbyte.o ]
+libcubix.a                                [ crt0.o ]
+
+ASxxxx Linker V05.11 (GCC6809)                                          Page 7
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:05 2025
+
+User Base Address Definitions
+
+.text=0x2020
+.startup=0x2000
+

@@ -58,7 +58,7 @@
      
 # Description
 
-This is a heavily modifiedport of Microsoft Extended BASIC, as used in 
+This is a heavily modified port of Microsoft Extended BASIC, as used in 
 the Tandy Color Computer 2. This was forked from a port by Grant Searle.  
 See http://searle.x10host.com/6809/Simple6809.html
 

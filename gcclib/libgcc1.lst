@@ -1,0 +1,615 @@
+ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 1
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+
+
+
+                              1 ;
+                              2 ; libgcc routines for m6809
+                              3 ;   Copyright (C) 2006 Free Software Foundation, Inc.
+                              4 ;
+                              5 ; This file is part of GCC.
+                              6 ;
+                              7 ; GCC is free software; you can redistribute it and/or modify
+                              8 ; it under the terms of the GNU General Public License as published by
+                              9 ; the Free Software Foundation; either version 3, or (at your option)
+                             10 ; any later version.
+                             11 ;
+                             12 ; GCC is distributed in the hope that it will be useful,
+                             13 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
+                             14 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+                             15 ; GNU General Public License for more details.
+                             16 ;
+                             17 ; You should have received a copy of the GNU General Public License
+                             18 ; along with GCC; see the file COPYING3.  If not see
+                             19 ; <http://www.gnu.org/licenses/>.
+                             20 ;
+                             21 ; As a special exception, if you link this library with other files,
+                             22 ; some of which are compiled with GCC, to produce an executable,
+                             23 ; this library does not by itself cause the resulting executable
+                             24 ; to be covered by the GNU General Public License.
+                             25 ; This exception does not however invalidate any other reasons why
+                             26 ; the executable file might be covered by the GNU General Public License.
+                             27 ;
+                             28 
+                             29 	.module	libgcc1.s
+                             30 
+                             31 
+                             32 
+                             33 	.area	.text
+                             34 	.globl	_ashlhi3
+   0000                      35 _ashlhi3:
+   0000 34 10         [ 6]   36 	pshs	x
+   0002                      37 1$:
+   0002 30 1F         [ 5]   38 	leax	-1,x
+   0004 8C FF FF      [ 4]   39 	cmpx	#-1
+   0007 27 04         [ 3]   40 	beq	2$
+   0009 58            [ 2]   41 	aslb
+   000A 49            [ 2]   42 	rola
+   000B 20 F5         [ 3]   43 	bra	1$
+   000D                      44 2$:
+   000D 35 90         [ 7]   45 	puls	x,pc
+                             46 
+                             47 
+                             48 	.area	.text
+                             49 	.globl	_ashrhi3
+   000F                      50 _ashrhi3:
+   000F 34 10         [ 6]   51 	pshs	x
+   0011                      52 1$:
+   0011 30 1F         [ 5]   53 	leax	-1,x
+   0013 8C FF FF      [ 4]   54 	cmpx	#-1
+   0016 27 04         [ 3]   55 	beq	2$
+ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 2
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+
+
+
+   0018 47            [ 2]   56 	asra
+   0019 56            [ 2]   57 	rorb
+   001A 20 F5         [ 3]   58 	bra	1$
+   001C                      59 2$:
+   001C 35 90         [ 7]   60 	puls	x,pc
+                             61 
+                             62 
+                             63 	.area	.text
+                             64 	.globl	_lshrhi3
+   001E                      65 _lshrhi3:
+   001E 34 10         [ 6]   66 	pshs	x
+   0020                      67 1$:
+   0020 30 1F         [ 5]   68 	leax	-1,x
+   0022 8C FF FF      [ 4]   69 	cmpx	#-1
+   0025 27 04         [ 3]   70 	beq	2$
+   0027 44            [ 2]   71 	lsra
+   0028 56            [ 2]   72 	rorb
+   0029 20 F5         [ 3]   73 	bra	1$
+   002B                      74 2$:
+   002B 35 90         [ 7]   75 	puls	x,pc
+                             76 
+                             77 
+                             78 
+                             79 	.area	.text
+                             80 	.globl	_ashlsi3_one
+   002D                      81 _ashlsi3_one:
+   002D 68 03         [ 7]   82 	asl	3,x
+   002F 69 02         [ 7]   83 	rol	2,x
+   0031 69 01         [ 7]   84 	rol	1,x
+   0033 69 84         [ 6]   85 	rol	,x
+   0035 39            [ 5]   86 	rts
+                             87 
+                             88 
+                             89 	.area	.text
+                             90 	.globl	_ashlsi3
+                             91 	; X points to the SImode (source/dest)
+                             92 	; B is the count
+   0036                      93 _ashlsi3:
+   0036 34 40         [ 6]   94 	pshs	u
+   0038 C1 10         [ 2]   95 	cmpb	#16
+   003A 2D 06         [ 3]   96 	blt	try8
+   003C C0 10         [ 2]   97 	subb	#16
+                             98 	; Shift by 16
+   003E EE 02         [ 6]   99 	ldu	2,x
+   0040 EF 84         [ 5]  100 	stu	,x
+   0042                     101 try8:
+   0042 C1 08         [ 2]  102 	cmpb	#8
+   0044 2D 02         [ 3]  103 	blt	try_rest
+   0046 C0 08         [ 2]  104 	subb	#8
+                            105 	; Shift by 8
+   0048                     106 try_rest:
+   0048 5D            [ 2]  107 	tstb
+   0049 27 0B         [ 3]  108 	beq	done2
+   004B                     109 do_rest:
+                            110 	; Shift by 1
+ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 3
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+
+
+
+   004B 68 03         [ 7]  111 	asl	3,x
+   004D 69 02         [ 7]  112 	rol	2,x
+   004F 69 01         [ 7]  113 	rol	1,x
+   0051 69 84         [ 6]  114 	rol	,x
+   0053 5A            [ 2]  115 	decb
+   0054 26 F5         [ 3]  116 	bne	do_rest
+   0056                     117 done2:
+   0056 35 C0         [ 7]  118 	puls	u,pc
+                            119 
+                            120 
+                            121 	.area	.text
+                            122 	.globl	_ashlsi3_one
+   0058                     123 _ashrsi3_one:
+   0058 67 84         [ 6]  124 	asr	,x
+   005A 66 01         [ 7]  125 	ror	1,x
+   005C 66 02         [ 7]  126 	ror	2,x
+   005E 66 03         [ 7]  127 	ror	3,x
+   0060 39            [ 5]  128 	rts
+                            129 
+                            130 
+                            131 	.area	.text
+                            132 	.globl	_lshrsi3_one
+   0061                     133 _lshrsi3_one:
+   0061 64 84         [ 6]  134 	lsr	,x
+   0063 66 01         [ 7]  135 	ror	1,x
+   0065 66 02         [ 7]  136 	ror	2,x
+   0067 66 03         [ 7]  137 	ror	3,x
+   0069 39            [ 5]  138 	rts
+                            139 
+                            140 
+                            141 
+                            142 	.area	.text
+                            143 	.globl	___clzhi2
+                            144 	; Input: X = 16-bit unsigned integer
+                            145 	; Output: X = number of leading zeros
+                            146 	; This function destroys the value in D.
+   006A                     147 ___clzhi2:
+   006A 34 10         [ 6]  148 	pshs	x
+                            149 	; Find the offset of the leftmost '1' bit in
+                            150 	; the left half of the word.
+                            151 	;
+                            152 	; Bits are numbered in the table with 1 meaning the
+                            153 	; LSB and 8 meaning the MSB.
+                            154 	;
+                            155 	; If nonzero, then clz is 8-a.
+   006C 1F 10         [ 6]  156 	tfr	x,d
+   006E 8E 14 00      [ 3]  157 	ldx	#0x1400
+   0071 1F 89         [ 6]  158 	tfr	a,b
+   0073 4F            [ 2]  159 	clra
+   0074 E6 8B         [ 8]  160 	ldb	d,x
+   0076 26 0A         [ 3]  161 	bne	upper_bit_set
+   0078                     162 lower_bit_set:
+                            163 	; If the upper byte is zero, then check the lower
+                            164 	; half of the word.  Return 16-a.
+   0078 35 06         [ 7]  165 	puls	d
+ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 4
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+
+
+
+   007A 4F            [ 2]  166 	clra
+   007B E6 8B         [ 8]  167 	ldb	d,x
+   007D 50            [ 2]  168 	negb
+   007E CB 10         [ 2]  169 	addb	#16
+   0080 20 05         [ 3]  170 	bra	done1
+   0082                     171 upper_bit_set:
+   0082 50            [ 2]  172 	negb
+   0083 CB 08         [ 2]  173 	addb	#8
+   0085 35 10         [ 6]  174 	puls	x
+   0087                     175 done1:
+   0087 1F 01         [ 6]  176 	tfr	d,x
+   0089 35 80         [ 6]  177 	puls	pc
+                            178 
+                            179 
+                            180 	.area	.text
+                            181 	.globl	___clzsi2
+                            182 	; Input: 32-bit unsigned integer is on the stack, just
+                            183 	; above the return address
+                            184 	; Output: X = number of leading zeros
+   008B                     185 ___clzsi2:
+                            186 	; Check the upper 16-bit word
+                            187 	; If it is not zero, then return clzhi2(X).
+                            188 	; A branch can be used instead of a jsr since no
+                            189 	; postprocessing is needed.  Use long branch form
+                            190 	; though since functions may not be near each other.
+   008B AE 62         [ 6]  191 	ldx	2,s
+   008D 10 26 FF D9   [ 6]  192 	lbne	___clzhi2
+   0091 AE 64         [ 6]  193 	ldx	4,s
+   0093 BD 00 6A      [ 8]  194 	jsr	___clzhi2
+   0096 30 88 10      [ 5]  195 	leax	16,x
+   0099 39            [ 5]  196 	rts
+                            197 
+                            198 
+                            199 
+                            200 	.area	.text
+                            201 	.globl	___ctzhi2
+                            202 	; Input: X = 16-bit unsigned integer
+                            203 	; Output: X = number of trailing zeros
+                            204 	; F(x) = 15 - clzhi2(X & -x)
+                            205 	; This function destroys the value in D.
+   009A                     206 ___ctzhi2:
+   009A 1F 10         [ 6]  207 	tfr	x,d
+   009C 43            [ 2]  208 	coma
+   009D 53            [ 2]  209 	comb
+   009E C3 00 01      [ 4]  210 	addd	#1
+   00A1 34 02         [ 6]  211 	pshs	a
+   00A3 34 04         [ 6]  212 	pshs	b
+   00A5 1F 10         [ 6]  213 	tfr	x,d
+   00A7 E4 E0         [ 6]  214 	andb	,s+
+   00A9 A4 E0         [ 6]  215 	anda	,s+
+   00AB 1F 01         [ 6]  216 	tfr	d,x
+   00AD BD 00 6A      [ 8]  217 	jsr	___clzhi2
+   00B0 1F 10         [ 6]  218 	tfr	x,d
+   00B2 83 00 10      [ 4]  219 	subd	#16
+   00B5 43            [ 2]  220 	coma
+ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 5
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+
+
+
+   00B6 53            [ 2]  221 	comb
+   00B7 1F 01         [ 6]  222 	tfr	d,x
+   00B9 39            [ 5]  223 	rts
+                            224 
+                            225 
+                            226 	.area	.text
+                            227 	.globl	___ctzsi2
+                            228 	; Input: 32-bit unsigned integer is on the stack, just
+                            229 	; above the return address
+                            230 	; Output: X = number of leading zeros
+   00BA                     231 ___ctzsi2:
+                            232 	; Check the lower 16-bit word
+                            233 	; If it is not zero, then return ctzhi2(X).
+                            234 	; A branch can be used instead of a jsr since no
+                            235 	; postprocessing is needed.  Use long branch form
+                            236 	; though since functions may not be near each other.
+   00BA AE 64         [ 6]  237 	ldx	4,s
+   00BC 10 26 FF DA   [ 6]  238 	lbne	___ctzhi2
+   00C0 AE 62         [ 6]  239 	ldx	2,s
+   00C2 BD 00 9A      [ 8]  240 	jsr	___ctzhi2
+   00C5 30 88 10      [ 5]  241 	leax	16,x
+   00C8 39            [ 5]  242 	rts
+                            243 
+                            244 
+                            245 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            246 ;;; ___mulhi3 - signed/unsigned multiply
+                            247 ;;; jsred by GCC to implement 16x16 multiplication
+                            248 ;;; Arguments: Two 16-bit values, one in stack, one in X.
+                            249 ;;; Result: 16-bit result in X
+                            250 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            251 	.area	.text
+                            252 	.globl	_mulhi3
+   00C9                     253 _mulhi3:
+   00C9 34 10         [ 6]  254 	pshs	x
+   00CB A6 65         [ 5]  255 	lda	5,s   ; left msb * right lsb * 256
+   00CD E6 E4         [ 4]  256 	ldb	,s
+   00CF 3D            [11]  257 	mul
+   00D0 1F 98         [ 6]  258 	tfr	b,a
+   00D2 5F            [ 2]  259 	clrb
+   00D3 1F 01         [ 6]  260 	tfr	d,x
+   00D5 E6 61         [ 5]  261 	ldb	1,s   ; left lsb * right msb * 256
+   00D7 A6 64         [ 5]  262 	lda	4,s
+   00D9 3D            [11]  263 	mul
+   00DA 1F 98         [ 6]  264 	tfr	b,a
+   00DC 5F            [ 2]  265 	clrb
+   00DD 30 8B         [ 8]  266 	leax	d,x
+   00DF E6 61         [ 5]  267 	ldb	1,s   ; left lsb * right lsb
+   00E1 A6 65         [ 5]  268 	lda	5,s
+   00E3 3D            [11]  269 	mul
+   00E4 30 8B         [ 8]  270 	leax	d,x
+   00E6 35 86         [ 8]  271 	puls	d,pc  ; kill D to remove initial push
+                            272 
+                            273 
+                            274 
+                            275 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 6
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+
+
+
+                            276 ;;; ___divhi3 - signed division
+                            277 ;;; Arguments: Dividend in X, divisor on the stack
+                            278 ;;; Returns result in X.
+                            279 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            280 	.area	.text
+                            281 	.globl	_divhi3
+   00E8                     282 _divhi3:
+   00E8 EC 62         [ 6]  283 	ldd	2,s
+   00EA 26 00         [ 3]  284 	bne	do_div		; check dividend
+   00EC                     285 do_div:
+   00EC 34 10         [ 6]  286 	pshs	x
+   00EE BD 01 4C      [ 8]  287 	jsr	_seuclid
+   00F1 35 90         [ 7]  288 	puls	x,pc
+                            289 
+                            290 
+                            291 
+                            292 
+                            293 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            294 ;;; ___modhi3 - signed modulo
+                            295 ;;; Arguments: Dividend in X, divisor on the stack
+                            296 ;;; Returns result in X.
+                            297 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            298 	.area	.text
+                            299 	.globl	_modhi3
+   00F3                     300 _modhi3:
+   00F3 EC 62         [ 6]  301 	ldd	2,s
+   00F5 26 00         [ 3]  302 	bne	do_mod		; check dividend
+   00F7                     303 do_mod:
+   00F7 34 10         [ 6]  304 	pshs	x
+   00F9 BD 01 4C      [ 8]  305 	jsr	_seuclid
+   00FC 32 62         [ 5]  306 	leas	2,s
+   00FE 1F 01         [ 6]  307 	tfr	d,x
+   0100 39            [ 5]  308 	rts
+                            309 
+                            310 
+                            311 
+                            312 
+                            313 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            314 ;;; ___udivhi3 - unsigned division
+                            315 ;;; Arguments: Dividend in X, divisor on the stack
+                            316 ;;; Returns result in X.
+                            317 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            318 	.area	.text
+                            319 	.globl	_udivhi3
+   0101                     320 _udivhi3:
+   0101 EC 62         [ 6]  321 	ldd	2,s
+   0103 26 00         [ 3]  322 	bne	do_udiv		; check dividend
+   0105                     323 do_udiv:
+   0105 34 10         [ 6]  324 	pshs	x
+   0107 BD 01 1A      [ 8]  325 	jsr	_euclid
+   010A 35 90         [ 7]  326 	puls	x,pc
+                            327 
+                            328 
+                            329 
+                            330 
+ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 7
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+
+
+
+                            331 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            332 ;;; ___umodhi3 - unsigned modulo
+                            333 ;;; Arguments: Dividend in X, divisor on the stack
+                            334 ;;; Returns result in X.
+                            335 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+                            336 	.area	.text
+                            337 	.globl	_umodhi3
+   010C                     338 _umodhi3:
+   010C EC 62         [ 6]  339 	ldd	2,s
+   010E 26 00         [ 3]  340 	bne	do_umod		; check dividend
+   0110                     341 do_umod:
+   0110 34 10         [ 6]  342 	pshs	x
+   0112 BD 01 1A      [ 8]  343 	jsr	_euclid
+   0115 32 62         [ 5]  344 	leas	2,s
+   0117 1F 01         [ 6]  345 	tfr	d,x
+   0119 39            [ 5]  346 	rts
+                            347 
+                            348 
+                            349 
+                            350 
+                            351 ;	unsigned euclidean division
+                            352 ;	jsring: (left / right)
+                            353 ;		push left
+                            354 ;		ldd right
+                            355 ;		jsr _euclid
+                            356 ;	quotient on the stack (left)
+                            357 ;	modulus in d
+                            358 	.area	.text
+                            359 	.globl	_euclid
+                     0005   360 left	=	5
+                     0001   361 right	=	1		; word
+                     0000   362 count	=	0		; byte
+                     0001   363 carry	=	1		; alias
+   011A                     364 _euclid:
+   011A 32 7D         [ 5]  365 	leas	-3,s		; 2 local variables
+   011C 6F 60         [ 7]  366 	clr	count,s		; prescale divisor
+   011E 6C 60         [ 7]  367 	inc	count,s
+   0120 4D            [ 2]  368 	tsta
+   0121                     369 presc:
+   0121 2B 06         [ 3]  370 	bmi	presc_done
+   0123 6C 60         [ 7]  371 	inc	count,s
+   0125 58            [ 2]  372 	aslb
+   0126 49            [ 2]  373 	rola
+   0127 20 F8         [ 3]  374 	bra	presc
+   0129                     375 presc_done:
+   0129 ED 61         [ 6]  376 	std	right,s
+   012B EC 65         [ 6]  377 	ldd	left,s
+   012D 6F 65         [ 7]  378 	clr	left,s		; quotient = 0
+   012F 6F 66         [ 7]  379 	clr	left+1,s
+   0131                     380 mod1:
+   0131 A3 61         [ 7]  381 	subd	right,s		; check subtract
+   0133 24 06         [ 3]  382 	bcc	mod2
+   0135 E3 61         [ 7]  383 	addd	right,s
+   0137 1C FE         [ 3]  384 	andcc	#~carry
+   0139 20 02         [ 3]  385 	bra	mod3
+ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 8
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+
+
+
+   013B                     386 mod2:
+   013B 1A 01         [ 3]  387 	orcc	#carry
+   013D                     388 mod3:
+   013D 69 66         [ 7]  389 	rol	left+1,s	; roll in carry
+   013F 69 65         [ 7]  390 	rol	left,s
+   0141 64 61         [ 7]  391 	lsr	right,s
+   0143 66 62         [ 7]  392 	ror	right+1,s
+   0145 6A 60         [ 7]  393 	dec	count,s
+   0147 26 E8         [ 3]  394 	bne	mod1
+   0149 32 63         [ 5]  395 	leas	3,s
+   014B 39            [ 5]  396 	rts
+                            397 
+                            398 
+                            399 
+                            400 
+                            401 ;	signed euclidean division
+                            402 ;	jsring: (left / right)
+                            403 ;		push left
+                            404 ;		ldd right
+                            405 ;		jsr _seuclid
+                            406 ;	quotient on the stack (left)
+                            407 ;	modulus in d
+                            408 	.area	.text
+                            409 	.globl	_seuclid
+                     0006   410 left	=	6
+                     0002   411 right	=	2
+                     0001   412 quo_sgn	=	1
+                     0000   413 mod_sgn	=	0
+   014C                     414 _seuclid:
+   014C 32 7C         [ 5]  415 	leas	-4,s		; 3 local variables
+   014E ED 62         [ 6]  416 	std	right,s
+   0150 6F 60         [ 7]  417 	clr	mod_sgn,s
+   0152 6F 61         [ 7]  418 	clr	quo_sgn,s
+   0154 EC 66         [ 6]  419 	ldd	left,s
+   0156 2C 06         [ 3]  420 	bge	mod_abs
+   0158 6C 60         [ 7]  421 	inc	mod_sgn,s	; sign(mod) = sign(left)
+   015A 6C 61         [ 7]  422 	inc	quo_sgn,s
+   015C 8D 24         [ 7]  423 	bsr	negd		; abs(left) -> D
+   015E                     424 mod_abs:
+   015E 34 06         [ 7]  425 	pshs	b,a		; push abs(left)
+   0160 EC 64         [ 6]  426 	ldd	right+2,s	; all references shifted by 2
+   0162 2C 04         [ 3]  427 	bge	quot_abs
+   0164 6A 63         [ 7]  428 	dec	quo_sgn+2,s	; sign(quot) = sign(left) XOR sign(right)
+   0166 8D 1A         [ 7]  429 	bsr	negd		; abs(right) -> D
+   0168                     430 quot_abs:
+   0168 BD 01 1A      [ 8]  431 	jsr	_euclid		; jsr (unsigned) euclidean division
+   016B ED 64         [ 6]  432 	std	right+2,s
+   016D 35 06         [ 7]  433 	puls	a,b		; quot -> D
+   016F 6D 61         [ 7]  434 	tst	quo_sgn,s	; all references no longer shifted
+   0171 27 02         [ 3]  435 	beq	quot_done
+   0173 8D 0D         [ 7]  436 	bsr	negd
+   0175                     437 quot_done:
+   0175 ED 66         [ 6]  438 	std	left,s		; quot -> left
+   0177 EC 62         [ 6]  439 	ldd	right,s
+   0179 6D 60         [ 7]  440 	tst	mod_sgn,s
+ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 9
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+
+
+
+   017B 27 02         [ 3]  441 	beq	mod_done
+   017D 8D 03         [ 7]  442 	bsr	negd
+   017F                     443 mod_done:
+   017F 32 64         [ 5]  444 	leas	4,s		; destroy stack frame
+   0181 39            [ 5]  445 	rts
+   0182                     446 negd:				; self-explanatory !
+   0182 40            [ 2]  447 	nega
+   0183 50            [ 2]  448 	negb
+   0184 82 00         [ 2]  449 	sbca	#0
+   0186 39            [ 5]  450 	rts
+                            451 
+                            452 
+                            453 
+                            454 
+                            455 	.area	.direct
+                            456 	.globl	m0,m1,m2,m3
+   0000                     457 m0:	.blkb	1
+   0001                     458 m1:	.blkb	1
+   0002                     459 m2:	.blkb	1
+   0003                     460 m3:	.blkb	1
+                            461 
+                            462 
+                            463 
+                            464 
+                            465 	.area	.direct
+                            466 	.globl	m4,m5,m6,m7
+   0004                     467 m4:	.blkb	1
+   0005                     468 m5:	.blkb	1
+   0006                     469 m6:	.blkb	1
+   0007                     470 m7:	.blkb	1
+                            471 
+                            472 
+                            473 
+                            474 
+                            475 	.area	.direct
+                            476 	.globl	im0,im1,im2,im3
+   0008                     477 im0:	.blkb	1
+   0009                     478 im1:	.blkb	1
+   000A                     479 im2:	.blkb	1
+   000B                     480 im3:	.blkb	1
+                            481 
+                            482 
+                            483 
+                            484 
+                            485 	.area	.direct
+                            486 	.globl	im4,im5,im6,im7
+   000C                     487 im4:	.blkb	1
+   000D                     488 im5:	.blkb	1
+   000E                     489 im6:	.blkb	1
+   000F                     490 im7:	.blkb	1
+                            491 
+                            492 
+                            493 
+                            494 
+                            495 	.area	.direct
+ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                      Page 10
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+
+
+
+                            496 	.globl	fm0,fm1,fm2,fm3
+   0010                     497 fm0:	.blkb	1
+   0011                     498 fm1:	.blkb	1
+   0012                     499 fm2:	.blkb	1
+   0013                     500 fm3:	.blkb	1
+                            501 
+                            502 
+                            503 
+                            504 
+                            505 	.area	.direct
+                            506 	.globl	fm4,fm5,fm6,fm7
+   0014                     507 fm4:	.blkb	1
+   0015                     508 fm5:	.blkb	1
+   0016                     509 fm6:	.blkb	1
+   0017                     510 fm7:	.blkb	1
+ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                      Page 11
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+
+Symbol Table
+
+    .__.$$$.       =   2710 L   |     .__.ABS.       =   0000 G
+    .__.CPU.       =   0000 L   |     .__.H$L.       =   0001 L
+  2 ___clzhi2          006A GR  |   2 ___clzsi2          008B GR
+  2 ___ctzhi2          009A GR  |   2 ___ctzsi2          00BA GR
+  2 _ashlhi3           0000 GR  |   2 _ashlsi3           0036 GR
+  2 _ashlsi3_one       002D GR  |   2 _ashrhi3           000F GR
+  2 _ashrsi3_one       0058 R   |   2 _divhi3            00E8 GR
+  2 _euclid            011A GR  |   2 _lshrhi3           001E GR
+  2 _lshrsi3_one       0061 GR  |   2 _modhi3            00F3 GR
+  2 _mulhi3            00C9 GR  |   2 _seuclid           014C GR
+  2 _udivhi3           0101 GR  |   2 _umodhi3           010C GR
+    carry          =   0001     |     count          =   0000 
+  2 do_div             00EC R   |   2 do_mod             00F7 R
+  2 do_rest            004B R   |   2 do_udiv            0105 R
+  2 do_umod            0110 R   |   2 done1              0087 R
+  2 done2              0056 R   |   3 fm0                0010 GR
+  3 fm1                0011 GR  |   3 fm2                0012 GR
+  3 fm3                0013 GR  |   3 fm4                0014 GR
+  3 fm5                0015 GR  |   3 fm6                0016 GR
+  3 fm7                0017 GR  |   3 im0                0008 GR
+  3 im1                0009 GR  |   3 im2                000A GR
+  3 im3                000B GR  |   3 im4                000C GR
+  3 im5                000D GR  |   3 im6                000E GR
+  3 im7                000F GR  |     left           =   0006 
+  2 lower_bit_set      0078 R   |   3 m0                 0000 GR
+  3 m1                 0001 GR  |   3 m2                 0002 GR
+  3 m3                 0003 GR  |   3 m4                 0004 GR
+  3 m5                 0005 GR  |   3 m6                 0006 GR
+  3 m7                 0007 GR  |   2 mod1               0131 R
+  2 mod2               013B R   |   2 mod3               013D R
+  2 mod_abs            015E R   |   2 mod_done           017F R
+    mod_sgn        =   0000     |   2 negd               0182 R
+  2 presc              0121 R   |   2 presc_done         0129 R
+    quo_sgn        =   0001     |   2 quot_abs           0168 R
+  2 quot_done          0175 R   |     right          =   0002 
+  2 try8               0042 R   |   2 try_rest           0048 R
+  2 upper_bit_set      0082 R
+
+ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                      Page 12
+Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+
+Area Table
+
+[_CSEG]
+   0 _CODE            size    0   flags C080
+   2 .text            size  187   flags  100
+   3 .direct          size   18   flags    0
+[_DSEG]
+   1 _DATA            size    0   flags C0C0
+

@@ -299,8 +299,8 @@ RITAB           EQU *
         FCB     2,254,1,255,0,0,0                 ;ADR 2, 254 CYL, 1 HEAD, 255 SEC/TRK   - CYL 0 unusable by OS
         FCB     3,254,1,255,0,0,0                 ;ADR 3, 254 CYL, 1 HEAD, 255 SEC/TRK   - CYL 0 unusable by OS
 ;* CONSOLE DEVICE ASSIGNMENTS
-        FCB     2                                 ;CONSOLE INPUT DEVICE
-        FCB     2                                 ;CONSOLE OUTPUT DEVICE
+        FCB     1                                 ;CONSOLE INPUT DEVICE
+        FCB     1                                 ;CONSOLE OUTPUT DEVICE
 ;* SERIAL DEVICE DRIVERS
         FDB     RDNULL,RDSER,RDESPPS2,RDKYB,WRSERESP0,WRSERESP1,WRNETCONN,0
         FDB     WRNULL,WRSER,WRESPVID,WRLPT,RDESP0,RDESP1,RDNETCONN,0

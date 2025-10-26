@@ -1,0 +1,36 @@
+XH2
+H F areas 5 global symbols 2 banks 1 modes
+M crt0.S
+G 00 00 80 81 82 83 84 85 86 87 88 89 8A 8B 8C 8D 8E 8F
+B _CSEG base 0 size 0 map 0 flags 0
+B _DSEG base 0 size 0 map 0 flags 4 fsfx _DS
+S _main Ref0000
+S .__.ABS. Def0000
+A _CODE size 0 flags CC80 bank 0
+A _DATA size 0 flags CCC0 bank 1
+A .startup size 10 flags D00
+S .__.END. Def0000
+S __start Def0000
+S __exit Def000E
+A .text size 0 flags C00
+A .direct size 0 flags C00
+A .base size 0 flags C00
+A .romcall size 0 flags C00
+A .rodata size 0 flags C00
+A .data size 0 flags C00
+A .ctors size 0 flags C00
+A .dtors size 0 flags C00
+A .gcc_except_table size 0 flags C00
+A .bss size 0 flags C00
+A .noinit size 0 flags C00
+A .vector size 0 flags C00
+T 00 00
+R 00 00 00 02
+T 00 00 10 CE DF FF 1F 21 34 10 BD 00 00 7E
+R 00 00 00 02 81 0B 00 00
+T 00 0C 00 0E
+R 00 00 00 02 01 02 00 02
+T 00 0E
+R 00 00 00 02
+T 00 0E 3F 00
+R 00 00 00 02
