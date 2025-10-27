@@ -7,6 +7,8 @@ all:
 	$(MAKE) --directory cubix_util
 	$(MAKE) --directory basic
 	$(MAKE) --directory zmachine
+	$(MAKE) --directory gcclib
+	$(MAKE) --directory games
 
 pretty:
 	$(MAKE) --directory monitor pretty
@@ -27,3 +29,5 @@ clean:
 	$(MAKE) --directory 6809PC clean
 	$(MAKE) --directory basic clean
 	$(MAKE) --directory zmachine clean
+	$(MAKE) --directory gcclib clean
+	$(MAKE) --directory games clean

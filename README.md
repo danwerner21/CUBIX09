@@ -43,6 +43,7 @@ Included applications:
   -  Intel 8080 simulator with integrated debugger.
   -  Infocom Z-Machine game interpreter
   -  Extended Basic
+  -  Star Trek arcade game (for Dual ESP Video card for 6809PC)
 
 ---
 New SSRs
@@ -203,6 +204,13 @@ Cubix can also be started by uploading the cubix.s19 file located in the bin fol
 
 In order for the front panel SD interface to be used, the front panel ATTINY chip needs to be flashed with the "Duodyne SD card I2C to SD" firmware with the I2C address set to 0x25.  Note that if there is more than one Front Panel in the system (attached to different processor cards), each I2C address must be unique.   Cubix can be configured to use any front panel in the 0x25-0x27 range.
 See the instructions with the firmware for more information on how to configure the firmware and setup image files for use on the SD card.
+
+## Required Build Tools
+
+* [6809 GCC](https://github.com/danwerner21/gcc6809)
+* [SRecord Uitlities](https://srecord.sourceforge.net/) (or from your Linux Distro)
+* [LWasm](http://www.lwtools.ca/)
+* [Pretty6502](https://github.com/danwerner21/pretty6502)
 
 
 ## Contact Information

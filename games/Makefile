@@ -7,9 +7,11 @@ startrek.s19: startrek.c
 	srec_cat startrek.s19  -exclude 0x0000 0x1FFF -offset -0x2000 -o startrek.s1
 	srec_cat startrek.s1  -o startrek.exe -binary
 	@cp startrek.s19 ../bin/utilities
+	@cp startrek.exe ../bin/utilities
 
 
 clean:
+	@rm -f *.exe
 	@rm -f *.o
 	@rm -f *.out
 	@rm -f *.com

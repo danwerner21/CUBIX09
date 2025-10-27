@@ -1,5 +1,5 @@
 ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 1
-Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:33 2025
 
 
 
@@ -59,7 +59,7 @@ Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
    0013 8C FF FF      [ 4]   54 	cmpx	#-1
    0016 27 04         [ 3]   55 	beq	2$
 ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 2
-Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:33 2025
 
 
 
@@ -119,7 +119,7 @@ Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
    004B                     109 do_rest:
                             110 	; Shift by 1
 ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 3
-Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:33 2025
 
 
 
@@ -179,7 +179,7 @@ Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
                             164 	; half of the word.  Return 16-a.
    0078 35 06         [ 7]  165 	puls	d
 ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 4
-Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:33 2025
 
 
 
@@ -239,7 +239,7 @@ Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
    00B2 83 00 10      [ 4]  219 	subd	#16
    00B5 43            [ 2]  220 	coma
 ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 5
-Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:33 2025
 
 
 
@@ -299,7 +299,7 @@ Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
                             274 
                             275 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 6
-Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:33 2025
 
 
 
@@ -359,7 +359,7 @@ Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
                             329 
                             330 
 ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 7
-Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:33 2025
 
 
 
@@ -419,7 +419,7 @@ Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
    0137 1C FE         [ 3]  384 	andcc	#~carry
    0139 20 02         [ 3]  385 	bra	mod3
 ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 8
-Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:33 2025
 
 
 
@@ -479,7 +479,7 @@ Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
    0177 EC 62         [ 6]  439 	ldd	right,s
    0179 6D 60         [ 7]  440 	tst	mod_sgn,s
 ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                       Page 9
-Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:33 2025
 
 
 
@@ -539,7 +539,7 @@ Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
                             494 
                             495 	.area	.direct
 ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                      Page 10
-Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:33 2025
 
 
 
@@ -559,7 +559,7 @@ Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
    0016                     509 fm6:	.blkb	1
    0017                     510 fm7:	.blkb	1
 ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                      Page 11
-Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:33 2025
 
 Symbol Table
 
@@ -602,7 +602,7 @@ Symbol Table
   2 upper_bit_set      0082 R
 
 ASxxxx Assembler V05.11 (GCC6809) (Motorola 6809)                      Page 12
-Hexadecimal [16-Bits]                                 Mon Oct 20 00:07:04 2025
+Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:33 2025
 
 Area Table
 

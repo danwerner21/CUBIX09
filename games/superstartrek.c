@@ -25,6 +25,7 @@
 #define SECTOR_SIZE 7 // Sector size is this value +1
 #define MAX_KLINGONS 3
 #define MAX_DEVICES 8
+#define MAX_COMMANDS 9
 
 /* Device indices */
 #define WARP_ENGINES 0
@@ -132,54 +133,62 @@ int G[GALAXY_SIZE + 1][GALAXY_SIZE + 1]; /* Galaxy map */
 int K[MAX_KLINGONS][3];                  /* Klingon positions and energy */
 int Z[GALAXY_SIZE + 1][GALAXY_SIZE + 1]; /* Cumulative galactic record */
 int D[MAX_DEVICES];                      /* Damage array */
+int N[3];                                /* Temporary array */
 
 /* Game variables */
-static int T, T0, T9;      /* Time variables */
-static int E;              /* Energy */
-static int P;              /* Photon torpedoes */
-static int S;              /* Shield energy */
-static int B9, K9, K7;     /* Starbases, Klingons */
-static int Q1, Q2, S1, S2; /* Quadrant and sector positions */
-static int K3, B3, S3;     /* Quadrant contents */
-static int B4, B5;         /* Starbase position */
-static int D0, D4;         /* Docked flag, damage repair time */
-static char Qu[65];        /* Quadrant string */
-static char G2[20];        /* Region name */
-static char C_STR[10];     /* Condition string */
-static char C_STR_COLOR;   /* Condition string COLOR*/
+int T, T0, T9;      /* Time variables */
+int E, E0;          /* Energy */
+int P, P0;          /* Photon torpedoes */
+int S, S9;          /* Shield energy */
+int B9, K9, K7;     /* Starbases, Klingons */
+int Q1, Q2, S1, S2; /* Quadrant and sector positions */
+int K3, B3, S3;     /* Quadrant contents */
+int B4, B5;         /* Starbase position */
+int D0, D4;         /* Docked flag, damage repair time */
+char Q[193];        /* Quadrant string */
+char Qu[65];        /* Quadrant string */
+char A1[28];        /* Command string */
+char G2[20];        /* Region name */
+char C_STR[10];     /* Condition string */
+char C_STR_COLOR;   /* Condition string COLOR*/
 
 /* Game restart flag (replaces recursive main() call) */
-static int restart_game = 0;
+int restart_game = 0;
 
 /* Function prototypes */
 void paint_intro_screen();
 void initialize_game(void);
 void print_instructions(void);
 void enter_quadrant(void);
+void short_range_scan(void);
 void long_range_scan(void);
 void phaser_control(void);
 void photon_torpedoes(void);
+void shield_control(void);
 void damage_report(void);
 void library_computer(void);
-void warpSpeed(int WarpFactor);
+void navigation(void);
 void end_game(void);
 void klingon_attack(void);
 void place_enterprise(void);
 void place_objects(void);
 void get_quadrant_name(int z4, int z5);
-void CheckDocked(void);
 int get_random(int max);
 int find_empty_sector(void);
+void update_quadrant_string(int z1, int z2, char *symbol, char t);
+char *get_quadrant_symbol(int z1, int z2);
 void repair_damage(void);
 int calculate_distance(int x1, int y1, int x2, int y2);
 int calculate_direction(int x1, int y1, int x2, int y2);
 int abs_value(int x);
-void impulsePower(void);
+
 /* Simple replacements for standard library functions */
 int simple_strlen(char *str);
 void simple_strcpy(char *dest, char *src);
 void simple_strcat(char *dest, char *src);
 int simple_strcmp(char *str1, char *str2);
+int simple_strncmp(char *str1, char *str2, int n);
+int simple_scanf_int(void);
 void simple_gets(char *buffer, int max_len);
 char simple_getchar(void);
 
@@ -258,6 +267,20 @@ int simple_strcmp(char *str1, char *str2)
     return str1[i] - str2[i];
 }
 
+int simple_strncmp(char *str1, char *str2, int n)
+{
+    int i;
+    for (i = 0; i < n && str1[i] != '\0' && str2[i] != '\0'; i++)
+    {
+        if (str1[i] != str2[i])
+        {
+            return str1[i] - str2[i];
+        }
+    }
+    if (i == n)
+        return 0;
+    return str1[i] - str2[i];
+}
 
 /* Simple input functions */
 char simple_getchar(void)
@@ -266,6 +289,48 @@ char simple_getchar(void)
     ch = toupper(ch);
     outbyte(ch);
     return ch; /* Assuming minimal getchar() is available */
+}
+
+int simple_scanf_int(void)
+{
+    char buffer[10];
+    int i;
+    int result;
+    int negative;
+    char c;
+
+    i = 0;
+    result = 0;
+    negative = 0;
+
+    /* Skip whitespace */
+    do
+    {
+        c = simple_getchar();
+    } while (c == ' ' || c == '\t' || c == '\n' || c == '\r');
+
+    /* Check for negative */
+    if (c == '-')
+    {
+        negative = 1;
+        c = simple_getchar();
+    }
+
+    /* Read digits */
+    while (c >= '0' && c <= '9' && i < 9)
+    {
+        buffer[i++] = c;
+        c = simple_getchar();
+    }
+    buffer[i] = '\0';
+
+    /* Convert to integer */
+    for (i = 0; buffer[i] != '\0'; i++)
+    {
+        result = result * 10 + (buffer[i] - '0');
+    }
+
+    return negative ? -result : result;
 }
 
 void simple_gets(char *buffer, int max_len)
@@ -296,8 +361,6 @@ void paint_intro_screen()
 
 void paint_player_screen()
 {
-    int i;
-
     ClearDisplay();
     SetCursor(0);
     SetPenColor(12);
@@ -317,12 +380,6 @@ void paint_player_screen()
     OutString(10, 85, 6, 0, 7, "ENERGY");
     OutString(10, 100, 6, 0, 7, "SHIELDS");
     OutString(10, 115, 6, 0, 7, "KLINGONS");
-
-    OutString(10, 420, 6, 0, 7, "DEVICE");
-    OutString(10, 520, 6, 0, 7, "HEALTH");
-    for (i = 0; i < MAX_DEVICES; i++)
-        OutString(420, 25 + (15 * i), 6, 0, 7, device_names[i]);
-
     C_STR_COLOR = 0;
     C_STR[0] = 0;
     C_STR[1] = 0;
@@ -337,123 +394,112 @@ void paint_player_updates()
     SetBrushColor(0);
     DrawFilledRectangle(125, 10, 198, 130);
     DrawFilledRectangle(220, 10, 410, 170);
-    DrawFilledRectangle(10, 210, 400, 470);
+    DrawFilledRectangle(10,210, 400, 470);
 
-    if (D[SHORT_SENSORS] < 0)
+    SetPenColor(5);
+    sprintf(buf, "%d", T);
+    OutString(135, 10, 8, 0, 25, buf);
+    sprintf(buf, "%d,%d", Q1, Q2);
+    OutString(135, 40, 8, 0, 25, buf);
+    sprintf(buf, "%d,%d", S1, S2);
+    OutString(135, 55, 8, 0, 25, buf);
+    sprintf(buf, "%d", P);
+    OutString(135, 70, 8, 0, 25, buf);
+    sprintf(buf, "%d", E + S);
+    OutString(135, 85, 8, 0, 25, buf);
+    sprintf(buf, "%d", S);
+    OutString(135, 100, 8, 0, 25, buf);
+    sprintf(buf, "%d", K9);
+    OutString(135, 115, 8, 0, 25, buf);
+
+    SetPenColor(C_STR_COLOR);
+    OutString(135, 25, 8, 0, 25, C_STR);
+
+    SetPenColor(7);
+    // Draw Tactical
+    for (i = 0; i <= SECTOR_SIZE; i++)
     {
-        printf("\n\r*** SHORT RANGE SENSORS ARE OUT ***\n\r\n\r");
-    }
-    else
-    {
-        SetPenColor(5);
-        sprintf(buf, "%d", T);
-        OutString(135, 10, 8, 0, 25, buf);
-        sprintf(buf, "%d,%d", Q1, Q2);
-        OutString(135, 40, 8, 0, 25, buf);
-        sprintf(buf, "%d,%d", S1, S2);
-        OutString(135, 55, 8, 0, 25, buf);
-        sprintf(buf, "%d", P);
-        OutString(135, 70, 8, 0, 25, buf);
-        sprintf(buf, "%d", E);
-        OutString(135, 85, 8, 0, 25, buf);
-        sprintf(buf, "%d", S);
-        OutString(135, 100, 8, 0, 25, buf);
-        sprintf(buf, "%d", K9);
-        OutString(135, 115, 8, 0, 25, buf);
-
-        SetPenColor(C_STR_COLOR);
-        OutString(135, 25, 8, 0, 25, C_STR);
-
-        SetPenColor(7);
-        // Draw Tactical
-        for (i = 0; i <= SECTOR_SIZE; i++)
+        for (j = 0; j <= SECTOR_SIZE; j++)
         {
-            for (j = 0; j <= SECTOR_SIZE; j++)
+            if (Qu[j + (i * 8)] == '*')
             {
-                if (Qu[j + (i * 8)] == '*')
-                {
-                    SetPenColor(3);
-                    DrawGlyph((j * 20) + 226, (i * 20) + 15, 8, 9, 0, 9, starGlyph);
-                }
+                SetPenColor(3);
+                DrawGlyph((j * 20) + 226, (i * 20) + 15, 8, 9, 0, 9, starGlyph);
+            }
 
-                if (Qu[j + (i * 8)] == 'E')
-                {
-                    SetPenColor(10);
-                    DrawGlyph((j * 20) + enterpriseGlyphOffsetX[Dir[2][enterpriseDirection]], (i * 20) + enterpriseGlyphOffsetY[Dir[2][enterpriseDirection]], enterpriseGlyphSizeX[Dir[2][enterpriseDirection]], enterpriseGlyphSizeY[Dir[2][enterpriseDirection]], 0, enterpriseGlyphSize[Dir[2][enterpriseDirection]], enterpriseGlyph[enterpriseDirection]);
-                    // add shield graphic if shields are up. (make it fit better)
-                    SetPenColor(2);
-                    if (S > 0)
-                        DrawEllipse((j * 20) + 229, (i * 20) + 19, 30, 20);
-                }
+            if (Qu[j + (i * 8)] == 'E')
+            {
+                SetPenColor(10);
+                DrawGlyph((j * 20) + enterpriseGlyphOffsetX[Dir[2][enterpriseDirection]], (i * 20) + enterpriseGlyphOffsetY[Dir[2][enterpriseDirection]], enterpriseGlyphSizeX[Dir[2][enterpriseDirection]], enterpriseGlyphSizeY[Dir[2][enterpriseDirection]], 0, enterpriseGlyphSize[Dir[2][enterpriseDirection]], enterpriseGlyph[enterpriseDirection]);
+            }
 
-                if (Qu[j + (i * 8)] == 'X')
-                {
-                    SetPenColor(12);
-                    DrawGlyph((j * 20) + 220, (i * 20) + 10, 24, 20, 0, 60, baseGlyph);
-                }
+            if (Qu[j + (i * 8)] == 'X')
+            {
+                SetPenColor(12);
+                DrawGlyph((j * 20) + 220, (i * 20) + 10, 24, 20, 0, 60, baseGlyph);
+            }
 
-                if (Qu[j + (i * 8)] == 'K')
+            if (Qu[j + (i * 8)] == 'K')
+            {
+                d = 0;
+                if (S2 > j)
                 {
-                    d = 0;
-                    if (S2 > j)
-                    {
-                        if (S1 > i)
-                            d = 7;
-                        if (S1 == i)
-                            d = 0;
-                        if (S1 < i)
-                            d = 1;
-                    }
-                    if (S2 < j)
-                    {
-                        if (S1 > i)
-                            d = 5;
-                        if (S1 == i)
-                            d = 4;
-                        if (S1 < i)
-                            d = 3;
-                    }
-                    if (S2 == j)
-                    {
-                        if (S1 > i)
-                            d = 6;
-                        if (S1 < i)
-                            d = 2;
-                    }
-                    SetPenColor(9);
-                    DrawGlyph((j * 20) + klingonGlyphOffsetX[Dir[2][d]], (i * 20) + klingonGlyphOffsetY[Dir[2][d]], klingonGlyphSizeX[Dir[2][d]], klingonGlyphSizeY[Dir[2][d]], 0, klingonGlyphSize[Dir[2][d]], klingonGlyph[d]);
+                    if (S1 > i)
+                        d = 7;
+                    if (S1 == i)
+                        d = 0;
+                    if (S1 < i)
+                        d = 1;
                 }
+                if (S2 < j)
+                {
+                    if (S1 > i)
+                        d = 5;
+                    if (S1 == i)
+                        d = 4;
+                    if (S1 < i)
+                        d = 3;
+                }
+                if (S2 == j)
+                {
+                    if (S1 > i)
+                        d = 6;
+                    if (S1 < i)
+                        d = 2;
+                }
+                SetPenColor(9);
+                DrawGlyph((j * 20) + klingonGlyphOffsetX[Dir[2][d]], (i * 20) + klingonGlyphOffsetY[Dir[2][d]], klingonGlyphSizeX[Dir[2][d]], klingonGlyphSizeY[Dir[2][d]], 0, klingonGlyphSize[Dir[2][d]], klingonGlyph[d]);
             }
         }
     }
+
     // Draw Viewer
     // 100% view
-    j = S2 + Dir[0][enterpriseDirection];
-    i = S1 + Dir[1][enterpriseDirection];
+    j=S2+Dir[0][enterpriseDirection];
+    i=S1+Dir[1][enterpriseDirection];
 
-    if (Qu[j + (i * 8)] == '*')
+    if(Qu[j + (i * 8)]=='*')
     {
         SetPenColor(3);
-        SetGlyphOptions(0, 1, 1, 0, 0, 0, 0);
-        DrawGlyph(300, 270, 8, 9, 0, 9, starGlyph);
-        SetGlyphOptions(0, 0, 0, 0, 0, 0, 0);
+        SetGlyphOptions(0,1,1,0,0,0,0);
+        DrawGlyph(300,270, 8, 9, 0, 9, starGlyph);
+        SetGlyphOptions(0,0,0,0,0,0,0);
     }
-    if (Qu[j + (i * 8)] == 'K')
+    if(Qu[j + (i * 8)]=='K')
     {
         SetPenColor(9);
-        SetGlyphOptions(0, 1, 1, 0, 0, 0, 0);
-        DrawGlyph(300, 270, klingonGlyphSizeX[Dir[2][5]], klingonGlyphSizeY[Dir[2][5]], 0, klingonGlyphSize[Dir[2][5]], klingonGlyph[5]);
-        SetGlyphOptions(0, 0, 0, 0, 0, 0, 0);
+        SetGlyphOptions(0,1,1,0,0,0,0);
+        DrawGlyph(300,270, klingonGlyphSizeX[Dir[2][5]], klingonGlyphSizeY[Dir[2][5]], 0, klingonGlyphSize[Dir[2][5]], klingonGlyph[5]);
+        SetGlyphOptions(0,0,0,0,0,0,0);
     }
-    if (Qu[j + (i * 8)] == 'X')
+    if(Qu[j + (i * 8)]=='X')
     {
         SetPenColor(12);
-        SetGlyphOptions(0, 1, 1, 0, 0, 0, 0);
-        DrawGlyph(300, 270, 24, 20, 0, 60, baseGlyph);
-        SetGlyphOptions(0, 0, 0, 0, 0, 0, 0);
+        SetGlyphOptions(0,1,1,0,0,0,0);
+        DrawGlyph(300,270, 24, 20, 0, 60, baseGlyph);
+        SetGlyphOptions(0,0,0,0,0,0,0);
     }
 
-    damage_report();
 }
 
 /* Initialize game */
@@ -466,7 +512,10 @@ void initialize_game(void)
     T0 = T;
     T9 = get_random(10) + 25;
     E = 3000;
+    E0 = E;
     P = 10;
+    P0 = P;
+    S9 = 200;
     S = 0;
     B9 = 0;
     K9 = 0;
@@ -475,9 +524,11 @@ void initialize_game(void)
     /* Initialize damage array */
     for (i = 0; i < MAX_DEVICES; i++)
     {
-        D[i] = 100;
+        D[i] = 0;
     }
 
+    /* Set up command string */
+    simple_strcpy(A1, "NAVSRSLRSPHATORSHEDAMCOMXXX");
 
     /* Set up galaxy */
     for (i = 0; i <= GALAXY_SIZE; i++)
@@ -542,11 +593,17 @@ void initialize_game(void)
     if (K9 > T9)
         T9 = K9 + 1;
 
-    /* Initialize quadrant */
+    /* Initialize quadrant string */
+    for (i = 0; i < 192; i++)
+    {
+        Q[i] = ' ';
+    }
     for (i = 0; i < 65; i++)
     {
         Qu[i] = ' ';
     }
+
+    Q[192] = '\0';
 }
 
 /* Print game instructions */
@@ -587,6 +644,10 @@ void enter_quadrant(void)
     S3 = G[Q1][Q2] % 10;
 
     /* Clear quadrant */
+    for (i = 0; i < 192; i++)
+    {
+        Q[i] = ' ';
+    }
     for (i = 0; i < 65; i++)
     {
         Qu[i] = ' ';
@@ -655,7 +716,7 @@ void place_enterprise(void)
         else
             conflicts = 0;
     }
-    Qu[S2 + (S1 * 8)] = 'E';
+    update_quadrant_string(S1, S2, "<*>", 'E');
 }
 
 /* Place Klingons, starbases, and stars */
@@ -674,8 +735,8 @@ void place_objects(void)
 
         K[i][0] = r1;
         K[i][1] = r2;
-        K[i][2] = 200 * (get_random(50) + 50) / 100;
-        Qu[r2 + (r1 * 8)] = 'K';
+        K[i][2] = S9 * (get_random(50) + 50) / 100;
+        update_quadrant_string(r1, r2, "+K+", 'K');
     }
 
     /* Place starbase */
@@ -689,7 +750,7 @@ void place_objects(void)
 
         B4 = r1;
         B5 = r2;
-        Qu[r2 + (r1 * 8)] = 'X';
+        update_quadrant_string(r1, r2, ">!<", 'X');
     }
 
     /* Place stars */
@@ -701,8 +762,22 @@ void place_objects(void)
             r2 = get_random(SECTOR_SIZE);
         } while (Qu[r2 + (r1 * 8)] != ' ');
 
-        Qu[r2 + (r1 * 8)] = '*';
+        update_quadrant_string(r1, r2, " * ", '*');
     }
+}
+
+/* Update quadrant string */
+void update_quadrant_string(int z1, int z2, char *symbol, char t)
+{
+    int pos;
+    pos = z2 * 3 + z1 * 24;
+    if (pos >= 0 && pos < 189)
+    {
+        Q[pos] = symbol[0];
+        Q[pos + 1] = symbol[1];
+        Q[pos + 2] = symbol[2];
+    }
+    Qu[z2 + (z1 * 8)] = t;
 }
 
 /* Get quadrant name (using global arrays) */
@@ -722,298 +797,372 @@ void get_quadrant_name(int z4, int z5)
 /* Main game loop */
 void main_game_loop(void)
 {
-    char keypress;
+    char input[10];
+    int i, cmd_found;
 
     while (1)
     {
-        paint_player_updates();
-        while (1)
+        /* Check for docking */
+        D0 = 0;
+        if (B3 > 0)
         {
-            // LRS PHA  COM XXX
-            keypress = getc();
-            if (keypress == 'a')
+            if (abs_value(S1 - B4) <= 1 && abs_value(S2 - B5) <= 1)
             {
-                enterpriseDirection++;
-                if (enterpriseDirection > 7)
-                    enterpriseDirection = 0;
-                paint_player_updates();
-            }
-            if (keypress == 'd')
-            {
-                if (enterpriseDirection > 0)
-                {
-                    enterpriseDirection--;
-                }
-                else
-                {
-                    enterpriseDirection = 7;
-                }
-                paint_player_updates();
-            }
-            if (keypress == 's')
-            {
-                if (E > 0)
-                {
-                    impulsePower();
-                    paint_player_updates();
-                }
-            }
-            if (keypress == 'w')
-            {
-                if ((E > 8) && (D[WARP_ENGINES] >= 0))
-                {
-                    warpSpeed(1);
-                    paint_player_updates();
-                }
-            }
-            if (keypress == 't')
-            {
-                photon_torpedoes();
-                paint_player_updates();
-            }
-            if (keypress == '>')
-            {
-                if (D[SHIELD_CONTROL] > 0)
-                {
-                    if (E > 100)
-                    {
-                        S += 100;
-                        E -= 100;
-                    }
-                    paint_player_updates();
-                }
-            }
-            if (keypress == '<')
-            {
-                if (D[SHIELD_CONTROL] > 0)
-                {
-                    if (S > 100)
-                    {
-                        S -= 100;
-                        E += 100;
-                    }
-                    paint_player_updates();
-                }
-            }
-            if (keypress == 'l')
-            {
-                long_range_scan();
-                paint_player_updates();
-            }
-
-            if (keypress == 0x27)
-            {
-                end_game();
-                return;
-            }
-
-            if (keypress == ' ')
-            {
-                phaser_control();
-                paint_player_updates();
-            }
-            if (keypress == 'c')
-            {
-                library_computer();
-                paint_player_updates();
-            }
-
-            /* Check for insufficient energy */
-            if (S + E <= 10 && (E <= 10 || D[SHIELD_CONTROL] < 0))
-            {
-                printf("\n\r** FATAL ERROR **   YOU'VE JUST STRANDED YOUR SHIP IN SPACE\n\r");
-                printf("YOU HAVE INSUFFICIENT MANEUVERING ENERGY, AND SHIELD CONTROL\n\r");
-                printf("IS PRESENTLY INCAPABLE OF CROSS-CIRCUITING TO ENGINE ROOM!!\n\r");
-                end_game();
-                return;
-            }
-
-            /* Check for end conditions */
-            if (K9 <= 0)
-            {
-                printf("CONGRATULATIONS, CAPTAIN! THE LAST KLINGON BATTLE CRUISER\n\r");
-                printf("MENACING THE FEDERATION HAS BEEN DESTROYED.\n\r\n\r");
-                printf("YOUR EFFICIENCY RATING IS %d\n\r", 1000 * K7 * K7 / ((T - T0) * (T - T0)));
-                end_game();
-                return;
-            }
-
-            if (T > T0 + T9)
-            {
-                printf("IT IS STARDATE %d\n\r", T);
-                end_game();
-                return;
+                D0 = 1;
+                simple_strcpy(C_STR, "DOCKED\0");
+                C_STR_COLOR = 12;
+                E = E0;
+                P = P0;
+                printf("SHIELDS DROPPED FOR DOCKING PURPOSES\n\r");
+                S = 0;
             }
         }
+
+        /* Set condition */
+        if (!D0)
+        {
+            if (K3 > 0)
+            {
+                simple_strcpy(C_STR, "*RED*\0");
+                C_STR_COLOR = 9;
+            }
+            else if (E < E0 / 10)
+            {
+                simple_strcpy(C_STR, "YELLOW\0");
+                C_STR_COLOR = 11;
+            }
+            else
+            {
+                simple_strcpy(C_STR, "GREEN\0");
+                C_STR_COLOR = 10;
+            }
+        }
+
+        /* Check for insufficient energy */
+        if (S + E <= 10 && (E <= 10 || D[SHIELD_CONTROL] < 0))
+        {
+            printf("\n\r** FATAL ERROR **   YOU'VE JUST STRANDED YOUR SHIP IN SPACE\n\r");
+            printf("YOU HAVE INSUFFICIENT MANEUVERING ENERGY, AND SHIELD CONTROL\n\r");
+            printf("IS PRESENTLY INCAPABLE OF CROSS-CIRCUITING TO ENGINE ROOM!!\n\r");
+            end_game();
+            return;
+        }
+
+        /* Get command */
+        printf("COMMAND? ");
+        simple_gets(input, 10);
+
+        /* Parse command */
+        cmd_found = 0;
+        for (i = 0; i < MAX_COMMANDS; i++)
+        {
+            if (simple_strncmp(input, &A1[i * 3], 3) == 0)
+            {
+                cmd_found = 1;
+                switch (i)
+                {
+                case 0:
+                    navigation();
+                    break;
+                case 1:
+                    short_range_scan();
+                    break;
+                case 2:
+                    long_range_scan();
+                    break;
+                case 3:
+                    phaser_control();
+                    break;
+                case 4:
+                    photon_torpedoes();
+                    break;
+                case 5:
+                    shield_control();
+                    break;
+                case 6:
+                    damage_report();
+                    break;
+                case 7:
+                    library_computer();
+                    break;
+                case 8:
+                    end_game();
+                    return;
+                }
+                break;
+            }
+        }
+
+        if (!cmd_found)
+        {
+            printf("ENTER ONE OF THE FOLLOWING:\n\r");
+            printf("  NAV  (TO SET COURSE)\n\r");
+            printf("  SRS  (FOR SHORT RANGE SENSOR SCAN)\n\r");
+            printf("  LRS  (FOR LONG RANGE SENSOR SCAN)\n\r");
+            printf("  PHA  (TO FIRE PHASERS)\n\r");
+            printf("  TOR  (TO FIRE PHOTON TORPEDOES)\n\r");
+            printf("  SHE  (TO RAISE OR LOWER SHIELDS)\n\r");
+            printf("  DAM  (FOR DAMAGE CONTROL REPORTS)\n\r");
+            printf("  COM  (TO CALL ON LIBRARY-COMPUTER)\n\r");
+            printf("  XXX  (TO RESIGN YOUR COMMAND)\n\r\n\r");
+        }
+
+        /* Check for end conditions */
+        if (K9 <= 0)
+        {
+            printf("CONGRATULATIONS, CAPTAIN! THE LAST KLINGON BATTLE CRUISER\n\r");
+            printf("MENACING THE FEDERATION HAS BEEN DESTROYED.\n\r\n\r");
+            printf("YOUR EFFICIENCY RATING IS %d\n\r", 1000 * K7 * K7 / ((T - T0) * (T - T0)));
+            end_game();
+            return;
+        }
+
+        if (T > T0 + T9)
+        {
+            printf("IT IS STARDATE %d\n\r", T);
+            end_game();
+            return;
+        }
+        paint_player_updates();
     }
 }
 
-void CheckDocked(void)
+/* Navigation */
+void navigation(void)
 {
-    /* Check for docking */
-    D0 = 0;
-    if (B3 > 0)
+    int c1, w1, n, i, tx, ty, collision, d;
+
+    // get direction of travel
+
+    printf("  4  3  2\n\r");
+    printf("   \\ | /\n\r");
+    printf("  5--*--1\n\r");
+    printf("   / | \\ \n\r");
+    printf("  6  7  8\n\r");
+    printf("COURSE (1-8)? ");
+    c1 = simple_scanf_int();
+    printf("\n\r");
+    if (c1 < 1 || c1 > 8)
     {
-        if (abs_value(S1 - B4) <= 1 && abs_value(S2 - B5) <= 1)
-        {
-            D0 = 1;
-            simple_strcpy(C_STR, "DOCKED\0");
-            C_STR_COLOR = 12;
-            E = 3000;
-            P = 10;
-            printf("SHIELDS DROPPED FOR DOCKING PURPOSES\n\r");
-            S = 0;
-        }
+        printf("   LT. SULU REPORTS, 'INCORRECT COURSE DATA, SIR!'\n\r");
+        return;
+    }
+    enterpriseDirection = c1 - 1;
+    // get distance
+    printf("WARP FACTOR (0-%s)? ", (D[WARP_ENGINES] < 0) ? "0" : "8");
+    w1 = simple_scanf_int();
+    printf("\n\r");
+    if (w1 > 8)
+    {
+        printf("   CHIEF ENGINEER SCOTT REPORTS 'THE ENGINES WON'T TAKE WARP %d!'\n\r", w1);
+        return;
+    }
+    // adjust for damage (limit speed)
+    if (D[WARP_ENGINES] < 0 && w1 > 0)
+    {
+        printf("WARP ENGINES ARE DAMAGED. IMPULSE POWER ONLY\n\r");
+        return;
     }
 
-    /* Set condition */
-    if (!D0)
+    // if insuffient available energy do not permit travel
+    n = w1 * 80;
+    if (n == 0)
+        n = 1;
+    if (E - n < 0)
     {
-        if (K3 > 0)
+        printf("ENGINEERING REPORTS   'INSUFFICIENT ENERGY AVAILABLE\n\r");
+        printf("                       FOR MANEUVERING AT WARP %d!'\n\r", w1);
+        if (S < n - E || D[SHIELD_CONTROL] < 0)
+            return;
+        printf("DEFLECTOR CONTROL ROOM ACKNOWLEDGES %d UNITS OF ENERGY\n\r", S);
+        printf("                         PRESENTLY DEPLOYED TO SHIELDS.\n\r");
+        return;
+    }
+
+    // Move Enterprise
+
+    if (w1 == 0)
+    {
+        // if at impulse
+        tx = S1 + Dir[1][c1 - 1];
+        ty = S2 + Dir[0][c1 - 1];
+
+        if ((tx < 0) || (tx > SECTOR_SIZE) || (ty < 0) || (ty > SECTOR_SIZE) ||
+            (Qu[ty + (tx * 8)] != ' '))
         {
-            simple_strcpy(C_STR, "*RED*\0");
-            C_STR_COLOR = 9;
-        }
-        else if (E < 300)
-        {
-            simple_strcpy(C_STR, "YELLOW\0");
-            C_STR_COLOR = 11;
+            /* Exceeded sector limits or collision-- abort*/
+            printf("IMPULSE ENGINES SHUT DOWN AT SECTOR %d,%d DUE TO BAD NAVIGATION\n\r", tx, ty);
         }
         else
         {
-            simple_strcpy(C_STR, "GREEN\0");
-            C_STR_COLOR = 10;
-        }
-    }
-}
+            // remove current location
+            update_quadrant_string(S1, S2, "   ", ' ');
+            S1 = tx;
+            S2 = ty;
+            update_quadrant_string(S1, S2, "<*>", 'E');
+            E--;
+            // good chance all of this should be in a main loop, and not only happen during navigation
 
-void impulsePower(void)
-{
-    int tx, ty;
-    int i, d;
-
-    tx = S1 + Dir[1][enterpriseDirection];
-    ty = S2 + Dir[0][enterpriseDirection];
-
-    if ((tx < 0) || (tx > SECTOR_SIZE) || (ty < 0) || (ty > SECTOR_SIZE) ||
-        (Qu[ty + (tx * 8)] != ' '))
-    {
-        /* Exceeded sector limits or collision-- abort*/
-        printf("IMPULSE ENGINES SHUT DOWN AT SECTOR %d,%d DUE TO BAD NAVIGATION\n\r", tx, ty);
-    }
-    else
-    {
-        // remove current location
-        Qu[S2 + (S1 * 8)] = ' ';
-        S1 = tx;
-        S2 = ty;
-        Qu[S2 + (S1 * 8)] = 'E';
-        E--;
-        // good chance all of this should be in a main loop, and not only happen during navigation
-
-        /* Move Klingons */
-        for (i = 0; i < K3; i++)
-        {
-            d = get_random(9);
-            if (d < 8)
+            /* Move Klingons */
+            for (i = 0; i < K3; i++)
             {
-                if (K[i][2] > 0)
+                d = get_random(9);
+                if (d < 8)
                 {
-                    tx = K[i][0] + Dir[d][1];
-                    ty = K[i][1] + Dir[d][0];
-                    if ((tx >= 0) && (ty >= 0) && (tx <= SECTOR_SIZE) && (ty <= SECTOR_SIZE))
+                    if (K[i][2] > 0)
                     {
-                        if (Qu[ty + (tx * 8)] == ' ')
+                        tx = K[i][0] + Dir[d][1];
+                        ty = K[i][1] + Dir[d][0];
+                        if ((tx >= 0) && (ty >= 0) && (tx <= SECTOR_SIZE) && (ty <= SECTOR_SIZE))
                         {
-                            Qu[K[i][1] + (K[i][0] * 8)] = ' ';
-                            K[i][0] = tx;
-                            K[i][1] = ty;
-                            Qu[K[i][1] + (K[i][0] * 8)] = 'K';
+                            if (Qu[ty + (tx * 8)] == ' ')
+                            {
+                                update_quadrant_string(K[i][0], K[i][1], "   ", ' ');
+                                K[i][0] = tx;
+                                K[i][1] = ty;
+                                update_quadrant_string(K[i][0], K[i][1], "+K+", 'K');
+                            }
                         }
                     }
                 }
             }
-        }
 
-        /* Klingon attack */
-        CheckDocked();
-        /* Klingon attack */
-        klingon_attack();
-        /* Repair damage */
-        repair_damage();
-        /* Update time */
-        T++;
+            /* Klingon attack */
+            klingon_attack();
+            /* Repair damage */
+            repair_damage();
+            /* Update time */
+            T += (w1 < 1) ? 1 : w1;
+        }
+    }
+    else
+    {
+        // warp movement
+        tx = S1;
+        ty = S2;
+        collision = 0;
+        for (i = 0; i < 8; i++)
+        {
+            tx += Dir[1][c1 - 1];
+            ty += Dir[0][c1 - 1];
+            if ((tx < 0) || (tx > SECTOR_SIZE) || (ty < 0) || (ty > SECTOR_SIZE))
+                break;
+            if (Qu[ty + (tx * 8)] != ' ')
+            {
+                S1 = tx;
+                S2 = ty;
+                /*  collision-- abort*/
+                printf("WARP ENGINES SHUT DOWN AT SECTOR %d,%d DUE TO BAD NAVIGATION\n\r", tx, ty);
+                collision = 1;
+            }
+        }
+        if (collision == 0)
+        {
+            Q1 += Dir[1][c1 - 1] * w1;
+            Q2 += Dir[0][c1 - 1] * w1;
+            E -= n;
+            if ((Q1 < 0) || (Q1 > GALAXY_SIZE) || (Q2 < 0) || (Q2 > GALAXY_SIZE))
+            {
+                printf("LT. UHURA REPORTS MESSAGE FROM STARFLEET COMMAND:\n\r");
+                printf("  'PERMISSION TO ATTEMPT CROSSING OF GALACTIC PERIMETER\n\r");
+                printf("  IS HEREBY *DENIED*.  SHUT DOWN YOUR ENGINES.'\n\r");
+                printf("CHIEF ENGINEER SCOTT REPORTS  'WARP ENGINES SHUT DOWN\n\r");
+                if (Q1 < 0)
+                    Q1 = 0;
+                if (Q2 < 0)
+                    Q2 = 0;
+                if (Q1 >= GALAXY_SIZE)
+                    Q1 = GALAXY_SIZE;
+                if (Q2 >= GALAXY_SIZE)
+                    Q2 = GALAXY_SIZE;
+                printf("  AT SECTOR %d,%d OF QUADRANT %d,%d.' \n\r", S1, S2, Q1, Q2);
+            }
+
+            enter_quadrant();
+            printf(" WELCOME TO QUADRANT %d,%d.' \n\r", Q1, Q2);
+            /* Repair damage */
+            repair_damage();
+            /* Update time */
+            T += (w1 < 1) ? 1 : w1;
+        }
     }
 }
 
-void warpSpeed(int WarpFactor)
+/* Short range sensor scan */
+void short_range_scan(void)
 {
-    int tx, ty, i, collision, d;
+    int i, j;
 
-    tx = S1;
-    ty = S2;
-    collision = 0;
-    for (i = 0; i < 8; i++)
+    if (D[SHORT_SENSORS] < 0)
     {
-        Qu[ty + (tx * 8)] = ' ';
-        tx += Dir[1][enterpriseDirection];
-        ty += Dir[0][enterpriseDirection];
-        if ((tx < 0) || (tx > SECTOR_SIZE) || (ty < 0) || (ty > SECTOR_SIZE))
-            break;
-        if (Qu[ty + (tx * 8)] != ' ')
-        {
-            tx -= Dir[1][enterpriseDirection];
-            ty -= Dir[0][enterpriseDirection];
-            S1 = tx;
-            S2 = ty;
-            /*  collision-- abort*/
-            printf("WARP ENGINES SHUT DOWN AT SECTOR %d,%d DUE TO BAD NAVIGATION\n\r", tx, ty);
-            collision = 1;
-            Qu[ty + (tx * 8)] = 'E';
-            paint_player_updates();
-            break;
-        }
-        Qu[ty + (tx * 8)] = 'E';
-        paint_player_updates();
+        printf("\n\r*** SHORT RANGE SENSORS ARE OUT ***\n\r\n\r");
+        return;
     }
 
-    if (collision == 0)
+    printf("---------------------------------\n\r");
+    for (i = 0; i <= SECTOR_SIZE; i++)
     {
-        Q1 += Dir[1][enterpriseDirection] * WarpFactor;
-        Q2 += Dir[0][enterpriseDirection] * WarpFactor;
-        E -= (WarpFactor * 80);
-        if ((Q1 < 0) || (Q1 > GALAXY_SIZE) || (Q2 < 0) || (Q2 > GALAXY_SIZE))
+        for (j = 0; j <= SECTOR_SIZE; j++)
         {
-            printf("LT. UHURA REPORTS MESSAGE FROM STARFLEET COMMAND:\n\r");
-            printf("  'PERMISSION TO ATTEMPT CROSSING OF GALACTIC PERIMETER\n\r");
-            printf("  IS HEREBY *DENIED*.  SHUT DOWN YOUR ENGINES.'\n\r");
-            printf("CHIEF ENGINEER SCOTT REPORTS  'WARP ENGINES SHUT DOWN\n\r");
-            if (Q1 < 0)
-                Q1 = 0;
-            if (Q2 < 0)
-                Q2 = 0;
-            if (Q1 >= GALAXY_SIZE)
-                Q1 = GALAXY_SIZE;
-            if (Q2 >= GALAXY_SIZE)
-                Q2 = GALAXY_SIZE;
-            printf("  AT SECTOR %d,%d OF QUADRANT %d,%d.' \n\r", S1, S2, Q1, Q2);
+            printf(" %s", get_quadrant_symbol(i, j));
         }
 
-        enter_quadrant();
-        printf(" WELCOME TO QUADRANT %d,%d.' \n\r", Q1, Q2);
-        /* Repair damage */
-        repair_damage();
-        /* Update time */
-        T += WarpFactor;
+        /* Print status information */
+        switch (i)
+        {
+        case 0:
+            printf("        STARDATE          %d\n\r", T);
+            break;
+        case 1:
+            printf("        CONDITION         %s\n\r", C_STR);
+            break;
+        case 2:
+            printf("        QUADRANT          %d,%d\n\r", Q1, Q2);
+            break;
+        case 3:
+            printf("        SECTOR            %d,%d\n\r", S1, S2);
+            break;
+        case 4:
+            printf("        PHOTON TORPEDOES  %d\n\r", P);
+            break;
+        case 5:
+            printf("        TOTAL ENERGY      %d\n\r", E + S);
+            break;
+        case 6:
+            printf("        SHIELDS           %d\n\r", S);
+            break;
+        case 7:
+            printf("        KLINGONS REMAINING %d\n\r", K9);
+            break;
+        }
     }
+    printf("---------------------------------\n\r");
+}
+
+/* Get quadrant symbol */
+char *get_quadrant_symbol(int z1, int z2)
+{
+    int pos;
+    static char symbol[4];
+    pos = z2 * 3 + z1 * 24;
+    if (pos >= 0 && pos < 189)
+    {
+        symbol[0] = Q[pos];
+        symbol[1] = Q[pos + 1];
+        symbol[2] = Q[pos + 2];
+        symbol[3] = '\0';
+    }
+    else
+    {
+        simple_strcpy(symbol, "   ");
+    }
+    return symbol;
 }
 
 /* Long range sensor scan */
 void long_range_scan(void)
 {
     int i, j;
-    int x = 0, y = 0;
-    char buffer[10];
 
     if (D[LONG_SENSORS] < 0)
     {
@@ -1021,38 +1170,27 @@ void long_range_scan(void)
         return;
     }
 
-    SetPenColor(15);
-    OutString(35, 210, 6, 0, 7, "LONG RANGE SCAN FOR QUADRANT");
+    printf("LONG RANGE SCAN FOR QUADRANT %d,%d\n\r", Q1, Q2);
+    printf("-------------------\n\r");
 
     for (i = Q1 - 1; i <= Q1 + 1; i++)
     {
-        DrawLine(65, (y * 15) + 233, 170, (y * 15) + 233);
+        printf(": ");
         for (j = Q2 - 1; j <= Q2 + 1; j++)
         {
             if (i >= 0 && i <= GALAXY_SIZE && j >= 0 && j <= GALAXY_SIZE)
             {
-                sprintf(buffer, "%03d", G[i][j]);
-                if ((x == 1) && (y == 1))
-                    SetPenColor(11);
-                OutString(70 + (x * 40), 235 + (y * 15), 6, 0, 7, buffer);
-                SetPenColor(15);
+                printf("%03d ", G[i][j]);
                 Z[i][j] = G[i][j];
             }
             else
             {
-                OutString(70 + (x * 40), 235 + (y * 15), 6, 0, 7, "***");
+                printf("*** ");
             }
-            x++;
         }
-        y++;
-        x = 0;
+        printf(":\n\r");
     }
-    DrawLine(65, 233, 65, 278);
-    DrawLine(100, 233, 100, 278);
-    DrawLine(135, 233, 135, 278);
-    DrawLine(170, 233, 170, 278);
-    DrawLine(65, 278, 170, 278);
-    getch();
+    printf("-------------------\n\r");
 }
 
 /* Phaser control */
@@ -1080,7 +1218,7 @@ void phaser_control(void)
 
     printf("PHASERS LOCKED ON TARGET;  ENERGY AVAILABLE = %d UNITS\n\r", E);
     printf("NUMBER OF UNITS TO FIRE? ");
-    x = 100;
+    x = simple_scanf_int();
 
     if (x <= 0)
         return;
@@ -1111,7 +1249,7 @@ void phaser_control(void)
                     printf("*** KLINGON DESTROYED ***\n\r");
                     K3--;
                     K9--;
-                    Qu[K[i][1] + (K[i][0] * 8)] = ' ';
+                    update_quadrant_string(K[i][0], K[i][1], "   ", ' ');
                     K[i][2] = 0;
                     G[Q1][Q2] -= 100;
                     Z[Q1][Q2] = G[Q1][Q2];
@@ -1134,10 +1272,10 @@ void phaser_control(void)
 /* Photon torpedoes */
 void photon_torpedoes(void)
 {
-    ////////// this needs to animate the torpedo launch on both screens (tactical and viewer)
+    int c1;
     int x1, x2, x, y;
     int x3, y3, i;
-    char symbol;
+    char *symbol;
 
     if (P <= 0)
     {
@@ -1151,8 +1289,20 @@ void photon_torpedoes(void)
         return;
     }
 
-    x1 = Dir[1][enterpriseDirection];
-    x2 = Dir[0][enterpriseDirection];
+    printf("PHOTON TORPEDO COURSE (1-9)? ");
+    c1 = simple_scanf_int();
+    if (c1 == 9)
+        c1 = 1;
+
+    if (c1 < 1 || c1 >= 9)
+    {
+        printf("ENSIGN CHEKOV REPORTS,  'INCORRECT COURSE DATA, SIR!'\n\r");
+        return;
+    }
+
+    /* Simplified torpedo trajectory calculation */
+    ///////  x1 = C[c1 - 1][0];
+    /////////  x2 = C[c1 - 1][1];
     x = S1;
     y = S2;
     E -= 2;
@@ -1176,11 +1326,11 @@ void photon_torpedoes(void)
         printf("               %d,%d\n\r", x3, y3);
 
         /* Check for hit */
-        if (Qu[y3 + (x3 * 8)] != ' ')
+        if (get_quadrant_symbol(x3, y3)[1] != ' ')
         {
-            symbol = Qu[y3 + (x3 * 8)];
+            symbol = get_quadrant_symbol(x3, y3);
 
-            if (symbol == 'K')
+            if (symbol[0] == '+')
             {
                 /* Hit Klingon */
                 printf("*** KLINGON DESTROYED ***\n\r");
@@ -1194,24 +1344,24 @@ void photon_torpedoes(void)
                         break;
                     }
                 }
-                Qu[y3 + (x3 * 8)] = ' ';
+                update_quadrant_string(x3, y3, "   ", ' ');
                 G[Q1][Q2] -= 100;
                 Z[Q1][Q2] = G[Q1][Q2];
                 break;
             }
-            else if (symbol == '*')
+            else if (symbol[0] == '*')
             {
                 /* Hit star */
                 printf("STAR AT %d,%d ABSORBED TORPEDO ENERGY.\n\r", x3, y3);
                 break;
             }
-            else if (symbol == 'X')
+            else if (symbol[0] == '>')
             {
                 /* Hit starbase */
                 printf("*** STARBASE DESTROYED ***\n\r");
                 B3--;
                 B9--;
-                Qu[y3 + (x3 * 8)] = ' ';
+                update_quadrant_string(x3, y3, "   ", ' ');
                 G[Q1][Q2] -= 10;
                 Z[Q1][Q2] = G[Q1][Q2];
                 if (B9 <= 0 && K9 > T - T0 - T9)
@@ -1230,32 +1380,56 @@ void photon_torpedoes(void)
     klingon_attack();
 }
 
+/* Shield control */
+void shield_control(void)
+{
+    int x;
+
+    if (D[SHIELD_CONTROL] < 0)
+    {
+        printf("SHIELD CONTROL INOPERABLE\n\r");
+        return;
+    }
+
+    printf("ENERGY AVAILABLE = %d  NUMBER OF UNITS TO SHIELDS? ", E + S);
+    x = simple_scanf_int();
+
+    if (x < 0 || S == x)
+    {
+        printf("<SHIELDS UNCHANGED>\n\r");
+        return;
+    }
+
+    if (x > E + S)
+    {
+        printf("SHIELD CONTROL REPORTS  'THIS IS NOT THE FEDERATION TREASURY.'\n\r");
+        printf("<SHIELDS UNCHANGED>\n\r");
+        return;
+    }
+
+    E = E + S - x;
+    S = x;
+    printf("DEFLECTOR CONTROL ROOM REPORT:\n\r");
+    printf("  'SHIELDS NOW AT %d UNITS PER YOUR COMMAND.'\n\r", S);
+}
+
 /* Damage report (using global device_names array) */
 void damage_report(void)
 {
     int i;
-    char out[10];
-    SetPenColor(0);
-    DrawFilledRectangle(560, 10, 630, 190);
 
-    SetPenColor(6);
+    printf("\n\rDEVICE             STATE OF REPAIR\n\r");
     for (i = 0; i < MAX_DEVICES; i++)
     {
-        sprintf(out, "%d%%", D[i]);
-        if (D[i] > 60)
-            SetPenColor(10);
-        else if (D[i] > 25)
-            SetPenColor(11);
-        else
-            SetPenColor(9);
-        OutString(560, 25 + (15 * i), 6, 0, 7, out);
+        printf("%s %d\n\r", device_names[i], D[i]);
     }
+    printf("\n\r");
 }
 
 /* Library computer */
 void library_computer(void)
 {
-    int i,j;
+    int a, i, j;
 
     if (D[LIBRARY_COMPUTER] < 0)
     {
@@ -1263,6 +1437,15 @@ void library_computer(void)
         return;
     }
 
+    printf("COMPUTER ACTIVE AND AWAITING COMMAND? ");
+    a = simple_scanf_int();
+
+    if (a < 0)
+        return;
+
+    switch (a)
+    {
+    case 0:
         /* Cumulative galactic record */
         printf("        COMPUTER RECORD OF GALAXY FOR QUADRANT %d,%d\n\r", Q1, Q2);
         printf("       1     2     3     4     5     6     7     8\n\r");
@@ -1283,6 +1466,32 @@ void library_computer(void)
             }
             printf("\n\r");
         }
+        break;
+    case 1:
+        /* Status report */
+        printf("   STATUS REPORT:\n\r");
+        printf("KLINGONS LEFT: %d\n\r", K9);
+        printf("MISSION MUST BE COMPLETED IN %d STARDATES\n\r", T0 + T9 - T);
+        if (B9 > 0)
+        {
+            printf("THE FEDERATION IS MAINTAINING %d STARBASE", B9);
+            if (B9 > 1)
+                printf("S");
+            printf(" IN THE GALAXY\n\r");
+        }
+        else
+        {
+            printf("YOUR STUPIDITY HAS LEFT YOU ON YOUR OWN IN\n\r");
+            printf("  THE GALAXY -- YOU HAVE NO STARBASES LEFT!\n\r");
+        }
+        damage_report();
+        break;
+    default:
+        printf("FUNCTIONS AVAILABLE FROM LIBRARY-COMPUTER:\n\r");
+        printf("   0 = CUMULATIVE GALACTIC RECORD\n\r");
+        printf("   1 = STATUS REPORT\n\r");
+        break;
+    }
 }
 
 /* Klingon attack */
@@ -1339,7 +1548,6 @@ int calculate_distance(int x1, int y1, int x2, int y2)
 /* Repair damage */
 void repair_damage(void)
 {
-    // todo: this should be time based, not based  on moves
     int i, d1;
     d1 = 0;
     for (i = 0; i < MAX_DEVICES; i++)
@@ -1368,8 +1576,6 @@ void repair_damage(void)
 void end_game(void)
 {
     char response[10]; /* Variable declared at top for Micro-C compatibility */
-
-    // need an explosion
 
     printf("THERE WERE %d KLINGON BATTLE CRUISERS LEFT AT\n\r", K9);
     printf("THE END OF YOUR MISSION.\n\r\n\r");

@@ -1,5 +1,5 @@
 ASxxxx Linker V05.11 (GCC6809)                                          Page 1
-Hexadecimal [16-Bits]                                 Sun Oct 26 04:49:43 2025
+Hexadecimal [16-Bits]                                 Mon Oct 27 02:49:45 2025
 
 Area                       Addr        Size        Decimal Bytes (Attributes)
 --------------------       ----        ----        ------- ----- ------------
@@ -10,93 +10,84 @@ Area                       Addr        Size        Decimal Bytes (Attributes)
     0000  s__CODE  |   0000  l_.dtors |   0000  l_.noini |   0000  l_.vecto
     0000  l_.gcc_e |   0000  l_.romca |   0000  l_.base  |   0000  l__DATA 
     0000  l_.ctors |   0000  l__CODE  |   0000  l_.rodat |   0000  s__DATA 
-    0000  .__.ABS. |   0010  l_.start |   0018  l_.direc |   029A  l_.bss  
-    03A9  l_.data  |   2000  s_.start |   2010  s_.gcc_e |   2010  s_.noini
+    0000  .__.ABS. |   0010  l_.start |   0018  l_.direc |   01AF  l_.bss  
+    03A7  l_.data  |   2000  s_.start |   2010  s_.gcc_e |   2010  s_.noini
     2010  s_.vecto |   2010  s_.romca |   2010  s_.dtors |   2010  s_.ctors
-    2010  s_.rodat |   2010  s_.base  |   2020  s_.text  |   5831  l_.text 
-    7851  s_.data  |   7BFA  s_.bss   |   7E94  s_.direc
+    2010  s_.rodat |   2010  s_.base  |   2020  s_.text  |   4C44  l_.text 
+    6C64  s_.data  |   700B  s_.bss   |   71BA  s_.direc
 ASxxxx Linker V05.11 (GCC6809)                                          Page 2
-Hexadecimal [16-Bits]                                 Sun Oct 26 04:49:43 2025
+Hexadecimal [16-Bits]                                 Mon Oct 27 02:49:45 2025
 
 Area                       Addr        Size        Decimal Bytes (Attributes)
 --------------------       ----        ----        ------- ----- ------------
-.text                      2020        5831 =       22577. bytes (REL,CON,CSEG)
+.text                      2020        4C44 =       19524. bytes (REL,CON,CSEG)
 
    Value  Global      Value  Global      Value  Global      Value  Global   
    -----  ------      -----  ------      -----  ------      -----  ------   
     212D  _abs_val |   214F  _get_ran |   21E2  _simple_ |   220A  _simple_
-    224D  _simple_ |   22A3  _simple_ |   2333  _simple_ |   23DA  _simple_
-    23F7  _simple_ |   2501  _simple_ |   2554  _paint_i |   25D3  _paint_p
-    2764  _paint_p |   2EF5  _initial |   3467  _print_i |   35DD  _enter_q
-    37DD  _place_e |   3880  _place_o |   39FD  _update_ |   3A8E  _get_qua
-    3E12  _main_ga |   44C9  _navigat |   4CDF  _short_r |   4E1D  _get_qua
-    4F0F  _long_ra |   51DE  _phaser_ |   5864  _photon_ |   5CE6  _shield_
-    5DC6  _damage_ |   6069  _library |   6317  _klingon |   65E3  _calcula
-    664A  _repair_ |   67FF  _end_gam |   687E  _main    |   68AB  _getch  
-    68BF  _tolower |   68E3  _toupper |   6907  _islower |   692D  _isupper
-    6953  _isdigit |   6979  _isxdigi |   69BB  _isprint |   69E1  _OutStri
-    6A1E  _SetCurs |   6A34  _SetReso |   6A4A  _LoadFon |   6A60  _ClearDi
-    6A6B  _CopyRec |   6A9A  _DrawBit |   6AD6  _DrawCha |   6AFD  _DrawEll
-    6B22  _DrawGly |   6B5D  _DrawLin |   6B82  _DrawRec |   6BA7  _DrawFil
-    6BCC  _DrawFil |   6BF1  _GetPixe |   6C1F  _InvertR |   6C44  _DrawLin
-    6C5F  _MoveCur |   6C7A  _ScrollD |   6C95  _SetBrus |   6CAB  _SetLine
-    6CC1  _SetPenC |   6CD7  _SetPenW |   6CED  _SetPixe |   6D08  _SetGlyp
-    6D3C  _SetPall |   6D61  _SetMous |   6D77  _SetMous |   6D92  _ClearSp
-    6D9D  _SetSpri |   6DD4  _SetSpri |   6DF6  _SetSpri |   6E11  _esp0_ou
-    6E56  _esp1_ou |   6E9B  _esp0_in |   6EDA  _esp1_in |   6F19  _esp0_ou
-    6F4F  _esp0_ou |   6F7F  _esp0_ou |   6F9B  _esp1_ou |   6FD1  _esp1_ou
-    7001  _esp1_ou |   74C3  _printf  |   74DF  _sprintf |   74FE  _outhex 
-    750E  _ashlhi3 |   751D  _ashrhi3 |   752C  _lshrhi3 |   753B  _ashlsi3
-    7544  _ashlsi3 |   756F  _lshrsi3 |   7578  ___clzhi |   7599  ___clzsi
-    75A8  ___ctzhi |   75C8  ___ctzsi |   75D7  _mulhi3  |   75F6  _divhi3 
-    7601  _modhi3  |   760F  _udivhi3 |   761A  _umodhi3 |   7628  _euclid 
-    765A  _seuclid |   7695  _outbyte |   76A5  _randsee |   76B6  _gettime
-    7789  _getdate
+    224D  _simple_ |   22A3  _simple_ |   2333  _simple_ |   2350  _simple_
+    23A3  _paint_i |   2430  _paint_p |   267E  _paint_p |   2E68  _initial
+    3396  _print_i |   350C  _enter_q |   36EB  _place_e |   377B  _place_o
+    391D  _get_qua |   3AF9  _main_ga |   3D5A  _CheckDo |   3E5E  _impulse
+    42B4  _warpSpe |   4585  _long_ra |   4A0B  _phaser_ |   5036  _photon_
+    53B7  _damage_ |   5545  _library |   5716  _klingon |   59E2  _calcula
+    5A49  _repair_ |   5BFE  _end_gam |   5C7D  _main    |   5CAA  _getch  
+    5CBE  _getc    |   5CD2  _tolower |   5CF6  _toupper |   5D1A  _islower
+    5D40  _isupper |   5D66  _isdigit |   5D8C  _isxdigi |   5DCE  _isprint
+    5DF4  _OutStri |   5E31  _SetCurs |   5E47  _SetReso |   5E5D  _LoadFon
+    5E73  _ClearDi |   5E7E  _CopyRec |   5EAD  _DrawBit |   5EE9  _DrawCha
+    5F10  _DrawEll |   5F35  _DrawGly |   5F70  _DrawLin |   5F95  _DrawRec
+    5FBA  _DrawFil |   5FDF  _DrawFil |   6004  _GetPixe |   6032  _InvertR
+    6057  _DrawLin |   6072  _MoveCur |   608D  _ScrollD |   60A8  _SetBrus
+    60BE  _SetLine |   60D4  _SetPenC |   60EA  _SetPenW |   6100  _SetPixe
+    611B  _SetGlyp |   614F  _SetPall |   6174  _SetMous |   618A  _SetMous
+    61A5  _ClearSp |   61B0  _SetSpri |   61E7  _SetSpri |   6209  _SetSpri
+    6224  _esp0_ou |   6269  _esp1_ou |   62AE  _esp0_in |   62ED  _esp1_in
+    632C  _esp0_ou |   6362  _esp0_ou |   6392  _esp0_ou |   63AE  _esp1_ou
+    63E4  _esp1_ou |   6414  _esp1_ou |   68D6  _printf  |   68F2  _sprintf
+    6911  _outhex  |   6921  _ashlhi3 |   6930  _ashrhi3 |   693F  _lshrhi3
+    694E  _ashlsi3 |   6957  _ashlsi3 |   6982  _lshrsi3 |   698B  ___clzhi
+    69AC  ___clzsi |   69BB  ___ctzhi |   69DB  ___ctzsi |   69EA  _mulhi3 
+    6A09  _divhi3  |   6A14  _modhi3  |   6A22  _udivhi3 |   6A2D  _umodhi3
+    6A3B  _euclid  |   6A6D  _seuclid |   6AA8  _outbyte |   6AB8  _randsee
+    6AC9  _gettime |   6B9C  _getdate
 ASxxxx Linker V05.11 (GCC6809)                                          Page 3
-Hexadecimal [16-Bits]                                 Sun Oct 26 04:49:43 2025
+Hexadecimal [16-Bits]                                 Mon Oct 27 02:49:45 2025
 
 Area                       Addr        Size        Decimal Bytes (Attributes)
 --------------------       ----        ----        ------- ----- ------------
-.data                      7851        03A9 =         937. bytes (REL,CON,CSEG)
+.data                      6C64        03A7 =         935. bytes (REL,CON,CSEG)
 
    Value  Global      Value  Global      Value  Global      Value  Global   
    -----  ------      -----  ------      -----  ------      -----  ------   
-    7BE8  _restart |   7BF4  _ESP0Ptr |   7BF6  _ESP1Ptr |   7BF8  _ESPStat
+    7005  _ESP0Ptr |   7007  _ESP1Ptr |   7009  _ESPStat
 ASxxxx Linker V05.11 (GCC6809)                                          Page 4
-Hexadecimal [16-Bits]                                 Sun Oct 26 04:49:43 2025
+Hexadecimal [16-Bits]                                 Mon Oct 27 02:49:45 2025
 
 Area                       Addr        Size        Decimal Bytes (Attributes)
 --------------------       ----        ----        ------- ----- ------------
-.bss                       7BFA        029A =         666. bytes (REL,CON,CSEG)
+.bss                       700B        01AF =         431. bytes (REL,CON,CSEG)
 
    Value  Global      Value  Global      Value  Global      Value  Global   
    -----  ------      -----  ------      -----  ------      -----  ------   
-    7C01  _G       |   7C81  _K       |   7C93  _Z       |   7D13  _D      
-    7D23  _N       |   7D29  _T       |   7D2B  _T0      |   7D2D  _T9     
-    7D2F  _E       |   7D31  _E0      |   7D33  _P       |   7D35  _P0     
-    7D37  _S       |   7D39  _S9      |   7D3B  _B9      |   7D3D  _K9     
-    7D3F  _K7      |   7D41  _Q1      |   7D43  _Q2      |   7D45  _S1     
-    7D47  _S2      |   7D49  _K3      |   7D4B  _B3      |   7D4D  _S3     
-    7D4F  _B4      |   7D51  _B5      |   7D53  _D0      |   7D55  _D4     
-    7D57  _Q       |   7E18  _Qu      |   7E59  _A1      |   7E75  _G2     
-    7E89  _C_STR   |   7E93  _C_STR_C
+    7098  _G       |   7118  _K       |   712A  _Z       |   71AA  _D      
 ASxxxx Linker V05.11 (GCC6809)                                          Page 5
-Hexadecimal [16-Bits]                                 Sun Oct 26 04:49:43 2025
+Hexadecimal [16-Bits]                                 Mon Oct 27 02:49:45 2025
 
 Area                       Addr        Size        Decimal Bytes (Attributes)
 --------------------       ----        ----        ------- ----- ------------
-.direct                    7E94        0018 =          24. bytes (REL,CON,CSEG)
+.direct                    71BA        0018 =          24. bytes (REL,CON,CSEG)
 
    Value  Global      Value  Global      Value  Global      Value  Global   
    -----  ------      -----  ------      -----  ------      -----  ------   
-    7E94  m0       |   7E95  m1       |   7E96  m2       |   7E97  m3      
-    7E98  m4       |   7E99  m5       |   7E9A  m6       |   7E9B  m7      
-    7E9C  im0      |   7E9D  im1      |   7E9E  im2      |   7E9F  im3     
-    7EA0  im4      |   7EA1  im5      |   7EA2  im6      |   7EA3  im7     
-    7EA4  fm0      |   7EA5  fm1      |   7EA6  fm2      |   7EA7  fm3     
-    7EA8  fm4      |   7EA9  fm5      |   7EAA  fm6      |   7EAB  fm7     
+    71BA  m0       |   71BB  m1       |   71BC  m2       |   71BD  m3      
+    71BE  m4       |   71BF  m5       |   71C0  m6       |   71C1  m7      
+    71C2  im0      |   71C3  im1      |   71C4  im2      |   71C5  im3     
+    71C6  im4      |   71C7  im5      |   71C8  im6      |   71C9  im7     
+    71CA  fm0      |   71CB  fm1      |   71CC  fm2      |   71CD  fm3     
+    71CE  fm4      |   71CF  fm5      |   71D0  fm6      |   71D1  fm7     
 ASxxxx Linker V05.11 (GCC6809)                                          Page 6
-Hexadecimal [16-Bits]                                 Sun Oct 26 04:49:43 2025
+Hexadecimal [16-Bits]                                 Mon Oct 27 02:49:45 2025
 
 Area                       Addr        Size        Decimal Bytes (Attributes)
 --------------------       ----        ----        ------- ----- ------------
@@ -106,7 +97,7 @@ Area                       Addr        Size        Decimal Bytes (Attributes)
    -----  ------      -----  ------      -----  ------      -----  ------   
     2000  __start  |   2000  .__.END. |   200E  __exit  
 ASxxxx Linker V05.11 (GCC6809)                                          Page 7
-Hexadecimal [16-Bits]                                 Sun Oct 26 04:49:43 2025
+Hexadecimal [16-Bits]                                 Mon Oct 27 02:49:45 2025
 
 Files Linked                              [ module(s) ]
 
@@ -126,7 +117,7 @@ Libraries Linked                          [ object file ]
 ../gcclib/libcubix.a                      [ gettim.o ]
 
 ASxxxx Linker V05.11 (GCC6809)                                          Page 8
-Hexadecimal [16-Bits]                                 Sun Oct 26 04:49:43 2025
+Hexadecimal [16-Bits]                                 Mon Oct 27 02:49:45 2025
 
 User Base Address Definitions
 

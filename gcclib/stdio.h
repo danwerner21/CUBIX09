@@ -17,6 +17,7 @@ extern char randseed();
 extern struct time gettime();
 extern struct date getdate();
 extern char getch();
+extern char getc();
 extern int printf(char *format, ...);
 extern int sprintf(char *out,char *format, ...);
 extern void outbyte(char b);

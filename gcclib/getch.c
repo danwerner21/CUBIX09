@@ -7,3 +7,12 @@ char getch()
         asm ("sta	,u");
         return f;
 }
+
+char getc()
+{
+        char f=' ';
+        asm ("swi\n\t"
+            ".byte 35");
+        asm ("sta	,u");
+        return f;
+}
