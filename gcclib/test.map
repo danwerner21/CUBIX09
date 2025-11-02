@@ -1,5 +1,5 @@
 ASxxxx Linker V05.11 (GCC6809)                                          Page 1
-Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:34 2025
+Hexadecimal [16-Bits]                                 Sun Nov  2 22:34:54 2025
 
 Area                       Addr        Size        Decimal Bytes (Attributes)
 --------------------       ----        ----        ------- ----- ------------
@@ -16,7 +16,7 @@ Area                       Addr        Size        Decimal Bytes (Attributes)
     2010  s_.dtors |   2010  s_.ctors |   2010  s_.rodat |   2010  s_.base 
     2020  s_.text  |   3437  s_.data  |   3443  s_.direc
 ASxxxx Linker V05.11 (GCC6809)                                          Page 2
-Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:34 2025
+Hexadecimal [16-Bits]                                 Sun Nov  2 22:34:54 2025
 
 Area                       Addr        Size        Decimal Bytes (Attributes)
 --------------------       ----        ----        ------- ----- ------------
@@ -43,7 +43,7 @@ Area                       Addr        Size        Decimal Bytes (Attributes)
     33A1  _udivhi3 |   33AC  _umodhi3 |   33BA  _euclid  |   33EC  _seuclid
     3427  _outbyte
 ASxxxx Linker V05.11 (GCC6809)                                          Page 3
-Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:34 2025
+Hexadecimal [16-Bits]                                 Sun Nov  2 22:34:54 2025
 
 Area                       Addr        Size        Decimal Bytes (Attributes)
 --------------------       ----        ----        ------- ----- ------------
@@ -53,7 +53,7 @@ Area                       Addr        Size        Decimal Bytes (Attributes)
    -----  ------      -----  ------      -----  ------      -----  ------   
     343D  _ESP0Ptr |   343F  _ESP1Ptr |   3441  _ESPStat
 ASxxxx Linker V05.11 (GCC6809)                                          Page 4
-Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:34 2025
+Hexadecimal [16-Bits]                                 Sun Nov  2 22:34:54 2025
 
 Area                       Addr        Size        Decimal Bytes (Attributes)
 --------------------       ----        ----        ------- ----- ------------
@@ -68,7 +68,7 @@ Area                       Addr        Size        Decimal Bytes (Attributes)
     3453  fm0      |   3454  fm1      |   3455  fm2      |   3456  fm3     
     3457  fm4      |   3458  fm5      |   3459  fm6      |   345A  fm7     
 ASxxxx Linker V05.11 (GCC6809)                                          Page 5
-Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:34 2025
+Hexadecimal [16-Bits]                                 Sun Nov  2 22:34:54 2025
 
 Area                       Addr        Size        Decimal Bytes (Attributes)
 --------------------       ----        ----        ------- ----- ------------
@@ -78,7 +78,7 @@ Area                       Addr        Size        Decimal Bytes (Attributes)
    -----  ------      -----  ------      -----  ------      -----  ------   
     2000  __start  |   2000  .__.END. |   200E  __exit  
 ASxxxx Linker V05.11 (GCC6809)                                          Page 6
-Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:34 2025
+Hexadecimal [16-Bits]                                 Sun Nov  2 22:34:54 2025
 
 Files Linked                              [ module(s) ]
 
@@ -97,7 +97,7 @@ libcubix.a                                [ outbyte.o ]
 libcubix.a                                [ crt0.o ]
 
 ASxxxx Linker V05.11 (GCC6809)                                          Page 7
-Hexadecimal [16-Bits]                                 Sun Oct 26 19:06:34 2025
+Hexadecimal [16-Bits]                                 Sun Nov  2 22:34:54 2025
 
 User Base Address Definitions
 

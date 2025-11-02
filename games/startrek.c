@@ -1,201 +1,42 @@
 /*
- * SUPER STAR TREK - C Version
+ * STAR TREK - C Version
  * Originally Converted from BASIC version dated MAY 16, 1978
  *
  * Original BASIC program by Mike Mayfield, modified by Dave Ahl
  * Further modifications by Bob Leedom
  * Converted to Microsoft 8K BASIC by John Gorders
+ *
+ * Arcade conversion by Dan Werner
+ *
  */
 
-// todo: opening screen (w/music)
-//       Sound effects
-//       Speech?
+// todo:
+//       Message Window
+//       Remove Printfs
 //       3d (ok, 2d arcade playing)
-//       glyphs and graphics (three views, facing, 45 deg, rear and then mirror)
-//       operations pop ups
+//             visualizations
+//             arcade-ish play style?
+//       Improved Graphics
+//             3d view models
+//             explosions
+//             smoother motion and animation
+//             remove flickering
+//       Sound effects
+//       opening screen (w/music)
+//       Speech?
 
-// current bugs/working
-//        Navigation
+//       glyphs and graphics (three views, facing, 45 deg, rear and then mirror)
+
 
 #include "../gcclib/stdio.h"
 #include "../gcclib/graphics.h"
 
-/* Game constants */
-#define GALAXY_SIZE 7 // Galaxy size is this value +1
-#define SECTOR_SIZE 7 // Sector size is this value +1
-#define MAX_KLINGONS 3
-#define MAX_DEVICES 8
+#include "trekconstants.h"
+#include "trekassets.h"
+#include "startrek.h"
 
-/* Device indices */
-#define WARP_ENGINES 0
-#define SHORT_SENSORS 1
-#define LONG_SENSORS 2
-#define PHASER_CONTROL 3
-#define PHOTON_TUBES 4
-#define DAMAGE_CONTROL 5
-#define SHIELD_CONTROL 6
-#define LIBRARY_COMPUTER 7
 
-static char *star_names1[] = {"ANTARES", "RIGEL", "PROCYON", "VEGA",
-                              "CANOPUS", "ALTAIR", "SAGITTARIUS", "POLLUX"};
-static char *star_names2[] = {"SIRIUS", "DENEB", "CAPELLA", "BETELGEUSE",
-                              "ALDEBARAN", "REGULUS", "ARCTURUS", "SPICA"};
-static char *roman_numerals[] = {" I", " II", " III", " IV"};
-static char *device_names[] = {
-    "WARP ENGINES", "SHORT RANGE SENSORS", "LONG RANGE SENSORS",
-    "PHASER CONTROL", "PHOTON TUBES", "DAMAGE CONTROL",
-    "SHIELD CONTROL", "LIBRARY-COMPUTER"};
-static int Dir[3][8] = {{1, 1, 0, -1, -1, -1, 0, 1}, /* Navigation Directions*/
-                        {0, -1, -1, -1, 0, 1, 1, 1},
-                        {1, 2, 0, 2, 1, 2, 0, 2}};
 
-static char enterpriseGlyph1[36] = {0, 3, 128, 127, 135, 192, 127, 143, 224, 28, 31, 240, 14, 31, 240,
-                                    7, 255, 240, 7, 255, 240, 14, 31, 240, 28, 31, 240, 127, 143, 224,
-                                    127, 135, 192, 0, 3, 128};
-
-static char enterpriseGlyph2[57] = {0, 0, 240, 0, 3, 248, 0, 7, 252, 0, 15, 254, 0, 15, 254, 0, 15, 254, 0, 15, 254,
-                                    0, 135, 252, 1, 199, 248, 3, 142, 240, 7, 252, 0, 14, 120, 0, 4, 57, 0, 0, 27, 128,
-                                    0, 31, 0, 0, 30, 0, 0, 60, 0, 0, 120, 0, 0, 48, 0};
-
-static char enterpriseGlyph3[38] = {31, 128, 63, 192, 127, 224, 255, 240, 255, 240, 255, 240, 127, 224,
-                                    63, 192, 31, 128, 6, 0, 6, 0, 102, 96, 102, 96, 111, 96, 127, 224,
-                                    121, 224, 112, 224, 96, 96, 96, 96};
-
-static char enterpriseGlyph4[57] = {15, 0, 0, 31, 192, 0, 63, 224, 0, 127, 240, 0, 127, 240, 0, 127, 240, 0,
-                                    127, 240, 0, 63, 225, 0, 31, 227, 128, 15, 113, 192, 0, 63, 224, 0, 30, 112,
-                                    0, 156, 32, 1, 216, 0, 0, 248, 0, 0, 120, 0, 0, 60, 0, 0, 30, 0, 0, 12, 0};
-
-static char enterpriseGlyph5[36] = {1, 192, 0, 3, 225, 254, 7, 241, 254, 15, 248, 56, 15, 248, 112, 15, 255, 224,
-                                    15, 255, 224, 15, 248, 112, 15, 248, 56, 7, 241, 254, 3, 225, 254, 1, 192, 0};
-
-static char enterpriseGlyph6[57] = {0, 12, 0, 0, 30, 0, 0, 60, 0, 0, 120, 0, 0, 248, 0, 1, 216, 0, 0, 156, 32,
-                                    0, 30, 112, 0, 63, 224, 15, 113, 192, 31, 227, 128, 63, 225, 0, 127, 240, 0,
-                                    127, 240, 0, 127, 240, 0, 127, 240, 0, 63, 224, 0, 31, 192, 0, 15, 0, 0};
-
-static char enterpriseGlyph7[38] = {96, 96, 96, 96, 112, 224, 121, 224, 127, 224, 111, 96, 102, 96, 102, 96,
-                                    6, 0, 6, 0, 31, 128, 63, 192, 127, 224, 255, 240, 255, 240, 255, 240,
-                                    127, 224, 63, 192, 31, 128};
-
-static char enterpriseGlyph8[57] = {0, 48, 0, 0, 120, 0, 0, 60, 0, 0, 30, 0, 0, 31, 0, 0, 27, 128, 4, 57, 0, 14, 120, 0,
-                                    7, 252, 0, 3, 142, 240, 1, 199, 248, 0, 135, 252, 0, 15, 254, 0, 15, 254, 0, 15, 254,
-                                    0, 15, 254, 0, 7, 252, 0, 3, 248, 0, 0, 240};
-
-static char *enterpriseGlyph[8] = {enterpriseGlyph1, enterpriseGlyph2, enterpriseGlyph3, enterpriseGlyph4, enterpriseGlyph5, enterpriseGlyph6, enterpriseGlyph7, enterpriseGlyph8};
-
-static char enterpriseGlyphOffsetX[3] = {224, 220, 220};
-static char enterpriseGlyphOffsetY[3] = {10, 14, 10};
-static char enterpriseGlyphSize[3] = {38, 36, 57};
-static char enterpriseGlyphSizeX[3] = {16, 24, 24};
-static char enterpriseGlyphSizeY[3] = {19, 12, 19};
-static char enterpriseDirection = 0;
-
-static char starGlyph[9] = {16, 146, 84, 56, 254, 56, 84, 146, 16};
-static char baseGlyph[60] = {0, 224, 0, 1, 240, 0, 1, 240, 0, 0, 224, 0, 0, 64, 0, 0, 64, 0,
-                             1, 240, 0, 103, 252, 192, 247, 253, 224, 255, 255, 224, 247, 253, 224,
-                             103, 252, 192, 3, 248, 0, 1, 240, 0, 0, 64, 0, 0, 64, 0, 0, 224, 0, 1, 240, 0,
-                             1, 240, 0, 0, 224, 0};
-
-static char klingonGlyph1[20] = {255, 0, 255, 0, 12, 14, 12, 31, 15, 255, 15, 255, 12, 31, 12, 14, 255, 0, 255, 0};
-
-static char klingonGlyph2[51] = {0, 0, 14, 0, 0, 31, 0, 0, 31, 0, 0, 31, 0, 8, 62, 0, 28, 112, 0, 56, 224, 0, 125, 192,
-                                 0, 231, 128, 1, 195, 16, 0, 129, 184, 0, 0, 240, 0, 0, 224, 0, 1, 192, 0, 3, 128, 0, 7, 0, 0, 2, 0};
-
-static char klingonGlyph3[32] = {15, 0, 31, 128, 31, 128, 31, 128, 15, 0, 6, 0, 6, 0,
-                                 6, 0, 102, 96, 102, 96, 127, 224, 127, 224, 96, 96,
-                                 96, 96, 96, 96, 96, 96};
-
-static char klingonGlyph4[51] = {112, 0, 0, 248, 0, 0, 248, 0, 0, 248, 0, 0, 124, 16, 0, 14, 56, 0, 7, 28, 0, 3, 190, 0,
-                                 1, 231, 0, 8, 195, 128, 29, 129, 0, 15, 0, 0, 7, 0, 0, 3, 128, 0, 1, 192, 0, 0, 224, 0, 0, 64, 0};
-
-static char klingonGlyph5[20] = {0, 255, 0, 255, 112, 48, 248, 48, 255, 240, 255, 240, 248, 48, 112, 48, 0, 255, 0, 255};
-
-static char klingonGlyph6[51] = {0, 64, 0, 0, 224, 0, 1, 192, 0, 3, 128, 0, 7, 0, 0, 15, 0, 0, 29, 129, 0,
-                                 8, 195, 128, 1, 231, 0, 3, 190, 0, 7, 28, 0, 14, 56, 0, 124, 16, 0, 248, 0, 0,
-                                 248, 0, 0, 248, 0, 0, 112, 0, 0};
-
-static char klingonGlyph7[32] = {96, 96, 96, 96, 96, 96, 96, 96, 127, 224, 127, 224, 102, 96, 102, 96, 6, 0, 6, 0,
-                                 6, 0, 15, 0, 31, 128, 31, 128, 31, 128, 15, 0};
-
-static char klingonGlyph8[51] = {0, 2, 0, 0, 7, 0, 0, 3, 128, 0, 1, 192, 0, 0, 224, 0, 0, 240, 0, 129, 184, 1, 195, 16, 0, 231, 128,
-                                 0, 125, 192, 0, 56, 224, 0, 28, 112, 0, 8, 62, 0, 0, 31, 0, 0, 31, 0, 0, 31, 0, 0, 14};
-
-static char *klingonGlyph[8] = {klingonGlyph1, klingonGlyph2, klingonGlyph3, klingonGlyph4, klingonGlyph5, klingonGlyph6, klingonGlyph7, klingonGlyph8};
-
-static char klingonGlyphOffsetX[3] = {220, 220, 220};
-static char klingonGlyphOffsetY[3] = {10, 10, 10};
-static char klingonGlyphSize[3] = {32, 20, 51};
-static char klingonGlyphSizeX[3] = {16, 16, 24};
-static char klingonGlyphSizeY[3] = {16, 10, 17};
-
-/* Global game state */
-int G[GALAXY_SIZE + 1][GALAXY_SIZE + 1]; /* Galaxy map */
-int K[MAX_KLINGONS][3];                  /* Klingon positions and energy */
-int Z[GALAXY_SIZE + 1][GALAXY_SIZE + 1]; /* Cumulative galactic record */
-int D[MAX_DEVICES];                      /* Damage array */
-
-/* Game variables */
-static int T, T0, T9;      /* Time variables */
-static int E;              /* Energy */
-static int P;              /* Photon torpedoes */
-static int S;              /* Shield energy */
-static int B9, K9, K7;     /* Starbases, Klingons */
-static int Q1, Q2, S1, S2; /* Quadrant and sector positions */
-static int K3, B3, S3;     /* Quadrant contents */
-static int B4, B5;         /* Starbase position */
-static int D0, D4;         /* Docked flag, damage repair time */
-static char Qu[65];        /* Quadrant string */
-static char G2[20];        /* Region name */
-static char C_STR[10];     /* Condition string */
-static char C_STR_COLOR;   /* Condition string COLOR*/
-
-/* Game restart flag (replaces recursive main() call) */
-static int restart_game = 0;
-
-/* Function prototypes */
-void paint_intro_screen();
-void initialize_game(void);
-void print_instructions(void);
-void enter_quadrant(void);
-void long_range_scan(void);
-void phaser_control(void);
-void photon_torpedoes(void);
-void damage_report(void);
-void library_computer(void);
-void warpSpeed(int WarpFactor);
-void end_game(void);
-void klingon_attack(void);
-void place_enterprise(void);
-void place_objects(void);
-void get_quadrant_name(int z4, int z5);
-void CheckDocked(void);
-int get_random(int max);
-int find_empty_sector(void);
-void repair_damage(void);
-int calculate_distance(int x1, int y1, int x2, int y2);
-int calculate_direction(int x1, int y1, int x2, int y2);
-int abs_value(int x);
-void impulsePower(void);
-/* Simple replacements for standard library functions */
-int simple_strlen(char *str);
-void simple_strcpy(char *dest, char *src);
-void simple_strcat(char *dest, char *src);
-int simple_strcmp(char *str1, char *str2);
-void simple_gets(char *buffer, int max_len);
-char simple_getchar(void);
-
-/* Random number seed */
-static unsigned lfsr = 0xACE1u;
-static unsigned bit;
-
-static unsigned int random_seed = 1;
-
-/* Simple absolute value function */
-int abs_value(int x)
-{
-    return (x < 0) ? -x : x;
-}
-
-/* Simple random number generator (using smaller constants for 16-bit) */
 int get_random(int max)
 {
     lfsr = lfsr + randseed();
@@ -205,85 +46,11 @@ int get_random(int max)
     return (lfsr % max);
 }
 
-/* Simple string functions to replace standard library */
-int simple_strlen(char *str)
-{
-    int len;
-    len = 0;
-    while (str[len] != '\0')
-        len++;
-    return len;
-}
-
-void simple_strcpy(char *dest, char *src)
-{
-    int i;
-    i = 0;
-    while (src[i] != '\0')
-    {
-        dest[i] = src[i];
-        i++;
-    }
-    dest[i] = '\0';
-}
-
-void simple_strcat(char *dest, char *src)
-{
-    int dest_len;
-    int i;
-
-    dest_len = simple_strlen(dest);
-    i = 0;
-
-    while (src[i] != '\0')
-    {
-        dest[dest_len + i] = src[i];
-        i++;
-    }
-    dest[dest_len + i] = '\0';
-}
-
-int simple_strcmp(char *str1, char *str2)
-{
-    int i;
-    i = 0;
-    while (str1[i] != '\0' && str2[i] != '\0')
-    {
-        if (str1[i] != str2[i])
-        {
-            return str1[i] - str2[i];
-        }
-        i++;
-    }
-    return str1[i] - str2[i];
-}
 
 
-/* Simple input functions */
-char simple_getchar(void)
-{
-    char ch = getch();
-    ch = toupper(ch);
-    outbyte(ch);
-    return ch; /* Assuming minimal getchar() is available */
-}
 
-void simple_gets(char *buffer, int max_len)
-{
-    int i;
-    char c;
 
-    i = 0;
 
-    while (i < max_len - 1)
-    {
-        c = simple_getchar();
-        if (c == '\n' || c == '\r')
-            break;
-        buffer[i++] = c;
-    }
-    buffer[i] = '\0';
-}
 
 void paint_intro_screen()
 {
@@ -336,8 +103,8 @@ void paint_player_updates()
     SetPenColor(0);
     SetBrushColor(0);
     DrawFilledRectangle(125, 10, 198, 130);
-    DrawFilledRectangle(220, 10, 410, 170);
-    DrawFilledRectangle(10, 210, 400, 470);
+    DrawFilledRectangle(210, 5, 410, 170);
+    DrawFilledRectangle(3, 203, 400, 470);
 
     if (D[SHORT_SENSORS] < 0)
     {
@@ -464,7 +231,7 @@ void initialize_game(void)
     /* Set up time and energy */
     T = (get_random(20) + 20) * 100;
     T0 = T;
-    T9 = get_random(10) + 25;
+    T9 = get_random(30) + 155;
     E = 3000;
     P = 10;
     S = 0;
@@ -477,7 +244,6 @@ void initialize_game(void)
     {
         D[i] = 100;
     }
-
 
     /* Set up galaxy */
     for (i = 0; i <= GALAXY_SIZE; i++)
@@ -547,33 +313,6 @@ void initialize_game(void)
     {
         Qu[i] = ' ';
     }
-}
-
-/* Print game instructions */
-void print_instructions(void)
-{
-    printf("\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r");
-    printf("                ,------*------,\n\r");
-    printf(",-------------   '---  ------'\n\r");
-    printf(" '-------- --'      / /\n\r");
-    printf("    ,---' '-------/ /--,\n\r");
-    printf("    '----------------'\n\r\n\r");
-    printf("  THE USS ENTERPRISE --- NCC-1701\n\r");
-    printf("\n\r\n\r\n\r\n\r\n\r");
-
-    printf("YOUR ORDERS ARE AS FOLLOWS:\n\r");
-    printf("     DESTROY THE %d KLINGON WARSHIPS WHICH HAVE INVADED\n\r", K9);
-    printf("   THE GALAXY BEFORE THEY CAN ATTACK FEDERATION HEADQUARTERS\n\r");
-    printf("   ON STARDATE %d. THIS GIVES YOU %d DAYS. THERE", T0 + T9, T9);
-    if (B9 == 1)
-    {
-        printf(" IS\n\r  1 STARBASE IN THE GALAXY FOR RESUPPLYING YOUR SHIP\n\r");
-    }
-    else
-    {
-        printf(" ARE\n\r  %d STARBASES IN THE GALAXY FOR RESUPPLYING YOUR SHIP\n\r", B9);
-    }
-    printf("\n\r");
 }
 
 /* Enter new quadrant */
@@ -710,13 +449,13 @@ void get_quadrant_name(int z4, int z5)
 {
     if (z5 < 4)
     {
-        simple_strcpy(G2, star_names1[z4]);
+        strcpy(G2, star_names1[z4]);
     }
     else
     {
-        simple_strcpy(G2, star_names2[z4]);
+        strcpy(G2, star_names2[z4]);
     }
-    simple_strcat(G2, roman_numerals[z5 % 4]);
+    strcat(G2, roman_numerals[z5 % 4]);
 }
 
 /* Main game loop */
@@ -729,7 +468,6 @@ void main_game_loop(void)
         paint_player_updates();
         while (1)
         {
-            // LRS PHA  COM XXX
             keypress = getc();
             if (keypress == 'a')
             {
@@ -801,7 +539,7 @@ void main_game_loop(void)
                 paint_player_updates();
             }
 
-            if (keypress == 0x27)
+            if (keypress == 'x')
             {
                 end_game();
                 return;
@@ -857,7 +595,7 @@ void CheckDocked(void)
         if (abs_value(S1 - B4) <= 1 && abs_value(S2 - B5) <= 1)
         {
             D0 = 1;
-            simple_strcpy(C_STR, "DOCKED\0");
+            strcpy(C_STR, "DOCKED\0");
             C_STR_COLOR = 12;
             E = 3000;
             P = 10;
@@ -871,17 +609,17 @@ void CheckDocked(void)
     {
         if (K3 > 0)
         {
-            simple_strcpy(C_STR, "*RED*\0");
+            strcpy(C_STR, "*RED*\0");
             C_STR_COLOR = 9;
         }
         else if (E < 300)
         {
-            simple_strcpy(C_STR, "YELLOW\0");
+            strcpy(C_STR, "YELLOW\0");
             C_STR_COLOR = 11;
         }
         else
         {
-            simple_strcpy(C_STR, "GREEN\0");
+            strcpy(C_STR, "GREEN\0");
             C_STR_COLOR = 10;
         }
     }
@@ -1236,7 +974,10 @@ void damage_report(void)
     int i;
     char out[10];
     SetPenColor(0);
-    DrawFilledRectangle(560, 10, 630, 190);
+    DrawFilledRectangle(560, 10, 630, 150);
+
+    if (D[DAMAGE_CONTROL] < 0)
+        return;
 
     SetPenColor(6);
     for (i = 0; i < MAX_DEVICES; i++)
@@ -1255,7 +996,8 @@ void damage_report(void)
 /* Library computer */
 void library_computer(void)
 {
-    int i,j;
+    int i, j;
+    char buffer[20];
 
     if (D[LIBRARY_COMPUTER] < 0)
     {
@@ -1263,26 +1005,41 @@ void library_computer(void)
         return;
     }
 
-        /* Cumulative galactic record */
-        printf("        COMPUTER RECORD OF GALAXY FOR QUADRANT %d,%d\n\r", Q1, Q2);
-        printf("       1     2     3     4     5     6     7     8\n\r");
-        printf("     ----- ----- ----- ----- ----- ----- ----- -----\n\r");
-        for (i = 0; i <= GALAXY_SIZE; i++)
+    /* Cumulative galactic record */
+    SetPenColor(15);
+    OutString(70, 210, 6, 0, 7, "COMPUTER RECORD OF GALAXY");
+
+    for (i = -1; i <= GALAXY_SIZE; i++)
+    {
+
+        if (i != -1)
         {
-            printf("%d", i + 1);
-            for (j = 0; j <= GALAXY_SIZE; j++)
+            sprintf(buffer, "%d", i + 1);
+            OutString(15, 240 + (i * 15), 6, 0, 7, buffer);
+        }
+
+        for (j = 0; j <= GALAXY_SIZE; j++)
+        {
+            if (i == -1)
+            {
+                sprintf(buffer, "%d", j + 1);
+                OutString(36 + (30 * j), 225, 6, 0, 7, buffer);
+            }
+            else
             {
                 if (Z[i][j] == 0)
                 {
-                    printf("   ***");
+                    OutString(30 + (30 * j), 240 + (i * 15), 6, 0, 7, "***");
                 }
                 else
                 {
-                    printf("   %03d", Z[i][j]);
+                    sprintf(buffer, "%03d", Z[i][j]);
+                    OutString(30 + (30 * j), 240 + (i * 15), 6, 0, 7, buffer);
                 }
             }
-            printf("\n\r");
         }
+    }
+    getch();
 }
 
 /* Klingon attack */
@@ -1317,7 +1074,7 @@ void klingon_attack(void)
             if (h >= 20 && (get_random(10) > 6 || h * 100 / S > 2))
             {
                 r1 = get_random(MAX_DEVICES);
-                D[r1] = D[r1] - h / S - get_random(5);
+                D[r1] = D[r1] - h / S - get_random(15);
                 printf("DAMAGE CONTROL REPORTS '%s DAMAGED BY THE HIT'\n\r", device_names[r1]);
             }
         }
@@ -1342,23 +1099,26 @@ void repair_damage(void)
     // todo: this should be time based, not based  on moves
     int i, d1;
     d1 = 0;
-    for (i = 0; i < MAX_DEVICES; i++)
+    char buffer[60];
+    if (K3 == 0)
     {
-        if (D[i] < 0)
+        for (i = 0; i < MAX_DEVICES; i++)
         {
-            D[i] += 1;
-            if (D[i] > -1 && D[i] < 0)
+            if (D[i] < 100)
             {
-                D[i] = -1;
-            }
-            else if (D[i] >= 0)
-            {
-                if (d1 == 0)
+                D[i] += 1;
+                if (D[i] > 100)
                 {
-                    d1 = 1;
-                    printf("DAMAGE CONTROL REPORT:  ");
+                    D[i] = 100;
                 }
-                printf("%s REPAIR COMPLETED.\n\r", device_names[i]);
+                if (D[i] == 100)
+                {
+                    SetPenColor(0);
+                    DrawRectangle(420, 180, 639, 199);
+                    SetPenColor(11);
+                    sprintf(buffer, "%s REPAIR COMPLETE", device_names[i]);
+                    OutString(420, 185, 6, 0, 7, buffer);
+                }
             }
         }
     }
@@ -1367,26 +1127,11 @@ void repair_damage(void)
 /* End game (fixed to use restart flag instead of recursive main() call) */
 void end_game(void)
 {
-    char response[10]; /* Variable declared at top for Micro-C compatibility */
-
     // need an explosion
 
     printf("THERE WERE %d KLINGON BATTLE CRUISERS LEFT AT\n\r", K9);
     printf("THE END OF YOUR MISSION.\n\r\n\r");
 
-    if (B9 > 0)
-    {
-        printf("THE FEDERATION IS IN NEED OF A NEW STARSHIP COMMANDER\n\r");
-        printf("FOR A SIMILAR MISSION -- IF THERE IS A VOLUNTEER,\n\r");
-        printf("LET HIM STEP FORWARD AND ENTER 'AYE': ");
-        simple_gets(response, 10);
-        if (simple_strcmp(response, "AYE") == 0)
-        {
-            restart_game = 1; /* Set restart flag instead of calling main() */
-            return;
-        }
-    }
-    printf("\n\r\r");
     _exit();
 }
 
@@ -1400,8 +1145,6 @@ int main(void)
         /* Initialize game */
         initialize_game();
         paint_player_updates();
-        /* Print instructions */
-        print_instructions();
 
         /* Enter starting quadrant */
         enter_quadrant();

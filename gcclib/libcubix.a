@@ -974,6 +974,155 @@ R 00 00 00 02
 T 01 A7 32 E8 1D 35 E0
 R 00 00 00 02
 L1 gettim.o
+L0 abs_value.o
+XH2
+H 3 areas 2 global symbols 2 banks 1 modes
+M abs_value.c
+G 00 00 80 81 82 83 84 85 86 87 88 89 8A 8B 8C 8D 8E 8F
+B _CSEG base 0 size 0 map 0 flags 0
+B _DSEG base 0 size 0 map 0 flags 4 fsfx _DS
+S .__.ABS. Def0000
+A _CODE size 0 flags CC80 bank 0
+A _DATA size 0 flags CCC0 bank 1
+A .text size 22 flags D00
+S _abs_value Def0000
+T 00 00
+R 00 00 00 02
+T 00 00 34 40 32 7C 33 E4 AF 42 AE 42 AF C4 EC
+R 00 00 00 02
+T 00 0D C4 10 83 00 00 2C 08 EC C4 40 50 82 00
+R 00 00 00 02
+T 00 1A ED C4
+R 00 00 00 02
+T 00 1C
+R 00 00 00 02
+T 00 1C AE C4 32 64 35 C0
+R 00 00 00 02
+L1 abs_value.o
+L0 strcat.o
+XH2
+H 3 areas 3 global symbols 2 banks 1 modes
+M strcat.c
+G 00 00 80 81 82 83 84 85 86 87 88 89 8A 8B 8C 8D 8E 8F
+B _CSEG base 0 size 0 map 0 flags 0
+B _DSEG base 0 size 0 map 0 flags 4 fsfx _DS
+S .__.ABS. Def0000
+S _strlen Ref0000
+A _CODE size 0 flags CC80 bank 0
+A _DATA size 0 flags CCC0 bank 1
+A .text size 56 flags D00
+S _strcat Def0000
+T 00 00
+R 00 00 00 02
+T 00 00 34 60 32 78 33 E4 AF 42 AE 42 BD 00 00
+R 00 00 00 02 81 0D 00 01
+T 00 0D AF 44 8E 00 00 AF 46 20 21
+R 00 00 00 02
+T 00 16
+R 00 00 00 02
+T 00 16 EC 44 E3 46 1F 01 1F 10 AE 42 31 8B EC
+R 00 00 00 02
+T 00 23 46 AE 4E 30 8B AF C4 AE C4 E6 84 E7 A4
+R 00 00 00 02
+T 00 30 EC 46 C3 00 01 ED 46
+R 00 00 00 02
+T 00 37
+R 00 00 00 02
+T 00 37 EC 46 10 AE 4E 30 AB E6 84 5D 26 D3 EC
+R 00 00 00 02
+T 00 44 44 E3 46 1F 01 1F 10 10 AE 42 30 AB 6F
+R 00 00 00 02
+T 00 51 84 32 68 35 E0
+R 00 00 00 02
+L1 strcat.o
+L0 strcpy.o
+XH2
+H 3 areas 2 global symbols 2 banks 1 modes
+M strcpy.c
+G 00 00 80 81 82 83 84 85 86 87 88 89 8A 8B 8C 8D 8E 8F
+B _CSEG base 0 size 0 map 0 flags 0
+B _DSEG base 0 size 0 map 0 flags 4 fsfx _DS
+S .__.ABS. Def0000
+A _CODE size 0 flags CC80 bank 0
+A _DATA size 0 flags CCC0 bank 1
+A .text size 43 flags D00
+S _strcpy Def0000
+T 00 00
+R 00 00 00 02
+T 00 00 34 60 32 7A 33 E4 AF 42 8E 00 00 AF 44
+R 00 00 00 02
+T 00 0D 20 1B
+R 00 00 00 02
+T 00 0F
+R 00 00 00 02
+T 00 0F EC 44 AE 42 31 8B EC 44 AE 4C 30 8B AF
+R 00 00 00 02
+T 00 1C C4 AE C4 E6 84 E7 A4 EC 44 C3 00 01 ED
+R 00 00 00 02
+T 00 29 44
+R 00 00 00 02
+T 00 2A
+R 00 00 00 02
+T 00 2A EC 44 10 AE 4C 30 AB E6 84 5D 26 D9 EC
+R 00 00 00 02
+T 00 37 44 10 AE 42 30 AB 6F 84 32 66 35 E0
+R 00 00 00 02
+L1 strcpy.o
+L0 strcmp.o
+XH2
+H 3 areas 2 global symbols 2 banks 1 modes
+M strcmp.c
+G 00 00 80 81 82 83 84 85 86 87 88 89 8A 8B 8C 8D 8E 8F
+B _CSEG base 0 size 0 map 0 flags 0
+B _DSEG base 0 size 0 map 0 flags 4 fsfx _DS
+S .__.ABS. Def0000
+A _CODE size 0 flags CC80 bank 0
+A _DATA size 0 flags CCC0 bank 1
+A .text size 90 flags D00
+S _strcmp Def0000
+T 00 00
+R 00 00 00 02
+T 00 00 34 60 32 73 33 E4 AF 49 8E 00 00 AF 4B
+R 00 00 00 02
+T 00 0D 20 41
+R 00 00 00 02
+T 00 0F
+R 00 00 00 02
+T 00 0F EC 4B 10 AE 49 30 AB E6 84 E7 42 EC 4B
+R 00 00 00 02
+T 00 1C 10 AE C8 13 30 AB E6 84 E1 42 27 21 EC
+R 00 00 00 02
+T 00 29 4B 10 AE 49 30 AB E6 84 4F ED 45 EC 4B
+R 00 00 00 02
+T 00 36 10 AE C8 13 30 AB E6 84 4F ED C4 EC 45
+R 00 00 00 02
+T 00 43 A3 C4 ED 43 20 41
+R 00 00 00 02
+T 00 49
+R 00 00 00 02
+T 00 49 EC 4B C3 00 01 ED 4B
+R 00 00 00 02
+T 00 50
+R 00 00 00 02
+T 00 50 EC 4B 10 AE 49 30 AB E6 84 5D 27 0F EC
+R 00 00 00 02
+T 00 5D 4B 10 AE C8 13 30 AB E6 84 5D 10 26
+R 00 00 00 02
+T 00 69 FF A4
+R 00 00 00 02
+T 00 6B
+R 00 00 00 02
+T 00 6B EC 4B 10 AE 49 30 AB E6 84 4F ED 47 EC
+R 00 00 00 02
+T 00 78 4B 10 AE C8 13 30 AB E6 84 4F ED C4 EC
+R 00 00 00 02
+T 00 85 47 A3 C4 ED 43
+R 00 00 00 02
+T 00 8A
+R 00 00 00 02
+T 00 8A AE 43 32 6D 35 E0
+R 00 00 00 02
+L1 strcmp.o
 L0 esplowlevel.o
 XH2
 H 4 areas E global symbols 2 banks 1 modes

@@ -35,13 +35,26 @@ toupper.o: toupper.c
 gettim.o: gettim.c
 	gcc6809 -fno-builtin -nostdlib gettim.c -c
 
+abs_value.o: abs_value.c
+	gcc6809 -fno-builtin -nostdlib abs_value.c -c
+
+strcat.o: strcat.c
+	gcc6809 -fno-builtin -nostdlib strcat.c -c
+
+strcpy.o: strcpy.c
+	gcc6809 -fno-builtin -nostdlib strcpy.c -c
+
+strcmp.o: strcmp.c
+	gcc6809 -fno-builtin -nostdlib strcmp.c -c
+
+
 test.s19: test.c libcubix.a
 	gcc6809 -fno-builtin -nostdlib test.c -c
 	aslink -n -m  -s -o -b .text=0x2020 -b .startup=0x2000 -l libcubix.a test.o
 
-libcubix.a: libgcc1.o strlen.o puts.o outbyte.o printf.o getch.o gettim.o toupper.o esplowlevel.o graphics.o crt0.o
-	-aslib d libcubix.a    libgcc1.o outbyte.o strlen.o puts.o printf.o getch.o toupper.o gettim.o esplowlevel.o graphics.o crt0.o
-	aslib qc libcubix.a    libgcc1.o outbyte.o strlen.o puts.o printf.o getch.o toupper.o gettim.o esplowlevel.o graphics.o crt0.o
+libcubix.a: libgcc1.o strlen.o puts.o outbyte.o printf.o getch.o gettim.o toupper.o esplowlevel.o graphics.o abs_value.o strcat.o strcpy.o strcmp.o crt0.o
+	-aslib d libcubix.a    libgcc1.o outbyte.o strlen.o puts.o printf.o getch.o toupper.o gettim.o abs_value.o strcat.o strcpy.o strcmp.o esplowlevel.o graphics.o crt0.o
+	aslib qc libcubix.a    libgcc1.o outbyte.o strlen.o puts.o printf.o getch.o toupper.o gettim.o abs_value.o strcat.o strcpy.o strcmp.o esplowlevel.o graphics.o crt0.o
 
 clean:
 	@rm -f *.hlr

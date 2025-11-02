@@ -30,3 +30,7 @@ extern char isupper(char c);
 extern char isdigit(char c);
 extern char isxdigit(char c);
 extern char isprint(char c);
+extern int abs_value(int x);
+extern void strcpy(char *dest, char *src);
+extern int strcmp(char *str1, char *str2);
+extern void strcat(char *dest, char *src);
